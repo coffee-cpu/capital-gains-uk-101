@@ -27,4 +27,25 @@ test.describe('CGT Visualizer App', () => {
     const heading = page.getByRole('heading', { name: /CGT Visualizer/i })
     await expect(heading).toHaveClass(/text-4xl/)
   })
+
+  test('should display footer with disclaimer', async ({ page }) => {
+    await page.goto('/')
+
+    // Check footer is visible
+    const footer = page.locator('footer')
+    await expect(footer).toBeVisible()
+
+    // Check disclaimer heading
+    await expect(page.getByRole('heading', { name: /Disclaimer/i })).toBeVisible()
+
+    // Check key disclaimer phrases
+    await expect(page.getByText(/educational and visualization tool/i)).toBeVisible()
+    await expect(page.getByText(/not financial or tax advice/i)).toBeVisible()
+    await expect(page.getByText(/locally in your browser/i)).toBeVisible()
+
+    // Check HMRC link
+    const hmrcLink = page.getByRole('link', { name: /HMRC Capital Gains Manual/i })
+    await expect(hmrcLink).toBeVisible()
+    await expect(hmrcLink).toHaveAttribute('href', /gov\.uk/)
+  })
 })
