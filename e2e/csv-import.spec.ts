@@ -14,7 +14,7 @@ test.describe('CSV Import', () => {
     await expect(fileInput).toBeVisible()
 
     // Upload the test CSV file
-    const filePath = path.join(__dirname, '..', 'tests', 'fixtures', 'schwab-sample.csv')
+    const filePath = path.join(__dirname, 'fixtures', 'schwab-sample.csv')
     await fileInput.setInputFiles(filePath)
 
     // Wait for success message
@@ -51,7 +51,7 @@ test.describe('CSV Import', () => {
 
     // Upload CSV
     const fileInput = page.locator('input[type="file"]')
-    const filePath = path.join(__dirname, '..', 'tests', 'fixtures', 'schwab-sample.csv')
+    const filePath = path.join(__dirname, 'fixtures', 'schwab-sample.csv')
     await fileInput.setInputFiles(filePath)
 
     // Wait for import
