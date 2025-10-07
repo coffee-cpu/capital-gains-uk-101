@@ -12,7 +12,9 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "test": "vitest",
-    "test:ui": "vitest --ui"
+    "test:ui": "vitest --ui",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "repository": {
     "type": "git",
@@ -26,6 +28,8 @@
   },
   "homepage": "https://github.com/coffee-cpu/capital-gains-uk-101#readme",
   "devDependencies": {
+    "@playwright/test": "^1.56.0",
+    "@tailwindcss/postcss": "^4.1.14",
     "@types/papaparse": "^5.3.16",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.1",
