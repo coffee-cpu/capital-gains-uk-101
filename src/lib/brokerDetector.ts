@@ -14,6 +14,12 @@ export function detectBroker(rows: RawCSVRow[]): BrokerDetectionResult {
 
   const headers = Object.keys(rows[0])
 
+  // Check for Generic CSV (check first - most explicit format)
+  const genericResult = detectGeneric(headers, rows)
+  if (genericResult.confidence > 0.8) {
+    return genericResult
+  }
+
   // Check for Schwab
   const schwabResult = detectSchwab(headers, rows)
   if (schwabResult.confidence > 0.8) {
@@ -27,16 +33,36 @@ export function detectBroker(rows: RawCSVRow[]): BrokerDetectionResult {
   }
 
   // Return best match or unknown
-  if (schwabResult.confidence > trading212Result.confidence) {
-    return schwabResult
-  } else if (trading212Result.confidence > 0) {
-    return trading212Result
+  const results = [genericResult, schwabResult, trading212Result]
+  const bestMatch = results.reduce((best, current) =>
+    current.confidence > best.confidence ? current : best
+  )
+
+  if (bestMatch.confidence > 0) {
+    return bestMatch
   }
 
   return {
     broker: BrokerType.UNKNOWN,
     confidence: 0,
     headerMatches: [],
+  }
+}
+
+/**
+ * Detect Generic CSV format
+ * Required headers: "date", "type", "symbol", "currency"
+ */
+function detectGeneric(headers: string[], rows: RawCSVRow[]): BrokerDetectionResult {
+  const requiredHeaders = ['date', 'type', 'symbol', 'currency']
+
+  const matches = requiredHeaders.filter(h => headers.includes(h))
+  const confidence = matches.length / requiredHeaders.length
+
+  return {
+    broker: BrokerType.GENERIC,
+    confidence,
+    headerMatches: matches,
   }
 }
 

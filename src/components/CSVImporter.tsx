@@ -8,13 +8,10 @@ import { GenericTransaction } from '../types/transaction'
 import { useTransactionStore } from '../stores/transactionStore'
 import { db } from '../lib/db'
 
-type ImportMode = 'select' | 'auto' | 'generic'
-
 export function CSVImporter() {
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
-  const [importMode, setImportMode] = useState<ImportMode>('select')
   const addTransactions = useTransactionStore((state) => state.addTransactions)
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -44,38 +41,33 @@ export function CSVImporter() {
         return
       }
 
+      // Try to detect broker format
+      const detection = detectBroker(rawRows)
+
+      if (detection.confidence < 0.8) {
+        throw new Error(`Could not detect CSV format (confidence: ${(detection.confidence * 100).toFixed(0)}%). Please check your CSV file format.`)
+      }
+
       let transactions: GenericTransaction[] = []
-      let source: string
 
-      if (importMode === 'auto') {
-        // Try to detect broker
-        const detection = detectBroker(rawRows)
-
-        if (detection.confidence < 0.8) {
-          throw new Error(`Could not auto-detect broker format (confidence: ${(detection.confidence * 100).toFixed(0)}%). Try using Generic CSV mode instead.`)
-        }
-
-        switch (detection.broker) {
-          case BrokerType.SCHWAB:
-            transactions = normalizeSchwabTransactions(rawRows, fileId)
-            source = detection.broker
-            break
-          case BrokerType.TRADING212:
-            throw new Error('Trading 212 format not yet supported')
-          default:
-            throw new Error(`Unsupported broker: ${detection.broker}`)
-        }
-      } else if (importMode === 'generic') {
-        // Generic CSV format
-        transactions = normalizeGenericTransactions(rawRows, fileId)
-        source = 'Generic CSV'
+      switch (detection.broker) {
+        case BrokerType.SCHWAB:
+          transactions = normalizeSchwabTransactions(rawRows, fileId)
+          break
+        case BrokerType.GENERIC:
+          transactions = normalizeGenericTransactions(rawRows, fileId)
+          break
+        case BrokerType.TRADING212:
+          throw new Error('Trading 212 format not yet supported')
+        default:
+          throw new Error(`Unsupported broker: ${detection.broker}`)
       }
 
       if (transactions.length === 0) {
         throw new Error('No valid transactions found in CSV')
       }
 
-      await saveTransactions(transactions, source)
+      await saveTransactions(transactions, detection.broker)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to import CSV')
     } finally {
@@ -95,47 +87,7 @@ export function CSVImporter() {
     <div className="bg-white shadow rounded-lg p-6">
       <h2 className="text-2xl font-semibold text-gray-900 mb-4">Import Transactions</h2>
 
-      {/* Mode Selection */}
-      {importMode === 'select' && (
-        <div className="mb-6">
-          <p className="text-sm text-gray-600 mb-4">Choose your CSV format:</p>
-          <div className="grid grid-cols-2 gap-4">
-            <button
-              onClick={() => setImportMode('auto')}
-              className="p-4 border-2 border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 text-left transition-colors"
-            >
-              <div className="font-semibold text-gray-900 mb-1">Broker CSV</div>
-              <div className="text-sm text-gray-600">Auto-detect format (Schwab, Trading 212, etc.)</div>
-            </button>
-            <button
-              onClick={() => setImportMode('generic')}
-              className="p-4 border-2 border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 text-left transition-colors"
-            >
-              <div className="font-semibold text-gray-900 mb-1">Generic CSV</div>
-              <div className="text-sm text-gray-600">Standard format with predefined columns</div>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* File Upload */}
-      {importMode !== 'select' && (
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 mb-2">
-            <button
-              onClick={() => {
-                setImportMode('select')
-                setError(null)
-                setSuccess(null)
-              }}
-              className="text-sm text-blue-600 hover:text-blue-700"
-            >
-              ← Change import mode
-            </button>
-            <span className="text-sm text-gray-500">
-              ({importMode === 'auto' ? 'Broker CSV' : 'Generic CSV'})
-            </span>
-          </div>
+      <div className="space-y-4">
 
           <div>
             <label
@@ -214,33 +166,15 @@ export function CSVImporter() {
             </div>
           )}
 
-          {importMode === 'auto' && (
-            <div className="text-sm text-gray-500">
-              <p className="mb-2">Supported brokers:</p>
-              <ul className="list-disc list-inside space-y-1">
-                <li>Charles Schwab</li>
-                <li className="text-gray-400">Trading 212 (coming soon)</li>
-              </ul>
-            </div>
-          )}
-
-          {importMode === 'generic' && (
-            <div className="text-sm text-gray-500">
-              <p className="mb-2 font-medium">Required CSV columns:</p>
-              <ul className="list-disc list-inside space-y-1 mb-3">
-                <li><code className="text-xs bg-gray-100 px-1 py-0.5 rounded">date</code> - YYYY-MM-DD format</li>
-                <li><code className="text-xs bg-gray-100 px-1 py-0.5 rounded">type</code> - BUY, SELL, DIVIDEND, INTEREST, TAX, TRANSFER, FEE</li>
-                <li><code className="text-xs bg-gray-100 px-1 py-0.5 rounded">symbol</code> - Stock ticker</li>
-                <li><code className="text-xs bg-gray-100 px-1 py-0.5 rounded">currency</code> - USD, GBP, EUR, etc.</li>
-              </ul>
-              <p className="mb-2 font-medium">Optional columns:</p>
-              <ul className="list-disc list-inside space-y-1">
-                <li><code className="text-xs bg-gray-100 px-1 py-0.5 rounded">name</code>, <code className="text-xs bg-gray-100 px-1 py-0.5 rounded">quantity</code>, <code className="text-xs bg-gray-100 px-1 py-0.5 rounded">price</code>, <code className="text-xs bg-gray-100 px-1 py-0.5 rounded">total</code>, <code className="text-xs bg-gray-100 px-1 py-0.5 rounded">fee</code>, <code className="text-xs bg-gray-100 px-1 py-0.5 rounded">notes</code></li>
-              </ul>
-            </div>
-          )}
+        <div className="text-sm text-gray-500">
+          <p className="mb-2">Supported formats (auto-detected):</p>
+          <ul className="list-disc list-inside space-y-1">
+            <li>Charles Schwab</li>
+            <li>Generic CSV (columns: date, type, symbol, currency + optional fields)</li>
+            <li className="text-gray-400">Trading 212 (coming soon)</li>
+          </ul>
         </div>
-      )}
+      </div>
     </div>
   )
 }

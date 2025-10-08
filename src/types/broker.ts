@@ -5,6 +5,7 @@
 export enum BrokerType {
   SCHWAB = 'Charles Schwab',
   TRADING212 = 'Trading 212',
+  GENERIC = 'Generic CSV',
   UNKNOWN = 'Unknown',
 }
 
