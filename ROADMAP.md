@@ -1,12 +1,15 @@
-# CGT Visualizer - Roadmap
+# Capital Gains Tax UK 101 - Roadmap
 
 ## 🎯 Current Status
 - ✅ CSV import (Schwab)
 - ✅ Transaction list display
+- ✅ Support for all transaction types (BUY, SELL, DIVIDEND, INTEREST, TAX, TRANSFER, FEE)
+- ✅ Visual distinction for non-CGT-relevant transactions
 - ✅ Duplicate file detection
 - ✅ IndexedDB persistence
 - ✅ Clear data functionality
 - ✅ Footer with disclaimer
+- ✅ Rebranded to "Capital Gains Tax UK 101"
 
 ## 📋 Planned Features
 
@@ -23,7 +26,7 @@
   - Disclaimer and legal info
   - Privacy guarantee details
 
-- [ ] **Rebrand to "Capital Gains Tax UK 101"**
+- [x] **Rebrand to "Capital Gains Tax UK 101"** ✅ *Completed 2025-10-09*
   - Update all branding
   - Update README
   - Update repository name/description
@@ -136,4 +139,12 @@
 
 ---
 
-**Last Updated:** 2025-10-08
+## 📝 Note to Developers
+
+**IMPORTANT**: When completing a feature from this roadmap:
+1. Mark the item as completed with `[x]` and add completion date
+2. Update the "Current Status" section if it's a major feature
+3. Commit the ROADMAP.md update along with the feature code
+4. This ensures the roadmap stays in sync with actual progress
+
+**Last Updated:** 2025-10-09
