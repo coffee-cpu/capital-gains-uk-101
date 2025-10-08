@@ -82,11 +82,18 @@ function mapSchwabAction(action: string): typeof TransactionType[keyof typeof Tr
   if (actionLower.includes('interest')) {
     return TransactionType.INTEREST
   }
-  if (actionLower.includes('fee') || actionLower.includes('tax')) {
+  if (actionLower.includes('tax')) {
+    return TransactionType.TAX
+  }
+  if (actionLower.includes('wire') || actionLower.includes('transfer')) {
+    return TransactionType.TRANSFER
+  }
+  if (actionLower.includes('fee')) {
     return TransactionType.FEE
   }
 
-  return null // Unknown action
+  // Return TRANSFER as a fallback for unknown actions so we don't filter them out
+  return TransactionType.TRANSFER
 }
 
 /**

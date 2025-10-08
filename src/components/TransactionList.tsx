@@ -52,37 +52,48 @@ export function TransactionList() {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {transactions.map((tx) => (
-              <tr key={tx.id}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {tx.date}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                  {tx.symbol || '—'}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                    tx.type === 'BUY' ? 'bg-green-100 text-green-800' :
-                    tx.type === 'SELL' ? 'bg-red-100 text-red-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>
-                    {tx.type}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {tx.quantity !== null ? tx.quantity.toFixed(2) : '—'}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {tx.price !== null ? `$${tx.price.toFixed(2)}` : '—'}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {tx.total !== null ? `$${tx.total.toFixed(2)}` : '—'}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {tx.source}
-                </td>
-              </tr>
-            ))}
+            {transactions.map((tx) => {
+              // Determine if this transaction is relevant to display prominently
+              // BUY/SELL are relevant to CGT, DIVIDEND is important for tax reporting
+              const isRelevant = tx.type === 'BUY' || tx.type === 'SELL' || tx.type === 'DIVIDEND'
+              const rowClassName = isRelevant ? '' : 'opacity-50'
+
+              return (
+                <tr key={tx.id} className={rowClassName}>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {tx.date}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {tx.symbol || '—'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      tx.type === 'BUY' ? 'bg-green-100 text-green-800' :
+                      tx.type === 'SELL' ? 'bg-red-100 text-red-800' :
+                      tx.type === 'DIVIDEND' ? 'bg-blue-100 text-blue-800' :
+                      tx.type === 'INTEREST' ? 'bg-purple-100 text-purple-800' :
+                      tx.type === 'TAX' ? 'bg-yellow-100 text-yellow-800' :
+                      tx.type === 'TRANSFER' ? 'bg-orange-100 text-orange-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {tx.type}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {tx.quantity !== null ? tx.quantity.toFixed(2) : '—'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {tx.price !== null ? `$${tx.price.toFixed(2)}` : '—'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {tx.total !== null ? `$${tx.total.toFixed(2)}` : '—'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {tx.source}
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>

@@ -18,11 +18,11 @@ describe('Schwab Parser', () => {
         },
       ]
 
-      const result = normalizeSchwabTransactions(rows)
+      const result = normalizeSchwabTransactions(rows, 'test-file')
 
       expect(result).toHaveLength(1)
       expect(result[0]).toMatchObject({
-        id: 'schwab-1',
+        id: 'test-file-1',
         source: 'Charles Schwab',
         symbol: 'AAPL',
         name: 'APPLE INC',
@@ -50,7 +50,7 @@ describe('Schwab Parser', () => {
         },
       ]
 
-      const result = normalizeSchwabTransactions(rows)
+      const result = normalizeSchwabTransactions(rows, 'test-file')
 
       expect(result).toHaveLength(1)
       expect(result[0].type).toBe(TransactionType.SELL)
@@ -72,7 +72,7 @@ describe('Schwab Parser', () => {
         },
       ]
 
-      const result = normalizeSchwabTransactions(rows)
+      const result = normalizeSchwabTransactions(rows, 'test-file')
 
       expect(result).toHaveLength(1)
       expect(result[0].type).toBe(TransactionType.DIVIDEND)
@@ -94,7 +94,7 @@ describe('Schwab Parser', () => {
         },
       ]
 
-      const result = normalizeSchwabTransactions(rows)
+      const result = normalizeSchwabTransactions(rows, 'test-file')
 
       expect(result).toHaveLength(1)
       expect(result[0].type).toBe(TransactionType.INTEREST)
@@ -115,14 +115,14 @@ describe('Schwab Parser', () => {
         },
       ]
 
-      const result = normalizeSchwabTransactions(rows)
+      const result = normalizeSchwabTransactions(rows, 'test-file')
 
       expect(result).toHaveLength(1)
       expect(result[0].date).toBe('2024-08-18') // Uses first date
       expect(result[0].type).toBe(TransactionType.BUY) // Stock Plan Activity = BUY
     })
 
-    it('should handle negative amounts (fees)', () => {
+    it('should handle negative amounts (tax adjustments)', () => {
       const rows = [
         {
           'Date': '09/29/2024',
@@ -136,10 +136,10 @@ describe('Schwab Parser', () => {
         },
       ]
 
-      const result = normalizeSchwabTransactions(rows)
+      const result = normalizeSchwabTransactions(rows, 'test-file')
 
       expect(result).toHaveLength(1)
-      expect(result[0].type).toBe(TransactionType.FEE)
+      expect(result[0].type).toBe(TransactionType.TAX)
       expect(result[0].total).toBe(2.50) // Absolute value
     })
 
@@ -157,12 +157,12 @@ describe('Schwab Parser', () => {
         },
       ]
 
-      const result = normalizeSchwabTransactions(rows)
+      const result = normalizeSchwabTransactions(rows, 'test-file')
 
       expect(result).toHaveLength(0)
     })
 
-    it('should skip rows with unknown actions', () => {
+    it('should map unknown actions to TRANSFER type', () => {
       const rows = [
         {
           'Date': '03/15/2024',
@@ -176,9 +176,10 @@ describe('Schwab Parser', () => {
         },
       ]
 
-      const result = normalizeSchwabTransactions(rows)
+      const result = normalizeSchwabTransactions(rows, 'test-file')
 
-      expect(result).toHaveLength(0)
+      expect(result).toHaveLength(1)
+      expect(result[0].type).toBe(TransactionType.TRANSFER)
     })
 
     it('should handle empty values correctly', () => {
@@ -195,12 +196,33 @@ describe('Schwab Parser', () => {
         },
       ]
 
-      const result = normalizeSchwabTransactions(rows)
+      const result = normalizeSchwabTransactions(rows, 'test-file')
 
       expect(result).toHaveLength(1)
       expect(result[0].quantity).toBeNull()
       expect(result[0].price).toBeNull()
       expect(result[0].fee).toBeNull()
+    })
+
+    it('should handle wire transfers', () => {
+      const rows = [
+        {
+          'Date': '09/03/2024',
+          'Action': 'Wire Sent',
+          'Symbol': '',
+          'Description': 'WIRED FUNDS DISBURSED',
+          'Quantity': '',
+          'Price': '',
+          'Fees & Comm': '',
+          'Amount': '-$1000.00',
+        },
+      ]
+
+      const result = normalizeSchwabTransactions(rows, 'test-file')
+
+      expect(result).toHaveLength(1)
+      expect(result[0].type).toBe(TransactionType.TRANSFER)
+      expect(result[0].total).toBe(1000.00)
     })
 
     it('should process multiple transactions with sequential IDs', () => {
@@ -227,11 +249,11 @@ describe('Schwab Parser', () => {
         },
       ]
 
-      const result = normalizeSchwabTransactions(rows)
+      const result = normalizeSchwabTransactions(rows, 'test-file')
 
       expect(result).toHaveLength(2)
-      expect(result[0].id).toBe('schwab-1')
-      expect(result[1].id).toBe('schwab-2')
+      expect(result[0].id).toBe('test-file-1')
+      expect(result[1].id).toBe('test-file-2')
     })
   })
 })

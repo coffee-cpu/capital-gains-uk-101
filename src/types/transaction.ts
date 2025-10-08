@@ -10,7 +10,7 @@ export const GenericTransactionSchema = z.object({
   symbol: z.string().describe('Stock ticker or ISIN code'),
   name: z.string().nullable().describe('Full name of the asset'),
   date: z.string().date().describe('Transaction date in YYYY-MM-DD format'),
-  type: z.enum(['BUY', 'SELL', 'DIVIDEND', 'FEE', 'INTEREST']).describe('Transaction type'),
+  type: z.enum(['BUY', 'SELL', 'DIVIDEND', 'FEE', 'INTEREST', 'TRANSFER', 'TAX']).describe('Transaction type'),
   quantity: z.number().nullable().describe('Quantity bought or sold'),
   price: z.number().nullable().describe('Price per unit in transaction currency'),
   currency: z.string().describe('Original transaction currency (e.g. USD, EUR, GBP)'),
@@ -45,6 +45,8 @@ export const TransactionType = {
   DIVIDEND: 'DIVIDEND',
   FEE: 'FEE',
   INTEREST: 'INTEREST',
+  TRANSFER: 'TRANSFER',
+  TAX: 'TAX',
 } as const
 
 /**
