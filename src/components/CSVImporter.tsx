@@ -49,8 +49,8 @@ export function CSVImporter() {
         throw new Error('No valid transactions found in CSV')
       }
 
-      // Save to IndexedDB
-      await db.transactions.bulkAdd(transactions)
+      // Save to IndexedDB (using bulkPut to allow updates/re-imports)
+      await db.transactions.bulkPut(transactions)
 
       // Update store
       addTransactions(transactions)
