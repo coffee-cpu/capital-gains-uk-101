@@ -22,6 +22,20 @@ export function CSVImporter() {
     setSuccess(null)
 
     try {
+      // Generate unique file identifier based on name and size
+      const fileId = `schwab-${file.name.replace(/[^a-z0-9]/gi, '_')}-${file.size}`
+
+      // Check if this exact file was already imported
+      const existingWithFileId = await db.transactions
+        .where('id')
+        .startsWith(fileId)
+        .count()
+
+      if (existingWithFileId > 0) {
+        setSuccess(`This file "${file.name}" was already imported. No new transactions added.`)
+        return
+      }
+
       // Parse CSV
       const rawRows = await parseCSV(file)
 
@@ -37,7 +51,7 @@ export function CSVImporter() {
 
       switch (detection.broker) {
         case BrokerType.SCHWAB:
-          transactions = normalizeSchwabTransactions(rawRows)
+          transactions = normalizeSchwabTransactions(rawRows, fileId)
           break
         case BrokerType.TRADING212:
           throw new Error('Trading 212 format not yet supported')
@@ -49,8 +63,8 @@ export function CSVImporter() {
         throw new Error('No valid transactions found in CSV')
       }
 
-      // Save to IndexedDB (using bulkPut to allow updates/re-imports)
-      await db.transactions.bulkPut(transactions)
+      // Save transactions to IndexedDB
+      await db.transactions.bulkAdd(transactions)
 
       // Update store
       addTransactions(transactions)

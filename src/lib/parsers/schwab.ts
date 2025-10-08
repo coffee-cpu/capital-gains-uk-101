@@ -3,16 +3,18 @@ import { RawCSVRow } from '../../types/broker'
 
 /**
  * Normalize Schwab CSV rows to GenericTransaction format
+ * @param rows Raw CSV rows
+ * @param fileId Unique identifier for this file (e.g. 'schwab-abc123')
  */
-export function normalizeSchwabTransactions(rows: RawCSVRow[]): GenericTransaction[] {
+export function normalizeSchwabTransactions(rows: RawCSVRow[], fileId: string): GenericTransaction[] {
   const transactions: GenericTransaction[] = []
-  let idCounter = 1
+  let rowIndex = 1
 
   for (const row of rows) {
-    const normalized = normalizeSchwabRow(row, idCounter)
+    const normalized = normalizeSchwabRow(row, fileId, rowIndex)
     if (normalized) {
       transactions.push(normalized)
-      idCounter++
+      rowIndex++
     }
   }
 
@@ -22,7 +24,7 @@ export function normalizeSchwabTransactions(rows: RawCSVRow[]): GenericTransacti
 /**
  * Normalize a single Schwab row
  */
-function normalizeSchwabRow(row: RawCSVRow, id: number): GenericTransaction | null {
+function normalizeSchwabRow(row: RawCSVRow, fileId: string, rowIndex: number): GenericTransaction | null {
   const action = row['Action']?.trim()
   const symbol = row['Symbol']?.trim()
   const date = parseSchwabDate(row['Date'])
@@ -47,7 +49,7 @@ function normalizeSchwabRow(row: RawCSVRow, id: number): GenericTransaction | nu
   const total = amount !== null ? Math.abs(amount) : (quantity && price ? quantity * price : null)
 
   return {
-    id: `schwab-${id}`,
+    id: `${fileId}-${rowIndex}`,
     source: 'Charles Schwab',
     symbol: symbol || '',
     name: row['Description']?.trim() || null,
