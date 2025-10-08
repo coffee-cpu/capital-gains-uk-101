@@ -1,7 +1,7 @@
 {
-  "name": "capital-gains-uk-101",
+  "name": "capital-gains-tax-uk-101",
   "version": "1.0.0",
-  "description": "It is goint to be legen... wait for it",
+  "description": "UK Capital Gains Tax made easy - Free, privacy-focused CGT calculator",
   "main": "index.js",
   "directories": {
     "doc": "docs"
@@ -23,9 +23,9 @@
     "type": "git",
     "url": "git+https://github.com/coffee-cpu/capital-gains-uk-101.git"
   },
-  "keywords": [],
+  "keywords": ["capital-gains-tax", "uk", "tax-calculator", "hmrc", "cgt", "react", "typescript"],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/coffee-cpu/capital-gains-uk-101/issues"
   },
