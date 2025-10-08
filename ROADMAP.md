@@ -10,15 +10,16 @@
 - ✅ Clear data functionality
 - ✅ Footer with disclaimer
 - ✅ Rebranded to "Capital Gains Tax UK 101"
+- ✅ Generic CSV import with manual column mapping
 
 ## 📋 Planned Features
 
 ### High Priority
 
-- [ ] **Generic CSV Input Support**
+- [x] **Generic CSV Input Support** ✅ *Completed 2025-10-09*
   - Allow users to manually map CSV columns
   - Preview and column selection UI
-  - Save mapping templates for reuse
+  - Save mapping templates for reuse (deferred to future release)
 
 - [ ] **About Page**
   - How the calculator works
