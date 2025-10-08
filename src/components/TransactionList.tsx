@@ -1,4 +1,5 @@
 import { useTransactionStore } from '../stores/transactionStore'
+import { ClearDataButton } from './ClearDataButton'
 
 export function TransactionList() {
   const transactions = useTransactionStore((state) => state.transactions)
@@ -14,8 +15,13 @@ export function TransactionList() {
   return (
     <div className="bg-white shadow rounded-lg overflow-hidden">
       <div className="px-6 py-4 border-b border-gray-200">
-        <h2 className="text-2xl font-semibold text-gray-900">Transactions</h2>
-        <p className="text-sm text-gray-500 mt-1">{transactions.length} total</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-semibold text-gray-900">Transactions</h2>
+            <p className="text-sm text-gray-500 mt-1">{transactions.length} total</p>
+          </div>
+          <ClearDataButton />
+        </div>
       </div>
 
       <div className="overflow-x-auto">
