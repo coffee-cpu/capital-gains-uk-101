@@ -41,7 +41,7 @@ function normalizeSchwabRow(row: RawCSVRow, fileId: string, rowIndex: number): G
 
   // Parse numeric values
   const quantity = parseFloat(row['Quantity']) || null
-  const price = parseFloat(row['Price']) || null
+  const price = parseSchwabCurrency(row['Price']) || null
   const fee = parseSchwabCurrency(row['Fees & Comm']) || null
   const amount = parseSchwabCurrency(row['Amount']) || null
 
