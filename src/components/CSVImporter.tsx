@@ -3,21 +3,18 @@ import { parseCSV } from '../lib/csvParser'
 import { detectBroker } from '../lib/brokerDetector'
 import { normalizeSchwabTransactions } from '../lib/parsers/schwab'
 import { normalizeGenericTransactions } from '../lib/parsers/generic'
-import { BrokerType, RawCSVRow } from '../types/broker'
+import { BrokerType } from '../types/broker'
 import { GenericTransaction } from '../types/transaction'
-import { ColumnMapping } from '../types/columnMapping'
 import { useTransactionStore } from '../stores/transactionStore'
 import { db } from '../lib/db'
-import { ColumnMapper } from './ColumnMapper'
 
-type ImportMode = 'select' | 'auto' | 'manual'
+type ImportMode = 'select' | 'auto' | 'generic'
 
 export function CSVImporter() {
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [importMode, setImportMode] = useState<ImportMode>('select')
-  const [pendingFile, setPendingFile] = useState<{ file: File; rows: RawCSVRow[]; headers: string[] } | null>(null)
   const addTransactions = useTransactionStore((state) => state.addTransactions)
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -47,39 +44,38 @@ export function CSVImporter() {
         return
       }
 
-      // Auto mode: try to detect broker
+      let transactions: GenericTransaction[] = []
+      let source: string
+
       if (importMode === 'auto') {
+        // Try to detect broker
         const detection = detectBroker(rawRows)
 
         if (detection.confidence < 0.8) {
-          // Fall back to manual mapping
-          setPendingFile({ file, rows: rawRows, headers })
-          setError('Could not auto-detect broker format. Please map columns manually below.')
-          return
+          throw new Error(`Could not auto-detect broker format (confidence: ${(detection.confidence * 100).toFixed(0)}%). Try using Generic CSV mode instead.`)
         }
-
-        let transactions: GenericTransaction[] = []
 
         switch (detection.broker) {
           case BrokerType.SCHWAB:
             transactions = normalizeSchwabTransactions(rawRows, fileId)
+            source = detection.broker
             break
           case BrokerType.TRADING212:
             throw new Error('Trading 212 format not yet supported')
           default:
             throw new Error(`Unsupported broker: ${detection.broker}`)
         }
-
-        if (transactions.length === 0) {
-          throw new Error('No valid transactions found in CSV')
-        }
-
-        await saveTransactions(transactions, `Detected ${detection.broker}`)
-        return
+      } else if (importMode === 'generic') {
+        // Generic CSV format
+        transactions = normalizeGenericTransactions(rawRows, fileId)
+        source = 'Generic CSV'
       }
 
-      // Manual mode: show column mapper
-      setPendingFile({ file, rows: rawRows, headers })
+      if (transactions.length === 0) {
+        throw new Error('No valid transactions found in CSV')
+      }
+
+      await saveTransactions(transactions, source)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to import CSV')
     } finally {
@@ -89,53 +85,10 @@ export function CSVImporter() {
     }
   }
 
-  const handleMappingComplete = async (mapping: ColumnMapping) => {
-    if (!pendingFile) return
-
-    setIsProcessing(true)
-    setError(null)
-    setSuccess(null)
-
-    try {
-      const fileId = `${pendingFile.file.name.replace(/[^a-z0-9]/gi, '_')}-${pendingFile.file.size}`
-      const transactions = normalizeGenericTransactions(pendingFile.rows, mapping, fileId)
-
-      if (transactions.length === 0) {
-        throw new Error('No valid transactions found with this mapping')
-      }
-
-      await saveTransactions(transactions, 'Generic CSV')
-      setPendingFile(null)
-      setImportMode('select')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to import transactions')
-    } finally {
-      setIsProcessing(false)
-    }
-  }
-
-  const handleCancelMapping = () => {
-    setPendingFile(null)
-    setImportMode('select')
-    setError(null)
-  }
-
   const saveTransactions = async (transactions: GenericTransaction[], source: string) => {
     await db.transactions.bulkAdd(transactions)
     addTransactions(transactions)
     setSuccess(`Successfully imported ${transactions.length} transactions from ${source}`)
-  }
-
-  // If we're in column mapping mode, show the mapper
-  if (pendingFile) {
-    return (
-      <ColumnMapper
-        csvHeaders={pendingFile.headers}
-        previewRows={pendingFile.rows}
-        onMappingComplete={handleMappingComplete}
-        onCancel={handleCancelMapping}
-      />
-    )
   }
 
   return (
@@ -145,21 +98,21 @@ export function CSVImporter() {
       {/* Mode Selection */}
       {importMode === 'select' && (
         <div className="mb-6">
-          <p className="text-sm text-gray-600 mb-4">Choose how you want to import your CSV file:</p>
+          <p className="text-sm text-gray-600 mb-4">Choose your CSV format:</p>
           <div className="grid grid-cols-2 gap-4">
             <button
               onClick={() => setImportMode('auto')}
               className="p-4 border-2 border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 text-left transition-colors"
             >
-              <div className="font-semibold text-gray-900 mb-1">Auto-detect</div>
-              <div className="text-sm text-gray-600">Automatically detect broker format (Schwab, etc.)</div>
+              <div className="font-semibold text-gray-900 mb-1">Broker CSV</div>
+              <div className="text-sm text-gray-600">Auto-detect format (Schwab, Trading 212, etc.)</div>
             </button>
             <button
-              onClick={() => setImportMode('manual')}
+              onClick={() => setImportMode('generic')}
               className="p-4 border-2 border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 text-left transition-colors"
             >
-              <div className="font-semibold text-gray-900 mb-1">Manual mapping</div>
-              <div className="text-sm text-gray-600">Map CSV columns manually for any broker</div>
+              <div className="font-semibold text-gray-900 mb-1">Generic CSV</div>
+              <div className="text-sm text-gray-600">Standard format with predefined columns</div>
             </button>
           </div>
         </div>
@@ -180,7 +133,7 @@ export function CSVImporter() {
               ← Change import mode
             </button>
             <span className="text-sm text-gray-500">
-              ({importMode === 'auto' ? 'Auto-detect' : 'Manual mapping'})
+              ({importMode === 'auto' ? 'Broker CSV' : 'Generic CSV'})
             </span>
           </div>
 
@@ -263,10 +216,26 @@ export function CSVImporter() {
 
           {importMode === 'auto' && (
             <div className="text-sm text-gray-500">
-              <p className="mb-2">Supported brokers (auto-detect):</p>
+              <p className="mb-2">Supported brokers:</p>
               <ul className="list-disc list-inside space-y-1">
                 <li>Charles Schwab</li>
                 <li className="text-gray-400">Trading 212 (coming soon)</li>
+              </ul>
+            </div>
+          )}
+
+          {importMode === 'generic' && (
+            <div className="text-sm text-gray-500">
+              <p className="mb-2 font-medium">Required CSV columns:</p>
+              <ul className="list-disc list-inside space-y-1 mb-3">
+                <li><code className="text-xs bg-gray-100 px-1 py-0.5 rounded">date</code> - YYYY-MM-DD format</li>
+                <li><code className="text-xs bg-gray-100 px-1 py-0.5 rounded">type</code> - BUY, SELL, DIVIDEND, INTEREST, TAX, TRANSFER, FEE</li>
+                <li><code className="text-xs bg-gray-100 px-1 py-0.5 rounded">symbol</code> - Stock ticker</li>
+                <li><code className="text-xs bg-gray-100 px-1 py-0.5 rounded">currency</code> - USD, GBP, EUR, etc.</li>
+              </ul>
+              <p className="mb-2 font-medium">Optional columns:</p>
+              <ul className="list-disc list-inside space-y-1">
+                <li><code className="text-xs bg-gray-100 px-1 py-0.5 rounded">name</code>, <code className="text-xs bg-gray-100 px-1 py-0.5 rounded">quantity</code>, <code className="text-xs bg-gray-100 px-1 py-0.5 rounded">price</code>, <code className="text-xs bg-gray-100 px-1 py-0.5 rounded">total</code>, <code className="text-xs bg-gray-100 px-1 py-0.5 rounded">fee</code>, <code className="text-xs bg-gray-100 px-1 py-0.5 rounded">notes</code></li>
               </ul>
             </div>
           )}

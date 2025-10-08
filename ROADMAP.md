@@ -17,9 +17,9 @@
 ### High Priority
 
 - [x] **Generic CSV Input Support** ✅ *Completed 2025-10-09*
-  - Allow users to manually map CSV columns
-  - Preview and column selection UI
-  - Save mapping templates for reuse (deferred to future release)
+  - Standard CSV format with predefined columns matching GenericTransaction schema
+  - Simple mode selection (Broker CSV vs Generic CSV)
+  - Clear documentation of required/optional fields
 
 - [ ] **About Page**
   - How the calculator works
