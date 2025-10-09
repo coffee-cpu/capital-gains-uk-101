@@ -20,6 +20,12 @@ export function detectBroker(rows: RawCSVRow[]): BrokerDetectionResult {
     return genericResult
   }
 
+  // Check for Schwab Equity Awards (check before regular Schwab)
+  const schwabEquityResult = detectSchwabEquityAwards(headers, rows)
+  if (schwabEquityResult.confidence > 0.8) {
+    return schwabEquityResult
+  }
+
   // Check for Schwab
   const schwabResult = detectSchwab(headers, rows)
   if (schwabResult.confidence > 0.8) {
@@ -33,7 +39,7 @@ export function detectBroker(rows: RawCSVRow[]): BrokerDetectionResult {
   }
 
   // Return best match or unknown
-  const results = [genericResult, schwabResult, trading212Result]
+  const results = [genericResult, schwabEquityResult, schwabResult, trading212Result]
   const bestMatch = results.reduce((best, current) =>
     current.confidence > best.confidence ? current : best
   )
@@ -61,6 +67,23 @@ function detectGeneric(headers: string[], rows: RawCSVRow[]): BrokerDetectionRes
 
   return {
     broker: BrokerType.GENERIC,
+    confidence,
+    headerMatches: matches,
+  }
+}
+
+/**
+ * Detect Schwab Equity Awards format
+ * Expected headers: "Date", "Action", "Symbol", "FairMarketValuePrice", "NetSharesDeposited", etc.
+ */
+function detectSchwabEquityAwards(headers: string[], rows: RawCSVRow[]): BrokerDetectionResult {
+  const equityHeaders = ['Date', 'Action', 'Symbol', 'FairMarketValuePrice', 'NetSharesDeposited', 'AwardDate']
+
+  const matches = equityHeaders.filter(h => headers.includes(h))
+  const confidence = matches.length / equityHeaders.length
+
+  return {
+    broker: BrokerType.SCHWAB_EQUITY_AWARDS,
     confidence,
     headerMatches: matches,
   }

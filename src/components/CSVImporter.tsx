@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { parseCSV } from '../lib/csvParser'
 import { detectBroker } from '../lib/brokerDetector'
 import { normalizeSchwabTransactions } from '../lib/parsers/schwab'
+import { normalizeSchwabEquityAwardsTransactions } from '../lib/parsers/schwabEquityAwards'
 import { normalizeGenericTransactions } from '../lib/parsers/generic'
 import { BrokerType } from '../types/broker'
 import { GenericTransaction } from '../types/transaction'
@@ -53,6 +54,9 @@ export function CSVImporter() {
       switch (detection.broker) {
         case BrokerType.SCHWAB:
           transactions = normalizeSchwabTransactions(rawRows, fileId)
+          break
+        case BrokerType.SCHWAB_EQUITY_AWARDS:
+          transactions = normalizeSchwabEquityAwardsTransactions(rawRows, fileId)
           break
         case BrokerType.GENERIC:
           transactions = normalizeGenericTransactions(rawRows, fileId)
@@ -170,6 +174,7 @@ export function CSVImporter() {
           <p className="mb-2">Supported formats (auto-detected):</p>
           <ul className="list-disc list-inside space-y-1">
             <li>Charles Schwab</li>
+            <li>Charles Schwab Equity Awards</li>
             <li>Generic CSV (columns: date, type, symbol, currency + optional fields)</li>
             <li className="text-gray-400">Trading 212 (coming soon)</li>
           </ul>

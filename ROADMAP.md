@@ -1,7 +1,7 @@
 # Capital Gains Tax UK 101 - Roadmap
 
 ## 🎯 Current Status
-- ✅ CSV import (Schwab)
+- ✅ CSV import (Schwab, Schwab Equity Awards, Generic CSV)
 - ✅ Transaction list display
 - ✅ Support for all transaction types (BUY, SELL, DIVIDEND, INTEREST, TAX, TRANSFER, FEE)
 - ✅ Visual distinction for non-CGT-relevant transactions
@@ -10,7 +10,7 @@
 - ✅ Clear data functionality
 - ✅ Footer with disclaimer
 - ✅ Rebranded to "Capital Gains Tax UK 101"
-- ✅ Generic CSV import with manual column mapping
+- ✅ Generic CSV import (auto-detected)
 
 ## 📋 Planned Features
 
@@ -84,6 +84,12 @@
   - Color-coded matching
 
 ### Additional Brokers
+
+- [x] **Schwab Equity Awards Support** ✅ *Completed 2025-10-09*
+  - Parser for RSU vests with multi-row format
+  - Tax withholding calculations
+  - Auto-detection alongside regular Schwab
+  - Unit tests with sample data
 
 - [ ] **Trading 212 Support**
   - Parser implementation
