@@ -1,0 +1,6 @@
+date,type,symbol,currency,name,quantity,price,total,fee,notes
+2024-01-15,BUY,AAPL,USD,Apple Inc.,10,150.00,1500.00,0.00,
+2024-02-20,SELL,AAPL,USD,Apple Inc.,5,160.00,800.00,0.00,
+2024-03-10,BUY,MSFT,USD,Microsoft Corp.,15,350.00,5250.00,0.00,
+2024-04-05,DIVIDEND,AAPL,USD,Apple Inc. Dividend,,,12.50,0.00,Quarterly dividend
+2024-05-12,SELL,MSFT,USD,Microsoft Corp.,10,370.00,3700.00,1.00,

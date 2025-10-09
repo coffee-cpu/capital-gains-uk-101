@@ -13,6 +13,7 @@ export function CSVImporter() {
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [expandedFormat, setExpandedFormat] = useState<string | null>(null)
   const addTransactions = useTransactionStore((state) => state.addTransactions)
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -172,10 +173,93 @@ export function CSVImporter() {
 
         <div className="text-sm text-gray-500">
           <p className="mb-2">Supported formats (auto-detected):</p>
-          <ul className="list-disc list-inside space-y-1">
-            <li>Charles Schwab</li>
-            <li>Charles Schwab Equity Awards</li>
-            <li>Generic CSV (columns: date, type, symbol, currency + optional fields)</li>
+          <ul className="space-y-2">
+            {/* Charles Schwab */}
+            <li>
+              <div className="flex items-center gap-2">
+                <span>Charles Schwab</span>
+                <button
+                  onClick={() => setExpandedFormat(expandedFormat === 'schwab' ? null : 'schwab')}
+                  className="text-blue-600 hover:text-blue-800 text-xs underline"
+                >
+                  {expandedFormat === 'schwab' ? 'hide' : 'instructions & example'}
+                </button>
+              </div>
+              {expandedFormat === 'schwab' && (
+                <div className="mt-2 ml-4 p-3 bg-gray-50 rounded text-xs space-y-2">
+                  <p className="font-medium">How to download:</p>
+                  <ol className="list-decimal list-inside space-y-1 text-gray-600">
+                    <li>Log into schwab.com → Accounts → Transaction History</li>
+                    <li>Select account and date range</li>
+                    <li>Click Export → CSV</li>
+                  </ol>
+                  <a
+                    href="/examples/schwab-transactions-example.csv"
+                    className="inline-block text-blue-600 hover:text-blue-800 underline"
+                  >
+                    📥 Download example file
+                  </a>
+                </div>
+              )}
+            </li>
+
+            {/* Charles Schwab Equity Awards */}
+            <li>
+              <div className="flex items-center gap-2">
+                <span>Charles Schwab Equity Awards</span>
+                <button
+                  onClick={() => setExpandedFormat(expandedFormat === 'equity' ? null : 'equity')}
+                  className="text-blue-600 hover:text-blue-800 text-xs underline"
+                >
+                  {expandedFormat === 'equity' ? 'hide' : 'instructions & example'}
+                </button>
+              </div>
+              {expandedFormat === 'equity' && (
+                <div className="mt-2 ml-4 p-3 bg-gray-50 rounded text-xs space-y-2">
+                  <p className="font-medium">How to download:</p>
+                  <ol className="list-decimal list-inside space-y-1 text-gray-600">
+                    <li>Log into eac.schwab.com (Equity Award Center)</li>
+                    <li>Select your Equity Awards account → History</li>
+                    <li>Select date range → Export → CSV</li>
+                  </ol>
+                  <a
+                    href="/examples/schwab-equity-awards-example.csv"
+                    className="inline-block text-blue-600 hover:text-blue-800 underline"
+                  >
+                    📥 Download example file
+                  </a>
+                </div>
+              )}
+            </li>
+
+            {/* Generic CSV */}
+            <li>
+              <div className="flex items-center gap-2">
+                <span>Generic CSV</span>
+                <button
+                  onClick={() => setExpandedFormat(expandedFormat === 'generic' ? null : 'generic')}
+                  className="text-blue-600 hover:text-blue-800 text-xs underline"
+                >
+                  {expandedFormat === 'generic' ? 'hide' : 'format & example'}
+                </button>
+              </div>
+              {expandedFormat === 'generic' && (
+                <div className="mt-2 ml-4 p-3 bg-gray-50 rounded text-xs space-y-2">
+                  <p className="font-medium">Required columns:</p>
+                  <p className="text-gray-600">date, type, symbol, currency</p>
+                  <p className="font-medium mt-2">Optional columns:</p>
+                  <p className="text-gray-600">name, quantity, price, total, fee, notes</p>
+                  <a
+                    href="/examples/generic-example.csv"
+                    className="inline-block text-blue-600 hover:text-blue-800 underline"
+                  >
+                    📥 Download example file
+                  </a>
+                </div>
+              )}
+            </li>
+
+            {/* Trading 212 */}
             <li className="text-gray-400">Trading 212 (coming soon)</li>
           </ul>
         </div>
