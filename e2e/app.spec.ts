@@ -5,14 +5,14 @@ test.describe('CGT Visualizer App', () => {
     await page.goto('/')
 
     // Check page title
-    await expect(page).toHaveTitle(/CGT Visualizer/)
+    await expect(page).toHaveTitle(/Capital Gains Tax UK 101/)
 
     // Check main heading
-    const heading = page.getByRole('heading', { name: /CGT Visualizer/i })
+    const heading = page.getByRole('heading', { name: /Capital Gains Tax UK 101/i })
     await expect(heading).toBeVisible()
 
     // Check subtitle
-    const subtitle = page.getByText(/UK Capital Gains Tax Calculator/i)
+    const subtitle = page.getByText(/UK Capital Gains Tax made easy/i)
     await expect(subtitle).toBeVisible()
   })
 
@@ -24,7 +24,7 @@ test.describe('CGT Visualizer App', () => {
     await expect(container).toBeVisible()
 
     // Verify heading has proper styling
-    const heading = page.getByRole('heading', { name: /CGT Visualizer/i })
+    const heading = page.getByRole('heading', { name: /Capital Gains Tax UK 101/i })
     await expect(heading).toHaveClass(/text-4xl/)
   })
 
