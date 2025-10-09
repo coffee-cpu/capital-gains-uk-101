@@ -4,6 +4,11 @@ import { ClearDataButton } from './ClearDataButton'
 export function TransactionList() {
   const transactions = useTransactionStore((state) => state.transactions)
 
+  // Sort transactions by date (oldest first)
+  const sortedTransactions = [...transactions].sort((a, b) => {
+    return new Date(a.date).getTime() - new Date(b.date).getTime()
+  })
+
   if (transactions.length === 0) {
     return (
       <div className="bg-white shadow rounded-lg p-6">
@@ -52,7 +57,7 @@ export function TransactionList() {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {transactions.map((tx) => {
+            {sortedTransactions.map((tx) => {
               // Determine if this transaction is relevant to display prominently
               // BUY/SELL are relevant to CGT, DIVIDEND is important for tax reporting
               const isRelevant = tx.type === 'BUY' || tx.type === 'SELL' || tx.type === 'DIVIDEND'

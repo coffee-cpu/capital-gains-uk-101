@@ -14,11 +14,10 @@ export function CSVImporter() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [expandedFormat, setExpandedFormat] = useState<string | null>(null)
+  const [isDragging, setIsDragging] = useState(false)
   const addTransactions = useTransactionStore((state) => state.addTransactions)
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
+  const processFile = async (file: File) => {
 
     setIsProcessing(true)
     setError(null)
@@ -77,9 +76,40 @@ export function CSVImporter() {
       setError(err instanceof Error ? err.message : 'Failed to import CSV')
     } finally {
       setIsProcessing(false)
-      // Reset file input
-      event.target.value = ''
     }
+  }
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    await processFile(file)
+    // Reset file input
+    event.target.value = ''
+  }
+
+  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    setIsDragging(true)
+  }
+
+  const handleDragLeave = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    setIsDragging(false)
+  }
+
+  const handleDrop = async (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    setIsDragging(false)
+
+    const file = event.dataTransfer.files?.[0]
+    if (!file) return
+
+    if (!file.name.endsWith('.csv')) {
+      setError('Please upload a CSV file')
+      return
+    }
+
+    await processFile(file)
   }
 
   const saveTransactions = async (transactions: GenericTransaction[], source: string) => {
@@ -93,29 +123,48 @@ export function CSVImporter() {
       <h2 className="text-2xl font-semibold text-gray-900 mb-4">Import Transactions</h2>
 
       <div className="space-y-4">
+        {/* Drag and Drop Area */}
+        <div
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+            isDragging
+              ? 'border-blue-500 bg-blue-50'
+              : 'border-gray-300 hover:border-gray-400 bg-gray-50'
+          } ${isProcessing ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+        >
+          <input
+            id="csv-upload"
+            type="file"
+            accept=".csv"
+            onChange={handleFileUpload}
+            disabled={isProcessing}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+          />
 
-          <div>
-            <label
-              htmlFor="csv-upload"
-              className="block text-sm font-medium text-gray-700 mb-2"
+          <div className="flex flex-col items-center">
+            <svg
+              className={`w-12 h-12 mb-3 ${isDragging ? 'text-blue-500' : 'text-gray-400'}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
             >
-              Upload CSV file from your broker
-            </label>
-            <input
-              id="csv-upload"
-              type="file"
-              accept=".csv"
-              onChange={handleFileUpload}
-              disabled={isProcessing}
-              className="block w-full text-sm text-gray-500
-                file:mr-4 file:py-2 file:px-4
-                file:rounded-md file:border-0
-                file:text-sm file:font-semibold
-                file:bg-blue-50 file:text-blue-700
-                hover:file:bg-blue-100
-                disabled:opacity-50 disabled:cursor-not-allowed"
-            />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+              />
+            </svg>
+            <p className="text-sm font-medium text-gray-700 mb-1">
+              Drop your CSV file here, or click to browse
+            </p>
+            <p className="text-xs text-gray-500">
+              Supports Charles Schwab, Schwab Equity Awards, and Generic CSV
+            </p>
           </div>
+        </div>
 
           {isProcessing && (
             <div className="flex items-center text-blue-600">

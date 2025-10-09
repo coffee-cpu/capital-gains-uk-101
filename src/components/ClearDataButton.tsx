@@ -18,9 +18,11 @@ export function ClearDataButton() {
       setTransactions([])
 
       setShowConfirm(false)
+
+      // Reload page to ensure clean state
+      window.location.reload()
     } catch (err) {
       console.error('Failed to clear data:', err)
-    } finally {
       setIsClearing(false)
     }
   }
