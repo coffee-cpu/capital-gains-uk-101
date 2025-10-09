@@ -239,9 +239,13 @@ export function CSVImporter() {
                   <p className="font-medium">How to download:</p>
                   <ol className="list-decimal list-inside space-y-1 text-gray-600">
                     <li>Log into schwab.com → Accounts → Transaction History</li>
-                    <li>Select account and date range</li>
+                    <li>Select "Brokerage Accounts" from account dropdown</li>
+                    <li>Select your account and date range (max 4 years)</li>
                     <li>Click Export → CSV</li>
                   </ol>
+                  <p className="text-gray-600 italic">
+                    Note: Schwab limits downloads to 4 years. For longer history, download in 4-year chunks and upload multiple files.
+                  </p>
                   <a
                     href="/examples/schwab-transactions-example.csv"
                     className="inline-block text-blue-600 hover:text-blue-800 underline"
@@ -267,10 +271,14 @@ export function CSVImporter() {
                 <div className="mt-2 ml-4 p-3 bg-gray-50 rounded text-xs space-y-2">
                   <p className="font-medium">How to download:</p>
                   <ol className="list-decimal list-inside space-y-1 text-gray-600">
-                    <li>Log into eac.schwab.com (Equity Award Center)</li>
-                    <li>Select your Equity Awards account → History</li>
-                    <li>Select date range → Export → CSV</li>
+                    <li>Log into schwab.com → Accounts → Transaction History</li>
+                    <li>Select "Other Accounts" → "Equity Award Center" from dropdown</li>
+                    <li>Select your account and date range (max 4 years)</li>
+                    <li>Click Export → CSV</li>
                   </ol>
+                  <p className="text-gray-600 italic">
+                    Note: Schwab limits downloads to 4 years. For longer history, download in 4-year chunks and upload multiple files.
+                  </p>
                   <a
                     href="/examples/schwab-equity-awards-example.csv"
                     className="inline-block text-blue-600 hover:text-blue-800 underline"
