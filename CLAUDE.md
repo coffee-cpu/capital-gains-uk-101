@@ -171,6 +171,13 @@ Always store dates as ISO 8601: `YYYY-MM-DD`. Parsers must convert from broker-s
 - Use strict TypeScript - compiler options enforce `strict: true`, `noUnusedLocals`, `noUnusedParameters`
 - Never use `any` - prefer `unknown` and type guards if needed
 
+### Code Quality
+- **Always address linter warnings** before committing code
+- Remove unused variables, imports, and parameters
+- Fix TypeScript errors and warnings (e.g., TS6133 for unused declarations)
+- Ensure proper JSX structure (adjacent elements must be wrapped)
+- Use the IDE diagnostics to catch issues: check for warnings in modified files
+
 ### Testing Strategy
 - **Unit tests**: All parsers, detector logic, utility functions
 - **E2E tests**: Full import workflow with real CSV files
