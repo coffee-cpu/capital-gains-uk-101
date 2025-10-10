@@ -48,6 +48,19 @@ function normalizeSchwabRow(row: RawCSVRow, fileId: string, rowIndex: number): G
   // Calculate total (for buys, amount is negative, for sells positive)
   const total = amount !== null ? Math.abs(amount) : (quantity && price ? quantity * price : null)
 
+  // Check if this is an incomplete Stock Plan Activity transaction
+  const isStockPlanActivity = action?.toLowerCase() === 'stock plan activity'
+  const isIncomplete = isStockPlanActivity && !price && !amount
+
+  // Extract the "as of" date for matching with Equity Awards
+  const asOfDate = parseAsOfDate(row['Date'])
+
+  // Create a match key for linking with Equity Awards data
+  // Format: symbol-date-quantity (e.g., "META-2025-08-15-17")
+  const matchKey = isIncomplete && symbol && asOfDate && quantity
+    ? `${symbol}-${asOfDate}-${quantity}`
+    : undefined
+
   return {
     id: `${fileId}-${rowIndex}`,
     source: 'Charles Schwab',
@@ -60,7 +73,9 @@ function normalizeSchwabRow(row: RawCSVRow, fileId: string, rowIndex: number): G
     currency: 'USD', // Schwab reports in USD
     total,
     fee,
-    notes: null,
+    notes: isIncomplete ? 'Stock Plan Activity - missing price data. Upload Charles Schwab Equity Awards file for complete data.' : null,
+    incomplete: isIncomplete,
+    matchKey,
   }
 }
 
@@ -107,6 +122,23 @@ function parseSchwabDate(dateStr: string): string | null {
   const mainDate = dateStr.split(' as of ')[0].trim()
 
   const match = mainDate.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
+  if (!match) return null
+
+  const [, month, day, year] = match
+  return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
+}
+
+/**
+ * Extract the "as of" date from Schwab date strings like "MM/DD/YYYY as of MM/DD/YYYY"
+ * Returns the "as of" date in ISO format, or the main date if no "as of" exists
+ */
+function parseAsOfDate(dateStr: string): string | null {
+  if (!dateStr) return null
+
+  const parts = dateStr.split(' as of ')
+  const asOfPart = parts.length > 1 ? parts[1].trim() : parts[0].trim()
+
+  const match = asOfPart.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
   if (!match) return null
 
   const [, month, day, year] = match

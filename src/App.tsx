@@ -4,6 +4,7 @@ import { TransactionList } from './components/TransactionList'
 import { Footer } from './components/Footer'
 import { useTransactionStore } from './stores/transactionStore'
 import { db } from './lib/db'
+import { deduplicateTransactions } from './utils/deduplication'
 
 function App() {
   const setTransactions = useTransactionStore((state) => state.setTransactions)
@@ -13,8 +14,11 @@ function App() {
     const loadTransactions = async () => {
       const stored = await db.transactions.toArray()
       if (stored.length > 0) {
+        // Deduplicate incomplete Stock Plan Activity when Equity Awards data exists
+        const deduplicated = deduplicateTransactions(stored)
+
         // Convert to EnrichedTransaction format (for now, without enrichment)
-        const enriched = stored.map(tx => ({
+        const enriched = deduplicated.map(tx => ({
           ...tx,
           fx_rate: 1,
           price_gbp: tx.price,

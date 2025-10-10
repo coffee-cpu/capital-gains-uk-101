@@ -8,6 +8,7 @@ import { BrokerType } from '../types/broker'
 import { GenericTransaction } from '../types/transaction'
 import { useTransactionStore } from '../stores/transactionStore'
 import { db } from '../lib/db'
+import { deduplicateTransactions } from '../utils/deduplication'
 
 export function CSVImporter() {
   const [isProcessing, setIsProcessing] = useState(false)
@@ -16,7 +17,7 @@ export function CSVImporter() {
   const [expandedFormat, setExpandedFormat] = useState<string | null>(null)
   const [isDragging, setIsDragging] = useState(false)
   const [showImportInfo, setShowImportInfo] = useState(false)
-  const addTransactions = useTransactionStore((state) => state.addTransactions)
+  const setTransactions = useTransactionStore((state) => state.setTransactions)
 
   const processFile = async (file: File) => {
 
@@ -114,7 +115,24 @@ export function CSVImporter() {
 
   const saveTransactions = async (transactions: GenericTransaction[], source: string) => {
     await db.transactions.bulkAdd(transactions)
-    addTransactions(transactions)
+
+    // Reload all transactions from DB and apply deduplication
+    const allStored = await db.transactions.toArray()
+    const deduplicated = deduplicateTransactions(allStored)
+
+    // Convert to EnrichedTransaction format
+    const enriched = deduplicated.map(tx => ({
+      ...tx,
+      fx_rate: 1,
+      price_gbp: tx.price,
+      value_gbp: tx.total,
+      fee_gbp: tx.fee,
+      fx_source: 'Not yet enriched',
+      tax_year: '2024/25',
+      gain_group: 'NONE' as const,
+    }))
+
+    setTransactions(enriched)
     setSuccess(`Successfully imported ${transactions.length} transactions from ${source}`)
   }
 
