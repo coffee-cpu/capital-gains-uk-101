@@ -5,6 +5,7 @@ import { GenericTransaction } from '../types/transaction'
  * FX Rate cache entry
  */
 export interface FXRate {
+  id: string // Composite key: date-currency (e.g., '2025-05-15-USD')
   date: string // YYYY-MM-DD
   currency: string // e.g. 'USD'
   rate: number // GBP conversion rate

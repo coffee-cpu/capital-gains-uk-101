@@ -32,6 +32,7 @@ export const EnrichedTransactionSchema = GenericTransactionSchema.extend({
   value_gbp: z.number().nullable().describe('Total value in GBP'),
   fee_gbp: z.number().nullable().describe('Fee amount in GBP'),
   fx_source: z.string().describe('Source of FX rate (e.g. Bank of England)'),
+  fx_error: z.string().nullable().optional().describe('Error message if FX rate fetch failed'),
   tax_year: z.string().describe('UK tax year (e.g. 2023/24)'),
   gain_group: z.enum(['SAME_DAY', '30_DAY', 'SECTION_104', 'NONE']).describe('HMRC matching rule applied'),
 })

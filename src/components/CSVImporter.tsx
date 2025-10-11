@@ -9,6 +9,7 @@ import { GenericTransaction } from '../types/transaction'
 import { useTransactionStore } from '../stores/transactionStore'
 import { db } from '../lib/db'
 import { deduplicateTransactions } from '../utils/deduplication'
+import { enrichTransactions } from '../lib/enrichment'
 
 export function CSVImporter() {
   const [isProcessing, setIsProcessing] = useState(false)
@@ -120,17 +121,8 @@ export function CSVImporter() {
     const allStored = await db.transactions.toArray()
     const deduplicated = deduplicateTransactions(allStored)
 
-    // Convert to EnrichedTransaction format
-    const enriched = deduplicated.map(tx => ({
-      ...tx,
-      fx_rate: 1,
-      price_gbp: tx.price,
-      value_gbp: tx.total,
-      fee_gbp: tx.fee,
-      fx_source: 'Not yet enriched',
-      tax_year: '2024/25',
-      gain_group: 'NONE' as const,
-    }))
+    // Enrich with FX rates and GBP conversions
+    const enriched = await enrichTransactions(deduplicated)
 
     setTransactions(enriched)
     setSuccess(`Successfully imported ${transactions.length} transactions from ${source}`)

@@ -5,6 +5,7 @@ import { Footer } from './components/Footer'
 import { useTransactionStore } from './stores/transactionStore'
 import { db } from './lib/db'
 import { deduplicateTransactions } from './utils/deduplication'
+import { enrichTransactions } from './lib/enrichment'
 
 function App() {
   const setTransactions = useTransactionStore((state) => state.setTransactions)
@@ -17,17 +18,8 @@ function App() {
         // Deduplicate incomplete Stock Plan Activity when Equity Awards data exists
         const deduplicated = deduplicateTransactions(stored)
 
-        // Convert to EnrichedTransaction format (for now, without enrichment)
-        const enriched = deduplicated.map(tx => ({
-          ...tx,
-          fx_rate: 1,
-          price_gbp: tx.price,
-          value_gbp: tx.total,
-          fee_gbp: tx.fee,
-          fx_source: 'Not yet enriched',
-          tax_year: '2024/25',
-          gain_group: 'NONE' as const,
-        }))
+        // Enrich with FX rates and GBP conversions
+        const enriched = await enrichTransactions(deduplicated)
         setTransactions(enriched)
       }
     }
