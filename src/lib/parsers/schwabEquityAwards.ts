@@ -63,8 +63,8 @@ function normalizeSchwabEquityAwardsPair(
   // Price is the Fair Market Value at vest
   const price = fmvPrice
 
-  // Total value at vest
-  const total = totalQuantity && price ? totalQuantity * price : null
+  // Total value is based on net shares received (quantity), not total vested
+  const total = quantity && price ? quantity * price : null
 
   // Type mapping
   let type: typeof TransactionType[keyof typeof TransactionType]
