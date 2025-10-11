@@ -42,6 +42,23 @@ export function Footer() {
         </div>
 
         <div className="mt-6 text-center text-sm text-gray-500">
+          <p className="mb-3">
+            <a
+              href="#about"
+              className="text-blue-600 hover:underline font-medium"
+            >
+              About this calculator
+            </a>
+            {' • '}
+            <a
+              href="https://github.com/coffee-cpu/capital-gains-uk-101"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:underline"
+            >
+              GitHub
+            </a>
+          </p>
           <p>
             Built with{' '}
             <a
