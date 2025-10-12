@@ -226,14 +226,13 @@ All processing is performed locally in your browser — your data is never uploa
 All CGT matching rules implemented according to official HMRC guidance:
 
 - [CG51500P – Share identification rules (index)](https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51500p)
-- [CG51560 – Shares acquired and sold on the same day](https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51560)
-- [CG51573 – Shares repurchased within 30 days (“bed and breakfast” rule)](https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51573)
+- [CG51560 – Same-day and 30-day matching rules](https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51560)
 - [CG51620 – Section 104 holding (pooled holdings)](https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51620)
 
 Order of application:
-1. **Same-Day Rule** — match buys/sells on the same calendar day  
-2. **30-Day Rule** — match repurchases within 30 days after a disposal  
-3. **Section 104 Pool** — all remaining holdings grouped for average cost  
+1. **Same-Day Rule** (TCGA92/S105(1)) — match buys/sells on the same calendar day
+2. **30-Day Rule** (TCGA92/S106A(5) and (5A)) — match repurchases within 30 days after a disposal
+3. **Section 104 Pool** (TCGA92/S104) — all remaining holdings grouped for average cost
 
 Each sale record links to its matched purchase(s) with proportional cost basis and resulting gain/loss.
 

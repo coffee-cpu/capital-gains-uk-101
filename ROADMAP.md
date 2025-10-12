@@ -36,10 +36,9 @@
   - Right sidebar with matching rules
   - Color-coded examples
   - Links to official HMRC docs:
-    - [CG51500P](https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51500p)
-    - [CG51560](https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51560)
-    - [CG51573](https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51573)
-    - [CG51620](https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51620)
+    - [CG51500P - Share identification rules overview](https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51500p)
+    - [CG51560 - Same-day and 30-day matching rules](https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51560)
+    - [CG51620 - Section 104 pooled holdings](https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51620)
   - Interactive tooltips
 
 - [ ] **Tax Year Allowances**

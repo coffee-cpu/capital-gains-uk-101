@@ -45,3 +45,15 @@ export function getTaxYearEnd(taxYear: string): string {
   const startYear = parseInt(taxYear.split('/')[0])
   return `${startYear + 1}-04-05`
 }
+
+/**
+ * Get the start and end dates of a tax year
+ * @param taxYear Tax year string (e.g. "2023/24")
+ * @returns Object with startDate and endDate in ISO format
+ */
+export function getTaxYearBounds(taxYear: string): { startDate: string; endDate: string } {
+  return {
+    startDate: getTaxYearStart(taxYear),
+    endDate: getTaxYearEnd(taxYear),
+  }
+}

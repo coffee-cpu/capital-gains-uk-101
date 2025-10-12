@@ -11,10 +11,15 @@ A free, privacy-focused web application that helps UK taxpayers understand and c
 - ✅ Support for all transaction types (buys, sells, dividends, transfers, etc.)
 - ✅ Duplicate file detection
 - ✅ Privacy-first: all data stored locally in your browser
-- 🚧 HMRC-compliant matching rules (same-day, 30-day, Section 104)
-- 🚧 Automatic FX rate conversion (Bank of England)
-- 🚧 Tax year calculations and allowances
-- 🚧 Visual explanations of CGT rules
+- ✅ Automatic FX rate conversion using HMRC official exchange rates
+- ✅ Tax year calculations (UK tax years: 6 April to 5 April)
+- ✅ HMRC-compliant CGT calculation engine:
+  - ✅ Same-day matching rule (TCGA92/S105(1))
+  - ✅ 30-day "bed and breakfast" rule (TCGA92/S106A(5))
+  - ✅ Section 104 pooled holdings (TCGA92/S104)
+- ✅ Capital gains/loss calculations with full disposal records
+- 🚧 Visual explanations of CGT rules (UI integration pending)
+- 🚧 Tax year summary dashboard
 - 🚧 PDF export for tax returns
 
 ## Getting Started
@@ -58,11 +63,30 @@ npm run build
 Capital Gains Tax UK 101 helps you understand and calculate your capital gains tax obligations by:
 
 1. **Importing your transaction history** from broker CSV exports
-2. **Converting to GBP** using Bank of England historical rates
-3. **Applying HMRC matching rules** to calculate gains/losses
-4. **Visualizing the results** with clear explanations
+2. **Converting to GBP** using HMRC official monthly exchange rates
+3. **Applying HMRC matching rules** in the correct order:
+   - Same-day rule: Matches buys and sells on the same day
+   - 30-day rule: Matches disposals with repurchases within 30 days
+   - Section 104 pool: Remaining shares pooled for average cost basis
+4. **Calculating gains and losses** for each disposal with full audit trail
+5. **Generating tax year summaries** with total gains, losses, and taxable amounts
 
 All processing happens in your browser using IndexedDB for storage. No data is sent to any server.
+
+### CGT Calculation Engine
+
+The app implements the complete HMRC share matching rules as specified in the Capital Gains Manual:
+
+- **Same-Day Rule** (TCGA92/S105(1) - CG51560): Shares bought and sold on the same day are matched first
+- **30-Day Rule** (TCGA92/S106A(5) and (5A) - CG51560): Shares repurchased within 30 days after a sale are matched next ("bed and breakfast" anti-avoidance)
+- **Section 104 Pool** (TCGA92/S104 - CG51620): All remaining shares are pooled with average cost basis
+
+Each disposal generates a detailed record showing:
+- Proceeds from sale (including fees)
+- Cost basis from matched acquisitions
+- Gain or loss calculation
+- Tax year allocation
+- Which HMRC rule was applied
 
 ## Supported Brokers
 

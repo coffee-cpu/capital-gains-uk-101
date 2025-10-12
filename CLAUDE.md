@@ -203,11 +203,10 @@ PapaParse configuration:
 ### FX Rate Enrichment (🚧 Planned)
 Bank of England API will provide historical GBP rates. Cache in `fx_rates` table with composite key `[date+currency]`.
 
-### HMRC Rule Implementation (🚧 Planned)
+### HMRC Rule Implementation (✅ Completed)
 Reference official HMRC guidance when implementing:
-- CG51560 - Same-day rule
-- CG51573 - 30-day "bed and breakfast" rule
-- CG51620 - Section 104 pooled holdings
+- CG51560 - Same-day rule (TCGA92/S105(1)) and 30-day "bed and breakfast" rule (TCGA92/S106A(5))
+- CG51620 - Section 104 pooled holdings (TCGA92/S104)
 
 ### Current Status
 As of the latest commits:
@@ -216,8 +215,9 @@ As of the latest commits:
 - ✅ Generic CSV format support
 - ✅ Duplicate file detection
 - ✅ Transaction list UI
-- 🚧 FX rate enrichment (not yet implemented)
-- 🚧 CGT matching engine (not yet implemented)
+- ✅ FX rate enrichment (HMRC official rates)
+- ✅ CGT matching engine (all three rules implemented with 33 passing tests)
+- 🚧 UI integration for CGT results
 - 🚧 PDF export (not yet implemented)
 
 Refer to README.md for user-facing status and ROADMAP.md for planned features.
