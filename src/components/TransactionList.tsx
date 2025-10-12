@@ -175,6 +175,9 @@ export function TransactionList() {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Source
               </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                CGT Rule
+              </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -184,6 +187,22 @@ export function TransactionList() {
               const isRelevant = tx.type === 'BUY' || tx.type === 'SELL' || tx.type === 'DIVIDEND'
               const isIncomplete = tx.incomplete
               const hasFxError = !!tx.fx_error
+
+              // Get CGT badge styling based on gain_group
+              const getCGTBadge = () => {
+                if (tx.gain_group === 'SAME_DAY') {
+                  return { className: 'bg-blue-100 text-blue-800 border-blue-300', label: 'Same Day', title: 'Matched same-day buy/sell (TCGA92/S105(1))' }
+                }
+                if (tx.gain_group === '30_DAY') {
+                  return { className: 'bg-orange-100 text-orange-800 border-orange-300', label: '30-Day', title: 'Bed & breakfast rule - repurchased within 30 days (TCGA92/S106A(5))' }
+                }
+                if (tx.gain_group === 'SECTION_104') {
+                  return { className: 'bg-green-100 text-green-800 border-green-300', label: 'Section 104', title: 'Section 104 pooled holdings (TCGA92/S104)' }
+                }
+                return null
+              }
+
+              const cgtBadge = getCGTBadge()
               const rowClassName = hasFxError ? 'bg-red-50' : (isIncomplete ? 'bg-yellow-50' : (isRelevant ? '' : 'opacity-50'))
 
               return (
@@ -266,6 +285,18 @@ export function TransactionList() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {tx.source}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    {cgtBadge ? (
+                      <span
+                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${cgtBadge.className}`}
+                        title={cgtBadge.title}
+                      >
+                        {cgtBadge.label}
+                      </span>
+                    ) : (
+                      <span className="text-gray-400">—</span>
+                    )}
                   </td>
                 </tr>
               )
