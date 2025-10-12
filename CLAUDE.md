@@ -184,6 +184,54 @@ Always store dates as ISO 8601: `YYYY-MM-DD`. Parsers must convert from broker-s
 - Test files mirror source structure: `src/lib/foo.ts` → `src/lib/__tests__/foo.test.ts`
 - E2E tests in separate `e2e/` directory
 
+### Debugging Frontend Issues
+
+**IMPORTANT**: When the page fails to load, appears blank, or UI components are broken, **ALWAYS use Playwright with console logging as your FIRST debugging step** before attempting code changes.
+
+#### Quick Debug Script
+Use `test-page.js` to capture browser console logs and errors:
+
+```bash
+node test-page.js
+```
+
+This script:
+- Captures all browser console messages (log, error, warning, debug)
+- Shows page errors with full stack traces
+- Reports failed network requests
+- Takes screenshots for visual inspection
+- Shows exact file locations where errors occur
+
+#### When to Use Playwright Debugging
+Use Playwright debugging **immediately** when:
+- Page shows a blank white screen
+- Components fail to render
+- User reports "page won't load"
+- Vite compiles successfully but page doesn't work
+- React components throw runtime errors
+- State management issues are suspected
+
+#### Common React/Zustand Issues
+Based on past issues:
+- **Infinite render loops**: Often caused by creating new object/array references in Zustand selectors. Use stable constant references:
+  ```typescript
+  // ❌ BAD - creates new array on every render
+  const data = useStore((state) => state.data ?? [])
+
+  // ✅ GOOD - stable reference
+  const EMPTY_ARRAY = []
+  const data = useStore((state) => state.data ?? EMPTY_ARRAY)
+  ```
+- **"Maximum update depth exceeded"**: Usually indicates infinite render loop in selector or effect
+- **"getSnapshot should be cached"**: Zustand selector is returning different reference on each call
+
+#### Debugging Workflow
+1. **First**: Run `node test-page.js` to capture browser console errors
+2. **Then**: Analyze the error messages and stack traces
+3. **Finally**: Make targeted fixes based on actual errors (not guesses)
+
+Never attempt fixes without seeing the actual browser error first!
+
 ## Important Notes
 
 ### Privacy & Security
