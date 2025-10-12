@@ -57,7 +57,7 @@ describe('normalizeSchwabEquityAwardsTransactions', () => {
       quantity: 52, // Net shares after tax withholding
       price: 150.00, // FMV price
       currency: 'USD',
-      total: 15000, // 100 shares * $150
+      total: 7800, // 52 net shares * $150
       fee: null,
     })
     expect(transactions[0].notes).toContain('100 shares vested')

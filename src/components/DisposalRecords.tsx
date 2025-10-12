@@ -4,11 +4,36 @@ import { useState } from 'react'
 const EMPTY_DISPOSALS: never[] = []
 
 export function DisposalRecords() {
-  const disposals = useTransactionStore((state) => state.cgtResults?.disposals ?? EMPTY_DISPOSALS)
+  const allDisposals = useTransactionStore((state) => state.cgtResults?.disposals ?? EMPTY_DISPOSALS)
+  const selectedTaxYear = useTransactionStore((state) => state.selectedTaxYear)
   const [expandedDisposal, setExpandedDisposal] = useState<string | null>(null)
 
-  if (disposals.length === 0) {
+  if (allDisposals.length === 0) {
     return null
+  }
+
+  // Filter disposals by selected tax year
+  const disposals = allDisposals.filter(d => d.taxYear === selectedTaxYear)
+
+  // If no disposals in selected tax year, show empty state
+  if (disposals.length === 0) {
+    return (
+      <div className="bg-white shadow rounded-lg overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h2 className="text-2xl font-semibold text-gray-900">Disposal Records</h2>
+          <p className="text-sm text-gray-500 mt-1">
+            No disposals in {selectedTaxYear}
+            {allDisposals.length > 0 && (
+              <span className="text-gray-400"> ({allDisposals.length} in other tax years)</span>
+            )}
+          </p>
+        </div>
+        <div className="px-6 py-8 text-center text-gray-500">
+          <p>No share disposals recorded for the {selectedTaxYear} tax year.</p>
+          <p className="text-sm mt-2">Select a different tax year above to view its disposals.</p>
+        </div>
+      </div>
+    )
   }
 
   // Calculate totals
@@ -29,7 +54,10 @@ export function DisposalRecords() {
           <div>
             <h2 className="text-2xl font-semibold text-gray-900">Disposal Records</h2>
             <p className="text-sm text-gray-500 mt-1">
-              {disposals.length} disposal{disposals.length !== 1 ? 's' : ''} with calculated gains/losses
+              {disposals.length} disposal{disposals.length !== 1 ? 's' : ''} in {selectedTaxYear}
+              {allDisposals.length !== disposals.length && (
+                <span className="text-gray-400"> ({allDisposals.length} total)</span>
+              )}
             </p>
           </div>
           <div className="text-right">
