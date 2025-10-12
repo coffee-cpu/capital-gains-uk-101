@@ -186,21 +186,22 @@ Always store dates as ISO 8601: `YYYY-MM-DD`. Parsers must convert from broker-s
 
 ### Debugging Frontend Issues
 
-**IMPORTANT**: When the page fails to load, appears blank, or UI components are broken, **ALWAYS use Playwright with console logging as your FIRST debugging step** before attempting code changes.
+**IMPORTANT**: When the page fails to load, appears blank, or UI components are broken, **ALWAYS use Playwright E2E tests with console logging as your FIRST debugging step** before attempting code changes.
 
-#### Quick Debug Script
-Use `test-page.js` to capture browser console logs and errors:
+#### Quick Debug Test
+Use the debug E2E test to capture browser console logs and errors:
 
 ```bash
-node test-page.js
+npx playwright test e2e/debug.spec.ts --headed
 ```
 
-This script:
+This test (`e2e/debug.spec.ts`):
 - Captures all browser console messages (log, error, warning, debug)
 - Shows page errors with full stack traces
 - Reports failed network requests
 - Takes screenshots for visual inspection
 - Shows exact file locations where errors occur
+- Verifies main components render correctly
 
 #### When to Use Playwright Debugging
 Use Playwright debugging **immediately** when:
@@ -226,11 +227,18 @@ Based on past issues:
 - **"getSnapshot should be cached"**: Zustand selector is returning different reference on each call
 
 #### Debugging Workflow
-1. **First**: Run `node test-page.js` to capture browser console errors
-2. **Then**: Analyze the error messages and stack traces
+1. **First**: Run `npx playwright test e2e/debug.spec.ts --headed` to capture browser console errors
+2. **Then**: Analyze the error messages and stack traces in the terminal output
 3. **Finally**: Make targeted fixes based on actual errors (not guesses)
 
 Never attempt fixes without seeing the actual browser error first!
+
+#### Example Usage
+When debugging, you can also run the test and check the screenshot:
+```bash
+npx playwright test e2e/debug.spec.ts --headed
+# Screenshot will be saved to: playwright-debug-screenshot.png
+```
 
 ## Important Notes
 
