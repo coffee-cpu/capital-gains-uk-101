@@ -17,6 +17,18 @@ npm run build            # TypeScript compile + Vite build
 npm run preview          # Preview production build
 ```
 
+**IMPORTANT - Auto-start Dev Server**: When starting work on this project (especially in a new session), **automatically start the dev server in the background** using the Bash tool with `run_in_background: true`:
+```
+Bash tool: npm run dev (with run_in_background: true)
+```
+This allows:
+- Real-time verification of changes in the browser
+- Immediate detection of compilation errors via Vite HMR
+- Running E2E debug tests (`npx playwright test e2e/debug.spec.ts --headed`) without manual setup
+- User to verify changes at http://localhost:3000 (or 3001 if 3000 is taken)
+
+The dev server will run in the background and hot-reload on file changes. You can check its output anytime using the BashOutput tool. Only skip auto-starting if the user explicitly says they don't need it running.
+
 ### Testing
 ```bash
 npm test                 # Run unit tests (Vitest)
