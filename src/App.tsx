@@ -7,10 +7,12 @@ import { useTransactionStore } from './stores/transactionStore'
 import { db } from './lib/db'
 import { deduplicateTransactions } from './utils/deduplication'
 import { enrichTransactions } from './lib/enrichment'
+import { calculateCGT } from './lib/cgt/engine'
 
 function App() {
   const [currentPage, setCurrentPage] = useState<'calculator' | 'about'>('calculator')
   const setTransactions = useTransactionStore((state) => state.setTransactions)
+  const setCGTResults = useTransactionStore((state) => state.setCGTResults)
 
   // Handle hash-based routing
   useEffect(() => {
@@ -37,11 +39,17 @@ function App() {
 
         // Enrich with FX rates and GBP conversions
         const enriched = await enrichTransactions(deduplicated)
-        setTransactions(enriched)
+
+        // Calculate CGT with HMRC matching rules
+        const cgtResults = calculateCGT(enriched)
+
+        // Update store with enriched transactions and CGT results
+        setTransactions(cgtResults.transactions)
+        setCGTResults(cgtResults)
       }
     }
     loadTransactions()
-  }, [setTransactions])
+  }, [setTransactions, setCGTResults])
 
   // Render About page
   if (currentPage === 'about') {

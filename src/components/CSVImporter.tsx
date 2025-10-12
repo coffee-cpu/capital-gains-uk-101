@@ -10,6 +10,7 @@ import { useTransactionStore } from '../stores/transactionStore'
 import { db } from '../lib/db'
 import { deduplicateTransactions } from '../utils/deduplication'
 import { enrichTransactions } from '../lib/enrichment'
+import { calculateCGT } from '../lib/cgt/engine'
 
 export function CSVImporter() {
   const [isProcessing, setIsProcessing] = useState(false)
@@ -19,6 +20,7 @@ export function CSVImporter() {
   const [isDragging, setIsDragging] = useState(false)
   const [showImportInfo, setShowImportInfo] = useState(false)
   const setTransactions = useTransactionStore((state) => state.setTransactions)
+  const setCGTResults = useTransactionStore((state) => state.setCGTResults)
 
   const processFile = async (file: File) => {
 
@@ -124,7 +126,13 @@ export function CSVImporter() {
     // Enrich with FX rates and GBP conversions
     const enriched = await enrichTransactions(deduplicated)
 
-    setTransactions(enriched)
+    // Calculate CGT with HMRC matching rules
+    const cgtResults = calculateCGT(enriched)
+
+    // Update store with enriched transactions (with gain_group populated) and CGT results
+    setTransactions(cgtResults.transactions)
+    setCGTResults(cgtResults)
+
     setSuccess(`Successfully imported ${transactions.length} transactions from ${source}`)
   }
 
