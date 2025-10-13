@@ -48,18 +48,9 @@ function normalizeSchwabRow(row: RawCSVRow, fileId: string, rowIndex: number): G
   // Calculate total (for buys, amount is negative, for sells positive)
   const total = amount !== null ? Math.abs(amount) : (quantity && price ? quantity * price : null)
 
-  // Check if this is an incomplete Stock Plan Activity transaction
+  // Check if this is Stock Plan Activity - these are always incomplete and should be ignored
+  // Users should use Charles Schwab Equity Awards data instead, which has complete information
   const isStockPlanActivity = action?.toLowerCase() === 'stock plan activity'
-  const isIncomplete = isStockPlanActivity && !price && !amount
-
-  // Extract the "as of" date for matching with Equity Awards
-  const asOfDate = parseAsOfDate(row['Date'])
-
-  // Create a match key for linking with Equity Awards data
-  // Format: symbol-date-quantity (e.g., "META-2025-08-15-17")
-  const matchKey = isIncomplete && symbol && asOfDate && quantity
-    ? `${symbol}-${asOfDate}-${quantity}`
-    : undefined
 
   return {
     id: `${fileId}-${rowIndex}`,
@@ -73,9 +64,9 @@ function normalizeSchwabRow(row: RawCSVRow, fileId: string, rowIndex: number): G
     currency: 'USD', // Schwab reports in USD
     total,
     fee,
-    notes: isIncomplete ? 'Stock Plan Activity - missing price data. Upload Charles Schwab Equity Awards file for complete data.' : null,
-    incomplete: isIncomplete,
-    matchKey,
+    notes: isStockPlanActivity ? 'Stock Plan Activity - ignored in favor of Equity Awards data. Upload Charles Schwab Equity Awards file for complete information.' : null,
+    incomplete: isStockPlanActivity,
+    ignored: isStockPlanActivity, // Always ignore Stock Plan Activity transactions
   }
 }
 
@@ -113,37 +104,23 @@ function mapSchwabAction(action: string): typeof TransactionType[keyof typeof Tr
 
 /**
  * Parse Schwab date format: "MM/DD/YYYY" or "MM/DD/YYYY as of MM/DD/YYYY"
+ * For "as of" dates (Stock Plan Activity), use the transaction date, not settlement date
  * Returns ISO date string (YYYY-MM-DD) or null
  */
 function parseSchwabDate(dateStr: string): string | null {
   if (!dateStr) return null
 
-  // Handle "as of" dates - use the first date
-  const mainDate = dateStr.split(' as of ')[0].trim()
-
-  const match = mainDate.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
-  if (!match) return null
-
-  const [, month, day, year] = match
-  return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
-}
-
-/**
- * Extract the "as of" date from Schwab date strings like "MM/DD/YYYY as of MM/DD/YYYY"
- * Returns the "as of" date in ISO format, or the main date if no "as of" exists
- */
-function parseAsOfDate(dateStr: string): string | null {
-  if (!dateStr) return null
-
+  // Handle "as of" dates - use the "as of" date (transaction date) not settlement date
   const parts = dateStr.split(' as of ')
-  const asOfPart = parts.length > 1 ? parts[1].trim() : parts[0].trim()
+  const dateToUse = parts.length > 1 ? parts[1].trim() : parts[0].trim()
 
-  const match = asOfPart.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
+  const match = dateToUse.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
   if (!match) return null
 
   const [, month, day, year] = match
   return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
 }
+
 
 /**
  * Parse Schwab currency format: "$1,234.56" or "-$1,234.56"

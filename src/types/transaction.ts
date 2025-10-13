@@ -18,7 +18,7 @@ export const GenericTransactionSchema = z.object({
   fee: z.number().nullable().describe('Fee or commission amount'),
   notes: z.string().nullable().describe('Optional broker notes'),
   incomplete: z.boolean().optional().describe('True if transaction is missing required data (e.g., Stock Plan Activity without price)'),
-  matchKey: z.string().optional().describe('Key used to match incomplete transactions with their complete counterparts'),
+  ignored: z.boolean().optional().describe('True if transaction should be excluded from calculations (e.g., Stock Plan Activity which is always incomplete)'),
 })
 
 export type GenericTransaction = z.infer<typeof GenericTransactionSchema>

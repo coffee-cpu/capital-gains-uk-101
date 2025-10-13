@@ -118,7 +118,7 @@ describe('Schwab Parser', () => {
       const result = normalizeSchwabTransactions(rows, 'test-file')
 
       expect(result).toHaveLength(1)
-      expect(result[0].date).toBe('2024-08-18') // Uses first date
+      expect(result[0].date).toBe('2024-08-15') // Uses "as of" date (transaction date), not settlement date
       expect(result[0].type).toBe(TransactionType.BUY) // Stock Plan Activity = BUY
     })
 

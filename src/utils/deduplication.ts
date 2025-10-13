@@ -1,41 +1,16 @@
 import { GenericTransaction } from '../types/transaction'
 
 /**
- * Deduplicate incomplete Schwab Stock Plan Activity transactions when
- * complete Equity Awards data is available.
+ * Deduplication is no longer needed - Stock Plan Activity transactions are
+ * marked as ignored at parse time in the Schwab parser.
  *
- * Strategy:
- * - Incomplete transactions have `incomplete: true` and a `matchKey`
- * - Complete Equity Awards transactions have the same `matchKey`
- * - When both exist, remove the incomplete one
+ * This function is kept for backwards compatibility but just returns transactions as-is.
  *
  * @param transactions Array of all loaded transactions
- * @returns Filtered array with duplicates removed
+ * @returns Array unchanged (deduplication happens at parse time)
  */
 export function deduplicateTransactions(transactions: GenericTransaction[]): GenericTransaction[] {
-  // Build a set of match keys from complete transactions
-  const completeMatchKeys = new Set<string>()
-
-  for (const tx of transactions) {
-    if (tx.matchKey && !tx.incomplete) {
-      completeMatchKeys.add(tx.matchKey)
-    }
-  }
-
-  // Filter out incomplete transactions that have matching complete ones
-  return transactions.filter(tx => {
-    // Keep all transactions that aren't incomplete
-    if (!tx.incomplete) {
-      return true
-    }
-
-    // For incomplete transactions, only keep if no matching complete transaction exists
-    if (tx.matchKey && completeMatchKeys.has(tx.matchKey)) {
-      return false // Remove this incomplete transaction
-    }
-
-    return true // Keep incomplete transactions that don't have matches
-  })
+  return transactions
 }
 
 /**

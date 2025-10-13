@@ -79,10 +79,6 @@ function normalizeSchwabEquityAwardsPair(
     ? `RSU vest: ${totalQuantity} shares vested, ${sharesSoldForTaxes} sold for taxes ($${taxes.toFixed(2)}), ${netShares} net shares deposited`
     : null
 
-  // Create match key to link with incomplete Schwab Stock Plan Activity
-  // Format: symbol-date-netShares (e.g., "META-2025-08-15-17")
-  const matchKey = symbol && date && netShares ? `${symbol}-${date}-${netShares}` : undefined
-
   return {
     id: `${fileId}-${rowIndex}`,
     source: 'Charles Schwab Equity Awards',
@@ -96,7 +92,6 @@ function normalizeSchwabEquityAwardsPair(
     total,
     fee: null,
     notes,
-    matchKey,
   }
 }
 

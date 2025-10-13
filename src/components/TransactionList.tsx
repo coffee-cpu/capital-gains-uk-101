@@ -185,7 +185,8 @@ export function TransactionList() {
               // Determine if this transaction is relevant to display prominently
               // BUY/SELL are relevant to CGT, DIVIDEND is important for tax reporting
               const isRelevant = tx.type === 'BUY' || tx.type === 'SELL' || tx.type === 'DIVIDEND'
-              const isIncomplete = tx.incomplete
+              const isIncomplete = tx.incomplete && !tx.ignored
+              const isIgnored = tx.ignored
               const hasFxError = !!tx.fx_error
 
               // Get CGT badge styling based on gain_group
@@ -203,7 +204,10 @@ export function TransactionList() {
               }
 
               const cgtBadge = getCGTBadge()
-              const rowClassName = hasFxError ? 'bg-red-50' : (isIncomplete ? 'bg-yellow-50' : (isRelevant ? '' : 'opacity-50'))
+              const rowClassName = hasFxError ? 'bg-red-50' :
+                                   isIgnored ? 'bg-gray-50 opacity-40' :
+                                   isIncomplete ? 'bg-yellow-50' :
+                                   (isRelevant ? '' : 'opacity-50')
 
               return (
                 <tr key={tx.id} className={rowClassName}>
@@ -218,8 +222,18 @@ export function TransactionList() {
                           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                         </svg>
                       )}
-                      {isIncomplete && !hasFxError && (
-                        <svg className="h-4 w-4 text-yellow-500" viewBox="0 0 20 20" fill="currentColor" title="Missing price data">
+                      {isIgnored && !hasFxError && (
+                        <span
+                          className="inline-flex items-center cursor-help"
+                          title="Ignored: Stock Plan Activity is incomplete. Use Charles Schwab Equity Awards file for complete transaction data. Not included in CGT calculations."
+                        >
+                          <svg className="h-4 w-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z" clipRule="evenodd" />
+                          </svg>
+                        </span>
+                      )}
+                      {isIncomplete && !hasFxError && !isIgnored && (
+                        <svg className="h-4 w-4 text-yellow-500" viewBox="0 0 20 20" fill="currentColor" title="Missing price data - upload Equity Awards file for complete information">
                           <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                         </svg>
                       )}

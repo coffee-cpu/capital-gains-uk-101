@@ -25,9 +25,12 @@ import { getTaxYearBounds } from '../../utils/taxYear'
 export function calculateCGT(
   transactions: EnrichedTransaction[]
 ): CGTCalculationResult {
+  // Filter out ignored transactions (incomplete Stock Plan Activity superseded by Equity Awards)
+  const activeTransactions = transactions.filter(tx => !tx.ignored)
+
   // Step 1: Apply same-day matching rule
-  const sameDayMatchings = applySameDayRule(transactions)
-  let updatedTransactions = markSameDayMatches(transactions, sameDayMatchings)
+  const sameDayMatchings = applySameDayRule(activeTransactions)
+  let updatedTransactions = markSameDayMatches(activeTransactions, sameDayMatchings)
 
   // Step 2: Apply 30-day rule (to remaining unmatched quantities)
   const thirtyDayMatchings = applyThirtyDayRule(updatedTransactions, sameDayMatchings)
@@ -53,13 +56,21 @@ export function calculateCGT(
   // Step 6: Compile metadata
   const metadata = {
     calculatedAt: new Date().toISOString(),
-    totalTransactions: transactions.length,
-    totalBuys: transactions.filter(tx => tx.type === 'BUY').length,
-    totalSells: transactions.filter(tx => tx.type === 'SELL').length,
+    totalTransactions: activeTransactions.length,
+    totalBuys: activeTransactions.filter(tx => tx.type === 'BUY').length,
+    totalSells: activeTransactions.filter(tx => tx.type === 'SELL').length,
   }
 
+  // Return all transactions (including ignored ones) so they can be displayed in UI
+  // But merge back the ignored ones without any gain_group modifications
+  const allTransactionsWithGroups = transactions.map(tx => {
+    if (tx.ignored) return tx
+    const updated = updatedTransactions.find(u => u.id === tx.id)
+    return updated || tx
+  })
+
   return {
-    transactions: updatedTransactions,
+    transactions: allTransactionsWithGroups,
     disposals,
     section104Pools,
     taxYearSummaries,
