@@ -37,6 +37,7 @@ coverage/
 .pytest_cache/
 playwright-report/
 test-results/
+playwright-debug-screenshot.png
 
 # Misc
 .cache/
