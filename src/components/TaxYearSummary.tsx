@@ -135,7 +135,18 @@ export function TaxYearSummary() {
             </div>
 
             <div className="flex justify-between items-center">
-              <span className="text-blue-800">Less: Annual Exempt Amount</span>
+              <span className="text-blue-800">
+                Less: Annual Exempt Amount
+                <a
+                  href="https://www.gov.uk/government/publications/rates-and-allowances-capital-gains-tax/capital-gains-tax-rates-and-annual-tax-free-allowances"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ml-1 text-blue-600 hover:text-blue-800 underline text-xs"
+                  title="View HMRC official rates and allowances"
+                >
+                  (source)
+                </a>
+              </span>
               <span className="font-medium text-blue-900">
                 (£{currentSummary.annualExemptAmount.toLocaleString('en-GB', { minimumFractionDigits: 0, maximumFractionDigits: 0 })})
               </span>
