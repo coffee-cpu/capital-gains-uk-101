@@ -190,6 +190,12 @@ Always store dates as ISO 8601: `YYYY-MM-DD`. Parsers must convert from broker-s
 - Ensure proper JSX structure (adjacent elements must be wrapped)
 - Use the IDE diagnostics to catch issues: check for warnings in modified files
 
+### Committing Changes
+- **IMPORTANT**: Always ask the user to validate changes before committing
+- Never commit code without explicit user approval
+- Show a summary of changes and ask: "Should I commit and push these changes?"
+- Only proceed with `git commit` and `git push` after receiving confirmation
+
 ### Testing Strategy
 - **Unit tests**: All parsers, detector logic, utility functions
 - **E2E tests**: Full import workflow with real CSV files
