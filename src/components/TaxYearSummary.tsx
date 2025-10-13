@@ -1,9 +1,12 @@
 import { useTransactionStore } from '../stores/transactionStore'
+import { useState } from 'react'
+import { DisposalRecords } from './DisposalRecords'
 
 export function TaxYearSummary() {
   const cgtResults = useTransactionStore((state) => state.cgtResults)
   const selectedTaxYear = useTransactionStore((state) => state.selectedTaxYear)
   const setSelectedTaxYear = useTransactionStore((state) => state.setSelectedTaxYear)
+  const [showDisposals, setShowDisposals] = useState(false)
 
   if (!cgtResults || cgtResults.taxYearSummaries.length === 0) {
     return null
@@ -54,10 +57,23 @@ export function TaxYearSummary() {
 
         {/* Key Metrics Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-gray-50 rounded-lg p-4">
+          <button
+            onClick={() => setShowDisposals(!showDisposals)}
+            className="bg-gray-50 hover:bg-gray-100 rounded-lg p-4 text-left transition-colors"
+          >
             <div className="text-xs text-gray-500 uppercase mb-1">Disposals</div>
-            <div className="text-2xl font-bold text-gray-900">{currentSummary.totalDisposals}</div>
-          </div>
+            <div className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+              {currentSummary.totalDisposals}
+              <svg
+                className={`w-4 h-4 text-gray-400 transition-transform ${showDisposals ? 'transform rotate-180' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </button>
 
           <div className="bg-gray-50 rounded-lg p-4">
             <div className="text-xs text-gray-500 uppercase mb-1">Total Proceeds</div>
@@ -80,6 +96,15 @@ export function TaxYearSummary() {
             </div>
           </div>
         </div>
+
+        {/* Disposal Records Panel */}
+        {showDisposals && (
+          <DisposalRecords
+            containerClassName="bg-white border border-gray-200 rounded-lg overflow-hidden"
+            showHeader={true}
+            headerTitle="Disposal Records"
+          />
+        )}
 
         {/* CGT Calculation */}
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">

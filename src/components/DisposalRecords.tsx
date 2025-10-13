@@ -3,7 +3,20 @@ import { useState } from 'react'
 
 const EMPTY_DISPOSALS: never[] = []
 
-export function DisposalRecords() {
+interface DisposalRecordsProps {
+  /** Custom container className - defaults to card with shadow */
+  containerClassName?: string
+  /** Whether to show header with title - defaults to true */
+  showHeader?: boolean
+  /** Custom header title - defaults to "Disposal Records" */
+  headerTitle?: string
+}
+
+export function DisposalRecords({
+  containerClassName = "bg-white shadow rounded-lg overflow-hidden",
+  showHeader = true,
+  headerTitle = "Disposal Records"
+}: DisposalRecordsProps = {}) {
   const allDisposals = useTransactionStore((state) => state.cgtResults?.disposals ?? EMPTY_DISPOSALS)
   const selectedTaxYear = useTransactionStore((state) => state.selectedTaxYear)
   const [expandedDisposal, setExpandedDisposal] = useState<string | null>(null)
@@ -18,16 +31,18 @@ export function DisposalRecords() {
   // If no disposals in selected tax year, show empty state
   if (disposals.length === 0) {
     return (
-      <div className="bg-white shadow rounded-lg overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-2xl font-semibold text-gray-900">Disposal Records</h2>
-          <p className="text-sm text-gray-500 mt-1">
-            No disposals in {selectedTaxYear}
-            {allDisposals.length > 0 && (
-              <span className="text-gray-400"> ({allDisposals.length} in other tax years)</span>
-            )}
-          </p>
-        </div>
+      <div className={containerClassName}>
+        {showHeader && (
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h2 className="text-2xl font-semibold text-gray-900">{headerTitle}</h2>
+            <p className="text-sm text-gray-500 mt-1">
+              No disposals in {selectedTaxYear}
+              {allDisposals.length > 0 && (
+                <span className="text-gray-400"> ({allDisposals.length} in other tax years)</span>
+              )}
+            </p>
+          </div>
+        )}
         <div className="px-6 py-8 text-center text-gray-500">
           <p>No share disposals recorded for the {selectedTaxYear} tax year.</p>
           <p className="text-sm mt-2">Select a different tax year above to view its disposals.</p>
@@ -45,30 +60,16 @@ export function DisposalRecords() {
     .filter(d => d.gainOrLossGbp < 0)
     .reduce((sum, d) => sum + d.gainOrLossGbp, 0)
 
-  const netGainLoss = totalGains + totalLosses
-
   return (
-    <div className="bg-white shadow rounded-lg overflow-hidden">
-      <div className="px-6 py-4 border-b border-gray-200">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-semibold text-gray-900">Disposal Records</h2>
-            <p className="text-sm text-gray-500 mt-1">
-              {disposals.length} disposal{disposals.length !== 1 ? 's' : ''} in {selectedTaxYear}
-              {allDisposals.length !== disposals.length && (
-                <span className="text-gray-400"> ({allDisposals.length} total)</span>
-              )}
-            </p>
-          </div>
-          <div className="text-right">
-            <div className="text-sm text-gray-500">Net Gain/(Loss)</div>
-            <div className={`text-2xl font-bold ${netGainLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              £{Math.abs(netGainLoss).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              {netGainLoss < 0 && ' (Loss)'}
-            </div>
-          </div>
+    <div className={containerClassName}>
+      {showHeader && (
+        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+          <h3 className="text-lg font-semibold text-gray-900">{headerTitle}</h3>
+          <p className="text-sm text-gray-500 mt-1">
+            {disposals.length} disposal{disposals.length !== 1 ? 's' : ''} in {selectedTaxYear}
+          </p>
         </div>
-      </div>
+      )}
 
       {/* Summary Cards */}
       <div className="px-6 py-4 bg-gray-50 border-b border-gray-200 grid grid-cols-3 gap-4">

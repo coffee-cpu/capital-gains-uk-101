@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { CSVImporter } from './components/CSVImporter'
 import { TransactionList } from './components/TransactionList'
-import { DisposalRecords } from './components/DisposalRecords'
 import { TaxYearSummary } from './components/TaxYearSummary'
 import { About } from './components/About'
 import { Footer } from './components/Footer'
@@ -83,7 +82,6 @@ function App() {
           <div className="space-y-8">
             <CSVImporter />
             <TaxYearSummary />
-            <DisposalRecords />
             <TransactionList />
           </div>
         </div>
