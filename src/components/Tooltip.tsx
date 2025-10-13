@@ -14,12 +14,15 @@ interface TooltipProps {
  */
 export function Tooltip({ content, children, className = '' }: TooltipProps) {
   const [isVisible, setIsVisible] = useState(false)
-  const [position, setPosition] = useState({ top: 0, left: 0, placement: 'bottom' as 'top' | 'bottom' })
+  const [position, setPosition] = useState<{ top: number; left: number; placement: 'top' | 'bottom' } | null>(null)
   const triggerRef = useRef<HTMLDivElement>(null)
   const tooltipRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (!isVisible || !triggerRef.current) return
+    if (!isVisible || !triggerRef.current) {
+      setPosition(null)
+      return
+    }
 
     const updatePosition = () => {
       const trigger = triggerRef.current
@@ -69,7 +72,7 @@ export function Tooltip({ content, children, className = '' }: TooltipProps) {
       >
         {children}
       </div>
-      {isVisible && createPortal(
+      {isVisible && position && createPortal(
         <div
           ref={tooltipRef}
           className="fixed z-[9999] px-3 py-2 text-sm text-white bg-gray-900 rounded-lg shadow-xl max-w-xs animate-in fade-in duration-150"
