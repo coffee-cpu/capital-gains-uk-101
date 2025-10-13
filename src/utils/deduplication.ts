@@ -1,16 +1,42 @@
 import { GenericTransaction } from '../types/transaction'
 
 /**
- * Deduplication is no longer needed - Stock Plan Activity transactions are
- * marked as ignored at parse time in the Schwab parser.
+ * Deduplicates transactions by removing incomplete Stock Plan Activity transactions
+ * when there are corresponding Equity Awards transactions within 6 days before.
  *
- * This function is kept for backwards compatibility but just returns transactions as-is.
+ * Stock Plan Activity transactions often appear in the standard Schwab export with
+ * missing price data. When users also import the Equity Awards file, we have complete
+ * data for those same transactions. This function filters out the incomplete duplicates.
  *
  * @param transactions Array of all loaded transactions
- * @returns Array unchanged (deduplication happens at parse time)
+ * @returns Array with incomplete transactions removed when Equity Awards coverage exists
  */
 export function deduplicateTransactions(transactions: GenericTransaction[]): GenericTransaction[] {
-  return transactions
+  // Helper function to check if an incomplete transaction has Equity Awards coverage
+  const hasEquityAwardsCoverage = (tx: GenericTransaction) => {
+    if (!tx.incomplete || !tx.symbol) return false
+
+    const txDate = new Date(tx.date)
+    return transactions.some(other => {
+      if (other.source !== 'Charles Schwab Equity Awards') return false
+      if (other.symbol !== tx.symbol) return false
+
+      const otherDate = new Date(other.date)
+      const daysDiff = Math.floor((txDate.getTime() - otherDate.getTime()) / (1000 * 60 * 60 * 24))
+
+      // Check if Equity Awards transaction is on the same day or up to 6 days before
+      return daysDiff >= 0 && daysDiff <= 6
+    })
+  }
+
+  // Filter out incomplete transactions that have Equity Awards coverage
+  return transactions.filter(tx => {
+    // If transaction is incomplete and has Equity Awards coverage, remove it
+    if (tx.incomplete && hasEquityAwardsCoverage(tx)) {
+      return false
+    }
+    return true
+  })
 }
 
 /**
