@@ -4,6 +4,7 @@ import { TransactionList } from './components/TransactionList'
 import { TaxYearSummary } from './components/TaxYearSummary'
 import { About } from './components/About'
 import { Footer } from './components/Footer'
+import { Sidebar } from './components/Sidebar'
 import { useTransactionStore } from './stores/transactionStore'
 import { db } from './lib/db'
 import { deduplicateTransactions } from './utils/deduplication'
@@ -54,40 +55,33 @@ function App() {
 
   // Render About page
   if (currentPage === 'about') {
-    return <About />
+    return (
+      <div className="flex min-h-screen bg-gray-50">
+        <Sidebar />
+        <div className="flex-1 overflow-auto">
+          <About />
+        </div>
+      </div>
+    )
   }
 
   // Render Calculator page
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <main className="flex-grow">
-        <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">
-              Capital Gains Tax UK 101
-            </h1>
-            <p className="text-xl text-gray-600">
-              UK Capital Gains Tax made easy
-            </p>
-            <div className="mt-4">
-              <a
-                href="#about"
-                className="text-blue-600 hover:text-blue-800 underline text-sm"
-              >
-                About this calculator
-              </a>
+    <div className="flex min-h-screen bg-gray-50">
+      <Sidebar />
+      <div className="flex-1 flex flex-col overflow-auto">
+        <main className="flex-grow">
+          <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+            <div className="space-y-8">
+              <CSVImporter />
+              <TaxYearSummary />
+              <TransactionList />
             </div>
           </div>
+        </main>
 
-          <div className="space-y-8">
-            <CSVImporter />
-            <TaxYearSummary />
-            <TransactionList />
-          </div>
-        </div>
-      </main>
-
-      <Footer />
+        <Footer />
+      </div>
     </div>
   )
 }
