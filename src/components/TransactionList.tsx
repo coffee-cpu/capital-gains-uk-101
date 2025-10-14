@@ -183,12 +183,34 @@ export function TransactionList() {
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {sortedTransactions.map((tx) => {
-              // Determine if this transaction is relevant to display prominently
-              // BUY/SELL are relevant to CGT, DIVIDEND is important for tax reporting
-              const isRelevant = tx.type === 'BUY' || tx.type === 'SELL' || tx.type === 'DIVIDEND'
+              // Determine if this transaction is relevant to CGT calculations
+              // Only BUY/SELL transactions directly affect capital gains
+              const isRelevant = tx.type === 'BUY' || tx.type === 'SELL'
               const isIncomplete = tx.incomplete && !tx.ignored
               const isIgnored = tx.ignored
               const hasFxError = !!tx.fx_error
+
+              // Get tooltip for non-relevant transaction types
+              const getNonRelevantTooltip = () => {
+                if (tx.type === 'DIVIDEND') {
+                  return 'Dividend income is subject to Income Tax, not Capital Gains Tax. Report dividends on your Self Assessment tax return if they exceed the dividend allowance.'
+                }
+                if (tx.type === 'FEE') {
+                  return 'Fees are not directly included in CGT calculations. They may be deductible as an allowable cost when calculating gains/losses.'
+                }
+                if (tx.type === 'INTEREST') {
+                  return 'Interest income is subject to Income Tax, not Capital Gains Tax. Not included in CGT calculations.'
+                }
+                if (tx.type === 'TRANSFER') {
+                  return 'Transfers between accounts do not trigger capital gains events. Not included in CGT calculations.'
+                }
+                if (tx.type === 'TAX') {
+                  return 'Tax withholdings are recorded for completeness but do not affect CGT calculations directly.'
+                }
+                return null
+              }
+
+              const nonRelevantTooltip = getNonRelevantTooltip()
 
               // Get CGT badge styling based on gain_group
               const getCGTBadge = () => {
@@ -244,17 +266,26 @@ export function TransactionList() {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      tx.type === 'BUY' ? 'bg-green-100 text-green-800' :
-                      tx.type === 'SELL' ? 'bg-red-100 text-red-800' :
-                      tx.type === 'DIVIDEND' ? 'bg-blue-100 text-blue-800' :
-                      tx.type === 'INTEREST' ? 'bg-purple-100 text-purple-800' :
-                      tx.type === 'TAX' ? 'bg-yellow-100 text-yellow-800' :
-                      tx.type === 'TRANSFER' ? 'bg-orange-100 text-orange-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
-                      {tx.type}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        tx.type === 'BUY' ? 'bg-green-100 text-green-800' :
+                        tx.type === 'SELL' ? 'bg-red-100 text-red-800' :
+                        tx.type === 'DIVIDEND' ? 'bg-blue-100 text-blue-800' :
+                        tx.type === 'INTEREST' ? 'bg-purple-100 text-purple-800' :
+                        tx.type === 'TAX' ? 'bg-yellow-100 text-yellow-800' :
+                        tx.type === 'TRANSFER' ? 'bg-orange-100 text-orange-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {tx.type}
+                      </span>
+                      {nonRelevantTooltip && (
+                        <Tooltip content={nonRelevantTooltip}>
+                          <svg className="h-4 w-4 text-gray-400 cursor-help" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                          </svg>
+                        </Tooltip>
+                      )}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {tx.quantity !== null ? tx.quantity.toFixed(2) : '—'}
