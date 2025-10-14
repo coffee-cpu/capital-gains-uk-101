@@ -57,7 +57,7 @@ function App() {
   if (currentPage === 'about') {
     return (
       <div className="flex min-h-screen bg-gray-50">
-        <Sidebar />
+        <Sidebar currentPage="about" />
         <div className="flex-1 overflow-auto">
           <About />
         </div>
@@ -68,7 +68,7 @@ function App() {
   // Render Calculator page
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <Sidebar />
+      <Sidebar currentPage="calculator" />
       <div className="flex-1 flex flex-col overflow-auto">
         <main className="flex-grow">
           <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
