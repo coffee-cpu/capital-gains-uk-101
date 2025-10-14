@@ -11,6 +11,7 @@ import { db } from '../lib/db'
 import { deduplicateTransactions } from '../utils/deduplication'
 import { enrichTransactions } from '../lib/enrichment'
 import { calculateCGT } from '../lib/cgt/engine'
+import { normalizeTransactionSymbols } from '../utils/symbolNormalization'
 
 export function CSVImporter() {
   const [isProcessing, setIsProcessing] = useState(false)
@@ -74,6 +75,9 @@ export function CSVImporter() {
       if (transactions.length === 0) {
         throw new Error('No valid transactions found in CSV')
       }
+
+      // Apply symbol normalization (e.g., FB -> META)
+      transactions = normalizeTransactionSymbols(transactions)
 
       await saveTransactions(transactions, detection.broker)
     } catch (err) {
