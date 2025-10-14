@@ -2,6 +2,7 @@ import { useTransactionStore } from '../stores/transactionStore'
 import { useState } from 'react'
 import { DisposalRecords } from './DisposalRecords'
 import { Tooltip } from './Tooltip'
+import { ExportPDFButton } from './ExportPDFButton'
 
 export function TaxYearSummary() {
   const cgtResults = useTransactionStore((state) => state.cgtResults)
@@ -51,9 +52,12 @@ export function TaxYearSummary() {
       </div>
 
       <div className="p-6 space-y-6">
-        {/* Period Info */}
-        <div className="text-sm text-gray-600">
-          Period: {currentSummary.startDate} to {currentSummary.endDate}
+        {/* Period Info and Export Button */}
+        <div className="flex items-center justify-between">
+          <div className="text-sm text-gray-600">
+            Period: {currentSummary.startDate} to {currentSummary.endDate}
+          </div>
+          <ExportPDFButton />
         </div>
 
         {/* Key Metrics Grid */}

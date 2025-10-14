@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 
-test.describe('CGT Visualizer App', () => {
+test.describe('Capital Gains Tax UK 101 App', () => {
   test('should display the app title', async ({ page }) => {
     await page.goto('/')
 

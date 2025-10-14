@@ -23,7 +23,15 @@
     "type": "git",
     "url": "git+https://github.com/coffee-cpu/capital-gains-uk-101.git"
   },
-  "keywords": ["capital-gains-tax", "uk", "tax-calculator", "hmrc", "cgt", "react", "typescript"],
+  "keywords": [
+    "capital-gains-tax",
+    "uk",
+    "tax-calculator",
+    "hmrc",
+    "cgt",
+    "react",
+    "typescript"
+  ],
   "author": "",
   "license": "MIT",
   "bugs": {
@@ -47,6 +55,7 @@
     "vitest": "^3.2.4"
   },
   "dependencies": {
+    "@react-pdf/renderer": "^4.3.1",
     "dexie": "^4.2.1",
     "papaparse": "^5.5.3",
     "react": "^19.2.0",
