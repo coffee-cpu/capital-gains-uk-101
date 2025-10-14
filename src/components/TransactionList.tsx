@@ -145,10 +145,14 @@ export function TransactionList() {
         </div>
       )}
 
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
+      <div className="relative">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-blue-50 z-10">
+                CGT Rule
+              </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Date
               </th>
@@ -175,9 +179,6 @@ export function TransactionList() {
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Source
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                CGT Rule
               </th>
             </tr>
           </thead>
@@ -234,6 +235,22 @@ export function TransactionList() {
 
               return (
                 <tr key={tx.id} className={rowClassName}>
+                  <td className={`px-6 py-4 whitespace-nowrap text-sm sticky left-0 z-10 ${
+                    hasFxError ? 'bg-red-100' :
+                    isIgnored ? 'bg-gray-100' :
+                    isIncomplete ? 'bg-yellow-100' :
+                    'bg-blue-50'
+                  }`}>
+                    {cgtBadge ? (
+                      <Tooltip content={cgtBadge.title}>
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${cgtBadge.className}`}>
+                          {cgtBadge.label}
+                        </span>
+                      </Tooltip>
+                    ) : (
+                      <span className="text-gray-400">—</span>
+                    )}
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {tx.date}
                   </td>
@@ -333,22 +350,13 @@ export function TransactionList() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {tx.source}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    {cgtBadge ? (
-                      <Tooltip content={cgtBadge.title}>
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${cgtBadge.className}`}>
-                          {cgtBadge.label}
-                        </span>
-                      </Tooltip>
-                    ) : (
-                      <span className="text-gray-400">—</span>
-                    )}
-                  </td>
                 </tr>
               )
             })}
           </tbody>
         </table>
+        </div>
+        <div className="absolute top-0 right-0 bottom-0 w-12 bg-gradient-to-l from-white via-white/80 to-transparent pointer-events-none"></div>
       </div>
     </div>
   )
