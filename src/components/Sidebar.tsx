@@ -9,11 +9,11 @@ export function Sidebar({ currentPage }: SidebarProps) {
   return (
     <aside className="w-64 bg-white border-r border-gray-200 h-screen sticky top-0 flex flex-col">
       {/* Header */}
-      <div className="p-6 border-b border-gray-200">
-        <h1 className="text-lg font-bold text-gray-900 leading-tight">
-          Capital Gains Tax UK 101
+      <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 border-b border-gray-200">
+        <h1 className="text-base font-bold text-gray-900 leading-tight whitespace-nowrap">
+          Capital Gains Tax <span className="text-blue-600">UK 101</span>
         </h1>
-        <p className="text-xs text-gray-500 mt-2">
+        <p className="text-xs text-gray-600 mt-3">
           UK Capital Gains Tax made easy
         </p>
       </div>
