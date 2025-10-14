@@ -143,7 +143,10 @@ export function CSVImporter() {
   return (
     <div className="bg-white shadow rounded-lg p-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-2xl font-semibold text-gray-900">Import Transactions</h2>
+        <div>
+          <h2 className="text-2xl font-semibold text-gray-900">Import Transactions</h2>
+          <p className="text-xs text-gray-500 mt-1">All processing happens locally in your browser — your data never leaves your device</p>
+        </div>
         <button
           onClick={() => setShowImportInfo(!showImportInfo)}
           className="text-sm text-blue-600 hover:text-blue-800 underline flex items-center gap-1"

@@ -65,7 +65,15 @@ export function About() {
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">HMRC Matching Rules</h2>
             <div className="space-y-4 text-gray-700">
               <p>
-                When calculating capital gains tax on shares, HMRC requires specific matching rules to be applied in a defined order. These rules determine which shares you're selling and at what cost.
+                When calculating capital gains tax on shares, HMRC requires specific matching rules to be applied in a defined order. These rules determine which shares you're selling and at what cost. This calculator is based on the{' '}
+                <a
+                  href="https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51500p"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline font-semibold"
+                >
+                  HMRC Capital Gains Manual
+                </a>.
               </p>
               <div className="space-y-4">
                 <div>
