@@ -57,7 +57,7 @@ export function ExportPDFButton() {
       <button
         onClick={handleExport}
         disabled={!hasCGTResults || !hasDataForYear || isGenerating}
-        className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white ${
+        className={`inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white ${
           !hasCGTResults || !hasDataForYear || isGenerating
             ? 'bg-gray-400 cursor-not-allowed'
             : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
@@ -73,7 +73,7 @@ export function ExportPDFButton() {
         {isGenerating ? (
           <>
             <svg
-              className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+              className="animate-spin -ml-0.5 mr-1.5 h-3 w-3 text-white"
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
               viewBox="0 0 24 24"
@@ -97,7 +97,7 @@ export function ExportPDFButton() {
         ) : (
           <>
             <svg
-              className="-ml-1 mr-2 h-4 w-4"
+              className="-ml-0.5 mr-1.5 h-3 w-3"
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
               viewBox="0 0 24 24"

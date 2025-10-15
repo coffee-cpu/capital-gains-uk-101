@@ -32,32 +32,32 @@ export function TaxYearSummary() {
             <p className="text-sm text-gray-500 mt-1">Capital gains tax calculation</p>
           </div>
 
-          {/* Tax Year Selector */}
-          <div className="flex gap-2">
-            {cgtResults.taxYearSummaries.map((summary) => (
-              <button
-                key={summary.taxYear}
-                onClick={() => setSelectedTaxYear(summary.taxYear)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  summary.taxYear === selectedTaxYear
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                {summary.taxYear}
-              </button>
-            ))}
+          {/* Tax Year Selector Dropdown */}
+          <div className="relative">
+            <select
+              value={selectedTaxYear}
+              onChange={(e) => setSelectedTaxYear(e.target.value)}
+              className="block w-full px-4 py-2 pr-8 text-sm font-medium text-gray-900 bg-white border border-gray-300 rounded-lg shadow-sm hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none cursor-pointer"
+            >
+              {cgtResults.taxYearSummaries.map((summary) => (
+                <option key={summary.taxYear} value={summary.taxYear}>
+                  {summary.taxYear}
+                </option>
+              ))}
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
           </div>
         </div>
       </div>
 
       <div className="p-6 space-y-6">
-        {/* Period Info and Export Button */}
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-gray-600">
-            Period: {currentSummary.startDate} to {currentSummary.endDate}
-          </div>
-          <ExportPDFButton />
+        {/* Period Info */}
+        <div className="text-sm text-gray-600">
+          Period: {currentSummary.startDate} to {currentSummary.endDate}
         </div>
 
         {/* Key Metrics Grid */}
@@ -201,9 +201,14 @@ export function TaxYearSummary() {
           </div>
         )}
 
-        {/* Disclaimer */}
-        <div className="text-xs text-gray-500 italic">
-          This is an estimate based on HMRC guidance. Always consult a qualified tax professional for your specific situation.
+        {/* Disclaimer and Export Button */}
+        <div className="flex items-center justify-between gap-4">
+          <div className="text-xs text-gray-500 italic">
+            This is an estimate based on HMRC guidance. Always consult a qualified tax professional for your specific situation.
+          </div>
+          <div className="flex-shrink-0">
+            <ExportPDFButton />
+          </div>
         </div>
       </div>
     </div>
