@@ -245,7 +245,7 @@ export function TransactionList() {
 
               const nonRelevantTooltip = getNonRelevantTooltip()
 
-              // Get CGT badges - SELL transactions can have multiple rules
+              // Get CGT badges - Both SELL and BUY transactions can have multiple rules
               const getCGTBadges = () => {
                 const badges: Array<{ className: string; label: string; title: string }> = []
 
@@ -279,34 +279,60 @@ export function TransactionList() {
                       }
                     }
                   }
-                } else if (tx.type === 'BUY' && tx.gain_group === 'SECTION_104') {
-                  // For BUY transactions, show single badge based on gain_group
-                  const poolDetails = tx.symbol ? getPoolDetailsForBuy(tx.id, tx.symbol) : null
-                  if (poolDetails) {
-                    badges.push({
-                      className: 'bg-green-100 text-green-800 border-green-300',
-                      label: 'Section 104',
-                      title: `Section 104: Added to pool (new balance: ${poolDetails.quantity.toFixed(2)} shares at £${poolDetails.averageCost.toFixed(2)}/share average cost)`
-                    })
-                  } else {
-                    badges.push({
-                      className: 'bg-green-100 text-green-800 border-green-300',
-                      label: 'Section 104',
-                      title: 'Section 104 pooled holdings (TCGA92/S104)'
-                    })
+                } else if (tx.type === 'BUY') {
+                  // For BUY transactions, find all matchings where this BUY is an acquisition
+                  const allDisposals = getDisposals()
+                  let totalMatched = 0
+                  const ruleQuantities: Map<string, number> = new Map()
+
+                  // Find all matchings that use this BUY transaction
+                  for (const disposal of allDisposals) {
+                    for (const matching of disposal.matchings) {
+                      for (const acq of matching.acquisitions) {
+                        if (acq.transaction.id === tx.id) {
+                          totalMatched += acq.quantityMatched
+                          const existingQty = ruleQuantities.get(matching.rule) || 0
+                          ruleQuantities.set(matching.rule, existingQty + acq.quantityMatched)
+                        }
+                      }
+                    }
                   }
-                } else if (tx.gain_group === 'SAME_DAY') {
-                  badges.push({
-                    className: 'bg-blue-100 text-blue-800 border-blue-300',
-                    label: 'Same Day',
-                    title: 'Matched same-day buy/sell (TCGA92/S105(1))'
-                  })
-                } else if (tx.gain_group === '30_DAY') {
-                  badges.push({
-                    className: 'bg-orange-100 text-orange-800 border-orange-300',
-                    label: '30-Day',
-                    title: 'Bed & breakfast rule - repurchased within 30 days (TCGA92/S106A(5))'
-                  })
+
+                  // Add badges for each rule this BUY participates in
+                  for (const [rule, qty] of ruleQuantities.entries()) {
+                    if (rule === 'SAME_DAY') {
+                      badges.push({
+                        className: 'bg-blue-100 text-blue-800 border-blue-300',
+                        label: 'Same Day',
+                        title: `Same Day: ${qty.toFixed(2)} shares matched to same-day disposal (TCGA92/S105(1))`
+                      })
+                    } else if (rule === '30_DAY') {
+                      badges.push({
+                        className: 'bg-orange-100 text-orange-800 border-orange-300',
+                        label: '30-Day',
+                        title: `30-Day: ${qty.toFixed(2)} shares matched to disposal (bed & breakfast rule TCGA92/S106A(5))`
+                      })
+                    }
+                  }
+
+                  // Check if remaining shares went to Section 104 pool
+                  const remainingQty = (tx.quantity || 0) - totalMatched
+                  if (remainingQty > 0) {
+                    const poolDetails = tx.symbol ? getPoolDetailsForBuy(tx.id, tx.symbol) : null
+                    if (poolDetails) {
+                      badges.push({
+                        className: 'bg-green-100 text-green-800 border-green-300',
+                        label: 'Section 104',
+                        title: `Section 104: ${remainingQty.toFixed(2)} shares added to pool (new balance: ${poolDetails.quantity.toFixed(2)} shares at £${poolDetails.averageCost.toFixed(2)}/share average cost)`
+                      })
+                    } else {
+                      badges.push({
+                        className: 'bg-green-100 text-green-800 border-green-300',
+                        label: 'Section 104',
+                        title: `Section 104: ${remainingQty.toFixed(2)} shares added to pooled holdings (TCGA92/S104)`
+                      })
+                    }
+                  }
                 }
 
                 return badges.length > 0 ? badges : null
