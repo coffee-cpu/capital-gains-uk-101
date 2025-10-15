@@ -245,43 +245,74 @@ export function TransactionList() {
 
               const nonRelevantTooltip = getNonRelevantTooltip()
 
-              // Get CGT badge styling based on gain_group
-              const getCGTBadge = () => {
-                if (tx.gain_group === 'SAME_DAY') {
-                  return { className: 'bg-blue-100 text-blue-800 border-blue-300', label: 'Same Day', title: 'Matched same-day buy/sell (TCGA92/S105(1))' }
-                }
-                if (tx.gain_group === '30_DAY') {
-                  return { className: 'bg-orange-100 text-orange-800 border-orange-300', label: '30-Day', title: 'Bed & breakfast rule - repurchased within 30 days (TCGA92/S106A(5))' }
-                }
-                if (tx.gain_group === 'SECTION_104') {
-                  let title = 'Section 104 pooled holdings (TCGA92/S104)'
+              // Get CGT badges - SELL transactions can have multiple rules
+              const getCGTBadges = () => {
+                const badges: Array<{ className: string; label: string; title: string }> = []
 
-                  if (tx.type === 'SELL') {
-                    // For SELL, use the disposal record
-                    const disposal = getDisposalForTransaction(tx.id)
-                    if (disposal) {
-                      const section104Matching = disposal.matchings.find(m => m.rule === 'SECTION_104')
-                      if (section104Matching) {
-                        const quantityMatched = section104Matching.quantityMatched
-                        const avgCost = section104Matching.totalCostBasisGbp / quantityMatched
-
-                        title = `Section 104: Matched ${quantityMatched.toFixed(2)} shares at average cost £${avgCost.toFixed(2)}/share from pooled holdings`
+                if (tx.type === 'SELL') {
+                  // For SELL transactions, show all matching rules from DisposalRecord
+                  const disposal = getDisposalForTransaction(tx.id)
+                  if (disposal && disposal.matchings.length > 0) {
+                    for (const matching of disposal.matchings) {
+                      if (matching.rule === 'SAME_DAY') {
+                        const quantityMatched = matching.quantityMatched
+                        badges.push({
+                          className: 'bg-blue-100 text-blue-800 border-blue-300',
+                          label: 'Same Day',
+                          title: `Same Day: Matched ${quantityMatched.toFixed(2)} shares bought on same day (TCGA92/S105(1))`
+                        })
+                      } else if (matching.rule === '30_DAY') {
+                        const quantityMatched = matching.quantityMatched
+                        badges.push({
+                          className: 'bg-orange-100 text-orange-800 border-orange-300',
+                          label: '30-Day',
+                          title: `30-Day: Matched ${quantityMatched.toFixed(2)} shares repurchased within 30 days (TCGA92/S106A(5))`
+                        })
+                      } else if (matching.rule === 'SECTION_104') {
+                        const quantityMatched = matching.quantityMatched
+                        const avgCost = matching.totalCostBasisGbp / quantityMatched
+                        badges.push({
+                          className: 'bg-green-100 text-green-800 border-green-300',
+                          label: 'Section 104',
+                          title: `Section 104: Matched ${quantityMatched.toFixed(2)} shares at average cost £${avgCost.toFixed(2)}/share from pooled holdings`
+                        })
                       }
                     }
-                  } else if (tx.type === 'BUY') {
-                    // For BUY, show the pool state after adding this transaction
-                    const poolDetails = tx.symbol ? getPoolDetailsForBuy(tx.id, tx.symbol) : null
-                    if (poolDetails) {
-                      title = `Section 104: Added to pool (new balance: ${poolDetails.quantity.toFixed(2)} shares at £${poolDetails.averageCost.toFixed(2)}/share average cost)`
-                    }
                   }
-
-                  return { className: 'bg-green-100 text-green-800 border-green-300', label: 'Section 104', title }
+                } else if (tx.type === 'BUY' && tx.gain_group === 'SECTION_104') {
+                  // For BUY transactions, show single badge based on gain_group
+                  const poolDetails = tx.symbol ? getPoolDetailsForBuy(tx.id, tx.symbol) : null
+                  if (poolDetails) {
+                    badges.push({
+                      className: 'bg-green-100 text-green-800 border-green-300',
+                      label: 'Section 104',
+                      title: `Section 104: Added to pool (new balance: ${poolDetails.quantity.toFixed(2)} shares at £${poolDetails.averageCost.toFixed(2)}/share average cost)`
+                    })
+                  } else {
+                    badges.push({
+                      className: 'bg-green-100 text-green-800 border-green-300',
+                      label: 'Section 104',
+                      title: 'Section 104 pooled holdings (TCGA92/S104)'
+                    })
+                  }
+                } else if (tx.gain_group === 'SAME_DAY') {
+                  badges.push({
+                    className: 'bg-blue-100 text-blue-800 border-blue-300',
+                    label: 'Same Day',
+                    title: 'Matched same-day buy/sell (TCGA92/S105(1))'
+                  })
+                } else if (tx.gain_group === '30_DAY') {
+                  badges.push({
+                    className: 'bg-orange-100 text-orange-800 border-orange-300',
+                    label: '30-Day',
+                    title: 'Bed & breakfast rule - repurchased within 30 days (TCGA92/S106A(5))'
+                  })
                 }
-                return null
+
+                return badges.length > 0 ? badges : null
               }
 
-              const cgtBadge = getCGTBadge()
+              const cgtBadges = getCGTBadges()
 
               // Check if this transaction is part of a match group
               const matchGroups = tx.match_groups || []
@@ -302,19 +333,23 @@ export function TransactionList() {
                   onMouseEnter={() => matchGroups.length > 0 && setHoveredMatchGroup(matchGroups[0])}
                   onMouseLeave={() => setHoveredMatchGroup(null)}
                 >
-                  <td className={`px-6 py-4 whitespace-nowrap text-sm sticky left-0 z-10 transition-all duration-150 ${
+                  <td className={`px-6 py-4 text-sm sticky left-0 z-10 transition-all duration-150 ${
                     hasFxError ? 'bg-red-100' :
                     isIgnored ? 'bg-gray-100' :
                     isIncomplete ? 'bg-yellow-100' :
                     isHighlighted ? 'bg-blue-100' :
                     'bg-blue-50'
                   }`}>
-                    {cgtBadge ? (
-                      <Tooltip content={cgtBadge.title}>
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${cgtBadge.className}`}>
-                          {cgtBadge.label}
-                        </span>
-                      </Tooltip>
+                    {cgtBadges ? (
+                      <div className="flex flex-wrap gap-1">
+                        {cgtBadges.map((badge, index) => (
+                          <Tooltip key={index} content={badge.title}>
+                            <span className={`inline-flex px-1.5 py-0.5 text-[10px] font-semibold rounded-full border whitespace-nowrap ${badge.className}`}>
+                              {badge.label}
+                            </span>
+                          </Tooltip>
+                        ))}
+                      </div>
                     ) : (
                       <span className="text-gray-400">—</span>
                     )}
