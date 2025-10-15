@@ -47,7 +47,10 @@ export function calculateCGT(
   // Combine all matchings
   const allMatchingsComplete = [...sameDayMatchings, ...thirtyDayMatchings, ...section104Matchings]
 
-  // Step 4: Create disposal records
+  // Step 4: Assign match group IDs to link related transactions
+  updatedTransactions = assignMatchGroupIds(updatedTransactions, allMatchingsComplete)
+
+  // Step 5: Create disposal records
   const disposals = createDisposalRecords(allMatchingsComplete)
 
   // Step 5: Generate tax year summaries
@@ -213,4 +216,50 @@ function getAnnualExemptAmount(taxYear: string): number {
 
   // Default for older years (approximate)
   return 11000
+}
+
+/**
+ * Assign match group IDs to link related transactions
+ *
+ * Each disposal and its matched acquisitions get the same match_group ID
+ * for easy visual grouping in the UI.
+ *
+ * Note: A single acquisition can be matched against multiple disposals
+ * (e.g., 100 shares bought once, then sold 30 and 70 separately),
+ * so match_groups is an array.
+ */
+function assignMatchGroupIds(
+  transactions: EnrichedTransaction[],
+  matchings: MatchingResult[]
+): EnrichedTransaction[] {
+  // Create a map of transaction ID to array of match group IDs
+  const txToMatchGroups = new Map<string, Set<string>>()
+
+  // Process each matching - group disposal with its acquisitions
+  for (const matching of matchings) {
+    // Use the disposal ID as the match group ID (unique per disposal)
+    const matchGroupId = matching.disposal.id
+
+    // Add match group to disposal
+    if (!txToMatchGroups.has(matching.disposal.id)) {
+      txToMatchGroups.set(matching.disposal.id, new Set())
+    }
+    txToMatchGroups.get(matching.disposal.id)!.add(matchGroupId)
+
+    // Add same match group to all matched acquisitions
+    for (const acq of matching.acquisitions) {
+      if (!txToMatchGroups.has(acq.transaction.id)) {
+        txToMatchGroups.set(acq.transaction.id, new Set())
+      }
+      txToMatchGroups.get(acq.transaction.id)!.add(matchGroupId)
+    }
+  }
+
+  // Update all transactions with their match group IDs
+  return transactions.map(tx => ({
+    ...tx,
+    match_groups: txToMatchGroups.has(tx.id)
+      ? Array.from(txToMatchGroups.get(tx.id)!)
+      : undefined,
+  }))
 }

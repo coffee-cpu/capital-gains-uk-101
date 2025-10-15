@@ -5,7 +5,35 @@ import { Tooltip } from './Tooltip'
 
 export function TransactionList() {
   const transactions = useTransactionStore((state) => state.transactions)
+  const getDisposals = useTransactionStore((state) => state.getDisposals)
+  const getSection104Pools = useTransactionStore((state) => state.getSection104Pools)
   const [showFxInfo, setShowFxInfo] = useState(false)
+  const [hoveredMatchGroup, setHoveredMatchGroup] = useState<string | null>(null)
+
+  // Get disposal records and Section 104 pools
+  const disposals = getDisposals()
+  const section104Pools = getSection104Pools()
+
+  // Helper to find disposal record for a transaction
+  const getDisposalForTransaction = (txId: string) => {
+    return disposals.find(d => d.disposal.id === txId)
+  }
+
+  // Helper to get pool details for a BUY transaction
+  const getPoolDetailsForBuy = (txId: string, symbol: string) => {
+    const pool = section104Pools.get(symbol)
+    if (!pool || !pool.history) return null
+
+    const historyEntry = pool.history.find(h => h.transactionId === txId && h.type === 'BUY')
+    if (!historyEntry) return null
+
+    return {
+      quantity: historyEntry.balanceQuantity,
+      averageCost: historyEntry.balanceQuantity > 0
+        ? historyEntry.balanceCost / historyEntry.balanceQuantity
+        : 0,
+    }
+  }
 
   // Sort transactions by date (oldest first)
   const sortedTransactions = [...transactions].sort((a, b) => {
@@ -226,23 +254,59 @@ export function TransactionList() {
                   return { className: 'bg-orange-100 text-orange-800 border-orange-300', label: '30-Day', title: 'Bed & breakfast rule - repurchased within 30 days (TCGA92/S106A(5))' }
                 }
                 if (tx.gain_group === 'SECTION_104') {
-                  return { className: 'bg-green-100 text-green-800 border-green-300', label: 'Section 104', title: 'Section 104 pooled holdings (TCGA92/S104)' }
+                  let title = 'Section 104 pooled holdings (TCGA92/S104)'
+
+                  if (tx.type === 'SELL') {
+                    // For SELL, use the disposal record
+                    const disposal = getDisposalForTransaction(tx.id)
+                    if (disposal) {
+                      const section104Matching = disposal.matchings.find(m => m.rule === 'SECTION_104')
+                      if (section104Matching) {
+                        const quantityMatched = section104Matching.quantityMatched
+                        const avgCost = section104Matching.totalCostBasisGbp / quantityMatched
+
+                        title = `Section 104: Matched ${quantityMatched.toFixed(2)} shares at average cost £${avgCost.toFixed(2)}/share from pooled holdings`
+                      }
+                    }
+                  } else if (tx.type === 'BUY') {
+                    // For BUY, show the pool state after adding this transaction
+                    const poolDetails = tx.symbol ? getPoolDetailsForBuy(tx.id, tx.symbol) : null
+                    if (poolDetails) {
+                      title = `Section 104: Added to pool (new balance: ${poolDetails.quantity.toFixed(2)} shares at £${poolDetails.averageCost.toFixed(2)}/share average cost)`
+                    }
+                  }
+
+                  return { className: 'bg-green-100 text-green-800 border-green-300', label: 'Section 104', title }
                 }
                 return null
               }
 
               const cgtBadge = getCGTBadge()
+
+              // Check if this transaction is part of a match group
+              const matchGroups = tx.match_groups || []
+              const isHighlighted = matchGroups.includes(hoveredMatchGroup || '')
+              const shouldDim = hoveredMatchGroup && !isHighlighted
+
               const rowClassName = hasFxError ? 'bg-red-50' :
                                    isIgnored ? 'bg-gray-50 opacity-40' :
                                    isIncomplete ? 'bg-yellow-50' :
+                                   isHighlighted ? 'bg-blue-100 ring-2 ring-blue-400' :
+                                   shouldDim ? 'opacity-30' :
                                    (isRelevant ? '' : 'opacity-50')
 
               return (
-                <tr key={tx.id} className={rowClassName}>
-                  <td className={`px-6 py-4 whitespace-nowrap text-sm sticky left-0 z-10 ${
+                <tr
+                  key={tx.id}
+                  className={`transition-all duration-150 ${rowClassName}`}
+                  onMouseEnter={() => matchGroups.length > 0 && setHoveredMatchGroup(matchGroups[0])}
+                  onMouseLeave={() => setHoveredMatchGroup(null)}
+                >
+                  <td className={`px-6 py-4 whitespace-nowrap text-sm sticky left-0 z-10 transition-all duration-150 ${
                     hasFxError ? 'bg-red-100' :
                     isIgnored ? 'bg-gray-100' :
                     isIncomplete ? 'bg-yellow-100' :
+                    isHighlighted ? 'bg-blue-100' :
                     'bg-blue-50'
                   }`}>
                     {cgtBadge ? (
