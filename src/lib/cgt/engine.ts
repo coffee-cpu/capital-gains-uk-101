@@ -42,7 +42,7 @@ export function calculateCGT(
     updatedTransactions,
     allMatchings
   )
-  updatedTransactions = markSection104Matches(updatedTransactions, section104Matchings)
+  updatedTransactions = markSection104Matches(updatedTransactions, section104Matchings, section104Pools)
 
   // Combine all matchings
   const allMatchingsComplete = [...sameDayMatchings, ...thirtyDayMatchings, ...section104Matchings]

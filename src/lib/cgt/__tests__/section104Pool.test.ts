@@ -405,7 +405,7 @@ describe('Section 104 Pool', () => {
         },
       ]
 
-      const marked = markSection104Matches(transactions, matchings)
+      const marked = markSection104Matches(transactions, matchings, new Map())
 
       expect(marked[0].gain_group).toBe('SECTION_104')
     })
@@ -475,7 +475,7 @@ describe('Section 104 Pool', () => {
         },
       ]
 
-      const marked = markSection104Matches(transactions, matchings)
+      const marked = markSection104Matches(transactions, matchings, new Map())
 
       expect(marked[0].gain_group).toBe('SAME_DAY') // Should remain
       expect(marked[1].gain_group).toBe('30_DAY') // Should remain

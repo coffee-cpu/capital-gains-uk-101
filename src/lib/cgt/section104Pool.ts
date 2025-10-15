@@ -171,18 +171,32 @@ function matchAgainstPool(
 
 /**
  * Mark transactions as matched under Section 104 rule
+ *
+ * Marks both:
+ * - SELL transactions that were matched against the pool
+ * - BUY transactions that were added to the pool
  */
 export function markSection104Matches(
   transactions: EnrichedTransaction[],
-  matchings: MatchingResult[]
+  matchings: MatchingResult[],
+  pools: Map<string, Section104Pool>
 ): EnrichedTransaction[] {
   const matchedTxIds = new Set<string>()
 
-  // Collect all transaction IDs involved in Section 104 matches
+  // Collect all SELL transaction IDs involved in Section 104 matches
   for (const matching of matchings) {
     // Only mark if not already marked by previous rules
     if (matching.disposal.gain_group === 'NONE') {
       matchedTxIds.add(matching.disposal.id)
+    }
+  }
+
+  // Collect all BUY transaction IDs that were added to Section 104 pools
+  for (const pool of pools.values()) {
+    for (const historyEntry of pool.history) {
+      if (historyEntry.type === 'BUY') {
+        matchedTxIds.add(historyEntry.transactionId)
+      }
     }
   }
 
