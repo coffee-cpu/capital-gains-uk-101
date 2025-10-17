@@ -1,3 +1,5 @@
+import { BuyMeACoffee } from './BuyMeACoffee'
+
 export function About() {
   return (
     <div className="min-h-screen bg-gray-50">
@@ -217,6 +219,11 @@ export function About() {
                 </p>
               </div>
             </div>
+          </section>
+
+          {/* Support the Project */}
+          <section>
+            <BuyMeACoffee />
           </section>
 
           {/* Back to Calculator */}

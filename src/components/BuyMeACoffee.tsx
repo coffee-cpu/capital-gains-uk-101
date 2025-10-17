@@ -13,7 +13,7 @@ import { useState } from 'react'
  */
 
 export function BuyMeACoffee() {
-  const STRIPE_DONATION_LINK = 'https://donate.stripe.com/placeholder' // TODO: Replace with actual Stripe link
+  const STRIPE_DONATION_LINK = 'https://buy.stripe.com/dRm8wRb1b2bQfarfaHeIw00'
   const [isDismissed, setIsDismissed] = useState(false)
 
   if (isDismissed) {
