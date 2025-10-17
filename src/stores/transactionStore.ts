@@ -6,10 +6,12 @@ interface TransactionState {
   transactions: EnrichedTransaction[]
   selectedTaxYear: string
   cgtResults: CGTCalculationResult | null
+  hasExportedPDF: boolean
   setTransactions: (transactions: EnrichedTransaction[]) => void
   setSelectedTaxYear: (year: string) => void
   setCGTResults: (results: CGTCalculationResult) => void
   addTransactions: (transactions: GenericTransaction[]) => void
+  setHasExportedPDF: (hasExported: boolean) => void
   // Computed getters for CGT data
   getDisposals: () => DisposalRecord[]
   getTaxYearSummary: (taxYear: string) => TaxYearSummary | undefined
@@ -23,12 +25,15 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
   transactions: [],
   selectedTaxYear: '2024/25',
   cgtResults: null,
+  hasExportedPDF: false,
 
   setTransactions: (transactions) => set({ transactions }),
 
   setSelectedTaxYear: (year) => set({ selectedTaxYear: year }),
 
   setCGTResults: (results) => set({ cgtResults: results }),
+
+  setHasExportedPDF: (hasExported) => set({ hasExportedPDF: hasExported }),
 
   addTransactions: (newTransactions) =>
     set((state) => ({

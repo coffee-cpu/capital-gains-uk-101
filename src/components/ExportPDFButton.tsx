@@ -12,6 +12,7 @@ export function ExportPDFButton() {
   const getDisposals = useTransactionStore((state) => state.getDisposals)
   const getSection104Pools = useTransactionStore((state) => state.getSection104Pools)
   const transactions = useTransactionStore((state) => state.transactions)
+  const setHasExportedPDF = useTransactionStore((state) => state.setHasExportedPDF)
 
   const handleExport = async () => {
     setIsGenerating(true)
@@ -39,6 +40,9 @@ export function ExportPDFButton() {
         transactions,
         section104Pools
       )
+
+      // Mark that user has successfully exported a PDF
+      setHasExportedPDF(true)
     } catch (err) {
       console.error('Failed to generate PDF:', err)
       setError(err instanceof Error ? err.message : 'Failed to generate PDF report')

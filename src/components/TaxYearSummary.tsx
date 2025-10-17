@@ -3,11 +3,13 @@ import { useState } from 'react'
 import { DisposalRecords } from './DisposalRecords'
 import { Tooltip } from './Tooltip'
 import { ExportPDFButton } from './ExportPDFButton'
+import { BuyMeACoffee } from './BuyMeACoffee'
 
 export function TaxYearSummary() {
   const cgtResults = useTransactionStore((state) => state.cgtResults)
   const selectedTaxYear = useTransactionStore((state) => state.selectedTaxYear)
   const setSelectedTaxYear = useTransactionStore((state) => state.setSelectedTaxYear)
+  const hasExportedPDF = useTransactionStore((state) => state.hasExportedPDF)
   const [showDisposals, setShowDisposals] = useState(false)
 
   if (!cgtResults || cgtResults.taxYearSummaries.length === 0) {
@@ -212,6 +214,9 @@ export function TaxYearSummary() {
             <ExportPDFButton />
           </div>
         </div>
+
+        {/* Buy Me A Coffee - Only shown after PDF export */}
+        {hasExportedPDF && <BuyMeACoffee />}
       </div>
     </div>
   )
