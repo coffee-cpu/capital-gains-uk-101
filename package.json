@@ -1,7 +1,7 @@
 {
   "name": "capital-gains-tax-uk-101",
   "version": "1.0.0",
-  "description": "UK Capital Gains Tax made easy - Free, privacy-focused CGT calculator",
+  "description": "UK Capital Gains Tax made easy - Free, privacy-focused CGT calculator and visualiser",
   "main": "index.js",
   "directories": {
     "doc": "docs"

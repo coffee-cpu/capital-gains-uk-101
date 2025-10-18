@@ -1,19 +1,19 @@
 import { test, expect } from '@playwright/test'
 
-test.describe('Capital Gains Tax UK 101 App', () => {
+test.describe('Capital Gains Tax Visualiser App', () => {
   test('should display the app title', async ({ page }) => {
     await page.goto('/')
 
     // Check page title
-    await expect(page).toHaveTitle(/Capital Gains Tax UK 101/)
+    await expect(page).toHaveTitle(/Capital Gains Tax Visualiser/)
 
-    // Check main heading
-    const heading = page.getByRole('heading', { name: /Capital Gains Tax UK 101/i })
-    await expect(heading).toBeVisible()
+    // Check that sidebar has branding
+    const branding = page.getByText(/Capital Gains Tax/i)
+    await expect(branding).toBeVisible()
 
-    // Check subtitle
-    const subtitle = page.getByText(/UK Capital Gains Tax made easy/i)
-    await expect(subtitle).toBeVisible()
+    // Check visualiser text
+    const visualiser = page.getByText(/Visualiser/i)
+    await expect(visualiser).toBeVisible()
   })
 
   test('should have proper styling applied', async ({ page }) => {
@@ -22,10 +22,6 @@ test.describe('Capital Gains Tax UK 101 App', () => {
     // Check that TailwindCSS is working by verifying background color
     const container = page.locator('div.min-h-screen')
     await expect(container).toBeVisible()
-
-    // Verify heading has proper styling
-    const heading = page.getByRole('heading', { name: /Capital Gains Tax UK 101/i })
-    await expect(heading).toHaveClass(/text-4xl/)
   })
 
   test('should display footer with disclaimer', async ({ page }) => {

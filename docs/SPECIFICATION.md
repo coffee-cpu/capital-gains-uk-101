@@ -1,8 +1,8 @@
-# Capital Gains Tax UK 101 – Specification (Browser-Only Capital Gains Tax Tool)
+# Capital Gains Tax Visualiser – Specification (Browser-Only Capital Gains Tax Tool)
 
 ## 🧭 Overview
 
-**Capital Gains Tax UK 101** is a fully browser-based tool that lets users import transaction exports from multiple brokers (e.g. Charles Schwab, Trading 212) and automatically normalize, enrich, and visualize capital gains calculations according to UK HMRC rules.
+**Capital Gains Tax Visualiser** is a fully browser-based tool that lets users import transaction exports from multiple brokers (e.g. Charles Schwab, Trading 212) and automatically normalize, enrich, and visualise capital gains calculations according to UK HMRC rules.
 
 The tool behaves like a blend of **regex101**, **Google Sheets**, and a **visual tax engine** — interactive, transparent, and completely local (no backend or data uploads).
 
@@ -202,7 +202,7 @@ Hover tooltips will display short HMRC explanations.
 Footer:  
 ### ⚠️ Disclaimer
 
-Capital Gains Tax UK 101 is an educational and visualization tool, not financial or tax advice.
+Capital Gains Tax Visualiser is an educational and visualisation tool, not financial or tax advice.
 All calculations are approximate and based on publicly available HMRC guidance.
 No guarantee is made as to the accuracy, completeness, or applicability of the results.
 Always verify your figures and consult a qualified tax professional before submitting any official tax returns.
@@ -267,7 +267,7 @@ Each sale record links to its matched purchase(s) with proportional cost basis a
 
 ```plantuml
 @startuml
-title Capital Gains Tax UK 101 – Data Flow (Browser Only)
+title Capital Gains Tax Visualiser – Data Flow (Browser Only)
 
 actor User
 

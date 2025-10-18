@@ -27,7 +27,7 @@ export function About() {
                 <h2 className="text-xl font-semibold text-yellow-900 mb-2">Important Disclaimer</h2>
                 <div className="text-sm text-yellow-800 space-y-2">
                   <p>
-                    <strong>This is not financial or tax advice.</strong> Capital Gains Tax UK 101 is an educational and visualization tool only.
+                    <strong>This is not financial or tax advice.</strong> Capital Gains Tax Visualiser is an educational and visualisation tool only.
                   </p>
                   <p>
                     All calculations are approximate and based on publicly available HMRC guidance. No guarantee is made as to the accuracy, completeness, or applicability of the results.
@@ -48,7 +48,7 @@ export function About() {
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">How the Calculator Works</h2>
             <div className="space-y-4 text-gray-700">
               <p>
-                Capital Gains Tax UK 101 is a <strong>privacy-focused, browser-only</strong> tool that helps UK taxpayers calculate capital gains tax on share transactions. All data processing happens locally in your browser — no data is ever uploaded to any server.
+                Capital Gains Tax Visualiser is a <strong>privacy-focused, browser-only</strong> tool that helps UK taxpayers calculate capital gains tax on share transactions. All data processing happens locally in your browser — no data is ever uploaded to any server.
               </p>
               <div>
                 <h3 className="text-lg font-medium text-gray-900 mb-2">Process Overview:</h3>

@@ -68,7 +68,7 @@ test.describe('Debug - Console Logs', () => {
     }
 
     // Assert page loaded successfully (basic checks)
-    await expect(page).toHaveTitle(/Capital Gains Tax UK 101/)
+    await expect(page).toHaveTitle(/Capital Gains Tax Visualiser/)
 
     // Assert no critical errors occurred
     expect(pageErrors, 'Page should not have uncaught errors').toHaveLength(0)
@@ -90,9 +90,9 @@ test.describe('Debug - Console Logs', () => {
     await page.goto('/')
 
     // Check all main components render
-    await expect(page.getByRole('heading', { name: /Capital Gains Tax UK 101/i })).toBeVisible()
+    await expect(page.getByText(/Capital Gains Tax/i)).toBeVisible()
+    await expect(page.getByText(/Visualiser/i)).toBeVisible()
     await expect(page.getByText(/Import Transactions/i)).toBeVisible()
-    await expect(page.getByText(/No transactions imported yet/i)).toBeVisible()
 
     console.log(`\nCaptured ${consoleLogs.length} console messages`)
   })

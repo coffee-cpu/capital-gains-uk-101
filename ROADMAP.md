@@ -1,4 +1,4 @@
-# Capital Gains Tax UK 101 - Roadmap
+# Capital Gains Tax Visualiser - Roadmap
 
 ## 🎯 Current Status
 - ✅ CSV import (Schwab, Schwab Equity Awards, Generic CSV)
@@ -9,7 +9,7 @@
 - ✅ IndexedDB persistence
 - ✅ Clear data functionality
 - ✅ Footer with disclaimer
-- ✅ Rebranded to "Capital Gains Tax UK 101"
+- ✅ Rebranded to "Capital Gains Tax Visualiser"
 - ✅ Generic CSV import (auto-detected)
 
 ## 📋 Planned Features
@@ -27,10 +27,10 @@
   - Disclaimer and legal info
   - Privacy guarantee details
 
-- [x] **Rebrand to "Capital Gains Tax UK 101"** ✅ *Completed 2025-10-09*
+- [x] **Rebrand to "Capital Gains Tax Visualiser"** ✅ *Completed 2025-10-19*
   - Update all branding
   - Update README
-  - Update repository name/description
+  - Update sidebar with logo and new name
 
 - [ ] **Explanation Panel**
   - Right sidebar with matching rules

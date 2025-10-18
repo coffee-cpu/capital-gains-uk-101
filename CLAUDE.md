@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Capital Gains Tax UK 101** is a privacy-focused, browser-only web application that helps UK taxpayers calculate capital gains tax on share transactions. All data processing happens client-side - no backend, no data uploads.
+**Capital Gains Tax Visualiser** is a privacy-focused, browser-only web application that helps UK taxpayers calculate capital gains tax on share transactions. All data processing happens client-side - no backend, no data uploads.
 
 The app imports CSV files from various brokers, normalizes them to a unified format, enriches transactions with GBP conversions, and applies HMRC matching rules (same-day, 30-day bed-and-breakfast, Section 104 pooling) for CGT calculations.
 

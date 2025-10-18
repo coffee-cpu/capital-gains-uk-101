@@ -1,4 +1,4 @@
-# Capital Gains Tax UK 101
+# Capital Gains Tax Visualiser
 
 **UK Capital Gains Tax made easy**
 
@@ -60,7 +60,7 @@ npm run build
 
 ## How It Works
 
-Capital Gains Tax UK 101 helps you understand and calculate your capital gains tax obligations by:
+Capital Gains Tax Visualiser helps you understand and calculate your capital gains tax obligations by:
 
 1. **Importing your transaction history** from broker CSV exports
 2. **Converting to GBP** using HMRC official monthly exchange rates
