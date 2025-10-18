@@ -126,7 +126,7 @@ interface PDFDocumentProps {
   section104Pools: Map<string, Section104Pool>
 }
 
-const CGTReportDocument = ({ taxYearSummary, disposals, transactions, section104Pools }: PDFDocumentProps) => {
+const CGTReportDocument = ({ taxYearSummary, disposals, section104Pools }: PDFDocumentProps) => {
   const formatCurrency = (value: number) => `£${value.toFixed(2)}`
   const formatDate = (date: string) => new Date(date).toLocaleDateString('en-GB')
 

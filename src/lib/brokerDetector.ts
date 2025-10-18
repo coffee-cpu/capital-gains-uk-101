@@ -59,7 +59,7 @@ export function detectBroker(rows: RawCSVRow[]): BrokerDetectionResult {
  * Detect Generic CSV format
  * Required headers: "date", "type", "symbol", "currency"
  */
-function detectGeneric(headers: string[], rows: RawCSVRow[]): BrokerDetectionResult {
+function detectGeneric(headers: string[], _rows: RawCSVRow[]): BrokerDetectionResult {
   const requiredHeaders = ['date', 'type', 'symbol', 'currency']
 
   const matches = requiredHeaders.filter(h => headers.includes(h))
@@ -76,7 +76,7 @@ function detectGeneric(headers: string[], rows: RawCSVRow[]): BrokerDetectionRes
  * Detect Schwab Equity Awards format
  * Expected headers: "Date", "Action", "Symbol", "FairMarketValuePrice", "NetSharesDeposited", etc.
  */
-function detectSchwabEquityAwards(headers: string[], rows: RawCSVRow[]): BrokerDetectionResult {
+function detectSchwabEquityAwards(headers: string[], _rows: RawCSVRow[]): BrokerDetectionResult {
   const equityHeaders = ['Date', 'Action', 'Symbol', 'FairMarketValuePrice', 'NetSharesDeposited', 'AwardDate']
 
   const matches = equityHeaders.filter(h => headers.includes(h))
@@ -93,7 +93,7 @@ function detectSchwabEquityAwards(headers: string[], rows: RawCSVRow[]): BrokerD
  * Detect Charles Schwab format
  * Expected headers: "Date", "Action", "Symbol", "Description", "Quantity", "Price", "Fees & Comm", "Amount"
  */
-function detectSchwab(headers: string[], rows: RawCSVRow[]): BrokerDetectionResult {
+function detectSchwab(headers: string[], _rows: RawCSVRow[]): BrokerDetectionResult {
   const schwabHeaders = ['Date', 'Action', 'Symbol', 'Description', 'Quantity', 'Price', 'Fees & Comm', 'Amount']
 
   const matches = schwabHeaders.filter(h => headers.includes(h))
@@ -110,7 +110,7 @@ function detectSchwab(headers: string[], rows: RawCSVRow[]): BrokerDetectionResu
  * Detect Trading 212 format
  * Expected headers might include: "Action", "Time", "ISIN", "Ticker", "Name", "No. of shares", "Price / share", "Result", etc.
  */
-function detectTrading212(headers: string[], rows: RawCSVRow[]): BrokerDetectionResult {
+function detectTrading212(headers: string[], _rows: RawCSVRow[]): BrokerDetectionResult {
   const trading212Headers = ['Action', 'Time', 'ISIN', 'Ticker', 'No. of shares']
 
   const matches = trading212Headers.filter(h => headers.includes(h))
