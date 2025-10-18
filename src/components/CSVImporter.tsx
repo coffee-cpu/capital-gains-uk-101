@@ -20,15 +20,11 @@ export function CSVImporter() {
   const [expandedFormat, setExpandedFormat] = useState<string | null>(null)
   const [isDragging, setIsDragging] = useState(false)
   const [showImportInfo, setShowImportInfo] = useState(false)
+  const [processingStatus, setProcessingStatus] = useState<string>('')
   const setTransactions = useTransactionStore((state) => state.setTransactions)
   const setCGTResults = useTransactionStore((state) => state.setCGTResults)
 
-  const processFile = async (file: File) => {
-
-    setIsProcessing(true)
-    setError(null)
-    setSuccess(null)
-
+  const processFile = async (file: File): Promise<{ success: boolean; message: string; count?: number }> => {
     try {
       // Parse CSV first
       const rawRows = await parseCSV(file)
@@ -43,8 +39,11 @@ export function CSVImporter() {
         .count()
 
       if (existingWithFileId > 0) {
-        setSuccess(`This file "${file.name}" was already imported. No new transactions added.`)
-        return
+        return {
+          success: true,
+          message: `"${file.name}" was already imported (skipped)`,
+          count: 0
+        }
       }
 
       // Try to detect broker format
@@ -79,18 +78,90 @@ export function CSVImporter() {
       // Apply symbol normalization (e.g., FB -> META)
       transactions = normalizeTransactionSymbols(transactions)
 
-      await saveTransactions(transactions, detection.broker)
+      await db.transactions.bulkAdd(transactions)
+
+      return {
+        success: true,
+        message: `"${file.name}": ${transactions.length} transactions from ${detection.broker}`,
+        count: transactions.length
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to import CSV')
-    } finally {
-      setIsProcessing(false)
+      return {
+        success: false,
+        message: `"${file.name}": ${err instanceof Error ? err.message : 'Failed to import'}`,
+        count: 0
+      }
+    }
+  }
+
+  const processFiles = async (files: File[]) => {
+    setIsProcessing(true)
+    setError(null)
+    setSuccess(null)
+    setProcessingStatus('')
+
+    const results = []
+    let totalTransactions = 0
+    let successCount = 0
+    let failCount = 0
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i]
+      setProcessingStatus(`Processing file ${i + 1} of ${files.length}: ${file.name}...`)
+
+      const result = await processFile(file)
+      results.push(result)
+
+      if (result.success) {
+        successCount++
+        totalTransactions += result.count || 0
+      } else {
+        failCount++
+      }
+    }
+
+    // Reload all transactions from DB and apply deduplication
+    const allStored = await db.transactions.toArray()
+    const deduplicated = deduplicateTransactions(allStored)
+
+    // Enrich with FX rates and GBP conversions
+    const enriched = await enrichTransactions(deduplicated)
+
+    // Calculate CGT with HMRC matching rules
+    const cgtResults = calculateCGT(enriched)
+
+    // Update store with enriched transactions (with gain_group populated) and CGT results
+    setTransactions(cgtResults.transactions)
+    setCGTResults(cgtResults)
+
+    setIsProcessing(false)
+    setProcessingStatus('')
+
+    // Show summary
+    if (failCount > 0) {
+      const errorMessages = results
+        .filter(r => !r.success)
+        .map(r => r.message)
+        .join('\n')
+      setError(`${failCount} file(s) failed:\n${errorMessages}`)
+    }
+
+    if (successCount > 0) {
+      const successMessages = results
+        .filter(r => r.success)
+        .map(r => r.message)
+        .join('\n')
+      setSuccess(`${successCount} file(s) imported successfully (${totalTransactions} total transactions):\n${successMessages}`)
     }
   }
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-    await processFile(file)
+    const fileList = event.target.files
+    if (!fileList || fileList.length === 0) return
+
+    const files = Array.from(fileList)
+    await processFiles(files)
+
     // Reset file input
     event.target.value = ''
   }
@@ -109,35 +180,23 @@ export function CSVImporter() {
     event.preventDefault()
     setIsDragging(false)
 
-    const file = event.dataTransfer.files?.[0]
-    if (!file) return
+    const fileList = event.dataTransfer.files
+    if (!fileList || fileList.length === 0) return
 
-    if (!file.name.endsWith('.csv')) {
-      setError('Please upload a CSV file')
+    // Filter only CSV files
+    const files = Array.from(fileList).filter(file => file.name.endsWith('.csv'))
+
+    if (files.length === 0) {
+      setError('Please upload CSV files only')
       return
     }
 
-    await processFile(file)
-  }
+    if (files.length < fileList.length) {
+      setError(`Skipped ${fileList.length - files.length} non-CSV file(s). Processing ${files.length} CSV file(s)...`)
+      // Still process the valid CSV files
+    }
 
-  const saveTransactions = async (transactions: GenericTransaction[], source: string) => {
-    await db.transactions.bulkAdd(transactions)
-
-    // Reload all transactions from DB and apply deduplication
-    const allStored = await db.transactions.toArray()
-    const deduplicated = deduplicateTransactions(allStored)
-
-    // Enrich with FX rates and GBP conversions
-    const enriched = await enrichTransactions(deduplicated)
-
-    // Calculate CGT with HMRC matching rules
-    const cgtResults = calculateCGT(enriched)
-
-    // Update store with enriched transactions (with gain_group populated) and CGT results
-    setTransactions(cgtResults.transactions)
-    setCGTResults(cgtResults)
-
-    setSuccess(`Successfully imported ${transactions.length} transactions from ${source}`)
+    await processFiles(files)
   }
 
   return (
@@ -197,6 +256,7 @@ export function CSVImporter() {
             id="csv-upload"
             type="file"
             accept=".csv"
+            multiple
             onChange={handleFileUpload}
             disabled={isProcessing}
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
@@ -217,33 +277,40 @@ export function CSVImporter() {
               />
             </svg>
             <p className="text-sm font-medium text-gray-700 mb-1">
-              Drop your CSV file here, or click to browse
+              Drop your CSV files here, or click to browse
             </p>
             <p className="text-xs text-gray-500">
-              Supports Charles Schwab, Schwab Equity Awards, and Generic CSV
+              Supports multiple files • Charles Schwab, Schwab Equity Awards, and Generic CSV
             </p>
           </div>
         </div>
 
         {isProcessing && (
-          <div className="flex items-center text-blue-600">
-            <svg className="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-                fill="none"
-              />
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              />
-            </svg>
-            Processing CSV...
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center text-blue-600">
+              <svg className="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                  fill="none"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                />
+              </svg>
+              Processing CSV files...
+            </div>
+            {processingStatus && (
+              <div className="text-sm text-gray-600 ml-8">
+                {processingStatus}
+              </div>
+            )}
           </div>
         )}
 
