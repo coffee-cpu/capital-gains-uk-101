@@ -5,6 +5,7 @@ import { TaxYearSummary } from './components/TaxYearSummary'
 import { About } from './components/About'
 import { Footer } from './components/Footer'
 import { Sidebar } from './components/Sidebar'
+import { FlowGuide } from './components/FlowGuide'
 import { useTransactionStore } from './stores/transactionStore'
 import { db } from './lib/db'
 import { deduplicateTransactions } from './utils/deduplication'
@@ -73,6 +74,7 @@ function App() {
         <main className="flex-grow">
           <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
             <div className="space-y-8">
+              <FlowGuide />
               <CSVImporter />
               <TaxYearSummary />
               <TransactionList />
