@@ -10,7 +10,7 @@ export function FlowGuide() {
   ]
 
   return (
-    <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3">
+    <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 hidden lg:block">
       <div className="flex items-center gap-2 overflow-x-auto">
         <span className="text-sm font-medium text-gray-700 whitespace-nowrap mr-2">How it works:</span>
         {steps.map((step, index) => (

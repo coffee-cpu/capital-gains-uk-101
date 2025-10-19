@@ -14,6 +14,7 @@ import { calculateCGT } from './lib/cgt/engine'
 
 function App() {
   const [currentPage, setCurrentPage] = useState<'calculator' | 'about'>('calculator')
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const setTransactions = useTransactionStore((state) => state.setTransactions)
   const setCGTResults = useTransactionStore((state) => state.setCGTResults)
 
@@ -58,7 +59,18 @@ function App() {
   if (currentPage === 'about') {
     return (
       <div className="flex min-h-screen bg-gray-50">
-        <Sidebar currentPage="about" />
+        {/* Mobile menu button */}
+        <button
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-md bg-white border border-gray-300 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          aria-label="Toggle menu"
+        >
+          <svg className="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+
+        <Sidebar currentPage="about" isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
         <div className="flex-1 overflow-auto">
           <About />
         </div>
@@ -69,7 +81,18 @@ function App() {
   // Render Calculator page
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <Sidebar currentPage="calculator" />
+      {/* Mobile menu button */}
+      <button
+        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+        className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-md bg-white border border-gray-300 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        aria-label="Toggle menu"
+      >
+        <svg className="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+
+      <Sidebar currentPage="calculator" isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
       <div className="flex-1 flex flex-col overflow-auto">
         <main className="flex-grow">
           <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
