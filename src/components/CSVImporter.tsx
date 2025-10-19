@@ -351,11 +351,11 @@ export function CSVImporter() {
           <ul className="space-y-2">
             {/* Charles Schwab */}
             <li>
-              <div className="flex items-center gap-2">
+              <div className="flex justify-between items-center md:justify-start md:gap-4">
                 <span>Charles Schwab</span>
                 <button
                   onClick={() => setExpandedFormat(expandedFormat === 'schwab' ? null : 'schwab')}
-                  className="text-blue-600 hover:text-blue-800 text-xs underline"
+                  className="text-blue-600 hover:text-blue-800 text-xs underline whitespace-nowrap"
                 >
                   {expandedFormat === 'schwab' ? 'hide' : 'instructions & example'}
                 </button>
@@ -384,11 +384,11 @@ export function CSVImporter() {
 
             {/* Charles Schwab Equity Awards */}
             <li>
-              <div className="flex items-center gap-2">
+              <div className="flex justify-between items-center md:justify-start md:gap-4">
                 <span>Charles Schwab Equity Awards</span>
                 <button
                   onClick={() => setExpandedFormat(expandedFormat === 'equity' ? null : 'equity')}
-                  className="text-blue-600 hover:text-blue-800 text-xs underline"
+                  className="text-blue-600 hover:text-blue-800 text-xs underline whitespace-nowrap"
                 >
                   {expandedFormat === 'equity' ? 'hide' : 'instructions & example'}
                 </button>
@@ -417,11 +417,11 @@ export function CSVImporter() {
 
             {/* Generic CSV */}
             <li>
-              <div className="flex items-center gap-2">
+              <div className="flex justify-between items-center md:justify-start md:gap-4">
                 <span>Generic CSV</span>
                 <button
                   onClick={() => setExpandedFormat(expandedFormat === 'generic' ? null : 'generic')}
-                  className="text-blue-600 hover:text-blue-800 text-xs underline"
+                  className="text-blue-600 hover:text-blue-800 text-xs underline whitespace-nowrap"
                 >
                   {expandedFormat === 'generic' ? 'hide' : 'format & example'}
                 </button>
