@@ -91,4 +91,25 @@ test.describe('CSV Import', () => {
     await expect(page.getByText('AAPL').first()).toBeVisible()
     await expect(page.getByText('Charles Schwab').first()).toBeVisible()
   })
+
+  test('should import Trading 212 CSV successfully', async ({ page }) => {
+    await page.goto('/')
+
+    // Find the file input
+    const fileInput = page.locator('input[type="file"]')
+    await expect(fileInput).toBeVisible()
+
+    // Upload the Trading 212 test CSV file
+    const filePath = path.join(__dirname, '..', 'test-data', 'trading212-sample.csv')
+    await fileInput.setInputFiles(filePath)
+
+    // Wait for success message
+    await expect(page.getByText(/file\(s\) imported successfully/i)).toBeVisible({ timeout: 10000 })
+
+    // Check that the success message shows the correct number of transactions
+    await expect(page.getByText(/8 total transactions/i)).toBeVisible()
+
+    // Verify the success message mentions Trading 212
+    await expect(page.getByText(/from Trading 212/i)).toBeVisible()
+  })
 })

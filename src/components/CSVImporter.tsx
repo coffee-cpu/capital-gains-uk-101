@@ -4,6 +4,7 @@ import { detectBroker } from '../lib/brokerDetector'
 import { normalizeSchwabTransactions } from '../lib/parsers/schwab'
 import { normalizeSchwabEquityAwardsTransactions } from '../lib/parsers/schwabEquityAwards'
 import { normalizeGenericTransactions } from '../lib/parsers/generic'
+import { normalizeTrading212Transactions } from '../lib/parsers/trading212'
 import { BrokerType } from '../types/broker'
 import { GenericTransaction } from '../types/transaction'
 import { useTransactionStore } from '../stores/transactionStore'
@@ -66,7 +67,8 @@ export function CSVImporter() {
           transactions = normalizeGenericTransactions(rawRows, fileId)
           break
         case BrokerType.TRADING212:
-          throw new Error('Trading 212 format not yet supported')
+          transactions = normalizeTrading212Transactions(rawRows, fileId)
+          break
         default:
           throw new Error(`Unsupported broker: ${detection.broker}`)
       }
@@ -280,7 +282,7 @@ export function CSVImporter() {
               Drop your CSV files here, or click to browse
             </p>
             <p className="text-xs text-gray-500">
-              Supports multiple files • Charles Schwab, Schwab Equity Awards, and Generic CSV
+              Supports multiple files • Charles Schwab, Schwab Equity Awards, Trading 212, and Generic CSV
             </p>
           </div>
         </div>
@@ -443,7 +445,38 @@ export function CSVImporter() {
             </li>
 
             {/* Trading 212 */}
-            <li className="text-gray-400">Trading 212 (coming soon)</li>
+            <li>
+              <div className="flex justify-between items-center md:justify-start md:gap-4">
+                <span>Trading 212</span>
+                <button
+                  onClick={() => setExpandedFormat(expandedFormat === 'trading212' ? null : 'trading212')}
+                  className="text-blue-600 hover:text-blue-800 text-xs underline whitespace-nowrap"
+                >
+                  {expandedFormat === 'trading212' ? 'hide' : 'instructions & example'}
+                </button>
+              </div>
+              {expandedFormat === 'trading212' && (
+                <div className="mt-2 ml-4 p-3 bg-gray-50 rounded text-xs space-y-2">
+                  <p className="font-medium">How to download:</p>
+                  <ol className="list-decimal list-inside space-y-1 text-gray-600">
+                    <li>Log into Trading 212 app or website</li>
+                    <li>Go to Menu → History</li>
+                    <li>Tap the export button</li>
+                    <li>Select timeframe (max 1 year) and data types</li>
+                    <li>Download the CSV file when ready</li>
+                  </ol>
+                  <p className="text-gray-600 italic">
+                    Note: Trading 212 limits downloads to 1 year. For longer history, download year by year and upload multiple files.
+                  </p>
+                  <a
+                    href="/examples/trading212-example.csv"
+                    className="inline-block text-blue-600 hover:text-blue-800 underline"
+                  >
+                    📥 Download example file
+                  </a>
+                </div>
+              )}
+            </li>
           </ul>
         </div>
       </div>

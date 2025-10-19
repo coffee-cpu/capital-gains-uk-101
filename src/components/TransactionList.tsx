@@ -3,6 +3,20 @@ import { useTransactionStore } from '../stores/transactionStore'
 import { ClearDataButton } from './ClearDataButton'
 import { Tooltip } from './Tooltip'
 
+// Helper to get currency symbol
+function getCurrencySymbol(currency: string): string {
+  const symbols: Record<string, string> = {
+    'GBP': '£',
+    'USD': '$',
+    'EUR': '€',
+    'JPY': '¥',
+    'CHF': 'CHF ',
+    'CAD': 'CA$',
+    'AUD': 'A$',
+  }
+  return symbols[currency] || currency + ' '
+}
+
 export function TransactionList() {
   const transactions = useTransactionStore((state) => state.transactions)
   const getDisposals = useTransactionStore((state) => state.getDisposals)
@@ -453,7 +467,7 @@ export function TransactionList() {
                     {tx.quantity !== null ? tx.quantity.toFixed(2) : '—'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {tx.price !== null ? `$${tx.price.toFixed(2)}` : (isIncomplete ? <span className="text-yellow-600 font-medium">Missing</span> : '—')}
+                    {tx.price !== null ? `${getCurrencySymbol(tx.currency)}${tx.price.toFixed(2)}` : (isIncomplete ? <span className="text-yellow-600 font-medium">Missing</span> : '—')}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                     {hasFxError ? (
@@ -473,7 +487,7 @@ export function TransactionList() {
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {tx.total !== null ? `$${tx.total.toFixed(2)}` : (isIncomplete ? <span className="text-yellow-600 font-medium">Missing</span> : '—')}
+                    {tx.total !== null ? `${getCurrencySymbol(tx.currency)}${tx.total.toFixed(2)}` : (isIncomplete ? <span className="text-yellow-600 font-medium">Missing</span> : '—')}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                     {hasFxError ? (

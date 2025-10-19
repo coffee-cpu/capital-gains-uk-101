@@ -1,0 +1,9 @@
+Action,Time,ISIN,Ticker,Name,Notes,ID,No. of shares,Price / share,Currency (Price / share),Exchange rate,Currency (Result),Total,Currency (Total)
+Deposit,2024-01-10 09:00:00,,,,"Initial deposit",T212-DEP-001,,,,,,1000.00,GBP
+Market buy,2024-01-15 10:30:00,US0378331005,AAPL,"Apple Inc.",,T212-BUY-001,10.00,150.00,USD,0.79,GBP,1898.73,GBP
+Limit buy,2024-02-01 14:00:00,GB00BH4HKS39,VUSA,"Vanguard S&P 500 UCITS ETF",,T212-BUY-002,50.00,75.00,GBP,1.00,GBP,3750.00,GBP
+Dividend,2024-03-15 08:00:00,US0378331005,AAPL,"Apple Inc.",,T212-DIV-001,,,,,GBP,18.50,GBP
+Interest on cash,2024-03-31 23:59:59,,,,"Monthly interest",T212-INT-001,,,,,GBP,2.15,GBP
+Market sell,2024-04-10 11:45:00,US0378331005,AAPL,"Apple Inc.",,T212-SELL-001,5.00,165.00,USD,0.78,GBP,1028.21,GBP
+Limit sell,2024-05-20 15:30:00,GB00BH4HKS39,VUSA,"Vanguard S&P 500 UCITS ETF",,T212-SELL-002,25.00,78.50,GBP,1.00,GBP,1962.50,GBP
+Withdrawal,2024-06-01 10:00:00,,,,"Withdrawal to bank",T212-WITH-001,,,,,GBP,500.00,GBP
