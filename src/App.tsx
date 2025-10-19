@@ -61,16 +61,43 @@ function App() {
       <div className="flex min-h-screen bg-gray-50">
         <Sidebar currentPage="about" isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
         <div className="flex-1 overflow-auto relative">
-          {/* Mobile menu button */}
-          <button
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="lg:hidden absolute top-4 left-4 z-10 p-2 rounded-md bg-white border border-gray-300 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            aria-label="Toggle menu"
-          >
-            <svg className="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
+          {/* Mobile header */}
+          <header className="lg:hidden sticky top-0 z-10 bg-gradient-to-br from-blue-50 to-indigo-50 border-b border-gray-200 px-4 py-3">
+            <div className="flex items-center gap-3">
+              {/* Mobile menu button */}
+              <button
+                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                className="p-2 rounded-md hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                aria-label="Toggle menu"
+              >
+                <svg className="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+
+              {/* Logo and title */}
+              <div className="flex items-center gap-2 flex-1">
+                <img
+                  src="/favicon/favicon.svg"
+                  alt="Logo"
+                  className="w-8 h-8 flex-shrink-0"
+                />
+                <div className="flex flex-col">
+                  <div className="text-sm font-bold leading-tight">
+                    <span className="text-blue-600">C</span>
+                    <span className="text-gray-900">apital </span>
+                    <span className="text-blue-600">G</span>
+                    <span className="text-gray-900">ains </span>
+                    <span className="text-blue-600">T</span>
+                    <span className="text-gray-900">ax</span>
+                  </div>
+                  <div className="text-xs font-semibold text-gray-600">
+                    Visualiser
+                  </div>
+                </div>
+              </div>
+            </div>
+          </header>
           <About />
         </div>
       </div>
@@ -82,19 +109,46 @@ function App() {
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar currentPage="calculator" isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
       <div className="flex-1 flex flex-col overflow-auto relative">
-        {/* Mobile menu button */}
-        <button
-          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          className="lg:hidden absolute top-4 left-4 z-10 p-2 rounded-md bg-white border border-gray-300 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          aria-label="Toggle menu"
-        >
-          <svg className="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-        </button>
+        {/* Mobile header */}
+        <header className="lg:hidden sticky top-0 z-10 bg-gradient-to-br from-blue-50 to-indigo-50 border-b border-gray-200 px-4 py-3">
+          <div className="flex items-center gap-3">
+            {/* Mobile menu button */}
+            <button
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="p-2 rounded-md hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              aria-label="Toggle menu"
+            >
+              <svg className="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+
+            {/* Logo and title */}
+            <div className="flex items-center gap-2 flex-1">
+              <img
+                src="/favicon/favicon.svg"
+                alt="Logo"
+                className="w-8 h-8 flex-shrink-0"
+              />
+              <div className="flex flex-col">
+                <div className="text-sm font-bold leading-tight">
+                  <span className="text-blue-600">C</span>
+                  <span className="text-gray-900">apital </span>
+                  <span className="text-blue-600">G</span>
+                  <span className="text-gray-900">ains </span>
+                  <span className="text-blue-600">T</span>
+                  <span className="text-gray-900">ax</span>
+                </div>
+                <div className="text-xs font-semibold text-gray-600">
+                  Visualiser
+                </div>
+              </div>
+            </div>
+          </div>
+        </header>
 
         <main className="flex-grow">
-          <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto py-6 lg:py-12 px-4 sm:px-6 lg:px-8">
             <div className="space-y-8">
               <FlowGuide />
               <CSVImporter />
