@@ -1,29 +1,32 @@
-import { ArrowRight } from 'lucide-react'
-
 export function FlowGuide() {
   const steps = [
-    { title: 'Export transactions from brokers', icon: '📊' },
-    { title: 'Import files here', icon: '📥' },
-    { title: 'Visualize transactions', icon: '📈' },
-    { title: 'Review tax summary', icon: '📋' },
-    { title: 'Export to PDF', icon: '📄' },
+    'Export transactions from brokers',
+    'Import files here',
+    'Visualize transactions',
+    'Review tax summary',
+    'Export to PDF',
   ]
 
   return (
-    <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 hidden lg:block">
-      <div className="flex items-center gap-2 overflow-x-auto">
+    <div className="px-4 py-2 hidden lg:block">
+      <div className="flex items-center gap-2">
         <span className="text-sm font-medium text-gray-700 whitespace-nowrap mr-2">How it works:</span>
-        {steps.map((step, index) => (
-          <div key={index} className="flex items-center gap-2 flex-shrink-0">
-            <div className="flex items-center gap-1.5 text-sm text-gray-700">
-              <span>{step.icon}</span>
-              <span className="whitespace-nowrap">{step.title}</span>
+        <div className="flex items-stretch gap-1">
+          {steps.map((step, index) => (
+            <div
+              key={index}
+              className="relative flex items-center px-6 py-2 flex-shrink-0 transition-all hover:bg-blue-200"
+              style={{
+                clipPath: 'polygon(0 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 0 100%, 16px 50%)',
+                background: '#bfdbfe',
+                marginLeft: index === 0 ? '0' : '-17px',
+                zIndex: steps.length - index,
+              }}
+            >
+              <span className="text-sm font-medium text-gray-700 whitespace-nowrap">{step}</span>
             </div>
-            {index < steps.length - 1 && (
-              <ArrowRight className="text-gray-400 w-4 h-4 flex-shrink-0" />
-            )}
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   )
