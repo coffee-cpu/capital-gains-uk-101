@@ -43,15 +43,15 @@ export function Sidebar({ currentPage, isOpen, onClose }: SidebarProps) {
             </button>
 
             {/* Logo and title */}
-            <div className="flex items-center gap-3 flex-1">
+            <div className="flex items-center gap-2 lg:gap-3 flex-1">
               <img
                 src="/favicon/favicon.svg"
                 alt="Logo"
-                className="w-10 h-10 flex-shrink-0"
+                className="w-8 h-8 lg:w-10 lg:h-10 flex-shrink-0"
               />
 
               <div className="flex flex-col gap-1">
-                <div className="text-base font-bold leading-tight">
+                <div className="text-sm lg:text-base font-bold leading-tight">
                   <span className="text-blue-600">C</span>
                   <span className="text-gray-900">apital </span>
                   <span className="text-blue-600">G</span>
