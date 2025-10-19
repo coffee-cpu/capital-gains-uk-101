@@ -240,6 +240,12 @@ export function TransactionList() {
                 Total (GBP)
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Fee
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Fee (GBP)
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Source
               </th>
             </tr>
@@ -502,6 +508,24 @@ export function TransactionList() {
                       `£${tx.value_gbp.toFixed(2)}`
                     ) : isIncomplete ? (
                       <span className="text-yellow-600 font-medium">Missing</span>
+                    ) : (
+                      '—'
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {tx.fee !== null && tx.fee !== 0 ? `${getCurrencySymbol(tx.currency)}${tx.fee.toFixed(2)}` : '—'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    {hasFxError ? (
+                      <span className="text-red-600 font-medium">Error</span>
+                    ) : tx.fee_gbp !== null && tx.fee_gbp !== 0 && tx.currency !== 'GBP' ? (
+                      <Tooltip content={`FX Rate: ${tx.fx_rate.toFixed(4)} ${tx.currency}/GBP (${tx.fx_source} - ${tx.date.substring(0, 7)})`}>
+                        <span className="cursor-help border-b border-dotted border-gray-400">
+                          £{tx.fee_gbp.toFixed(2)}
+                        </span>
+                      </Tooltip>
+                    ) : tx.fee_gbp !== null && tx.fee_gbp !== 0 ? (
+                      `£${tx.fee_gbp.toFixed(2)}`
                     ) : (
                       '—'
                     )}
