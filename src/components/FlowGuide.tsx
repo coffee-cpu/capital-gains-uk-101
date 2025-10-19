@@ -2,8 +2,8 @@ export function FlowGuide() {
   const steps = [
     'Export transactions from brokers',
     'Import files here',
-    'Visualize transactions',
-    'Review tax summary',
+    'Review transactions & HMRC rule matches',
+    'View tax year summary',
     'Export to PDF',
   ]
 
