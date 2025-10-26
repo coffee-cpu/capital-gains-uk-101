@@ -61,6 +61,7 @@
     "papaparse": "^5.5.3",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "vibe-coding-stats": "^1.2.0",
     "zod": "^4.1.12",
     "zustand": "^5.0.8"
   }

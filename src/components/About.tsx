@@ -1,4 +1,5 @@
 import { BuyMeACoffee } from './BuyMeACoffee'
+import { CodingStats } from './CodingStats'
 
 export function About() {
   return (
@@ -220,6 +221,9 @@ export function About() {
               </div>
             </div>
           </section>
+
+          {/* Project Stats */}
+          <CodingStats />
 
           {/* Support the Project */}
           <section>
