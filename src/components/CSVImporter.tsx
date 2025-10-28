@@ -430,13 +430,31 @@ export function CSVImporter() {
               </div>
               {expandedFormat === 'generic' && (
                 <div className="mt-2 ml-4 p-3 bg-gray-50 rounded text-xs space-y-2">
-                  <p className="font-medium">Required columns:</p>
+                  <p className="font-medium">What is Generic CSV?</p>
+                  <p className="text-gray-600 mb-2">
+                    A simplified format that matches the data model used internally by this tool.
+                    Use this if your broker isn't supported yet, or to manually create test data.
+                  </p>
+
+                  <p className="font-medium">Always required:</p>
                   <p className="text-gray-600">date, type, symbol, currency</p>
-                  <p className="font-medium mt-2">Optional columns:</p>
-                  <p className="text-gray-600">name, quantity, price, total, fee, notes</p>
+
+                  <p className="font-medium mt-2">Required for BUY/SELL:</p>
+                  <p className="text-gray-600">quantity, price</p>
+
+                  <p className="font-medium mt-2">Required for DIVIDEND/FEE:</p>
+                  <p className="text-gray-600">total</p>
+
+                  <p className="font-medium mt-2">Optional:</p>
+                  <p className="text-gray-600">name, total, fee, notes</p>
+
+                  <p className="text-gray-600 mt-2 italic">
+                    Transaction types: BUY, SELL, DIVIDEND, FEE, INTEREST, TRANSFER, TAX
+                  </p>
+
                   <a
                     href="/examples/generic-example.csv"
-                    className="inline-block text-blue-600 hover:text-blue-800 underline"
+                    className="inline-block text-blue-600 hover:text-blue-800 underline mt-2"
                   >
                     📥 Download example file
                   </a>
