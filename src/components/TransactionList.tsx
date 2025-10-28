@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTransactionStore } from '../stores/transactionStore'
 import { ClearDataButton } from './ClearDataButton'
 import { Tooltip } from './Tooltip'
+import { exportTransactionsToCSV } from '../utils/csvExport'
 
 // Helper to get currency symbol
 function getCurrencySymbol(currency: string): string {
@@ -73,12 +74,24 @@ export function TransactionList() {
   return (
     <div className="bg-white shadow rounded-lg overflow-hidden">
       <div className="px-6 py-4 border-b border-gray-200">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-2xl font-semibold text-gray-900">Transactions</h2>
             <p className="text-sm text-gray-500 mt-1">{transactions.length} total</p>
           </div>
-          <ClearDataButton />
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => exportTransactionsToCSV(transactions)}
+              className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              title="Export transactions as Generic CSV"
+            >
+              <svg className="h-4 w-4 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              <span className="hidden sm:inline">Export CSV</span>
+            </button>
+            <ClearDataButton />
+          </div>
         </div>
       </div>
 
