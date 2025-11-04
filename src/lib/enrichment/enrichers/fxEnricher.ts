@@ -29,6 +29,9 @@ export class FxEnricher implements Enricher {
 
         // Convert prices to GBP
         const priceGbp = tx.price !== null ? convertToGBP(tx.price, fxRate) : null
+        const splitAdjustedPriceGbp = tx.split_adjusted_price !== null && tx.split_adjusted_price !== undefined
+          ? convertToGBP(tx.split_adjusted_price, fxRate)
+          : null
         const valueGbp = tx.total !== null ? convertToGBP(tx.total, fxRate) : null
         const feeGbp = tx.fee !== null ? convertToGBP(tx.fee, fxRate) : null
 
@@ -36,6 +39,7 @@ export class FxEnricher implements Enricher {
           ...tx,
           fx_rate: fxRate,
           price_gbp: priceGbp,
+          split_adjusted_price_gbp: splitAdjustedPriceGbp,
           value_gbp: valueGbp,
           fee_gbp: feeGbp,
           fx_source: tx.currency === 'GBP' ? 'Native GBP' : 'HMRC',
@@ -52,6 +56,7 @@ export class FxEnricher implements Enricher {
           ...tx,
           fx_rate: 0,
           price_gbp: null,
+          split_adjusted_price_gbp: null,
           value_gbp: null,
           fee_gbp: null,
           fx_source: 'Failed',

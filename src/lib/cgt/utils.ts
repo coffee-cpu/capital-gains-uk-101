@@ -16,3 +16,20 @@ export function getEffectiveQuantity(transaction: EnrichedTransaction): number {
   // Otherwise fall back to original quantity
   return transaction.split_adjusted_quantity ?? transaction.quantity ?? 0
 }
+
+/**
+ * Get the effective price in GBP for CGT matching purposes
+ *
+ * Returns split-adjusted price in GBP if stock splits occurred,
+ * otherwise returns the original price in GBP.
+ *
+ * This ensures CGT matching uses consistent price basis after stock splits.
+ *
+ * @param transaction Transaction to get price from
+ * @returns Split-adjusted price in GBP if available, otherwise original price in GBP
+ */
+export function getEffectivePrice(transaction: EnrichedTransaction): number {
+  // Use split-adjusted price in GBP if available (i.e., stock splits occurred)
+  // Otherwise fall back to original price in GBP
+  return transaction.split_adjusted_price_gbp ?? transaction.price_gbp ?? 0
+}

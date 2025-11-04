@@ -37,6 +37,7 @@ export const EnrichedTransactionSchema = GenericTransactionSchema.extend({
   // FX conversion (computed during enrichment, Step 2)
   fx_rate: z.number().describe('FX rate used for GBP conversion'),
   price_gbp: z.number().nullable().describe('Price per unit in GBP'),
+  split_adjusted_price_gbp: z.number().nullable().optional().describe('Split-adjusted price per unit in GBP (price_gbp adjusted for stock splits)'),
   value_gbp: z.number().nullable().describe('Total value in GBP'),
   fee_gbp: z.number().nullable().describe('Fee amount in GBP'),
   fx_source: z.string().describe('Source of FX rate (e.g. Bank of England)'),

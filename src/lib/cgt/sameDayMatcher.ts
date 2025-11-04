@@ -1,6 +1,6 @@
 import { EnrichedTransaction, TransactionType } from '../../types/transaction'
 import { MatchingResult } from '../../types/cgt'
-import { getEffectiveQuantity } from './utils'
+import { getEffectiveQuantity, getEffectivePrice } from './utils'
 
 /**
  * Same-Day Matching Rule (TCGA92/S105(1))
@@ -94,8 +94,8 @@ function matchSameDayTransactions(
       // Match as much as possible from this buy
       const quantityToMatch = Math.min(remainingSellQuantity, availableBuyQuantity)
 
-      // Calculate cost basis for the matched portion
-      const pricePerShare = buy.price_gbp || 0
+      // Calculate cost basis for the matched portion (use split-adjusted price if available)
+      const pricePerShare = getEffectivePrice(buy)
       const buyEffectiveQuantity = getEffectiveQuantity(buy)
       const feePerShare = buy.fee_gbp ? buy.fee_gbp / Math.max(buyEffectiveQuantity, 1) : 0
       const costBasisPerShare = pricePerShare + feePerShare

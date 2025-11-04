@@ -528,14 +528,28 @@ export function TransactionList() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                     {hasFxError ? (
                       <span className="text-red-600 font-medium">Error</span>
-                    ) : tx.price_gbp !== null && tx.currency !== 'GBP' ? (
-                      <Tooltip content={`FX Rate: ${tx.fx_rate.toFixed(4)} ${tx.currency}/GBP (${tx.fx_source} - ${tx.date.substring(0, 7)})`}>
-                        <span className="cursor-help border-b border-dotted border-gray-400">
-                          £{tx.price_gbp.toFixed(2)}
-                        </span>
-                      </Tooltip>
                     ) : tx.price_gbp !== null ? (
-                      `£${tx.price_gbp.toFixed(2)}`
+                      <div className="flex items-center gap-2">
+                        {tx.currency !== 'GBP' ? (
+                          <Tooltip content={`FX Rate: ${tx.fx_rate.toFixed(4)} ${tx.currency}/GBP (${tx.fx_source} - ${tx.date.substring(0, 7)})`}>
+                            <span className="cursor-help border-b border-dotted border-gray-400">
+                              £{tx.price_gbp.toFixed(2)}
+                            </span>
+                          </Tooltip>
+                        ) : (
+                          <span>£{tx.price_gbp.toFixed(2)}</span>
+                        )}
+                        {tx.split_multiplier && tx.split_multiplier !== 1.0 && tx.split_adjusted_price_gbp !== null && tx.split_adjusted_price_gbp !== undefined && (
+                          <Tooltip content={`Split-adjusted: £${tx.split_adjusted_price_gbp.toFixed(2)}/share (price ÷ ${tx.split_multiplier})`}>
+                            <div className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 bg-purple-50 text-purple-700 rounded border border-purple-200 cursor-help">
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17l-5-5m0 0l5-5m-5 5h12" />
+                              </svg>
+                              <span className="font-mono">£{tx.split_adjusted_price_gbp.toFixed(2)}</span>
+                            </div>
+                          </Tooltip>
+                        )}
+                      </div>
                     ) : isIncomplete ? (
                       <span className="text-yellow-600 font-medium">Missing</span>
                     ) : (

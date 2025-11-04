@@ -1,6 +1,6 @@
 import { EnrichedTransaction, TransactionType } from '../../types/transaction'
 import { Section104Pool, MatchingResult } from '../../types/cgt'
-import { getEffectiveQuantity } from './utils'
+import { getEffectiveQuantity, getEffectivePrice } from './utils'
 
 /**
  * Section 104 Pooled Holdings (HMRC CG51620)
@@ -84,8 +84,8 @@ function addToPool(
   transaction: EnrichedTransaction,
   quantity: number
 ): void {
-  // Calculate cost including fees
-  const pricePerShare = transaction.price_gbp || 0
+  // Calculate cost including fees (use split-adjusted price if available)
+  const pricePerShare = getEffectivePrice(transaction)
   const effectiveQuantity = getEffectiveQuantity(transaction)
   const feePerShare = transaction.fee_gbp ? transaction.fee_gbp / Math.max(effectiveQuantity, 1) : 0
   const costPerShare = pricePerShare + feePerShare
@@ -132,8 +132,8 @@ function matchAgainstPool(
   pool.totalCostGbp -= costBasisGbp
   pool.averageCostGbp = pool.quantity > 0 ? pool.totalCostGbp / pool.quantity : 0
 
-  // Calculate proceeds (including selling fees)
-  const pricePerShare = transaction.price_gbp || 0
+  // Calculate proceeds (including selling fees, use split-adjusted price if available)
+  const pricePerShare = getEffectivePrice(transaction)
   const effectiveQuantity = getEffectiveQuantity(transaction)
   const feePerShare = transaction.fee_gbp ? transaction.fee_gbp / Math.max(effectiveQuantity, 1) : 0
   const proceedsPerShare = pricePerShare - feePerShare
