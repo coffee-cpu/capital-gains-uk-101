@@ -495,7 +495,7 @@ export function TransactionList() {
                     {tx.quantity !== null ? (
                       <div className="flex items-center gap-2">
                         <span>{tx.quantity.toFixed(2)}</span>
-                        {tx.split_multiplier && tx.split_multiplier !== 1.0 && tx.split_adjusted_quantity !== null && (
+                        {tx.split_multiplier && tx.split_multiplier !== 1.0 && tx.split_adjusted_quantity != null && (
                           <Tooltip content={`Split-adjusted: ${tx.split_adjusted_quantity.toFixed(2)} shares (${tx.split_multiplier}x multiplier from ${tx.applied_splits?.length || 0} split${(tx.applied_splits?.length || 0) !== 1 ? 's' : ''})`}>
                             <div className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 bg-purple-50 text-purple-700 rounded border border-purple-200 cursor-help">
                               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -512,7 +512,7 @@ export function TransactionList() {
                     {tx.price !== null ? (
                       <div className="flex items-center gap-2">
                         <span>{getCurrencySymbol(tx.currency)}{tx.price.toFixed(2)}</span>
-                        {tx.split_multiplier && tx.split_multiplier !== 1.0 && tx.split_adjusted_price !== null && (
+                        {tx.split_multiplier && tx.split_multiplier !== 1.0 && tx.split_adjusted_price != null && (
                           <Tooltip content={`Split-adjusted: ${getCurrencySymbol(tx.currency)}${tx.split_adjusted_price.toFixed(2)}/share (price ÷ ${tx.split_multiplier})`}>
                             <div className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 bg-purple-50 text-purple-700 rounded border border-purple-200 cursor-help">
                               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">

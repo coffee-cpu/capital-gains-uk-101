@@ -1,5 +1,6 @@
 import { EnrichedTransaction, TransactionType } from '../../types/transaction'
 import { MatchingResult } from '../../types/cgt'
+import { getEffectiveQuantity } from './utils'
 
 /**
  * 30-Day "Bed and Breakfast" Rule (TCGA92/S106A(5) and (5A))
@@ -136,7 +137,8 @@ function matchSellAgainstBuys(
 
     // Calculate cost basis for the matched portion
     const pricePerShare = buy.price_gbp || 0
-    const feePerShare = buy.fee_gbp ? buy.fee_gbp / (buy.quantity || 1) : 0
+    const buyEffectiveQuantity = getEffectiveQuantity(buy)
+    const feePerShare = buy.fee_gbp ? buy.fee_gbp / Math.max(buyEffectiveQuantity, 1) : 0
     const costBasisPerShare = pricePerShare + feePerShare
     const costBasisGbp = costBasisPerShare * quantityToMatch
 
@@ -204,7 +206,7 @@ function getRemainingQuantity(
   transaction: EnrichedTransaction,
   matchings: MatchingResult[]
 ): number {
-  const originalQuantity = transaction.quantity || 0
+  const originalQuantity = getEffectiveQuantity(transaction)
 
   // Sum up all matched quantities for this transaction
   let matchedQuantity = 0

@@ -4,20 +4,22 @@ import { getTaxYear } from '../utils/taxYear'
 import { applySplitNormalization } from './splits/normalization'
 
 /**
- * Enrich transactions with GBP conversions and tax year information
+ * Enrich transactions with computed fields
  *
- * Per HMRC TCGA92/S127, stock splits are processed first to normalize
- * all quantities to the most recent split-adjusted units. This ensures
- * accurate cost basis calculations and CGT matching.
+ * Enrichment happens in three stages:
+ * 1. Stock split adjustments (HMRC TCGA92/S127) - normalize quantities to post-split units
+ * 2. FX conversion - convert to GBP using HMRC official rates
+ * 3. Tax year calculation - assign UK tax years
  *
- * @param transactions Array of generic transactions
- * @returns Array of enriched transactions with FX rates and GBP values
+ * @param transactions Array of generic transactions (raw parsed data from CSV)
+ * @returns Array of enriched transactions with all computed fields
  */
 export async function enrichTransactions(
   transactions: GenericTransaction[]
 ): Promise<EnrichedTransaction[]> {
-  // Step 1: Apply split normalization first
-  // This adjusts quantities and prices for all transactions that occurred before splits
+  // Step 1: Apply stock split adjustments (enrichment pass 1)
+  // Per HMRC TCGA92/S127, adjusts quantities/prices for transactions before splits
+  // This ensures accurate CGT matching using comparable units
   const normalized = applySplitNormalization(transactions)
 
   const enriched: EnrichedTransaction[] = []

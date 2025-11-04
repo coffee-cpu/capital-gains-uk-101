@@ -1,4 +1,4 @@
-import { GenericTransaction, StockSplitEvent, parseRatioMultiplier } from '../../types/transaction'
+import { GenericTransaction, EnrichedTransaction, StockSplitEvent, parseRatioMultiplier } from '../../types/transaction'
 
 /**
  * Extract stock split events from transactions
@@ -33,7 +33,7 @@ export function extractStockSplits(transactions: GenericTransaction[]): StockSpl
 }
 
 /**
- * Apply forward normalization to transactions
+ * Apply stock split adjustments to transactions (first pass of enrichment)
  * Adjusts quantities and prices for all transactions that occurred before splits
  *
  * Per HMRC TCGA92/S127:
@@ -47,9 +47,9 @@ export function extractStockSplits(transactions: GenericTransaction[]): StockSpl
  * - This ensures all quantities are comparable for CGT matching
  *
  * @param transactions Original transactions (including STOCK_SPLIT records)
- * @returns Transactions with split_adjusted_quantity, split_adjusted_price, split_multiplier, and applied_splits populated
+ * @returns Partially enriched transactions with split fields populated, other enrichment fields as defaults
  */
-export function applySplitNormalization(transactions: GenericTransaction[]): GenericTransaction[] {
+export function applySplitNormalization(transactions: GenericTransaction[]): EnrichedTransaction[] {
   // Extract all stock split events
   const allSplits = extractStockSplits(transactions)
 
@@ -63,10 +63,23 @@ export function applySplitNormalization(transactions: GenericTransaction[]): Gen
 
   // Process each transaction
   return transactions.map(tx => {
+    // Common enrichment placeholder fields (will be populated in subsequent enrichment passes)
+    const enrichmentDefaults = {
+      fx_rate: 0,
+      price_gbp: null,
+      value_gbp: null,
+      fee_gbp: null,
+      fx_source: '',
+      fx_error: null,
+      tax_year: '',
+      gain_group: 'NONE' as const,
+    }
+
     // STOCK_SPLIT transactions themselves don't need normalization
     if (tx.type === 'STOCK_SPLIT') {
       return {
         ...tx,
+        ...enrichmentDefaults,
         split_adjusted_quantity: null,
         split_adjusted_price: null,
         split_multiplier: 1.0,
@@ -78,6 +91,7 @@ export function applySplitNormalization(transactions: GenericTransaction[]): Gen
     if (tx.type !== 'BUY' && tx.type !== 'SELL') {
       return {
         ...tx,
+        ...enrichmentDefaults,
         split_adjusted_quantity: null,
         split_adjusted_price: null,
         split_multiplier: 1.0,
@@ -98,6 +112,7 @@ export function applySplitNormalization(transactions: GenericTransaction[]): Gen
     if (futureSplits.length === 0) {
       return {
         ...tx,
+        ...enrichmentDefaults,
         split_adjusted_quantity: tx.quantity,
         split_adjusted_price: tx.price,
         split_multiplier: 1.0,
@@ -114,6 +129,7 @@ export function applySplitNormalization(transactions: GenericTransaction[]): Gen
 
     return {
       ...tx,
+      ...enrichmentDefaults,
       split_adjusted_quantity: adjustedQuantity,
       split_adjusted_price: adjustedPrice,
       split_multiplier: cumulativeMultiplier,

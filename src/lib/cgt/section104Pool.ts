@@ -1,5 +1,6 @@
 import { EnrichedTransaction, TransactionType } from '../../types/transaction'
 import { Section104Pool, MatchingResult } from '../../types/cgt'
+import { getEffectiveQuantity } from './utils'
 
 /**
  * Section 104 Pooled Holdings (HMRC CG51620)
@@ -85,7 +86,8 @@ function addToPool(
 ): void {
   // Calculate cost including fees
   const pricePerShare = transaction.price_gbp || 0
-  const feePerShare = transaction.fee_gbp ? transaction.fee_gbp / (transaction.quantity || 1) : 0
+  const effectiveQuantity = getEffectiveQuantity(transaction)
+  const feePerShare = transaction.fee_gbp ? transaction.fee_gbp / Math.max(effectiveQuantity, 1) : 0
   const costPerShare = pricePerShare + feePerShare
   const totalCost = costPerShare * quantity
 
@@ -132,7 +134,8 @@ function matchAgainstPool(
 
   // Calculate proceeds (including selling fees)
   const pricePerShare = transaction.price_gbp || 0
-  const feePerShare = transaction.fee_gbp ? transaction.fee_gbp / (transaction.quantity || 1) : 0
+  const effectiveQuantity = getEffectiveQuantity(transaction)
+  const feePerShare = transaction.fee_gbp ? transaction.fee_gbp / Math.max(effectiveQuantity, 1) : 0
   const proceedsPerShare = pricePerShare - feePerShare
   const proceeds = proceedsPerShare * quantityToMatch
 
@@ -216,7 +219,7 @@ function getRemainingQuantity(
   transaction: EnrichedTransaction,
   matchings: MatchingResult[]
 ): number {
-  const originalQuantity = transaction.quantity || 0
+  const originalQuantity = getEffectiveQuantity(transaction)
 
   // Sum up all matched quantities for this transaction
   let matchedQuantity = 0

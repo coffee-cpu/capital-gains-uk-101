@@ -4,6 +4,7 @@ import { applySameDayRule, markSameDayMatches } from './sameDayMatcher'
 import { applyThirtyDayRule, markThirtyDayMatches } from './thirtyDayMatcher'
 import { applySection104Pooling, markSection104Matches } from './section104Pool'
 import { getTaxYearBounds } from '../../utils/taxYear'
+import { getEffectiveQuantity } from './utils'
 
 /**
  * CGT Calculation Engine
@@ -106,7 +107,8 @@ function createDisposalRecords(matchings: MatchingResult[]): DisposalRecord[] {
 
     // Calculate proceeds (sale price minus selling fees)
     const pricePerShare = disposal.price_gbp || 0
-    const totalProceeds = pricePerShare * (disposal.quantity || 0)
+    const disposalQuantity = getEffectiveQuantity(disposal)
+    const totalProceeds = pricePerShare * disposalQuantity
     const sellingFees = disposal.fee_gbp || 0
     const netProceeds = totalProceeds - sellingFees
 

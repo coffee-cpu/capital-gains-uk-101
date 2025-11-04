@@ -28,21 +28,24 @@ export type GenericTransaction = z.infer<typeof GenericTransactionSchema>
  * Enriched Transaction Schema - computed attributes added in browser
  */
 export const EnrichedTransactionSchema = GenericTransactionSchema.extend({
+  // Stock split adjustments (computed during enrichment, Step 1)
+  split_adjusted_quantity: z.number().nullable().optional().describe('Quantity adjusted for all stock splits that occurred after this transaction'),
+  split_adjusted_price: z.number().nullable().optional().describe('Price adjusted for all stock splits (price decreases when shares increase)'),
+  split_multiplier: z.number().optional().describe('Cumulative multiplier applied (e.g., 2.0 for 2:1 split, 10.0 for 10:1, 1.0 if no splits)'),
+  applied_splits: z.array(z.string()).optional().describe('Array of stock split transaction IDs that were applied to normalize this transaction'),
+
+  // FX conversion (computed during enrichment, Step 2)
   fx_rate: z.number().describe('FX rate used for GBP conversion'),
   price_gbp: z.number().nullable().describe('Price per unit in GBP'),
   value_gbp: z.number().nullable().describe('Total value in GBP'),
   fee_gbp: z.number().nullable().describe('Fee amount in GBP'),
   fx_source: z.string().describe('Source of FX rate (e.g. Bank of England)'),
   fx_error: z.string().nullable().optional().describe('Error message if FX rate fetch failed'),
+
+  // Tax year and CGT matching (computed during enrichment, Step 3)
   tax_year: z.string().describe('UK tax year (e.g. 2023/24)'),
   gain_group: z.enum(['SAME_DAY', '30_DAY', 'SECTION_104', 'NONE']).describe('HMRC matching rule applied'),
   match_groups: z.array(z.string()).optional().describe('Array of match group IDs this transaction belongs to. A single acquisition can match multiple disposals, so this is an array.'),
-
-  // Split adjustment fields (for stock splits/reorganisations per TCGA92/S127)
-  split_adjusted_quantity: z.number().nullable().optional().describe('Quantity adjusted for all stock splits that occurred after this transaction'),
-  split_adjusted_price: z.number().nullable().optional().describe('Price adjusted for all stock splits (price decreases when shares increase)'),
-  split_multiplier: z.number().optional().default(1.0).describe('Cumulative multiplier applied (e.g., 2.0 for 2:1 split, 10.0 for 10:1)'),
-  applied_splits: z.array(z.string()).optional().default([]).describe('Array of stock split transaction IDs that were applied to normalize this transaction'),
 })
 
 export type EnrichedTransaction = z.infer<typeof EnrichedTransactionSchema>

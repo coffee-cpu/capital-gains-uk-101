@@ -1,5 +1,6 @@
 import { EnrichedTransaction, TransactionType } from '../../types/transaction'
 import { MatchingResult } from '../../types/cgt'
+import { getEffectiveQuantity } from './utils'
 
 /**
  * Same-Day Matching Rule (TCGA92/S105(1))
@@ -63,18 +64,20 @@ function matchSameDayTransactions(
   // Track remaining quantities for each buy
   const buyQuantities = new Map<string, number>()
   buys.forEach(buy => {
-    if (buy.quantity !== null && buy.quantity > 0) {
-      buyQuantities.set(buy.id, buy.quantity)
+    const effectiveQuantity = getEffectiveQuantity(buy)
+    if (effectiveQuantity > 0) {
+      buyQuantities.set(buy.id, effectiveQuantity)
     }
   })
 
   // Process each sell
   for (const sell of sells) {
-    if (sell.quantity === null || sell.quantity <= 0) {
+    const effectiveSellQuantity = getEffectiveQuantity(sell)
+    if (effectiveSellQuantity <= 0) {
       continue
     }
 
-    let remainingSellQuantity = sell.quantity
+    let remainingSellQuantity = effectiveSellQuantity
     const acquisitions: MatchingResult['acquisitions'] = []
 
     // Match against available buys (FIFO order within the day)
@@ -93,7 +96,8 @@ function matchSameDayTransactions(
 
       // Calculate cost basis for the matched portion
       const pricePerShare = buy.price_gbp || 0
-      const feePerShare = buy.fee_gbp ? buy.fee_gbp / (buy.quantity || 1) : 0
+      const buyEffectiveQuantity = getEffectiveQuantity(buy)
+      const feePerShare = buy.fee_gbp ? buy.fee_gbp / Math.max(buyEffectiveQuantity, 1) : 0
       const costBasisPerShare = pricePerShare + feePerShare
       const costBasisGbp = costBasisPerShare * quantityToMatch
 
@@ -199,7 +203,7 @@ export function getRemainingQuantity(
   transaction: EnrichedTransaction,
   matchings: MatchingResult[]
 ): number {
-  const originalQuantity = transaction.quantity || 0
+  const originalQuantity = getEffectiveQuantity(transaction)
 
   // Sum up all matched quantities for this transaction
   let matchedQuantity = 0
