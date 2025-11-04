@@ -69,7 +69,7 @@ If your broker isn't directly supported, you can create a CSV file in our standa
 
 ### Required Columns:
 - `date` - Transaction date in YYYY-MM-DD format
-- `type` - Transaction type: BUY, SELL, DIVIDEND, INTEREST, TAX, TRANSFER, or FEE
+- `type` - Transaction type: BUY, SELL, DIVIDEND, INTEREST, TAX, TRANSFER, FEE, or **STOCK_SPLIT**
 - `symbol` - Stock ticker symbol (e.g., AAPL, MSFT)
 - `currency` - Currency code (e.g., USD, GBP)
 
@@ -90,7 +90,32 @@ date,type,symbol,currency,name,quantity,price,total,fee,notes
 2024-03-10,DIVIDEND,AAPL,USD,Apple Inc. Dividend,,,12.50,0.00,Quarterly dividend
 ```
 
-[📥 Download Example File](./examples/generic-example.csv)
+### Stock Splits
+
+Use the Generic CSV format to record stock splits if your broker doesn't include them:
+
+**Simply specify the split ratio - we'll calculate the quantity adjustment for you!**
+
+```csv
+date,type,symbol,ratio
+2024-06-10,STOCK_SPLIT,NVDA,10:1
+2022-08-25,STOCK_SPLIT,TSLA,3:1
+2022-06-06,STOCK_SPLIT,AMZN,20:1
+2020-08-31,STOCK_SPLIT,AAPL,4:1
+```
+
+**Split ratio format:**
+- `2:1` = 2-for-1 split (shares double)
+- `10:1` = 10-for-1 split (shares multiply by 10)
+- `1:10` = 1-for-10 reverse split (shares divide by 10)
+
+**Common stock splits:**
+- **NVIDIA** (NVDA): 10:1 split on June 10, 2024
+- **Amazon** (AMZN): 20:1 split on June 6, 2022
+- **Tesla** (TSLA): 3:1 split on August 25, 2022
+- **Apple** (AAPL): 4:1 split on August 31, 2020
+
+[📥 Download Example File](./examples/generic-example.csv) | [📥 Download Stock Splits Example](./examples/stock-splits-example.csv)
 
 ---
 
