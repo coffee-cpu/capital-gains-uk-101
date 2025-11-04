@@ -62,21 +62,57 @@ npx playwright test e2e/import.spec.ts
 ### Core Data Flow
 
 ```
-CSV Import → Broker Detection → Normalization → FX Enrichment → CGT Engine → Visualization → PDF Export
+CSV Import → Broker Detection → Parsing (to GenericTransaction) → Enrichment (3 passes) → CGT Engine → Visualization → PDF Export
 ```
 
+**Terminology**:
+- **Parsing/Normalization**: Converting broker-specific CSV formats to `GenericTransaction` (unified structure, raw data only)
+- **Enrichment**: Adding computed fields to create `EnrichedTransaction` (split adjustments → FX conversion → tax year)
+
 All processing is client-side. The app uses IndexedDB to persist:
-- Imported transactions (normalized format)
+- Imported transactions (GenericTransaction format with raw data)
 - Cached FX rates from Bank of England API
 
 ### Key Concepts
 
-#### 1. Transaction Schema (`src/types/transaction.ts`)
-Two schemas exist:
-- **GenericTransaction**: Normalized input format after CSV parsing. Required fields: `id`, `source`, `date`, `type`, `currency`. All transactions are converted to this unified format regardless of broker.
-- **EnrichedTransaction**: Extends GenericTransaction with computed fields: `fx_rate`, `price_gbp`, `value_gbp`, `fee_gbp`, `fx_source`, `tax_year`, `gain_group` (HMRC matching rule).
+#### 1. Transaction Schema & Separation of Concerns (`src/types/transaction.ts`)
 
-Transaction types: `BUY`, `SELL`, `DIVIDEND`, `FEE`, `INTEREST`, `TRANSFER`, `TAX`
+**IMPORTANT**: Maintain strict separation between raw data and computed fields.
+
+**GenericTransaction** = Raw parsed data from CSV (NO calculations)
+- Represents the original broker statement exactly as imported
+- Required fields: `id`, `source`, `date`, `type`, `symbol`, `currency`, `quantity`, `price`, `total`, `fee`
+- Transaction types: `BUY`, `SELL`, `DIVIDEND`, `FEE`, `INTEREST`, `TRANSFER`, `TAX`, `STOCK_SPLIT`
+- This is what parsers (`src/lib/parsers/`) output after converting broker-specific formats to a unified structure
+
+**EnrichedTransaction** = GenericTransaction + All computed fields
+- Extends GenericTransaction with calculations performed during enrichment
+- Three enrichment passes (see `src/lib/enrichment.ts`):
+  1. **Stock split adjustments**: `split_adjusted_quantity`, `split_adjusted_price`, `split_multiplier`, `applied_splits`
+  2. **FX conversion**: `fx_rate`, `price_gbp`, `value_gbp`, `fee_gbp`, `fx_source`
+  3. **Tax year & CGT**: `tax_year`, `gain_group`, `match_groups`
+
+**Why This Matters**:
+- ✅ **Audit trail**: Original quantities match broker statements exactly
+- ✅ **Transparency**: UI shows both original and computed values
+- ✅ **Correctness**: CGT calculations use split-adjusted quantities, but users can verify original data
+- ❌ **DON'T**: Put computed fields in GenericTransaction
+- ❌ **DON'T**: Call split adjustments "normalization" - that term is for converting broker formats to GenericTransaction
+
+**Example Flow**:
+```typescript
+// Parsing: Schwab CSV → GenericTransaction
+{ id: '1', symbol: 'AAPL', date: '2020-06-15', quantity: 25, price: 360.00 }
+
+// Enrichment Pass 1: Stock splits (4:1 split on 2020-08-31)
+{ ...above, split_adjusted_quantity: 100, split_adjusted_price: 90.00, split_multiplier: 4.0 }
+
+// Enrichment Pass 2: FX conversion
+{ ...above, fx_rate: 1.25, price_gbp: 288.00, value_gbp: 7200.00 }
+
+// Enrichment Pass 3: Tax year & CGT matching
+{ ...above, tax_year: '2020/21', gain_group: 'SECTION_104' }
+```
 
 #### 2. Broker Detection & Parsing (`src/lib/brokerDetector.ts`, `src/lib/parsers/`)
 The `detectBroker()` function inspects CSV headers to identify the source format. Each broker has a parser in `src/lib/parsers/` that converts raw CSV rows to GenericTransaction format.
@@ -93,20 +129,49 @@ Each parser must:
 - Parse currency amounts (handle $, commas, etc.)
 - Map broker-specific actions to standard TransactionType
 
-#### 3. State Management
+#### 3. Enrichment Pipeline (`src/lib/enrichment.ts`)
+
+The `enrichTransactions()` function performs three sequential passes:
+
+```typescript
+export async function enrichTransactions(
+  transactions: GenericTransaction[]  // Raw CSV data
+): Promise<EnrichedTransaction[]> {   // Fully computed
+  // Pass 1: Stock split adjustments (sync)
+  const normalized = applySplitNormalization(transactions)
+
+  // Pass 2: FX conversion (async - API calls)
+  for (const tx of normalized) {
+    const fxRate = await getFXRate(tx.date, tx.currency)
+    // ... convert to GBP
+  }
+
+  // Pass 3: Tax year calculation (sync)
+  // ... assign UK tax years
+}
+```
+
+**Why this order?**
+1. Stock splits must be applied first (quantities must be in comparable units)
+2. FX conversion happens on normalized quantities
+3. Tax year is independent of other fields
+
+#### 4. State Management
 - **Runtime state**: Zustand store (`src/stores/transactionStore.ts`) holds currently loaded transactions and selected tax year
 - **Persistence**: Dexie database (`src/lib/db.ts`) with two tables:
   - `transactions`: Indexed by id, source, symbol, date, type
   - `fx_rates`: Indexed by [date+currency] composite key
 
-#### 4. Tax Year Calculation (`src/utils/taxYear.ts`)
+#### 5. Tax Year Calculation (`src/utils/taxYear.ts`)
 UK tax years run April 6 to April 5. Format: `2023/24` means 6 April 2023 to 5 April 2024.
 
-#### 5. HMRC CGT Matching Rules (🚧 In Development)
-When implemented, the CGT engine will apply rules in this order:
-1. **Same-Day Rule**: Match buys/sells on same calendar day
-2. **30-Day Rule**: Match repurchases within 30 days after disposal ("bed and breakfast")
-3. **Section 104 Pool**: Remaining holdings pooled for average cost basis
+#### 6. HMRC CGT Matching Rules (`src/lib/cgt/`)
+The CGT engine applies rules in this order:
+1. **Same-Day Rule**: Match buys/sells on same calendar day (TCGA92/S105(1))
+2. **30-Day Rule**: Match repurchases within 30 days after disposal - "bed and breakfast" (TCGA92/S106A(5))
+3. **Section 104 Pool**: Remaining holdings pooled for average cost basis (TCGA92/S104)
+
+**Important**: CGT matching uses `split_adjusted_quantity ?? quantity` from the enrichment pipeline via `getEffectiveQuantity()` helper.
 
 See `docs/SPECIFICATION.md` for complete HMRC rule references.
 
@@ -274,13 +339,21 @@ PapaParse configuration:
 - `skipEmptyLines: true` - Ignore blank rows
 - Always handle parsing errors gracefully
 
-### FX Rate Enrichment (🚧 Planned)
-Bank of England API will provide historical GBP rates. Cache in `fx_rates` table with composite key `[date+currency]`.
+### FX Rate Enrichment (✅ Completed)
+Bank of England API provides historical GBP rates via HMRC's official exchange rate service. Rates are cached in `fx_rates` IndexedDB table with composite key `[date+currency]`.
 
-### HMRC Rule Implementation (✅ Completed)
-Reference official HMRC guidance when implementing:
+### Stock Splits (✅ Completed)
+Stock splits are handled per HMRC TCGA92/S127 (share reorganisations):
+- Split adjustments are the first enrichment pass (`applySplitNormalization`)
+- Pre-split quantities normalized to post-split units for CGT matching
+- Original quantities preserved for audit trail
+- UI displays both original and split-adjusted values with purple badges
+
+### HMRC CGT Rules (✅ Completed)
+Reference official HMRC guidance:
 - CG51560 - Same-day rule (TCGA92/S105(1)) and 30-day "bed and breakfast" rule (TCGA92/S106A(5))
 - CG51620 - Section 104 pooled holdings (TCGA92/S104)
+- CG51127 - Share reorganisations and stock splits (TCGA92/S127)
 
 ### Current Status
 As of the latest commits:
@@ -288,10 +361,10 @@ As of the latest commits:
 - ✅ Schwab parser (standard + equity awards)
 - ✅ Generic CSV format support
 - ✅ Duplicate file detection
-- ✅ Transaction list UI
+- ✅ Transaction list UI with CGT rule badges
 - ✅ FX rate enrichment (HMRC official rates)
-- ✅ CGT matching engine (all three rules implemented with 33 passing tests)
-- 🚧 UI integration for CGT results
+- ✅ Stock splits (TCGA92/S127) - full implementation with normalization and CGT integration
+- ✅ CGT matching engine (all three rules implemented with 131 passing tests)
 - 🚧 PDF export (not yet implemented)
 
 Refer to README.md for user-facing status and ROADMAP.md for planned features.
