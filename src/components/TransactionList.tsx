@@ -308,25 +308,54 @@ export function TransactionList() {
                     for (const matching of disposal.matchings) {
                       if (matching.rule === 'SAME_DAY') {
                         const quantityMatched = matching.quantityMatched
+                        const hasSplit = tx.split_multiplier && tx.split_multiplier !== 1.0
+                        let tooltip: string
+                        if (hasSplit && tx.split_multiplier) {
+                          const originalMatched = quantityMatched / tx.split_multiplier
+                          tooltip = `Same Day: Matched ${originalMatched.toFixed(2)} shares (${quantityMatched.toFixed(2)} split-adjusted) bought on same day (TCGA92/S105(1))`
+                        } else {
+                          tooltip = `Same Day: Matched ${quantityMatched.toFixed(2)} shares bought on same day (TCGA92/S105(1))`
+                        }
                         badges.push({
                           className: 'bg-blue-100 text-blue-800 border-blue-300',
                           label: 'Same Day',
-                          title: `Same Day: Matched ${quantityMatched.toFixed(2)} shares bought on same day (TCGA92/S105(1))`
+                          title: tooltip
                         })
                       } else if (matching.rule === '30_DAY') {
                         const quantityMatched = matching.quantityMatched
+                        const hasSplit = tx.split_multiplier && tx.split_multiplier !== 1.0
+                        let tooltip: string
+                        if (hasSplit && tx.split_multiplier) {
+                          const originalMatched = quantityMatched / tx.split_multiplier
+                          tooltip = `30-Day: Matched ${originalMatched.toFixed(2)} shares (${quantityMatched.toFixed(2)} split-adjusted) repurchased within 30 days (TCGA92/S106A(5))`
+                        } else {
+                          tooltip = `30-Day: Matched ${quantityMatched.toFixed(2)} shares repurchased within 30 days (TCGA92/S106A(5))`
+                        }
                         badges.push({
                           className: 'bg-orange-100 text-orange-800 border-orange-300',
                           label: '30-Day',
-                          title: `30-Day: Matched ${quantityMatched.toFixed(2)} shares repurchased within 30 days (TCGA92/S106A(5))`
+                          title: tooltip
                         })
                       } else if (matching.rule === 'SECTION_104') {
                         const quantityMatched = matching.quantityMatched
                         const avgCost = matching.totalCostBasisGbp / quantityMatched
+
+                        // Check if disposal has split adjustments
+                        const hasSplit = tx.split_multiplier && tx.split_multiplier !== 1.0
+                        let tooltip: string
+
+                        if (hasSplit && tx.split_multiplier) {
+                          // quantityMatched is split-adjusted, calculate original
+                          const originalMatched = quantityMatched / tx.split_multiplier
+                          tooltip = `Section 104: Matched ${originalMatched.toFixed(2)} shares (${quantityMatched.toFixed(2)} split-adjusted) at average cost £${avgCost.toFixed(2)}/share from pooled holdings`
+                        } else {
+                          tooltip = `Section 104: Matched ${quantityMatched.toFixed(2)} shares at average cost £${avgCost.toFixed(2)}/share from pooled holdings`
+                        }
+
                         badges.push({
                           className: 'bg-green-100 text-green-800 border-green-300',
                           label: 'Section 104',
-                          title: `Section 104: Matched ${quantityMatched.toFixed(2)} shares at average cost £${avgCost.toFixed(2)}/share from pooled holdings`
+                          title: tooltip
                         })
                       }
                     }
@@ -351,37 +380,67 @@ export function TransactionList() {
                   }
 
                   // Add badges for each rule this BUY participates in
+                  const hasSplit = tx.split_multiplier && tx.split_multiplier !== 1.0
                   for (const [rule, qty] of ruleQuantities.entries()) {
                     if (rule === 'SAME_DAY') {
+                      let tooltip: string
+                      if (hasSplit && tx.split_multiplier) {
+                        const originalQty = qty / tx.split_multiplier
+                        tooltip = `Same Day: ${originalQty.toFixed(2)} shares (${qty.toFixed(2)} split-adjusted) matched to same-day disposal (TCGA92/S105(1))`
+                      } else {
+                        tooltip = `Same Day: ${qty.toFixed(2)} shares matched to same-day disposal (TCGA92/S105(1))`
+                      }
                       badges.push({
                         className: 'bg-blue-100 text-blue-800 border-blue-300',
                         label: 'Same Day',
-                        title: `Same Day: ${qty.toFixed(2)} shares matched to same-day disposal (TCGA92/S105(1))`
+                        title: tooltip
                       })
                     } else if (rule === '30_DAY') {
+                      let tooltip: string
+                      if (hasSplit && tx.split_multiplier) {
+                        const originalQty = qty / tx.split_multiplier
+                        tooltip = `30-Day: ${originalQty.toFixed(2)} shares (${qty.toFixed(2)} split-adjusted) matched to disposal (bed & breakfast rule TCGA92/S106A(5))`
+                      } else {
+                        tooltip = `30-Day: ${qty.toFixed(2)} shares matched to disposal (bed & breakfast rule TCGA92/S106A(5))`
+                      }
                       badges.push({
                         className: 'bg-orange-100 text-orange-800 border-orange-300',
                         label: '30-Day',
-                        title: `30-Day: ${qty.toFixed(2)} shares matched to disposal (bed & breakfast rule TCGA92/S106A(5))`
+                        title: tooltip
                       })
                     }
                   }
 
                   // Check if remaining shares went to Section 104 pool
-                  const remainingQty = (tx.quantity || 0) - totalMatched
+                  const remainingQty = (tx.split_adjusted_quantity ?? tx.quantity ?? 0) - totalMatched
                   if (remainingQty > 0) {
                     const poolDetails = tx.symbol ? getPoolDetailsForBuy(tx.id, tx.symbol) : null
+                    const hasSplit = tx.split_multiplier && tx.split_multiplier !== 1.0
+
+                    let tooltip: string
                     if (poolDetails) {
+                      if (hasSplit && tx.split_multiplier) {
+                        const originalRemaining = remainingQty / tx.split_multiplier
+                        tooltip = `Section 104: ${originalRemaining.toFixed(2)} shares (${remainingQty.toFixed(2)} split-adjusted) added to pool (new balance: ${poolDetails.quantity.toFixed(2)} split-adjusted shares at £${poolDetails.averageCost.toFixed(2)}/share average cost)`
+                      } else {
+                        tooltip = `Section 104: ${remainingQty.toFixed(2)} shares added to pool (new balance: ${poolDetails.quantity.toFixed(2)} shares at £${poolDetails.averageCost.toFixed(2)}/share average cost)`
+                      }
                       badges.push({
                         className: 'bg-green-100 text-green-800 border-green-300',
                         label: 'Section 104',
-                        title: `Section 104: ${remainingQty.toFixed(2)} shares added to pool (new balance: ${poolDetails.quantity.toFixed(2)} shares at £${poolDetails.averageCost.toFixed(2)}/share average cost)`
+                        title: tooltip
                       })
                     } else {
+                      if (hasSplit && tx.split_multiplier) {
+                        const originalRemaining = remainingQty / tx.split_multiplier
+                        tooltip = `Section 104: ${originalRemaining.toFixed(2)} shares (${remainingQty.toFixed(2)} split-adjusted) added to pooled holdings (TCGA92/S104)`
+                      } else {
+                        tooltip = `Section 104: ${remainingQty.toFixed(2)} shares added to pooled holdings (TCGA92/S104)`
+                      }
                       badges.push({
                         className: 'bg-green-100 text-green-800 border-green-300',
                         label: 'Section 104',
-                        title: `Section 104: ${remainingQty.toFixed(2)} shares added to pooled holdings (TCGA92/S104)`
+                        title: tooltip
                       })
                     }
                   }
