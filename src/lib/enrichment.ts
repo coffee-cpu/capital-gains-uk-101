@@ -1,9 +1,14 @@
 import { GenericTransaction, EnrichedTransaction } from '../types/transaction'
 import { getFXRate, convertToGBP } from './fxRates'
 import { getTaxYear } from '../utils/taxYear'
+import { applySplitNormalization } from './splits/normalization'
 
 /**
  * Enrich transactions with GBP conversions and tax year information
+ *
+ * Per HMRC TCGA92/S127, stock splits are processed first to normalize
+ * all quantities to the most recent split-adjusted units. This ensures
+ * accurate cost basis calculations and CGT matching.
  *
  * @param transactions Array of generic transactions
  * @returns Array of enriched transactions with FX rates and GBP values
@@ -11,9 +16,13 @@ import { getTaxYear } from '../utils/taxYear'
 export async function enrichTransactions(
   transactions: GenericTransaction[]
 ): Promise<EnrichedTransaction[]> {
+  // Step 1: Apply split normalization first
+  // This adjusts quantities and prices for all transactions that occurred before splits
+  const normalized = applySplitNormalization(transactions)
+
   const enriched: EnrichedTransaction[] = []
 
-  for (const tx of transactions) {
+  for (const tx of normalized) {
     try {
       // Fetch FX rate for this transaction's date and currency
       const fxRate = await getFXRate(tx.date, tx.currency)

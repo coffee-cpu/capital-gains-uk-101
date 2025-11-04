@@ -492,10 +492,38 @@ export function TransactionList() {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {tx.quantity !== null ? tx.quantity.toFixed(2) : '—'}
+                    {tx.quantity !== null ? (
+                      <div className="flex items-center gap-2">
+                        <span>{tx.quantity.toFixed(2)}</span>
+                        {tx.split_multiplier && tx.split_multiplier !== 1.0 && tx.split_adjusted_quantity !== null && (
+                          <Tooltip content={`Split-adjusted: ${tx.split_adjusted_quantity.toFixed(2)} shares (${tx.split_multiplier}x multiplier from ${tx.applied_splits?.length || 0} split${(tx.applied_splits?.length || 0) !== 1 ? 's' : ''})`}>
+                            <div className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 bg-purple-50 text-purple-700 rounded border border-purple-200 cursor-help">
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                              </svg>
+                              <span className="font-mono">{tx.split_adjusted_quantity.toFixed(0)}</span>
+                            </div>
+                          </Tooltip>
+                        )}
+                      </div>
+                    ) : '—'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {tx.price !== null ? `${getCurrencySymbol(tx.currency)}${tx.price.toFixed(2)}` : (isIncomplete ? <span className="text-yellow-600 font-medium">Missing</span> : '—')}
+                    {tx.price !== null ? (
+                      <div className="flex items-center gap-2">
+                        <span>{getCurrencySymbol(tx.currency)}{tx.price.toFixed(2)}</span>
+                        {tx.split_multiplier && tx.split_multiplier !== 1.0 && tx.split_adjusted_price !== null && (
+                          <Tooltip content={`Split-adjusted: ${getCurrencySymbol(tx.currency)}${tx.split_adjusted_price.toFixed(2)}/share (price ÷ ${tx.split_multiplier})`}>
+                            <div className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 bg-purple-50 text-purple-700 rounded border border-purple-200 cursor-help">
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17l-5-5m0 0l5-5m-5 5h12" />
+                              </svg>
+                              <span className="font-mono">{getCurrencySymbol(tx.currency)}{tx.split_adjusted_price.toFixed(2)}</span>
+                            </div>
+                          </Tooltip>
+                        )}
+                      </div>
+                    ) : (isIncomplete ? <span className="text-yellow-600 font-medium">Missing</span> : '—')}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                     {hasFxError ? (
