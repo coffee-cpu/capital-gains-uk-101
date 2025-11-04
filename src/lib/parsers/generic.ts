@@ -6,12 +6,13 @@ import { RawCSVRow } from '../../types/broker'
  * - symbol (required)
  * - name (optional)
  * - date (required, YYYY-MM-DD format)
- * - type (required, one of: BUY, SELL, DIVIDEND, FEE, INTEREST, TRANSFER, TAX)
+ * - type (required, one of: BUY, SELL, DIVIDEND, FEE, INTEREST, TRANSFER, TAX, STOCK_SPLIT)
  * - quantity (optional, number)
  * - price (optional, number)
  * - currency (required, e.g., USD, GBP, EUR)
  * - total (optional, number)
  * - fee (optional, number)
+ * - split_ratio (optional, for STOCK_SPLIT only, e.g., "10:1", "2:1")
  * - notes (optional, text)
  */
 
@@ -64,11 +65,12 @@ function normalizeGenericRow(
 
   // Optional fields
   const name = row['name']?.trim() || null
-  const quantity = row['quantity'] ? parseFloat(row['quantity']) || null : null
-  const price = row['price'] ? parseFloat(row['price']) || null : null
-  const total = row['total'] ? parseFloat(row['total']) || null : null
-  const fee = row['fee'] ? parseFloat(row['fee']) || null : null
+  const quantity = row['quantity'] ? (isNaN(parseFloat(row['quantity'])) ? null : parseFloat(row['quantity'])) : null
+  const price = row['price'] ? (isNaN(parseFloat(row['price'])) ? null : parseFloat(row['price'])) : null
+  const total = row['total'] ? (isNaN(parseFloat(row['total'])) ? null : parseFloat(row['total'])) : null
+  const fee = row['fee'] ? (isNaN(parseFloat(row['fee'])) ? null : parseFloat(row['fee'])) : null
   const notes = row['notes']?.trim() || null
+  const ratio = row['split_ratio']?.trim() || null
 
   return {
     id: `${fileId}-${rowIndex}`,
@@ -83,6 +85,7 @@ function normalizeGenericRow(
     total,
     fee,
     notes,
+    ratio,
   }
 }
 

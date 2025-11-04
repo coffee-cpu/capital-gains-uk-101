@@ -289,6 +289,9 @@ export function TransactionList() {
                 if (tx.type === 'TAX') {
                   return 'Tax withholdings are recorded for completeness but do not affect CGT calculations directly.'
                 }
+                if (tx.type === 'STOCK_SPLIT') {
+                  return 'Stock splits are treated as share reorganisations under HMRC TCGA92/S127. The tool automatically adjusts cost basis - no disposal occurs.'
+                }
                 return null
               }
 
@@ -469,10 +472,16 @@ export function TransactionList() {
                         tx.type === 'INTEREST' ? 'bg-purple-100 text-purple-800' :
                         tx.type === 'TAX' ? 'bg-yellow-100 text-yellow-800' :
                         tx.type === 'TRANSFER' ? 'bg-orange-100 text-orange-800' :
+                        tx.type === 'STOCK_SPLIT' ? 'bg-indigo-100 text-indigo-800' :
                         'bg-gray-100 text-gray-800'
                       }`}>
                         {tx.type}
                       </span>
+                      {tx.type === 'STOCK_SPLIT' && tx.ratio && (
+                        <span className="text-xs text-gray-600 font-mono">
+                          {tx.ratio}
+                        </span>
+                      )}
                       {nonRelevantTooltip && (
                         <Tooltip content={nonRelevantTooltip}>
                           <svg className="h-4 w-4 text-gray-400 cursor-help" viewBox="0 0 20 20" fill="currentColor">

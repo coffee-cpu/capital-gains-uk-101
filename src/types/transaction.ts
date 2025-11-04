@@ -10,13 +10,14 @@ export const GenericTransactionSchema = z.object({
   symbol: z.string().describe('Stock ticker or ISIN code'),
   name: z.string().nullable().describe('Full name of the asset'),
   date: z.string().date().describe('Transaction date in YYYY-MM-DD format'),
-  type: z.enum(['BUY', 'SELL', 'DIVIDEND', 'FEE', 'INTEREST', 'TRANSFER', 'TAX']).describe('Transaction type'),
+  type: z.enum(['BUY', 'SELL', 'DIVIDEND', 'FEE', 'INTEREST', 'TRANSFER', 'TAX', 'STOCK_SPLIT']).describe('Transaction type'),
   quantity: z.number().nullable().describe('Quantity bought or sold'),
   price: z.number().nullable().describe('Price per unit in transaction currency'),
   currency: z.string().describe('Original transaction currency (e.g. USD, EUR, GBP)'),
   total: z.number().nullable().describe('Total value in original currency'),
   fee: z.number().nullable().describe('Fee or commission amount'),
   notes: z.string().nullable().describe('Optional broker notes'),
+  ratio: z.string().nullable().optional().describe('Stock split ratio (e.g., "10:1", "2:1", "1:10"). Only used for STOCK_SPLIT transactions.'),
   incomplete: z.boolean().optional().describe('True if transaction is missing required data (e.g., Stock Plan Activity without price)'),
   ignored: z.boolean().optional().describe('True if transaction should be excluded from calculations (e.g., Stock Plan Activity which is always incomplete)'),
 })
@@ -36,6 +37,12 @@ export const EnrichedTransactionSchema = GenericTransactionSchema.extend({
   tax_year: z.string().describe('UK tax year (e.g. 2023/24)'),
   gain_group: z.enum(['SAME_DAY', '30_DAY', 'SECTION_104', 'NONE']).describe('HMRC matching rule applied'),
   match_groups: z.array(z.string()).optional().describe('Array of match group IDs this transaction belongs to. A single acquisition can match multiple disposals, so this is an array.'),
+
+  // Split adjustment fields (for stock splits/reorganisations per TCGA92/S127)
+  split_adjusted_quantity: z.number().nullable().optional().describe('Quantity adjusted for all stock splits that occurred after this transaction'),
+  split_adjusted_price: z.number().nullable().optional().describe('Price adjusted for all stock splits (price decreases when shares increase)'),
+  split_multiplier: z.number().optional().default(1.0).describe('Cumulative multiplier applied (e.g., 2.0 for 2:1 split, 10.0 for 10:1)'),
+  applied_splits: z.array(z.string()).optional().default([]).describe('Array of stock split transaction IDs that were applied to normalize this transaction'),
 })
 
 export type EnrichedTransaction = z.infer<typeof EnrichedTransactionSchema>
@@ -51,6 +58,7 @@ export const TransactionType = {
   INTEREST: 'INTEREST',
   TRANSFER: 'TRANSFER',
   TAX: 'TAX',
+  STOCK_SPLIT: 'STOCK_SPLIT',
 } as const
 
 /**
@@ -62,3 +70,39 @@ export const GainGroup = {
   SECTION_104: 'SECTION_104',
   NONE: 'NONE',
 } as const
+
+/**
+ * Stock Split Event
+ * Represents a stock split/reorganisation under HMRC TCGA92/S127
+ */
+export interface StockSplitEvent {
+  id: string                      // Transaction ID of the split event
+  date: string                    // ISO format: YYYY-MM-DD
+  symbol: string                  // e.g., "NVDA", "AAPL"
+  ratio: string                   // e.g., "2:1", "10:1", "1:10" (reverse split)
+  ratioMultiplier: number         // e.g., 2.0, 10.0, 0.1
+  source: string                  // e.g., "Trading 212", "Generic CSV"
+  originalTransaction?: GenericTransaction  // For audit trail
+}
+
+/**
+ * Parse split ratio string to multiplier
+ * @example "2:1" → 2.0 (2-for-1 split, shares double)
+ * @example "10:1" → 10.0 (10-for-1 split, shares 10x)
+ * @example "1:10" → 0.1 (1-for-10 reverse split, shares /10)
+ */
+export function parseRatioMultiplier(ratio: string): number {
+  const parts = ratio.split(':')
+  if (parts.length !== 2) {
+    throw new Error(`Invalid split ratio format: "${ratio}". Expected format: "new:old" (e.g., "2:1")`)
+  }
+
+  const newShares = parseFloat(parts[0])
+  const oldShares = parseFloat(parts[1])
+
+  if (isNaN(newShares) || isNaN(oldShares) || oldShares === 0) {
+    throw new Error(`Invalid split ratio values: "${ratio}"`)
+  }
+
+  return newShares / oldShares
+}

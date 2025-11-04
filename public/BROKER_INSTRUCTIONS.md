@@ -97,7 +97,7 @@ Use the Generic CSV format to record stock splits if your broker doesn't include
 **Simply specify the split ratio - we'll calculate the quantity adjustment for you!**
 
 ```csv
-date,type,symbol,ratio
+date,type,symbol,split_ratio
 2024-06-10,STOCK_SPLIT,NVDA,10:1
 2022-08-25,STOCK_SPLIT,TSLA,3:1
 2022-06-06,STOCK_SPLIT,AMZN,20:1

@@ -445,12 +445,22 @@ export function CSVImporter() {
                   <p className="font-medium mt-2">Required for DIVIDEND/FEE:</p>
                   <p className="text-gray-600">total</p>
 
+                  <p className="font-medium mt-2">Required for STOCK_SPLIT:</p>
+                  <p className="text-gray-600">split_ratio (e.g., "10:1", "2:1", "1:10" for reverse splits)</p>
+
                   <p className="font-medium mt-2">Optional:</p>
                   <p className="text-gray-600">name, total, fee, notes</p>
 
                   <p className="text-gray-600 mt-2 italic">
-                    Transaction types: BUY, SELL, DIVIDEND, FEE, INTEREST, TRANSFER, TAX
+                    Transaction types: BUY, SELL, DIVIDEND, FEE, INTEREST, TRANSFER, TAX, STOCK_SPLIT
                   </p>
+
+                  <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded">
+                    <p className="text-xs text-blue-700">
+                      <strong>Stock Splits:</strong> Use STOCK_SPLIT to record corporate actions like 10:1 splits.
+                      The tool will automatically adjust your cost basis per HMRC TCGA92/S127 rules.
+                    </p>
+                  </div>
 
                   <a
                     href="/examples/generic-example.csv"
