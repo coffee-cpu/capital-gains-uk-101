@@ -6,9 +6,10 @@ A free, privacy-focused web application that helps UK taxpayers understand and c
 
 ## Features
 
-- ✅ CSV import from popular brokers (Charles Schwab, more coming soon)
+- ✅ CSV import from popular brokers (Charles Schwab, Trading 212, Generic CSV format)
 - ✅ Transaction management with persistent storage
-- ✅ Support for all transaction types (buys, sells, dividends, transfers, etc.)
+- ✅ Support for all transaction types (buys, sells, dividends, transfers, stock splits, etc.)
+- ✅ Stock split handling (TCGA92/S127) with split-adjusted quantities
 - ✅ Duplicate file detection
 - ✅ Privacy-first: all data stored locally in your browser
 - ✅ Automatic FX rate conversion using HMRC official exchange rates
@@ -18,9 +19,9 @@ A free, privacy-focused web application that helps UK taxpayers understand and c
   - ✅ 30-day "bed and breakfast" rule (TCGA92/S106A(5))
   - ✅ Section 104 pooled holdings (TCGA92/S104)
 - ✅ Capital gains/loss calculations with full disposal records
-- 🚧 Visual explanations of CGT rules (UI integration pending)
-- 🚧 Tax year summary dashboard
-- 🚧 PDF export for tax returns
+- ✅ Tax year summary dashboard with key metrics and CGT calculations
+- ✅ PDF export for tax returns with detailed disposal records
+- 🚧 Visual explanations of CGT rules (tooltips and badges implemented, full guide pending)
 
 ## Getting Started
 
@@ -90,8 +91,9 @@ Each disposal generates a detailed record showing:
 
 ## Supported Brokers
 
-- ✅ Charles Schwab
-- 🚧 Trading 212 (coming soon)
+- ✅ Charles Schwab (standard transactions + equity awards)
+- ✅ Trading 212 (with stock split support)
+- ✅ Generic CSV format (universal import)
 - 🚧 Interactive Brokers (planned)
 - 🚧 Vanguard (planned)
 - 🚧 Hargreaves Lansdown (planned)
@@ -105,6 +107,7 @@ Each disposal generates a detailed record showing:
 - **Zustand** - State management
 - **Dexie** - IndexedDB wrapper
 - **Zod** - Schema validation
+- **@react-pdf/renderer** - PDF export
 - **Vitest** - Unit testing
 - **Playwright** - E2E testing
 
