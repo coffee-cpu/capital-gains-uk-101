@@ -33,7 +33,7 @@ import type { RawCSVRow } from '../../types/broker'
 /**
  * Map Trading 212 action to transaction type
  */
-function mapActionToType(action: string): 'BUY' | 'SELL' | 'DIVIDEND' | 'FEE' | 'INTEREST' | 'TRANSFER' | 'TAX' {
+function mapActionToType(action: string): 'BUY' | 'SELL' | 'DIVIDEND' | 'FEE' | 'INTEREST' | 'TRANSFER' | 'TAX' | 'STOCK_SPLIT' {
   const actionLower = action.toLowerCase()
 
   // Buy actions: Market buy, Limit buy, Stop buy
@@ -51,8 +51,8 @@ function mapActionToType(action: string): 'BUY' | 'SELL' | 'DIVIDEND' | 'FEE' | 
   // Transfer actions: Deposit, Withdrawal
   if (actionLower === 'deposit' || actionLower === 'withdrawal') return 'TRANSFER'
 
-  // Stock splits - Trading 212 specific (not in our transaction types, treat as FEE/adjustment)
-  if (actionLower === 'stock split') return 'FEE'
+  // Stock splits - now properly supported as STOCK_SPLIT transaction type
+  if (actionLower === 'stock split') return 'STOCK_SPLIT'
 
   // Result adjustment - Trading 212 specific
   if (actionLower === 'result adjustment') return 'FEE'

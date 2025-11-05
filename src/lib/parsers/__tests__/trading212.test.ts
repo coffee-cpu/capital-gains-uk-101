@@ -438,7 +438,7 @@ describe('Trading 212 Parser', () => {
       expect(result[0].type).toBe(TransactionType.INTEREST)
     })
 
-    it('should handle Stock split as FEE type', () => {
+    it('should handle Stock split as STOCK_SPLIT type', () => {
       const rows = [
         {
           'Action': 'Stock Split',
@@ -467,7 +467,7 @@ describe('Trading 212 Parser', () => {
       const result = normalizeTrading212Transactions(rows, 'test-file')
 
       expect(result).toHaveLength(1)
-      expect(result[0].type).toBe(TransactionType.FEE)
+      expect(result[0].type).toBe(TransactionType.STOCK_SPLIT)
       expect(result[0].notes).toContain('2-for-1 split')
     })
 
