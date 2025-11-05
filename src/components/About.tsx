@@ -56,6 +56,7 @@ export function About() {
                 <ol className="list-decimal list-inside space-y-2 ml-4">
                   <li><strong>Import transactions</strong> from your broker (Schwab, Schwab Equity Awards, or Generic format)</li>
                   <li><strong>Automatic format detection</strong> identifies your broker and normalizes the data</li>
+                  <li><strong>Stock split adjustment</strong> adjusts quantities and prices for any stock splits to ensure all shares are in comparable units</li>
                   <li><strong>FX rate enrichment</strong> converts foreign currency values to GBP using official HMRC monthly exchange rates</li>
                   <li><strong>CGT calculation</strong> applies HMRC matching rules to calculate gains/losses</li>
                 </ol>
