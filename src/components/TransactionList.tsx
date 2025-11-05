@@ -290,7 +290,7 @@ export function TransactionList() {
                   return 'Tax withholdings are recorded for completeness but do not affect CGT calculations directly.'
                 }
                 if (tx.type === 'STOCK_SPLIT') {
-                  return 'Stock splits are treated as share reorganisations under HMRC TCGA92/S127. The tool automatically adjusts cost basis - no disposal occurs.'
+                  return 'Stock splits are treated as share reorganisations under HMRC TCGA92/S127. This split adjusts all transactions for this stock before the split date to post-split quantities for CGT calculations. No disposal occurs.'
                 }
                 return null
               }
@@ -554,16 +554,27 @@ export function TransactionList() {
                     {tx.quantity !== null ? (
                       <div className="flex items-center gap-2">
                         <span>{tx.quantity.toFixed(2)}</span>
-                        {tx.split_multiplier && tx.split_multiplier !== 1.0 && tx.split_adjusted_quantity != null && (
-                          <Tooltip content={`Split-adjusted: ${tx.split_adjusted_quantity.toFixed(2)} shares (${tx.split_multiplier}x multiplier from ${tx.applied_splits?.length || 0} split${(tx.applied_splits?.length || 0) !== 1 ? 's' : ''})`}>
-                            <div className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 bg-purple-50 text-purple-700 rounded border border-purple-200 cursor-help">
-                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                              </svg>
-                              <span className="font-mono">{tx.split_adjusted_quantity.toFixed(0)}</span>
-                            </div>
-                          </Tooltip>
-                        )}
+                        {tx.split_multiplier && tx.split_multiplier !== 1.0 && tx.split_adjusted_quantity != null && (() => {
+                          // Get split dates by looking up split transaction IDs
+                          const splitDates = tx.applied_splits
+                            ?.map(splitId => transactions.find(t => t.id === splitId)?.date)
+                            .filter(Boolean)
+                            .join(', ') || ''
+                          const splitCount = tx.applied_splits?.length || 0
+                          const splitText = splitCount === 1 ? 'split' : 'splits'
+                          const dateText = splitDates ? ` on ${splitDates}` : ''
+
+                          return (
+                            <Tooltip content={`Split-adjusted quantity: ${tx.split_adjusted_quantity.toFixed(2)} shares (${tx.split_multiplier}x multiplier from ${splitCount} ${splitText}${dateText})`}>
+                              <div className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 bg-purple-50 text-purple-700 rounded border border-purple-200 cursor-help">
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                                </svg>
+                                <span className="font-mono">{tx.split_adjusted_quantity.toFixed(0)}</span>
+                              </div>
+                            </Tooltip>
+                          )
+                        })()}
                       </div>
                     ) : '—'}
                   </td>
@@ -572,7 +583,7 @@ export function TransactionList() {
                       <div className="flex items-center gap-2">
                         <span>{getCurrencySymbol(tx.currency)}{tx.price.toFixed(2)}</span>
                         {tx.split_multiplier && tx.split_multiplier !== 1.0 && tx.split_adjusted_price != null && (
-                          <Tooltip content={`Split-adjusted: ${getCurrencySymbol(tx.currency)}${tx.split_adjusted_price.toFixed(2)}/share (price ÷ ${tx.split_multiplier})`}>
+                          <Tooltip content={`Split-adjusted price: ${getCurrencySymbol(tx.currency)}${tx.split_adjusted_price.toFixed(2)}/share (original price ÷ ${tx.split_multiplier})`}>
                             <div className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 bg-purple-50 text-purple-700 rounded border border-purple-200 cursor-help">
                               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17l-5-5m0 0l5-5m-5 5h12" />
@@ -599,7 +610,7 @@ export function TransactionList() {
                           <span>£{tx.price_gbp.toFixed(2)}</span>
                         )}
                         {tx.split_multiplier && tx.split_multiplier !== 1.0 && tx.split_adjusted_price_gbp !== null && tx.split_adjusted_price_gbp !== undefined && (
-                          <Tooltip content={`Split-adjusted: £${tx.split_adjusted_price_gbp.toFixed(2)}/share (price ÷ ${tx.split_multiplier})`}>
+                          <Tooltip content={`Split-adjusted price: £${tx.split_adjusted_price_gbp.toFixed(2)}/share (original price ÷ ${tx.split_multiplier})`}>
                             <div className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 bg-purple-50 text-purple-700 rounded border border-purple-200 cursor-help">
                               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17l-5-5m0 0l5-5m-5 5h12" />

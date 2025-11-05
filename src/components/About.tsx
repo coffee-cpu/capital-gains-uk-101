@@ -136,6 +136,70 @@ export function About() {
             </div>
           </section>
 
+          {/* Stock Splits */}
+          <section className="bg-white shadow rounded-lg p-6">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">Stock Splits</h2>
+            <div className="space-y-4 text-gray-700">
+              <p>
+                Stock splits are corporate actions where a company increases the number of shares outstanding by dividing existing shares. For example, in a 4:1 split, each share is divided into 4 shares, and the price per share is divided by 4.
+              </p>
+
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">HMRC Treatment</h3>
+                <p>
+                  Under HMRC rules, stock splits are treated as <strong>share reorganisations</strong> (TCGA92/S127). Importantly:
+                </p>
+                <ul className="list-disc list-inside space-y-2 ml-4 mt-2">
+                  <li><strong>No disposal occurs:</strong> A stock split is not a taxable event — you are not selling or disposing of your shares</li>
+                  <li><strong>Cost basis is preserved:</strong> The total cost of your holding remains the same, just spread across more shares</li>
+                  <li><strong>No capital gains tax:</strong> No CGT is due at the time of the split</li>
+                </ul>
+                <p className="text-sm text-gray-600 mt-2">
+                  Reference:{' '}
+                  <a
+                    href="https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51700"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline"
+                  >
+                    HMRC CG51700
+                  </a>
+                  {' '}(Share reorganisations and company reconstructions)
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">How This Tool Handles Splits</h3>
+                <p>
+                  To ensure accurate CGT calculations, the calculator automatically adjusts all transactions for affected stocks:
+                </p>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-2">
+                  <div className="space-y-2 text-sm">
+                    <div>
+                      <strong className="text-blue-900">Adjustment Process:</strong>
+                      <ul className="list-disc list-inside ml-4 mt-1 text-blue-800">
+                        <li>All transactions <strong>before</strong> the split date are adjusted to post-split quantities</li>
+                        <li>Share quantities are multiplied by the split ratio (e.g., ×4 for a 4:1 split)</li>
+                        <li>Share prices are divided by the split ratio (e.g., ÷4 for a 4:1 split)</li>
+                        <li>Original values are preserved and shown alongside adjusted values for transparency</li>
+                      </ul>
+                    </div>
+                    <div className="pt-2">
+                      <strong className="text-blue-900">Example (4:1 split on 2020-08-31):</strong>
+                      <div className="ml-4 mt-1 font-mono text-xs">
+                        <div>Original: Bought 10 shares @ $360/share = $3,600 total</div>
+                        <div>Adjusted: Bought 40 shares @ $90/share = $3,600 total</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <p className="mt-2">
+                  This adjustment ensures that when calculating capital gains, all share quantities are in comparable units, making the matching rules work correctly across split events.
+                </p>
+              </div>
+            </div>
+          </section>
+
           {/* FX Rates */}
           <section className="bg-white shadow rounded-lg p-6">
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">Exchange Rates</h2>
