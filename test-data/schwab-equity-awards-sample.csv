@@ -1,7 +1,0 @@
-"Date","Action","Symbol","Description","Quantity","FeesAndCommissions","DisbursementElection","Amount","AwardDate","AwardId","FairMarketValuePrice","SalePrice","SharesSoldWithheldForTaxes","NetSharesDeposited","Taxes"
-"08/15/2024","Lapse","AAPL","Restricted Stock Lapse","100","","","","","","","","","",""
-"","","","","","","","","03/20/2023","123456","$150.00","","48","52","$7,200.00"
-"05/15/2024","Lapse","AAPL","Restricted Stock Lapse","50","","","","","","","","","",""
-"","","","","","","","","03/20/2024","123457","$160.00","","24","26","$3,840.00"
-"02/15/2024","Lapse","MSFT","Restricted Stock Lapse","75","","","","","","","","","",""
-"","","","","","","","","03/21/2022","123458","$350.00","","36","39","$12,600.00"

@@ -265,7 +265,16 @@ Always store dates as ISO 8601: `YYYY-MM-DD`. Parsers must convert from broker-s
 - **Unit tests**: All parsers, detector logic, utility functions
 - **E2E tests**: Full import workflow with real CSV files
 - Test files mirror source structure: `src/lib/foo.ts` → `src/lib/__tests__/foo.test.ts`
-- E2E tests in separate `e2e/` directory
+- E2E tests in separate `e2e/` directory with fixtures in `e2e/fixtures/`
+
+#### Running E2E Tests Efficiently
+When running E2E tests via Bash tool:
+- **Monitor output actively**: Check `BashOutput` frequently, don't wait for full command completion
+- **React to failures immediately**: When error messages appear in console, act on them right away
+- **Don't wait for timeouts**: If a test is clearly failing (e.g., `ReferenceError`, component not found), fix it immediately rather than waiting for the 30s test timeout or 2-minute bash timeout
+- **Kill stuck tests if needed**: Use `KillShell` if a test is hanging and you need to move forward
+
+The goal is rapid iteration - see error, fix error, rerun - not passive waiting.
 
 ### Debugging Frontend Issues
 
