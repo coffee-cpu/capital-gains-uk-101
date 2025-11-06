@@ -27,29 +27,6 @@ interface TransactionState {
 }
 
 /**
- * Load help panel state from localStorage
- */
-function loadHelpPanelState(): boolean {
-  try {
-    const stored = localStorage.getItem('helpPanelOpen')
-    return stored !== null ? JSON.parse(stored) : true // Default to open
-  } catch {
-    return true
-  }
-}
-
-/**
- * Save help panel state to localStorage
- */
-function saveHelpPanelState(isOpen: boolean): void {
-  try {
-    localStorage.setItem('helpPanelOpen', JSON.stringify(isOpen))
-  } catch {
-    // Ignore localStorage errors
-  }
-}
-
-/**
  * Zustand store for runtime transaction state and CGT calculations
  */
 export const useTransactionStore = create<TransactionState>((set, get) => ({
@@ -57,7 +34,7 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
   selectedTaxYear: '2024/25',
   cgtResults: null,
   hasExportedPDF: false,
-  isHelpPanelOpen: loadHelpPanelState(),
+  isHelpPanelOpen: false, // Always start closed on page load
   helpContext: 'default',
 
   setTransactions: (transactions) => set({ transactions }),
@@ -68,18 +45,11 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
 
   setHasExportedPDF: (hasExported) => set({ hasExportedPDF: hasExported }),
 
-  setHelpPanelOpen: (open) => {
-    saveHelpPanelState(open)
-    set({ isHelpPanelOpen: open })
-  },
+  setHelpPanelOpen: (open) => set({ isHelpPanelOpen: open }),
 
   setHelpContext: (context) => set({ helpContext: context }),
 
-  toggleHelpPanel: () => {
-    const newState = !get().isHelpPanelOpen
-    saveHelpPanelState(newState)
-    set({ isHelpPanelOpen: newState })
-  },
+  toggleHelpPanel: () => set({ isHelpPanelOpen: !get().isHelpPanelOpen }),
 
   addTransactions: (newTransactions) =>
     set((state) => ({
