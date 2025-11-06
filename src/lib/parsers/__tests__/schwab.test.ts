@@ -225,6 +225,71 @@ describe('Schwab Parser', () => {
       expect(result[0].total).toBe(1000.00)
     })
 
+    it('should normalize stock split transactions', () => {
+      const rows = [
+        {
+          'Date': '08/31/2020',
+          'Action': 'Stock Split',
+          'Symbol': 'AAPL',
+          'Description': 'APPLE INC 4 FOR 1 STOCK SPLIT',
+          'Quantity': '',
+          'Price': '',
+          'Fees & Comm': '',
+          'Amount': '',
+        },
+      ]
+
+      const result = normalizeSchwabTransactions(rows, 'test-file')
+
+      expect(result).toHaveLength(1)
+      expect(result[0].type).toBe(TransactionType.STOCK_SPLIT)
+      expect(result[0].symbol).toBe('AAPL')
+      expect(result[0].date).toBe('2020-08-31')
+      expect(result[0].ratio).toBe('4:1')
+      expect(result[0].quantity).toBeNull()
+      expect(result[0].price).toBeNull()
+    })
+
+    it('should parse 10-for-1 stock split ratio', () => {
+      const rows = [
+        {
+          'Date': '06/10/2024',
+          'Action': 'Stock Split',
+          'Symbol': 'NVDA',
+          'Description': 'NVIDIA CORP 10 FOR 1 STOCK SPLIT',
+          'Quantity': '',
+          'Price': '',
+          'Fees & Comm': '',
+          'Amount': '',
+        },
+      ]
+
+      const result = normalizeSchwabTransactions(rows, 'test-file')
+
+      expect(result).toHaveLength(1)
+      expect(result[0].ratio).toBe('10:1')
+    })
+
+    it('should parse reverse stock split ratio', () => {
+      const rows = [
+        {
+          'Date': '06/10/2024',
+          'Action': 'Stock Split',
+          'Symbol': 'XYZ',
+          'Description': 'COMPANY XYZ 1 FOR 10 STOCK SPLIT',
+          'Quantity': '',
+          'Price': '',
+          'Fees & Comm': '',
+          'Amount': '',
+        },
+      ]
+
+      const result = normalizeSchwabTransactions(rows, 'test-file')
+
+      expect(result).toHaveLength(1)
+      expect(result[0].ratio).toBe('1:10')
+    })
+
     it('should process multiple transactions with sequential IDs', () => {
       const rows = [
         {

@@ -52,6 +52,11 @@ function normalizeSchwabRow(row: RawCSVRow, fileId: string, rowIndex: number): G
   // Users should use Charles Schwab Equity Awards data instead, which has complete information
   const isStockPlanActivity = action?.toLowerCase() === 'stock plan activity'
 
+  // Extract split ratio for STOCK_SPLIT transactions
+  const ratio = type === TransactionType.STOCK_SPLIT
+    ? parseSchwabStockSplitRatio(row['Description'])
+    : null
+
   return {
     id: `${fileId}-${rowIndex}`,
     source: 'Charles Schwab',
@@ -64,6 +69,7 @@ function normalizeSchwabRow(row: RawCSVRow, fileId: string, rowIndex: number): G
     currency: 'USD', // Schwab reports in USD
     total,
     fee,
+    ratio,
     notes: isStockPlanActivity ? 'Stock Plan Activity - ignored in favor of Equity Awards data. Upload Charles Schwab Equity Awards file for complete information.' : null,
     incomplete: isStockPlanActivity,
     ignored: isStockPlanActivity, // Always ignore Stock Plan Activity transactions
@@ -81,6 +87,9 @@ function mapSchwabAction(action: string): typeof TransactionType[keyof typeof Tr
   }
   if (actionLower === 'sell') {
     return TransactionType.SELL
+  }
+  if (actionLower === 'stock split') {
+    return TransactionType.STOCK_SPLIT
   }
   if (actionLower.includes('dividend')) {
     return TransactionType.DIVIDEND
@@ -134,4 +143,23 @@ function parseSchwabCurrency(value: string): number | null {
   const parsed = parseFloat(cleaned)
 
   return isNaN(parsed) ? null : parsed
+}
+
+/**
+ * Parse stock split ratio from Schwab description
+ * Examples:
+ *   "APPLE INC 4 FOR 1 STOCK SPLIT" -> "4:1"
+ *   "NVIDIA CORP 10 FOR 1 STOCK SPLIT" -> "10:1"
+ *   "COMPANY 1 FOR 10 STOCK SPLIT" -> "1:10" (reverse split)
+ * Returns ratio string in "new:old" format or null if not found
+ */
+function parseSchwabStockSplitRatio(description: string | undefined): string | null {
+  if (!description) return null
+
+  // Match patterns like "4 FOR 1", "10 FOR 1", "1 FOR 10" (case insensitive)
+  const match = description.match(/(\d+)\s+for\s+(\d+)/i)
+  if (!match) return null
+
+  const [, newShares, oldShares] = match
+  return `${newShares}:${oldShares}`
 }
