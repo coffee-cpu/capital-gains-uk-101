@@ -21,7 +21,7 @@ A free, privacy-focused web application that helps UK taxpayers understand and c
 - ✅ Capital gains/loss calculations with full disposal records
 - ✅ Tax year summary dashboard with key metrics and CGT calculations
 - ✅ PDF export for tax returns with detailed disposal records
-- 🚧 Visual explanations of CGT rules (tooltips and badges implemented, full guide pending)
+- ✅ Context-sensitive help panel with interactive CGT rule explanations, examples, and HMRC references
 
 ## Getting Started
 

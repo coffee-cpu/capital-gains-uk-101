@@ -1,16 +1,22 @@
 # Capital Gains Tax Visualiser - Roadmap
 
 ## 🎯 Current Status
-- ✅ CSV import (Schwab, Schwab Equity Awards, Generic CSV)
-- ✅ Transaction list display
-- ✅ Support for all transaction types (BUY, SELL, DIVIDEND, INTEREST, TAX, TRANSFER, FEE)
+- ✅ CSV import (Schwab, Schwab Equity Awards, Trading 212, Generic CSV)
+- ✅ Transaction list display with CGT rule badges
+- ✅ Support for all transaction types (BUY, SELL, DIVIDEND, INTEREST, TAX, TRANSFER, FEE, STOCK_SPLIT)
+- ✅ Stock split handling (TCGA92/S127) with quantity normalization
 - ✅ Visual distinction for non-CGT-relevant transactions
 - ✅ Duplicate file detection
 - ✅ IndexedDB persistence
+- ✅ FX rate conversion using HMRC official exchange rates
+- ✅ HMRC-compliant CGT calculation engine (same-day, 30-day, Section 104)
+- ✅ Tax year summary dashboard with gains/losses
+- ✅ PDF export for tax returns
+- ✅ Context-sensitive help panel with CGT rule explanations
+- ✅ About page with detailed process overview
 - ✅ Clear data functionality
 - ✅ Footer with disclaimer
 - ✅ Rebranded to "Capital Gains Tax Visualiser"
-- ✅ Generic CSV import (auto-detected)
 
 ## 📋 Planned Features
 
@@ -21,7 +27,7 @@
   - Simple mode selection (Broker CSV vs Generic CSV)
   - Clear documentation of required/optional fields
 
-- [ ] **About Page**
+- [x] **About Page** ✅ *Completed 2025-10-20*
   - How the calculator works
   - HMRC matching rules explanation
   - Disclaimer and legal info
@@ -32,14 +38,19 @@
   - Update README
   - Update sidebar with logo and new name
 
-- [ ] **Explanation Panel**
-  - Right sidebar with matching rules
-  - Color-coded examples
+- [x] **Context-Sensitive Help Panel** ✅ *Completed 2025-11-06*
+  - Desktop-only overlay panel with detailed CGT rule explanations
+  - Context-aware content (same-day, 30-day, Section 104, stock splits, tax year)
+  - 3-tab interface: Explanation, Example, References
+  - Interactive examples with step-by-step calculations
   - Links to official HMRC docs:
-    - [CG51500P - Share identification rules overview](https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51500p)
     - [CG51560 - Same-day and 30-day matching rules](https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51560)
     - [CG51620 - Section 104 pooled holdings](https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51620)
-  - Interactive tooltips
+    - [CG51700 - Share reorganisations (stock splits)](https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51700)
+    - [HS284 - Shares and Capital Gains Tax](https://www.gov.uk/government/publications/shares-and-capital-gains-tax-hs284-self-assessment-helpsheet)
+  - Click-triggered from CGT badges and help icon
+  - Auto-close on click outside or Escape key
+  - Markdown-style formatting support
 
 - [ ] **Tax Year Allowances**
   - Display annual CGT allowance (£3,000 for 2024/25)
@@ -49,38 +60,39 @@
 
 ### Core Functionality (per Spec)
 
-- [ ] **FX Rate Integration**
+- [x] **FX Rate Integration** ✅ *Completed 2025-10-25*
   - Bank of England API integration
   - Historical rate fetching
   - Cache rates in IndexedDB
-  - Fallback to manual entry
+  - HMRC official monthly exchange rates
 
-- [ ] **Transaction Enrichment**
+- [x] **Transaction Enrichment** ✅ *Completed 2025-10-25*
   - Convert all amounts to GBP
   - Calculate tax year for each transaction
   - Add FX rate metadata
+  - Stock split quantity normalization
 
-- [ ] **CGT Matching Engine**
-  - Same-day rule implementation
-  - 30-day "bed and breakfast" rule
-  - Section 104 pooled holdings
-  - Visual matching indicators
+- [x] **CGT Matching Engine** ✅ *Completed 2025-10-30*
+  - Same-day rule implementation (TCGA92/S105(1))
+  - 30-day "bed and breakfast" rule (TCGA92/S106A(5))
+  - Section 104 pooled holdings (TCGA92/S104)
+  - Visual matching indicators with color-coded badges
 
-- [ ] **Tax Year Selector**
-  - Switch between tax years (2022/23, 2023/24, 2024/25)
+- [x] **Tax Year Selector** ✅ *Completed 2025-10-31*
+  - Switch between available tax years
   - Recalculate gains for selected year
-  - Filter transactions by year
+  - Display period dates (6 April - 5 April)
 
 - [ ] **Charts & Visualizations**
   - Gains/losses over time
   - Holdings breakdown
   - Tax liability visualization
 
-- [ ] **PDF Export**
+- [x] **PDF Export** ✅ *Completed 2025-11-02*
   - Generate tax report
   - Include all calculations
-  - HMRC-ready format
-  - Color-coded matching
+  - Disposal records with rule matching
+  - Section 104 pool summary
 
 ### Additional Brokers
 
@@ -90,10 +102,11 @@
   - Auto-detection alongside regular Schwab
   - Unit tests with sample data
 
-- [ ] **Trading 212 Support**
-  - Parser implementation
-  - Column mapping
+- [x] **Trading 212 Support** ✅ *Completed 2025-10-28*
+  - Parser implementation with stock split support
+  - Column mapping for all transaction types
   - Test fixtures
+  - Auto-detection alongside other brokers
 
 - [ ] **Interactive Brokers**
 - [ ] **Vanguard**
@@ -153,4 +166,4 @@
 3. Commit the ROADMAP.md update along with the feature code
 4. This ensures the roadmap stays in sync with actual progress
 
-**Last Updated:** 2025-10-09
+**Last Updated:** 2025-11-06
