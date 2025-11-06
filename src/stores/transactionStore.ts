@@ -1,21 +1,52 @@
 import { create } from 'zustand'
 import { GenericTransaction, EnrichedTransaction } from '../types/transaction'
 import { CGTCalculationResult, DisposalRecord, TaxYearSummary, Section104Pool } from '../types/cgt'
+import { HelpContext } from '../utils/helpContent'
 
 interface TransactionState {
   transactions: EnrichedTransaction[]
   selectedTaxYear: string
   cgtResults: CGTCalculationResult | null
   hasExportedPDF: boolean
+  // Help panel state
+  isHelpPanelOpen: boolean
+  helpContext: HelpContext
   setTransactions: (transactions: EnrichedTransaction[]) => void
   setSelectedTaxYear: (year: string) => void
   setCGTResults: (results: CGTCalculationResult) => void
   addTransactions: (transactions: GenericTransaction[]) => void
   setHasExportedPDF: (hasExported: boolean) => void
+  // Help panel actions
+  setHelpPanelOpen: (open: boolean) => void
+  setHelpContext: (context: HelpContext) => void
+  toggleHelpPanel: () => void
   // Computed getters for CGT data
   getDisposals: () => DisposalRecord[]
   getTaxYearSummary: (taxYear: string) => TaxYearSummary | undefined
   getSection104Pools: () => Map<string, Section104Pool>
+}
+
+/**
+ * Load help panel state from localStorage
+ */
+function loadHelpPanelState(): boolean {
+  try {
+    const stored = localStorage.getItem('helpPanelOpen')
+    return stored !== null ? JSON.parse(stored) : true // Default to open
+  } catch {
+    return true
+  }
+}
+
+/**
+ * Save help panel state to localStorage
+ */
+function saveHelpPanelState(isOpen: boolean): void {
+  try {
+    localStorage.setItem('helpPanelOpen', JSON.stringify(isOpen))
+  } catch {
+    // Ignore localStorage errors
+  }
 }
 
 /**
@@ -26,6 +57,8 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
   selectedTaxYear: '2024/25',
   cgtResults: null,
   hasExportedPDF: false,
+  isHelpPanelOpen: loadHelpPanelState(),
+  helpContext: 'default',
 
   setTransactions: (transactions) => set({ transactions }),
 
@@ -34,6 +67,19 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
   setCGTResults: (results) => set({ cgtResults: results }),
 
   setHasExportedPDF: (hasExported) => set({ hasExportedPDF: hasExported }),
+
+  setHelpPanelOpen: (open) => {
+    saveHelpPanelState(open)
+    set({ isHelpPanelOpen: open })
+  },
+
+  setHelpContext: (context) => set({ helpContext: context }),
+
+  toggleHelpPanel: () => {
+    const newState = !get().isHelpPanelOpen
+    saveHelpPanelState(newState)
+    set({ isHelpPanelOpen: newState })
+  },
 
   addTransactions: (newTransactions) =>
     set((state) => ({

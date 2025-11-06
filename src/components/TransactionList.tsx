@@ -22,6 +22,8 @@ export function TransactionList() {
   const transactions = useTransactionStore((state) => state.transactions)
   const getDisposals = useTransactionStore((state) => state.getDisposals)
   const getSection104Pools = useTransactionStore((state) => state.getSection104Pools)
+  const setHelpPanelOpen = useTransactionStore((state) => state.setHelpPanelOpen)
+  const setHelpContext = useTransactionStore((state) => state.setHelpContext)
   const [showFxInfo, setShowFxInfo] = useState(false)
   const [hoveredMatchGroup, setHoveredMatchGroup] = useState<string | null>(null)
 
@@ -222,11 +224,25 @@ export function TransactionList() {
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-blue-50 z-10">
-                <Tooltip content="CGT Rule indicates how HMRC matches this transaction for Capital Gains Tax calculation: Same Day (same calendar day), 30-Day (bed & breakfast rule), or Section 104 (pooled holdings)">
-                  <span className="cursor-help border-b border-dotted border-gray-500">
-                    CGT Rule
-                  </span>
-                </Tooltip>
+                <div className="flex items-center gap-1.5">
+                  <Tooltip content="CGT Rule indicates how HMRC matches this transaction for Capital Gains Tax calculation: Same Day (same calendar day), 30-Day (bed & breakfast rule), or Section 104 (pooled holdings)">
+                    <span className="cursor-help border-b border-dotted border-gray-500">
+                      CGT Rule
+                    </span>
+                  </Tooltip>
+                  <button
+                    onClick={() => {
+                      setHelpContext('default')
+                      setHelpPanelOpen(true)
+                    }}
+                    className="p-0.5 rounded hover:bg-blue-100 transition-colors"
+                    aria-label="Learn about CGT rules"
+                  >
+                    <svg className="w-3.5 h-3.5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                </div>
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Date
@@ -479,13 +495,29 @@ export function TransactionList() {
                   }`}>
                     {cgtBadges ? (
                       <div className="flex flex-wrap gap-1">
-                        {cgtBadges.map((badge, index) => (
-                          <Tooltip key={index} content={badge.title}>
-                            <span className={`inline-flex px-1.5 py-0.5 text-[10px] font-semibold rounded-full border whitespace-nowrap ${badge.className}`}>
-                              {badge.label}
-                            </span>
-                          </Tooltip>
-                        ))}
+                        {cgtBadges.map((badge, index) => {
+                          // Determine which help context to show
+                          const getContextForBadge = (label: string) => {
+                            if (label === 'Same Day') return 'same-day'
+                            if (label === '30-Day') return '30-day'
+                            if (label === 'Section 104') return 'section104'
+                            return 'default'
+                          }
+
+                          return (
+                            <Tooltip key={index} content={badge.title}>
+                              <span
+                                className={`inline-flex px-1.5 py-0.5 text-[10px] font-semibold rounded-full border whitespace-nowrap cursor-pointer hover:ring-2 hover:ring-offset-1 transition-all ${badge.className}`}
+                                onClick={() => {
+                                  setHelpContext(getContextForBadge(badge.label) as any)
+                                  setHelpPanelOpen(true)
+                                }}
+                              >
+                                {badge.label}
+                              </span>
+                            </Tooltip>
+                          )
+                        })}
                       </div>
                     ) : (
                       <span className="text-gray-400">—</span>

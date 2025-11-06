@@ -6,6 +6,7 @@ import { About } from './components/About'
 import { Footer } from './components/Footer'
 import { Sidebar } from './components/Sidebar'
 import { FlowGuide } from './components/FlowGuide'
+import { HelpPanel } from './components/HelpPanel'
 import { useTransactionStore } from './stores/transactionStore'
 import { db } from './lib/db'
 import { deduplicateTransactions } from './utils/deduplication'
@@ -108,6 +109,8 @@ function App() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar currentPage="calculator" isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+
+      {/* Main content area */}
       <div className="flex-1 flex flex-col overflow-auto relative">
         {/* Mobile header */}
         <header className="lg:hidden sticky top-0 z-10 bg-gradient-to-br from-blue-50 to-indigo-50 border-b border-gray-200 px-4 py-3">
@@ -160,6 +163,9 @@ function App() {
 
         <Footer />
       </div>
+
+      {/* Help Panel (sticky sidebar on desktop, overlay on mobile) */}
+      <HelpPanel />
     </div>
   )
 }
