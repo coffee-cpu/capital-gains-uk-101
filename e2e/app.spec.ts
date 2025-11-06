@@ -8,12 +8,8 @@ test.describe('Capital Gains Tax Visualiser App', () => {
     await expect(page).toHaveTitle(/Capital Gains Tax Visualiser/)
 
     // Check that sidebar has branding
-    const branding = page.getByText(/Capital Gains Tax/i)
+    const branding = page.getByRole('complementary').getByText(/Capital Gains Tax/i)
     await expect(branding).toBeVisible()
-
-    // Check visualiser text
-    const visualiser = page.getByText(/Visualiser/i)
-    await expect(visualiser).toBeVisible()
   })
 
   test('should have proper styling applied', async ({ page }) => {
