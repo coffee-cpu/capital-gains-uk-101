@@ -85,4 +85,49 @@ test.describe('Tax Year Summary Verification', () => {
       console.log(`Switched to tax year: ${taxYear}`)
     }
   })
+
+  test('should calculate correct taxable gain with generic-example.csv', async ({ page }) => {
+    await page.goto('/')
+
+    // Upload the public generic example file
+    const fileInput = page.locator('input[type="file"]')
+    await expect(fileInput).toBeVisible()
+
+    const filePath = path.join(__dirname, '..', 'public', 'examples', 'generic-example.csv')
+    await fileInput.setInputFiles(filePath)
+
+    // Wait for import to complete
+    await expect(page.getByText(/file\(s\) imported successfully/i)).toBeVisible({ timeout: 15000 })
+
+    // Wait for Tax Year Summary section to appear
+    await expect(page.getByRole('heading', { name: 'Tax Year Summary' })).toBeVisible({ timeout: 10000 })
+
+    // Select the 2024/25 tax year
+    const taxYearSelect = page.locator('#tax-year-select')
+    await expect(taxYearSelect).toBeVisible()
+    await taxYearSelect.selectOption('2024/25')
+
+    // Wait for summary to update
+    await page.waitForTimeout(500)
+
+    // Verify the period is correct
+    await expect(page.getByText('Period: 2024-04-06 to 2025-04-05')).toBeVisible()
+
+    // Verify Taxable Gain value is displayed and calculated correctly
+    // This test verifies that taxable gain calculation works end-to-end with:
+    // - Stock splits (AAPL 4:1, TSLA 3:1, NVDA 10:1, AMZN 20:1)
+    // - Same-day matching rules
+    // - 30-day bed-and-breakfast rules
+    // - Section 104 pooling
+    // - Annual exemption deduction (£3,000 for 2024/25)
+
+    // Verify the expected Taxable Gain value for 2024/25
+    // This value is calculated with:
+    // - Stock splits applied (AAPL 4:1, TSLA 3:1, NVDA 10:1, AMZN 20:1)
+    // - Same-day matching (e.g., AAPL 2024-03-10, NVDA 2024-10-01, TSLA 2024-05-10)
+    // - 30-day bed-and-breakfast (e.g., AAPL 2024-03-25, TSLA 2024-06-20)
+    // - Section 104 pooling for remaining shares
+    // - Annual exemption (£3,000) deducted
+    await expect(page.getByText('£7,256.83')).toBeVisible()
+  })
 })
