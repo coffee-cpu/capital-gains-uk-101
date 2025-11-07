@@ -199,6 +199,16 @@ function generateTaxYearSummaries(
     // Get dividend allowance for this tax year
     const dividendAllowance = getDividendAllowance(taxYear)
 
+    // Calculate interest totals for this tax year
+    const yearInterest = transactions.filter(
+      tx => tx.tax_year === taxYear && tx.type === 'INTEREST'
+    )
+    const totalInterest = yearInterest.length
+    const totalInterestGbp = yearInterest.reduce(
+      (sum, tx) => sum + (tx.value_gbp || 0),
+      0
+    )
+
     summaries.push({
       taxYear,
       startDate,
@@ -215,6 +225,8 @@ function generateTaxYearSummaries(
       totalDividends,
       totalDividendsGbp,
       dividendAllowance,
+      totalInterest,
+      totalInterestGbp,
     })
   }
 

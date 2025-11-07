@@ -113,6 +113,10 @@ export interface TaxYearSummary {
   totalDividendsGbp: number
   /** Dividend allowance for this tax year (from HMRC) */
   dividendAllowance: number
+  /** Total number of interest transactions */
+  totalInterest: number
+  /** Total interest income in GBP */
+  totalInterestGbp: number
 }
 
 /**
@@ -182,4 +186,6 @@ export const TaxYearSummarySchema = z.object({
   totalDividends: z.number().int().nonnegative(),
   totalDividendsGbp: z.number().nonnegative(),
   dividendAllowance: z.number().nonnegative(),
+  totalInterest: z.number().int().nonnegative(),
+  totalInterestGbp: z.number().nonnegative(),
 })

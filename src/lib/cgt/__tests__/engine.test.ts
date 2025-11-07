@@ -758,5 +758,63 @@ describe('CGT Engine', () => {
       expect(summary.totalDividendsGbp).toBe(300)
       expect(summary.dividendAllowance).toBe(500)
     })
+
+    it('should include interest income in tax year summary', () => {
+      const transactions: EnrichedTransaction[] = [
+        {
+          id: 'tx-1',
+          source: 'test',
+          symbol: 'CASH',
+          name: 'Savings Account',
+          date: '2024-06-15',
+          type: 'INTEREST',
+          quantity: null,
+          price: null,
+          currency: 'USD',
+          total: 800,
+          fee: 0,
+          notes: null,
+          fx_rate: 1.0,
+          price_gbp: null,
+          value_gbp: 800,
+          fee_gbp: 0,
+          fx_source: 'HMRC',
+          fx_error: null,
+          tax_year: '2024/25',
+          gain_group: 'NONE',
+        },
+        {
+          id: 'tx-2',
+          source: 'test',
+          symbol: 'CASH',
+          name: 'Savings Account',
+          date: '2024-07-20',
+          type: 'INTEREST',
+          quantity: null,
+          price: null,
+          currency: 'USD',
+          total: 400,
+          fee: 0,
+          notes: null,
+          fx_rate: 1.0,
+          price_gbp: null,
+          value_gbp: 400,
+          fee_gbp: 0,
+          fx_source: 'HMRC',
+          fx_error: null,
+          tax_year: '2024/25',
+          gain_group: 'NONE',
+        },
+      ]
+
+      const result = calculateCGT(transactions)
+
+      expect(result.taxYearSummaries).toHaveLength(1)
+
+      const summary = result.taxYearSummaries[0]
+      expect(summary.taxYear).toBe('2024/25')
+      expect(summary.totalInterest).toBe(2)
+      expect(summary.totalInterestGbp).toBe(1200)
+    })
   })
 })

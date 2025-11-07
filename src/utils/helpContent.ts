@@ -5,7 +5,7 @@
  * detailed explanations of CGT rules, examples, and HMRC references.
  */
 
-export type HelpContext = 'default' | 'same-day' | '30-day' | 'section104' | 'stock-split' | 'tax-year' | 'dividend'
+export type HelpContext = 'default' | 'same-day' | '30-day' | 'section104' | 'stock-split' | 'tax-year' | 'dividend' | 'interest'
 
 export interface HelpContent {
   title: string
@@ -362,6 +362,61 @@ The allowance has been significantly reduced in recent years.`,
         title: 'Dividend allowances',
         url: 'https://www.gov.uk/government/publications/dividend-allowance-factsheet/dividend-allowance-factsheet',
         description: 'Detailed factsheet on dividend allowance changes'
+      }
+    ]
+  },
+
+  interest: {
+    title: 'Interest Income Tax',
+    explanation: `Interest income from savings accounts, bonds, and other sources is subject to income tax, **not** capital gains tax. The Personal Savings Allowance determines how much interest you can earn tax-free.
+
+**Personal Savings Allowance** (tax-free threshold):
+- Basic rate taxpayers (20%): £1,000
+- Higher rate taxpayers (40%): £500
+- Additional rate taxpayers (45%): £0
+
+**When it applies**:
+The Personal Savings Allowance was introduced in April 2016. Before that, all interest was taxable unless held in tax-free accounts (ISAs, etc.).
+
+**Tax rates on interest above allowance**:
+Interest above your Personal Savings Allowance is taxed at your marginal income tax rate:
+- Basic rate: 20%
+- Higher rate: 40%
+- Additional rate: 45%
+
+**Reporting requirements**:
+- Interest under your Personal Savings Allowance: No reporting required
+- Interest over your allowance but under £10,000: HMRC may adjust your tax code
+- Interest over £10,000: Must complete Self Assessment tax return
+
+**Important**: This visualizer shows the **basic rate** allowance (£1,000). If you're a higher or additional rate taxpayer, your actual allowance will be lower.`,
+    example: {
+      title: 'Interest Tax Example',
+      scenario: 'In the 2024/25 tax year, you earned £1,500 in savings interest. You are a basic rate taxpayer.',
+      calculation: [
+        'Total interest received: £1,500',
+        'Less: Personal Savings Allowance (basic rate): £1,000',
+        'Taxable interest: £500',
+        '',
+        'Tax calculation:',
+        '  £500 × 20% (basic rate) = £100',
+        '',
+        'Reporting requirement:',
+        '  Interest > £1,000 but < £10,000',
+        '  → HMRC will typically adjust your tax code to collect the tax'
+      ],
+      result: 'You owe £100 in income tax on your interest. HMRC will likely collect this through your tax code.'
+    },
+    references: [
+      {
+        title: 'Tax on savings interest - Gov.uk',
+        url: 'https://www.gov.uk/apply-tax-free-interest-on-savings',
+        description: 'Official HMRC guidance on Personal Savings Allowance and interest tax'
+      },
+      {
+        title: 'Personal Savings Allowance factsheet',
+        url: 'https://www.gov.uk/government/publications/personal-savings-allowance-factsheet/personal-savings-allowance',
+        description: 'Detailed information about how the allowance works'
       }
     ]
   }
