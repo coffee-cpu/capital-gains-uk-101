@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import type { JSX } from 'react'
 import { useTransactionStore } from '../stores/transactionStore'
 import { getHelpContent, HelpContext } from '../utils/helpContent'
 
