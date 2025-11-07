@@ -5,7 +5,7 @@
  * detailed explanations of CGT rules, examples, and HMRC references.
  */
 
-export type HelpContext = 'default' | 'same-day' | '30-day' | 'section104' | 'stock-split' | 'tax-year'
+export type HelpContext = 'default' | 'same-day' | '30-day' | 'section104' | 'stock-split' | 'tax-year' | 'dividend'
 
 export interface HelpContent {
   title: string
@@ -303,6 +303,70 @@ The allowance has been significantly reduced in recent years.`,
         title: 'Self Assessment deadlines',
         url: 'https://www.gov.uk/self-assessment-tax-returns/deadlines',
         description: 'When to report capital gains'
+      }
+    ]
+  },
+
+  dividend: {
+    title: 'Dividend Tax',
+    explanation: `Dividend tax is calculated **separately** from capital gains tax. Dividends are distributions of a company's profits paid to shareholders.
+
+**Tax treatment**:
+- Dividends are not subject to CGT - they have their own tax rules
+- You receive a dividend allowance each tax year
+- Dividends above the allowance are taxed at dividend tax rates
+- These rates are different from (and lower than) income tax and CGT rates
+
+**Dividend Allowance** (tax-free threshold):
+- 2024/25 onwards: £500
+- 2023/24: £1,000
+- 2018/19 to 2022/23: £2,000
+- 2016/17 to 2017/18: £5,000
+- Before 2016: No allowance (different system)
+
+**Dividend Tax Rates** (on amounts above allowance):
+- Basic rate taxpayers: 8.75%
+- Higher rate taxpayers: 33.75%
+- Additional rate taxpayers: 39.35%
+
+**Reporting requirements**:
+- Dividends under £500: No reporting required
+- £500-£10,000: Must inform HMRC (letter or phone)
+- Over £10,000: Must complete Self Assessment tax return
+
+**Important**: This visualizer tracks dividend income per tax year to help you determine if you need to report. It does NOT calculate the actual dividend tax owed - consult HMRC guidance or a tax advisor for that.`,
+    example: {
+      title: 'Dividend Tax Example',
+      scenario: 'In the 2024/25 tax year, you received £2,500 in dividends from UK companies. You are a basic rate taxpayer.',
+      calculation: [
+        'Total dividends received: £2,500',
+        'Less: Dividend allowance (2024/25): £500',
+        'Taxable dividends: £2,000',
+        '',
+        'Tax calculation:',
+        '  £2,000 × 8.75% (basic rate) = £175',
+        '',
+        'Reporting requirement:',
+        '  Dividends > £500 but < £10,000',
+        '  → Must inform HMRC (letter or phone acceptable)'
+      ],
+      result: 'You owe £175 in dividend tax and must inform HMRC about these dividends.'
+    },
+    references: [
+      {
+        title: 'Tax on dividends - Gov.uk',
+        url: 'https://www.gov.uk/tax-on-dividends',
+        description: 'Official HMRC guidance on dividend tax rates, allowances, and reporting'
+      },
+      {
+        title: 'Dividend allowances',
+        url: 'https://www.gov.uk/government/publications/dividend-allowance-factsheet/dividend-allowance-factsheet',
+        description: 'Detailed factsheet on dividend allowance changes'
+      },
+      {
+        title: 'Report dividend income',
+        url: 'https://www.gov.uk/tax-on-dividends/how-dividends-are-taxed',
+        description: 'How to report and pay tax on dividends'
       }
     ]
   }

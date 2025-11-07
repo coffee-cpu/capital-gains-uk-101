@@ -314,6 +314,8 @@ function getResultBorderColor(context: HelpContext): string {
       return 'border-green-400'
     case 'stock-split':
       return 'border-purple-400'
+    case 'dividend':
+      return 'border-purple-400'
     default:
       return 'border-gray-400'
   }
