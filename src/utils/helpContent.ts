@@ -318,6 +318,7 @@ The allowance has been significantly reduced in recent years.`,
 - These rates are different from (and lower than) income tax and CGT rates
 
 **Dividend Allowance** (tax-free threshold):
+
 - 2024/25 onwards: £500
 - 2023/24: £1,000
 - 2018/19 to 2022/23: £2,000
@@ -325,11 +326,13 @@ The allowance has been significantly reduced in recent years.`,
 - Before 2016: No allowance (different system)
 
 **Dividend Tax Rates** (on amounts above allowance):
+
 - Basic rate taxpayers: 8.75%
 - Higher rate taxpayers: 33.75%
 - Additional rate taxpayers: 39.35%
 
 **Reporting requirements**:
+
 - Dividends under £500: No reporting required
 - £500-£10,000: Must inform HMRC (letter or phone)
 - Over £10,000: Must complete Self Assessment tax return
@@ -371,6 +374,7 @@ The allowance has been significantly reduced in recent years.`,
     explanation: `Interest income from savings accounts, bonds, and other sources is subject to income tax, **not** capital gains tax. The Personal Savings Allowance determines how much interest you can earn tax-free.
 
 **Personal Savings Allowance** (tax-free threshold):
+
 - Basic rate taxpayers (20%): £1,000
 - Higher rate taxpayers (40%): £500
 - Additional rate taxpayers (45%): £0
@@ -379,17 +383,16 @@ The allowance has been significantly reduced in recent years.`,
 The Personal Savings Allowance was introduced in April 2016. Before that, all interest was taxable unless held in tax-free accounts (ISAs, etc.).
 
 **Tax rates on interest above allowance**:
-Interest above your Personal Savings Allowance is taxed at your marginal income tax rate:
+
 - Basic rate: 20%
 - Higher rate: 40%
 - Additional rate: 45%
 
 **Reporting requirements**:
+
 - Interest under your Personal Savings Allowance: No reporting required
 - Interest over your allowance but under £10,000: HMRC may adjust your tax code
-- Interest over £10,000: Must complete Self Assessment tax return
-
-**Important**: This visualizer shows the **basic rate** allowance (£1,000). If you're a higher or additional rate taxpayer, your actual allowance will be lower.`,
+- Interest over £10,000: Must complete Self Assessment tax return`,
     example: {
       title: 'Interest Tax Example',
       scenario: 'In the 2024/25 tax year, you earned £1,500 in savings interest. You are a basic rate taxpayer.',
