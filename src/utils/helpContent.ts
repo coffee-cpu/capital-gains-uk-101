@@ -362,11 +362,6 @@ The allowance has been significantly reduced in recent years.`,
         title: 'Dividend allowances',
         url: 'https://www.gov.uk/government/publications/dividend-allowance-factsheet/dividend-allowance-factsheet',
         description: 'Detailed factsheet on dividend allowance changes'
-      },
-      {
-        title: 'Report dividend income',
-        url: 'https://www.gov.uk/tax-on-dividends/how-dividends-are-taxed',
-        description: 'How to report and pay tax on dividends'
       }
     ]
   }
