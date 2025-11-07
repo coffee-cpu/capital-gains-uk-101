@@ -492,5 +492,271 @@ describe('CGT Engine', () => {
       expect(result.metadata.totalSells).toBe(1)
       expect(result.metadata.calculatedAt).toBeDefined()
     })
+
+    it('should include dividend income in tax year summary', () => {
+      const transactions: EnrichedTransaction[] = [
+        {
+          id: 'tx-1',
+          source: 'test',
+          symbol: 'AAPL',
+          name: 'Apple Inc.',
+          date: '2024-06-15',
+          type: 'DIVIDEND',
+          quantity: null,
+          price: null,
+          currency: 'USD',
+          total: 300,
+          fee: 0,
+          notes: null,
+          fx_rate: 1.0,
+          price_gbp: null,
+          value_gbp: 300,
+          fee_gbp: 0,
+          fx_source: 'HMRC',
+          fx_error: null,
+          tax_year: '2024/25',
+          gain_group: 'NONE',
+        },
+        {
+          id: 'tx-2',
+          source: 'test',
+          symbol: 'AAPL',
+          name: 'Apple Inc.',
+          date: '2024-07-20',
+          type: 'DIVIDEND',
+          quantity: null,
+          price: null,
+          currency: 'USD',
+          total: 250,
+          fee: 0,
+          notes: null,
+          fx_rate: 1.0,
+          price_gbp: null,
+          value_gbp: 250,
+          fee_gbp: 0,
+          fx_source: 'HMRC',
+          fx_error: null,
+          tax_year: '2024/25',
+          gain_group: 'NONE',
+        },
+      ]
+
+      const result = calculateCGT(transactions)
+
+      expect(result.taxYearSummaries).toHaveLength(1)
+
+      const summary = result.taxYearSummaries[0]
+      expect(summary.taxYear).toBe('2024/25')
+      expect(summary.totalDividends).toBe(2)
+      expect(summary.totalDividendsGbp).toBe(550)
+      expect(summary.dividendAllowance).toBe(500) // 2024/25 allowance
+    })
+
+    it('should calculate dividends below allowance correctly', () => {
+      const transactions: EnrichedTransaction[] = [
+        {
+          id: 'tx-1',
+          source: 'test',
+          symbol: 'AAPL',
+          name: 'Apple Inc.',
+          date: '2024-06-15',
+          type: 'DIVIDEND',
+          quantity: null,
+          price: null,
+          currency: 'USD',
+          total: 200,
+          fee: 0,
+          notes: null,
+          fx_rate: 1.0,
+          price_gbp: null,
+          value_gbp: 200,
+          fee_gbp: 0,
+          fx_source: 'HMRC',
+          fx_error: null,
+          tax_year: '2024/25',
+          gain_group: 'NONE',
+        },
+      ]
+
+      const result = calculateCGT(transactions)
+
+      const summary = result.taxYearSummaries[0]
+      expect(summary.totalDividendsGbp).toBe(200)
+      expect(summary.dividendAllowance).toBe(500)
+    })
+
+    it('should calculate correct dividend allowance for different tax years', () => {
+      const transactions: EnrichedTransaction[] = [
+        {
+          id: 'tx-1',
+          source: 'test',
+          symbol: 'AAPL',
+          name: 'Apple Inc.',
+          date: '2023-06-15',
+          type: 'DIVIDEND',
+          quantity: null,
+          price: null,
+          currency: 'USD',
+          total: 600,
+          fee: 0,
+          notes: null,
+          fx_rate: 1.0,
+          price_gbp: null,
+          value_gbp: 600,
+          fee_gbp: 0,
+          fx_source: 'HMRC',
+          fx_error: null,
+          tax_year: '2023/24',
+          gain_group: 'NONE',
+        },
+        {
+          id: 'tx-2',
+          source: 'test',
+          symbol: 'AAPL',
+          name: 'Apple Inc.',
+          date: '2024-06-15',
+          type: 'DIVIDEND',
+          quantity: null,
+          price: null,
+          currency: 'USD',
+          total: 600,
+          fee: 0,
+          notes: null,
+          fx_rate: 1.0,
+          price_gbp: null,
+          value_gbp: 600,
+          fee_gbp: 0,
+          fx_source: 'HMRC',
+          fx_error: null,
+          tax_year: '2024/25',
+          gain_group: 'NONE',
+        },
+        {
+          id: 'tx-3',
+          source: 'test',
+          symbol: 'AAPL',
+          name: 'Apple Inc.',
+          date: '2021-06-15',
+          type: 'DIVIDEND',
+          quantity: null,
+          price: null,
+          currency: 'USD',
+          total: 1000,
+          fee: 0,
+          notes: null,
+          fx_rate: 1.0,
+          price_gbp: null,
+          value_gbp: 1000,
+          fee_gbp: 0,
+          fx_source: 'HMRC',
+          fx_error: null,
+          tax_year: '2021/22',
+          gain_group: 'NONE',
+        },
+      ]
+
+      const result = calculateCGT(transactions)
+
+      expect(result.taxYearSummaries).toHaveLength(3)
+
+      // 2023/24 should have £1000 allowance
+      const summary2023 = result.taxYearSummaries.find(s => s.taxYear === '2023/24')!
+      expect(summary2023.dividendAllowance).toBe(1000)
+
+      // 2024/25 should have £500 allowance
+      const summary2024 = result.taxYearSummaries.find(s => s.taxYear === '2024/25')!
+      expect(summary2024.dividendAllowance).toBe(500)
+
+      // 2021/22 should have £2000 allowance
+      const summary2021 = result.taxYearSummaries.find(s => s.taxYear === '2021/22')!
+      expect(summary2021.dividendAllowance).toBe(2000)
+    })
+
+    it('should handle tax years with both CGT disposals and dividends', () => {
+      const transactions: EnrichedTransaction[] = [
+        {
+          id: 'tx-1',
+          source: 'test',
+          symbol: 'AAPL',
+          name: 'Apple Inc.',
+          date: '2024-05-01',
+          type: 'BUY',
+          quantity: 10,
+          price: 100,
+          currency: 'USD',
+          total: 1000,
+          fee: 10,
+          notes: null,
+          fx_rate: 1.0,
+          price_gbp: 100,
+          value_gbp: 1000,
+          fee_gbp: 10,
+          fx_source: 'HMRC',
+          fx_error: null,
+          tax_year: '2024/25',
+          gain_group: 'NONE',
+        },
+        {
+          id: 'tx-2',
+          source: 'test',
+          symbol: 'AAPL',
+          name: 'Apple Inc.',
+          date: '2024-05-01',
+          type: 'SELL',
+          quantity: 10,
+          price: 150,
+          currency: 'USD',
+          total: 1500,
+          fee: 10,
+          notes: null,
+          fx_rate: 1.0,
+          price_gbp: 150,
+          value_gbp: 1500,
+          fee_gbp: 10,
+          fx_source: 'HMRC',
+          fx_error: null,
+          tax_year: '2024/25',
+          gain_group: 'NONE',
+        },
+        {
+          id: 'tx-3',
+          source: 'test',
+          symbol: 'AAPL',
+          name: 'Apple Inc.',
+          date: '2024-06-15',
+          type: 'DIVIDEND',
+          quantity: null,
+          price: null,
+          currency: 'USD',
+          total: 300,
+          fee: 0,
+          notes: null,
+          fx_rate: 1.0,
+          price_gbp: null,
+          value_gbp: 300,
+          fee_gbp: 0,
+          fx_source: 'HMRC',
+          fx_error: null,
+          tax_year: '2024/25',
+          gain_group: 'NONE',
+        },
+      ]
+
+      const result = calculateCGT(transactions)
+
+      expect(result.taxYearSummaries).toHaveLength(1)
+
+      const summary = result.taxYearSummaries[0]
+      // Check CGT calculations
+      expect(summary.totalDisposals).toBe(1)
+      expect(summary.netGainOrLossGbp).toBe(480) // (1500-10) - (1000+10)
+      expect(summary.annualExemptAmount).toBe(3000)
+      expect(summary.taxableGainGbp).toBe(0) // Below CGT threshold
+
+      // Check dividend calculations
+      expect(summary.totalDividends).toBe(1)
+      expect(summary.totalDividendsGbp).toBe(300)
+      expect(summary.dividendAllowance).toBe(500)
+    })
   })
 })

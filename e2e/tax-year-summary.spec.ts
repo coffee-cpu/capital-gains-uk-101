@@ -130,4 +130,107 @@ test.describe('Tax Year Summary Verification', () => {
     // - Annual exemption (£3,000) deducted
     await expect(page.getByText('£7,256.83')).toBeVisible()
   })
+
+  test('should display dividend income summary when dividends are present', async ({ page }) => {
+    await page.goto('/')
+
+    // Upload the public generic example file (contains dividends)
+    const fileInput = page.locator('input[type="file"]')
+    await expect(fileInput).toBeVisible()
+
+    const filePath = path.join(__dirname, '..', 'public', 'examples', 'generic-example.csv')
+    await fileInput.setInputFiles(filePath)
+
+    // Wait for import to complete
+    await expect(page.getByText(/file\(s\) imported successfully/i)).toBeVisible({ timeout: 15000 })
+
+    // Wait for Tax Year Summary section to appear
+    await expect(page.getByRole('heading', { name: 'Tax Year Summary' })).toBeVisible({ timeout: 10000 })
+
+    // Select the 2024/25 tax year (which has dividends)
+    const taxYearSelect = page.locator('#tax-year-select')
+    await expect(taxYearSelect).toBeVisible()
+    await taxYearSelect.selectOption('2024/25')
+
+    // Wait for summary to update
+    await page.waitForTimeout(500)
+
+    // Click the dividend card to expand it
+    await page.getByRole('button', { name: /Dividend Income/ }).click()
+    await page.waitForTimeout(300)
+
+    // Verify Dividend Income details section appears
+    await expect(page.getByRole('heading', { name: /Dividend Income Details/i })).toBeVisible()
+
+    // Verify the section explains that dividend tax is separate
+    await expect(page.getByText(/Dividend tax is calculated separately from capital gains tax/i)).toBeVisible()
+
+    // Verify dividend allowance link is present (find the link to gov.uk/tax-on-dividends)
+    await expect(page.getByRole('link', { name: '(source)' }).filter({ hasText: /source/ }).first()).toBeVisible()
+    const dividendLink = page.locator('a[href="https://www.gov.uk/tax-on-dividends"]')
+    await expect(dividendLink).toBeVisible()
+
+    // Verify Taxable Dividends value is displayed
+    await expect(page.getByText('Taxable Dividends')).toBeVisible()
+
+    // Verify reporting guidance appears (either within allowance or exceeds)
+    const withinAllowance = page.getByText(/Within Dividend Allowance/i)
+    const reportingRequired = page.getByText(/Dividend Reporting Required/i)
+
+    // One of these should be visible
+    const isWithinAllowance = await withinAllowance.isVisible().catch(() => false)
+    const isReportingRequired = await reportingRequired.isVisible().catch(() => false)
+
+    expect(isWithinAllowance || isReportingRequired).toBe(true)
+  })
+
+  test('should show different dividend allowances for different tax years', async ({ page }) => {
+    await page.goto('/')
+
+    // Upload the generic example file
+    const fileInput = page.locator('input[type="file"]')
+    const filePath = path.join(__dirname, '..', 'public', 'examples', 'generic-example.csv')
+    await fileInput.setInputFiles(filePath)
+
+    // Wait for import
+    await expect(page.getByText(/file\(s\) imported successfully/i)).toBeVisible({ timeout: 15000 })
+
+    // Wait for Tax Year Summary section
+    await expect(page.getByRole('heading', { name: 'Tax Year Summary' })).toBeVisible({ timeout: 10000 })
+
+    // Test 2023/24 tax year (£1,000 allowance)
+    const taxYearSelect = page.locator('#tax-year-select')
+    await taxYearSelect.selectOption('2023/24')
+    await page.waitForTimeout(500)
+
+    // Check if dividend card button is visible for 2023/24
+    const dividendButton2023 = page.getByRole('button', { name: /Dividend Income/ })
+    if (await dividendButton2023.isVisible()) {
+      // Click to expand dividend details
+      await dividendButton2023.click()
+      await page.waitForTimeout(300)
+
+      // Verify £1,000 allowance is mentioned
+      await expect(page.getByText(/£1,000/i).first()).toBeVisible()
+
+      // Collapse it again for next test
+      await dividendButton2023.click()
+      await page.waitForTimeout(300)
+    }
+
+    // Test 2024/25 tax year (£500 allowance)
+    await taxYearSelect.selectOption('2024/25')
+    await page.waitForTimeout(500)
+
+    // Check if dividend card button is visible for 2024/25
+    const dividendButton2024 = page.getByRole('button', { name: /Dividend Income/ })
+    if (await dividendButton2024.isVisible()) {
+      // Click to expand dividend details
+      await dividendButton2024.click()
+      await page.waitForTimeout(300)
+
+      // Verify £500 allowance is mentioned
+      await expect(page.getByText(/£500/i).first()).toBeVisible()
+    }
+  })
 })

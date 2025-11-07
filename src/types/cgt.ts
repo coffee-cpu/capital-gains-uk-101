@@ -107,6 +107,12 @@ export interface TaxYearSummary {
   annualExemptAmount: number
   /** Taxable gain after applying annual exemption (if positive) */
   taxableGainGbp: number
+  /** Total number of dividend transactions */
+  totalDividends: number
+  /** Total dividend income in GBP */
+  totalDividendsGbp: number
+  /** Dividend allowance for this tax year (from HMRC) */
+  dividendAllowance: number
 }
 
 /**
@@ -173,4 +179,7 @@ export const TaxYearSummarySchema = z.object({
   netGainOrLossGbp: z.number(),
   annualExemptAmount: z.number().nonnegative(),
   taxableGainGbp: z.number().nonnegative(),
+  totalDividends: z.number().int().nonnegative(),
+  totalDividendsGbp: z.number().nonnegative(),
+  dividendAllowance: z.number().nonnegative(),
 })

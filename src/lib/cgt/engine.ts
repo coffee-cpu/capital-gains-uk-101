@@ -54,8 +54,8 @@ export function calculateCGT(
   // Step 5: Create disposal records
   const disposals = createDisposalRecords(allMatchingsComplete)
 
-  // Step 5: Generate tax year summaries
-  const taxYearSummaries = generateTaxYearSummaries(disposals)
+  // Step 5: Generate tax year summaries (pass all transactions for dividend calculations)
+  const taxYearSummaries = generateTaxYearSummaries(disposals, updatedTransactions)
 
   // Step 6: Compile metadata
   const metadata = {
@@ -137,9 +137,12 @@ function createDisposalRecords(matchings: MatchingResult[]): DisposalRecord[] {
 }
 
 /**
- * Generate tax year summaries from disposal records
+ * Generate tax year summaries from disposal records and all transactions
  */
-function generateTaxYearSummaries(disposals: DisposalRecord[]): TaxYearSummary[] {
+function generateTaxYearSummaries(
+  disposals: DisposalRecord[],
+  transactions: EnrichedTransaction[]
+): TaxYearSummary[] {
   // Group disposals by tax year
   const byTaxYear = new Map<string, DisposalRecord[]>()
 
@@ -151,13 +154,19 @@ function generateTaxYearSummaries(disposals: DisposalRecord[]): TaxYearSummary[]
     byTaxYear.get(taxYear)!.push(disposal)
   }
 
+  // Get all unique tax years from both disposals and transactions
+  const allTaxYears = new Set<string>()
+  disposals.forEach(d => allTaxYears.add(d.taxYear))
+  transactions.forEach(tx => allTaxYears.add(tx.tax_year))
+
   // Create summary for each tax year
   const summaries: TaxYearSummary[] = []
 
-  for (const [taxYear, yearDisposals] of byTaxYear) {
+  for (const taxYear of allTaxYears) {
     const { startDate, endDate } = getTaxYearBounds(taxYear)
+    const yearDisposals = byTaxYear.get(taxYear) || []
 
-    // Calculate totals
+    // Calculate CGT totals
     const totalDisposals = yearDisposals.length
     const totalProceeds = yearDisposals.reduce((sum, d) => sum + d.proceedsGbp, 0)
     const totalAllowableCosts = yearDisposals.reduce((sum, d) => sum + d.allowableCostsGbp, 0)
@@ -177,6 +186,19 @@ function generateTaxYearSummaries(disposals: DisposalRecord[]): TaxYearSummary[]
     // Calculate taxable gain (cannot be negative)
     const taxableGain = Math.max(0, netGainOrLoss - annualExemptAmount)
 
+    // Calculate dividend totals for this tax year
+    const yearDividends = transactions.filter(
+      tx => tx.tax_year === taxYear && tx.type === 'DIVIDEND'
+    )
+    const totalDividends = yearDividends.length
+    const totalDividendsGbp = yearDividends.reduce(
+      (sum, tx) => sum + (tx.value_gbp || 0),
+      0
+    )
+
+    // Get dividend allowance for this tax year
+    const dividendAllowance = getDividendAllowance(taxYear)
+
     summaries.push({
       taxYear,
       startDate,
@@ -190,6 +212,9 @@ function generateTaxYearSummaries(disposals: DisposalRecord[]): TaxYearSummary[]
       netGainOrLossGbp: netGainOrLoss,
       annualExemptAmount,
       taxableGainGbp: taxableGain,
+      totalDividends,
+      totalDividendsGbp,
+      dividendAllowance,
     })
   }
 
@@ -218,6 +243,30 @@ function getAnnualExemptAmount(taxYear: string): number {
 
   // Default for older years (approximate)
   return 11000
+}
+
+/**
+ * Get the dividend allowance for a tax year
+ *
+ * Source: HMRC Tax on dividends
+ * https://www.gov.uk/tax-on-dividends
+ *
+ * Note: Dividend tax is separate from capital gains tax.
+ * Dividends above the allowance may be subject to dividend tax rates
+ * (8.75% basic, 33.75% higher, 39.35% additional rate).
+ */
+function getDividendAllowance(taxYear: string): number {
+  // Tax year format: "YYYY/YY" e.g., "2023/24"
+  const startYear = parseInt(taxYear.split('/')[0])
+
+  // Historical dividend allowances
+  if (startYear >= 2024) return 500       // 2024/25 onwards
+  if (startYear === 2023) return 1000     // 2023/24
+  if (startYear >= 2018) return 2000      // 2018/19 to 2022/23
+  if (startYear >= 2016) return 5000      // 2016/17 to 2017/18
+
+  // Default for older years (pre-dividend allowance era)
+  return 0
 }
 
 /**

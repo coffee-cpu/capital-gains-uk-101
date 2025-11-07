@@ -11,6 +11,7 @@ export function TaxYearSummary() {
   const setSelectedTaxYear = useTransactionStore((state) => state.setSelectedTaxYear)
   const hasExportedPDF = useTransactionStore((state) => state.hasExportedPDF)
   const [showDisposals, setShowDisposals] = useState(false)
+  const [showDividends, setShowDividends] = useState(false)
 
   if (!cgtResults || cgtResults.taxYearSummaries.length === 0) {
     return null
@@ -24,6 +25,7 @@ export function TaxYearSummary() {
   }
 
   const hasTaxableGain = currentSummary.taxableGainGbp > 0
+  const dividendsExceedAllowance = currentSummary.totalDividendsGbp > currentSummary.dividendAllowance
 
   return (
     <div className="bg-white shadow rounded-lg overflow-hidden">
@@ -106,6 +108,36 @@ export function TaxYearSummary() {
           </div>
         </div>
 
+        {/* Dividends Card (if present) */}
+        {currentSummary.totalDividends > 0 && (
+          <div className="grid grid-cols-1 gap-4">
+            <button
+              onClick={() => setShowDividends(!showDividends)}
+              className="bg-purple-50 hover:bg-purple-100 rounded-lg p-4 text-left transition-colors border border-purple-200"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <div className="text-xs text-purple-600 uppercase mb-1">Dividend Income</div>
+                  <div className="text-2xl font-bold text-purple-900 flex items-center gap-2">
+                    £{currentSummary.totalDividendsGbp.toLocaleString('en-GB', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                    <span className="text-sm font-normal text-purple-700">
+                      ({currentSummary.totalDividends} {currentSummary.totalDividends === 1 ? 'payment' : 'payments'})
+                    </span>
+                  </div>
+                </div>
+                <svg
+                  className={`w-5 h-5 text-purple-400 transition-transform flex-shrink-0 ${showDividends ? 'transform rotate-180' : ''}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </button>
+          </div>
+        )}
+
         {/* Disposal Records Panel */}
         {showDisposals && (
           <DisposalRecords
@@ -113,6 +145,92 @@ export function TaxYearSummary() {
             showHeader={true}
             headerTitle="Disposal Records"
           />
+        )}
+
+        {/* Dividend Details Panel */}
+        {showDividends && currentSummary.totalDividends > 0 && (
+          <div className="bg-white border border-purple-200 rounded-lg overflow-hidden">
+            <div className="bg-purple-50 px-6 py-4 border-b border-purple-200">
+              <h3 className="text-lg font-semibold text-purple-900">Dividend Income Details</h3>
+              <p className="text-sm text-purple-700 mt-1">
+                Dividend tax is calculated separately from capital gains tax.
+              </p>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-purple-800">Total Dividends Received</span>
+                  <span className="font-medium text-purple-900">
+                    £{currentSummary.totalDividendsGbp.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <span className="text-purple-800">
+                    Less: Dividend Allowance
+                    <Tooltip content="View HMRC tax on dividends information">
+                      <a
+                        href="https://www.gov.uk/tax-on-dividends"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="ml-1 text-purple-600 hover:text-purple-800 underline text-xs"
+                      >
+                        (source)
+                      </a>
+                    </Tooltip>
+                  </span>
+                  <span className="font-medium text-purple-900">
+                    (£{currentSummary.dividendAllowance.toLocaleString('en-GB', { minimumFractionDigits: 0, maximumFractionDigits: 0 })})
+                  </span>
+                </div>
+
+                <div className="border-t border-purple-300 pt-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-lg font-bold text-purple-900">Taxable Dividends</span>
+                    <span className={`text-2xl font-bold ${dividendsExceedAllowance ? 'text-red-700' : 'text-green-700'}`}>
+                      £{Math.max(0, currentSummary.totalDividendsGbp - currentSummary.dividendAllowance).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Dividend Reporting Guidance */}
+              {dividendsExceedAllowance ? (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <div className="flex">
+                    <svg className="h-5 w-5 text-yellow-400 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    <div className="ml-3">
+                      <h4 className="text-sm font-medium text-yellow-800">Dividend Reporting Required</h4>
+                      <p className="mt-1 text-sm text-yellow-700">
+                        Your dividends exceed the £{currentSummary.dividendAllowance.toLocaleString('en-GB')} allowance.
+                        {currentSummary.totalDividendsGbp > 10000
+                          ? ' You must complete a Self Assessment tax return.'
+                          : ' You must inform HMRC (via Self Assessment if dividends exceed £10,000).'
+                        }
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div className="flex">
+                    <svg className="h-5 w-5 text-green-400 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    <div className="ml-3">
+                      <h4 className="text-sm font-medium text-green-800">Within Dividend Allowance</h4>
+                      <p className="mt-1 text-sm text-green-700">
+                        Your dividends are within the £{currentSummary.dividendAllowance.toLocaleString('en-GB')} allowance. No dividend tax is due.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         )}
 
         {/* CGT Calculation */}
