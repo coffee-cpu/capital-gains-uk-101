@@ -41,7 +41,17 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
 
   setSelectedTaxYear: (year) => set({ selectedTaxYear: year }),
 
-  setCGTResults: (results) => set({ cgtResults: results }),
+  setCGTResults: (results) => {
+    // Automatically select the most recent tax year with data
+    const mostRecentTaxYear = results.taxYearSummaries.length > 0
+      ? results.taxYearSummaries[0].taxYear
+      : get().selectedTaxYear
+
+    set({
+      cgtResults: results,
+      selectedTaxYear: mostRecentTaxYear
+    })
+  },
 
   setHasExportedPDF: (hasExported) => set({ hasExportedPDF: hasExported }),
 

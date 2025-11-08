@@ -6,6 +6,47 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 test.describe('Tax Year Summary Verification', () => {
+  test('should auto-select most recent tax year on load', async ({ page }) => {
+    await page.goto('/')
+
+    // Upload the test CSV file
+    const fileInput = page.locator('input[type="file"]')
+    await expect(fileInput).toBeVisible()
+
+    const filePath = path.join(__dirname, 'fixtures', 'generic-multi-company.csv')
+    await fileInput.setInputFiles(filePath)
+
+    // Wait for import to complete
+    await expect(page.getByText(/file\(s\) imported successfully/i)).toBeVisible({ timeout: 15000 })
+
+    // Wait for Tax Year Summary section to appear
+    await expect(page.getByRole('heading', { name: 'Tax Year Summary' })).toBeVisible({ timeout: 10000 })
+
+    // Verify the most recent tax year is auto-selected
+    const taxYearSelect = page.locator('#tax-year-select')
+    await expect(taxYearSelect).toBeVisible()
+    const selectedValue = await taxYearSelect.inputValue()
+
+    // Get all available tax years and verify the selected one is the most recent
+    const allOptions = await taxYearSelect.locator('option').allTextContents()
+    const sortedOptions = [...allOptions].sort((a, b) => b.localeCompare(a))
+    expect(selectedValue).toBe(sortedOptions[0])
+
+    // Verify Disposal Records section shows data (not "No disposals" message)
+    // Click disposals button to expand
+    await page.getByRole('button', { name: /Disposals/ }).click()
+    await page.waitForTimeout(300)
+
+    // Should show disposal records, not empty state
+    const emptyState = page.getByText(/No share disposals recorded/i)
+    await expect(emptyState).not.toBeVisible()
+
+    // Verify export button is enabled
+    const exportButton = page.getByRole('button', { name: /Export PDF/i })
+    await expect(exportButton).toBeVisible()
+    await expect(exportButton).toBeEnabled()
+  })
+
   test('should calculate correct CGT summary for 2023/24 tax year', async ({ page }) => {
     await page.goto('/')
 
