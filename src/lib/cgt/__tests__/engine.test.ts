@@ -855,12 +855,12 @@ describe('CGT Engine', () => {
       expect(disposal.isIncomplete).toBe(true)
       expect(disposal.unmatchedQuantity).toBe(40)
 
-      // Proceeds should be calculated normally
-      expect(disposal.proceedsGbp).toBe(2200)
+      // Proceeds should be £0 (no matched shares, only unmatched)
+      expect(disposal.proceedsGbp).toBe(0)
 
-      // But cost basis and gain should be 0 (no matched acquisitions)
+      // Cost basis and gain should both be 0 (no matched acquisitions)
       expect(disposal.allowableCostsGbp).toBe(0)
-      expect(disposal.gainOrLossGbp).toBe(2200) // Proceeds - 0 cost
+      expect(disposal.gainOrLossGbp).toBe(0) // No matched portion = no reportable gain
 
       // Should have one matching with quantityMatched = 0 (empty Section 104 pool)
       expect(disposal.matchings).toHaveLength(1)
@@ -931,14 +931,14 @@ describe('CGT Engine', () => {
       expect(disposal.isIncomplete).toBe(true)
       expect(disposal.unmatchedQuantity).toBe(40)
 
-      // Total proceeds for all 100 shares
-      expect(disposal.proceedsGbp).toBe(14990) // 15000 - 10
+      // Proceeds only for matched 60 shares (150 - 0.1 fee/share) * 60
+      expect(disposal.proceedsGbp).toBeCloseTo(8994, 2) // (150 - 10/100) * 60
 
       // Cost basis only for matched 60 shares
       expect(disposal.allowableCostsGbp).toBeCloseTo(6010, 2) // 6000 + 10
 
-      // Gain calculation: proceeds for all 100 minus cost for 60
-      expect(disposal.gainOrLossGbp).toBeCloseTo(8980, 2)
+      // Gain calculation: proceeds for matched 60 minus cost for 60
+      expect(disposal.gainOrLossGbp).toBeCloseTo(2984, 2) // 8994 - 6010
 
       // Should have one Section 104 matching with 60 shares
       expect(disposal.matchings).toHaveLength(1)

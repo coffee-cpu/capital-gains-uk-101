@@ -118,11 +118,15 @@ function createDisposalRecords(matchings: MatchingResult[]): DisposalRecord[] {
     const unmatchedQuantity = disposalQuantity - totalMatchedQuantity
     const isIncomplete = unmatchedQuantity > 0
 
-    // Calculate proceeds (sale price minus selling fees)
+    // Calculate proceeds - ONLY for matched portion to ensure accurate CGT calculation
     const pricePerShare = disposal.price_gbp || 0
-    const totalProceeds = pricePerShare * disposalQuantity
-    const sellingFees = disposal.fee_gbp || 0
-    const netProceeds = totalProceeds - sellingFees
+    const feePerShare = disposal.fee_gbp ? disposal.fee_gbp / disposalQuantity : 0
+
+    // For incomplete disposals, only calculate proceeds for matched shares
+    const matchedProceeds = (pricePerShare - feePerShare) * totalMatchedQuantity
+
+    // For complete records, use all proceeds
+    const netProceeds = matchedProceeds
 
     // Sum up all allowable costs from matched acquisitions
     const totalCostBasis = disposalMatchings.reduce(
@@ -130,7 +134,7 @@ function createDisposalRecords(matchings: MatchingResult[]): DisposalRecord[] {
       0
     )
 
-    // Calculate gain or loss (only for matched portion if incomplete)
+    // Calculate gain or loss (only for matched portion)
     const gainOrLoss = netProceeds - totalCostBasis
 
     records.push({
