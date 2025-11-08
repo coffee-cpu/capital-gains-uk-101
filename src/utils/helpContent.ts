@@ -5,7 +5,7 @@
  * detailed explanations of CGT rules, examples, and HMRC references.
  */
 
-export type HelpContext = 'default' | 'same-day' | '30-day' | 'section104' | 'stock-split' | 'tax-year' | 'dividend' | 'interest'
+export type HelpContext = 'default' | 'same-day' | '30-day' | 'section104' | 'stock-split' | 'tax-year' | 'dividend' | 'interest' | 'incomplete'
 
 export interface HelpContent {
   title: string
@@ -420,6 +420,81 @@ The Personal Savings Allowance was introduced in April 2016. Before that, all in
         title: 'Personal Savings Allowance factsheet',
         url: 'https://www.gov.uk/government/publications/personal-savings-allowance-factsheet/personal-savings-allowance',
         description: 'Detailed information about how the allowance works'
+      }
+    ]
+  },
+
+  incomplete: {
+    title: 'Incomplete Disposals',
+    explanation: `An "Incomplete" disposal occurs when you sell shares but the CGT calculator cannot find sufficient acquisition (purchase) records to match against the sale.
+
+**Why this happens**:
+
+- You bought shares before you started importing transaction history
+- Missing transaction records from old accounts or brokers
+- Transferred shares from another platform without import history
+- Inherited shares or received them through corporate actions before your records begin
+
+**What it means**:
+
+The visualizer can only calculate gains/losses for shares it has matching purchase records for. For incomplete disposals:
+
+- **Matched portion**: Gains/losses are calculated correctly using available acquisition data
+- **Unmatched portion**: Shows as "incomplete" - you must manually calculate using your original purchase records
+
+**HMRC Requirements**:
+
+You are still required to report the full disposal to HMRC, including the unmatched portion. You'll need to:
+
+1. Find your original purchase records (broker statements, contract notes, etc.)
+2. Calculate the cost basis for the unmatched shares manually
+3. Report the complete disposal on your Self Assessment tax return
+
+**How to fix**:
+
+- Import earlier transaction history from your broker
+- Add missing acquisitions by creating transactions in the Generic CSV format
+- Manually record any pre-digital-era share purchases`,
+    example: {
+      title: 'Incomplete Disposal Example',
+      scenario: 'You sold 100 shares of ACME on 15 June 2024 at £50 each. The visualizer only has records for 60 shares purchased in 2023. The other 40 shares were bought in 2020 before you started importing data.',
+      calculation: [
+        'Total disposal: 100 shares at £50 = £5,000 proceeds',
+        '',
+        'Matched portion (60 shares):',
+        '  Acquisition cost: £2,400 (from imported records)',
+        '  Proceeds: 60 × £50 = £3,000',
+        '  Gain: £3,000 - £2,400 = £600',
+        '',
+        'Unmatched portion (40 shares):',
+        '  ⚠️ No acquisition records found',
+        '  You must find your 2020 purchase records',
+        '  Calculate manually and report to HMRC',
+        '',
+        'Example if 2020 cost was £30/share:',
+        '  Cost basis: 40 × £30 = £1,200',
+        '  Proceeds: 40 × £50 = £2,000',
+        '  Additional gain: £2,000 - £1,200 = £800',
+        '',
+        'Total gain to report: £600 + £800 = £1,400'
+      ],
+      result: 'The visualizer calculates £600 gain for the matched 60 shares. You must manually add £800 gain for the unmatched 40 shares when filing your tax return.'
+    },
+    references: [
+      {
+        title: 'HS284 - Shares and Capital Gains Tax',
+        url: 'https://www.gov.uk/government/publications/shares-and-capital-gains-tax-hs284-self-assessment-helpsheet/hs284-shares-and-capital-gains-tax-2024',
+        description: 'HMRC helpsheet explaining share disposal reporting requirements'
+      },
+      {
+        title: 'CG51560 - Share matching rules',
+        url: 'https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51560',
+        description: 'Official HMRC guidance on how share disposals must be matched to acquisitions'
+      },
+      {
+        title: 'Self Assessment: capital gains summary (SA108)',
+        url: 'https://www.gov.uk/government/publications/self-assessment-capital-gains-summary-sa108',
+        description: 'The tax form where you report capital gains from share disposals'
       }
     ]
   }

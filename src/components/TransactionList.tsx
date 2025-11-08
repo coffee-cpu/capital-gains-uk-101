@@ -520,6 +520,7 @@ export function TransactionList() {
                             if (label === 'Same Day') return 'same-day'
                             if (label === '30-Day') return '30-day'
                             if (label === 'Section 104') return 'section104'
+                            if (label === 'Incomplete') return 'incomplete'
                             return 'default'
                           }
 
