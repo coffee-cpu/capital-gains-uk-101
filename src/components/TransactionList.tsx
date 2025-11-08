@@ -320,6 +320,24 @@ export function TransactionList() {
                 if (tx.type === 'SELL') {
                   // For SELL transactions, show all matching rules from DisposalRecord
                   const disposal = getDisposalForTransaction(tx.id)
+
+                  // Add warning badge if disposal is incomplete (insufficient acquisition data)
+                  if (disposal?.isIncomplete && disposal.unmatchedQuantity) {
+                    const hasSplit = tx.split_multiplier && tx.split_multiplier !== 1.0
+                    let tooltip: string
+                    if (hasSplit && tx.split_multiplier) {
+                      const originalUnmatched = disposal.unmatchedQuantity / tx.split_multiplier
+                      tooltip = `Warning: ${originalUnmatched.toFixed(2)} shares (${disposal.unmatchedQuantity.toFixed(2)} split-adjusted) could not be matched to any acquisitions. Missing acquisition data - did you buy shares before you started importing transactions?`
+                    } else {
+                      tooltip = `Warning: ${disposal.unmatchedQuantity.toFixed(2)} shares could not be matched to any acquisitions. Missing acquisition data - did you buy shares before you started importing transactions?`
+                    }
+                    badges.push({
+                      className: 'bg-red-100 text-red-800 border-red-300',
+                      label: 'Incomplete',
+                      title: tooltip
+                    })
+                  }
+
                   if (disposal && disposal.matchings.length > 0) {
                     for (const matching of disposal.matchings) {
                       if (matching.rule === 'SAME_DAY') {
@@ -352,7 +370,8 @@ export function TransactionList() {
                           label: '30-Day',
                           title: tooltip
                         })
-                      } else if (matching.rule === 'SECTION_104') {
+                      } else if (matching.rule === 'SECTION_104' && matching.quantityMatched > 0) {
+                        // Only show Section 104 badge if some quantity was actually matched
                         const quantityMatched = matching.quantityMatched
                         const avgCost = matching.totalCostBasisGbp / quantityMatched
 

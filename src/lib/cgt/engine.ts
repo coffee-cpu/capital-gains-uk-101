@@ -105,9 +105,21 @@ function createDisposalRecords(matchings: MatchingResult[]): DisposalRecord[] {
   for (const [disposalId, disposalMatchings] of disposalMap) {
     const disposal = disposalMatchings[0].disposal
 
+    // Calculate total disposal quantity
+    const disposalQuantity = getEffectiveQuantity(disposal)
+
+    // Calculate total matched quantity across all matchings
+    const totalMatchedQuantity = disposalMatchings.reduce(
+      (sum, matching) => sum + matching.quantityMatched,
+      0
+    )
+
+    // Calculate unmatched quantity (if any)
+    const unmatchedQuantity = disposalQuantity - totalMatchedQuantity
+    const isIncomplete = unmatchedQuantity > 0
+
     // Calculate proceeds (sale price minus selling fees)
     const pricePerShare = disposal.price_gbp || 0
-    const disposalQuantity = getEffectiveQuantity(disposal)
     const totalProceeds = pricePerShare * disposalQuantity
     const sellingFees = disposal.fee_gbp || 0
     const netProceeds = totalProceeds - sellingFees
@@ -118,7 +130,7 @@ function createDisposalRecords(matchings: MatchingResult[]): DisposalRecord[] {
       0
     )
 
-    // Calculate gain or loss
+    // Calculate gain or loss (only for matched portion if incomplete)
     const gainOrLoss = netProceeds - totalCostBasis
 
     records.push({
@@ -129,6 +141,8 @@ function createDisposalRecords(matchings: MatchingResult[]): DisposalRecord[] {
       allowableCostsGbp: totalCostBasis,
       gainOrLossGbp: gainOrLoss,
       taxYear: disposal.tax_year,
+      unmatchedQuantity: isIncomplete ? unmatchedQuantity : undefined,
+      isIncomplete,
     })
   }
 
@@ -209,6 +223,9 @@ function generateTaxYearSummaries(
       0
     )
 
+    // Count incomplete disposals (those with missing acquisition data)
+    const incompleteDisposals = yearDisposals.filter(d => d.isIncomplete).length
+
     summaries.push({
       taxYear,
       startDate,
@@ -227,6 +244,7 @@ function generateTaxYearSummaries(
       dividendAllowance,
       totalInterest,
       totalInterestGbp,
+      incompleteDisposals,
     })
   }
 

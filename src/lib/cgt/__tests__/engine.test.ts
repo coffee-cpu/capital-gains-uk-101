@@ -816,5 +816,137 @@ describe('CGT Engine', () => {
       expect(summary.totalInterest).toBe(2)
       expect(summary.totalInterestGbp).toBe(1200)
     })
+
+    it('should handle disposals with no matching acquisitions (incomplete data)', () => {
+      // Scenario: User sells shares but has no corresponding buy records
+      // (e.g., shares bought before they started tracking transactions)
+      const transactions: EnrichedTransaction[] = [
+        {
+          id: 'tx-1',
+          source: 'test',
+          symbol: 'FOOD',
+          name: 'FoodRetail',
+          date: '2025-01-20',
+          type: 'SELL',
+          quantity: 40,
+          price: 55,
+          currency: 'GBP',
+          total: 2200,
+          fee: 0,
+          notes: null,
+          fx_rate: 1.0,
+          price_gbp: 55,
+          value_gbp: 2200,
+          fee_gbp: 0,
+          fx_source: 'HMRC',
+          fx_error: null,
+          tax_year: '2024/25',
+          gain_group: 'NONE',
+        },
+      ]
+
+      const result = calculateCGT(transactions)
+
+      // Should create a disposal record even with no acquisitions
+      expect(result.disposals).toHaveLength(1)
+
+      const disposal = result.disposals[0]
+      // Disposal should be marked as incomplete
+      expect(disposal.isIncomplete).toBe(true)
+      expect(disposal.unmatchedQuantity).toBe(40)
+
+      // Proceeds should be calculated normally
+      expect(disposal.proceedsGbp).toBe(2200)
+
+      // But cost basis and gain should be 0 (no matched acquisitions)
+      expect(disposal.allowableCostsGbp).toBe(0)
+      expect(disposal.gainOrLossGbp).toBe(2200) // Proceeds - 0 cost
+
+      // Should have one matching with quantityMatched = 0 (empty Section 104 pool)
+      expect(disposal.matchings).toHaveLength(1)
+      expect(disposal.matchings[0].rule).toBe('SECTION_104')
+      expect(disposal.matchings[0].quantityMatched).toBe(0)
+
+      // Tax year summary should reflect incomplete disposal
+      const summary = result.taxYearSummaries[0]
+      expect(summary.incompleteDisposals).toBe(1)
+      expect(summary.totalDisposals).toBe(1)
+    })
+
+    it('should handle partial incomplete disposals', () => {
+      // Scenario: User sells 100 shares but only has records for 60
+      const transactions: EnrichedTransaction[] = [
+        {
+          id: 'tx-1',
+          source: 'test',
+          symbol: 'AAPL',
+          name: 'Apple Inc.',
+          date: '2024-05-01',
+          type: 'BUY',
+          quantity: 60,
+          price: 100,
+          currency: 'USD',
+          total: 6000,
+          fee: 10,
+          notes: null,
+          fx_rate: 1.0,
+          price_gbp: 100,
+          value_gbp: 6000,
+          fee_gbp: 10,
+          fx_source: 'HMRC',
+          fx_error: null,
+          tax_year: '2024/25',
+          gain_group: 'NONE',
+        },
+        {
+          id: 'tx-2',
+          source: 'test',
+          symbol: 'AAPL',
+          name: 'Apple Inc.',
+          date: '2024-07-01',
+          type: 'SELL',
+          quantity: 100,
+          price: 150,
+          currency: 'USD',
+          total: 15000,
+          fee: 10,
+          notes: null,
+          fx_rate: 1.0,
+          price_gbp: 150,
+          value_gbp: 15000,
+          fee_gbp: 10,
+          fx_source: 'HMRC',
+          fx_error: null,
+          tax_year: '2024/25',
+          gain_group: 'NONE',
+        },
+      ]
+
+      const result = calculateCGT(transactions)
+
+      expect(result.disposals).toHaveLength(1)
+
+      const disposal = result.disposals[0]
+      // 60 shares matched, 40 shares unmatched
+      expect(disposal.isIncomplete).toBe(true)
+      expect(disposal.unmatchedQuantity).toBe(40)
+
+      // Total proceeds for all 100 shares
+      expect(disposal.proceedsGbp).toBe(14990) // 15000 - 10
+
+      // Cost basis only for matched 60 shares
+      expect(disposal.allowableCostsGbp).toBeCloseTo(6010, 2) // 6000 + 10
+
+      // Gain calculation: proceeds for all 100 minus cost for 60
+      expect(disposal.gainOrLossGbp).toBeCloseTo(8980, 2)
+
+      // Should have one Section 104 matching with 60 shares
+      expect(disposal.matchings).toHaveLength(1)
+      expect(disposal.matchings[0].quantityMatched).toBe(60)
+
+      // Tax year summary should show incomplete disposal
+      const summary = result.taxYearSummaries[0]
+      expect(summary.incompleteDisposals).toBe(1)
+    })
   })
 })

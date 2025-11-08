@@ -111,6 +111,27 @@ export function TaxYearSummary() {
           </div>
         </div>
 
+        {/* Warning for incomplete disposals */}
+        {currentSummary.incompleteDisposals > 0 && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex">
+              <svg className="h-5 w-5 text-red-400 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+              <div className="ml-3">
+                <h4 className="text-sm font-medium text-red-800">Incomplete Disposal Data</h4>
+                <p className="mt-1 text-sm text-red-700">
+                  {currentSummary.incompleteDisposals} disposal{currentSummary.incompleteDisposals !== 1 ? 's' : ''} could not be fully matched to acquisition data.
+                  This typically occurs when you sold shares that were purchased before you started importing transactions.
+                  Look for disposals with the red "Incomplete" badge in the transaction list below.
+                </p>
+                <p className="mt-2 text-sm text-red-700">
+                  <strong>Note:</strong> Gains/losses shown above only include matched portions. You may need to manually calculate gains for unmatched shares using your original purchase records.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Disposal Records Panel */}
         {showDisposals && (

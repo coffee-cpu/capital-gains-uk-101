@@ -62,11 +62,9 @@ export function applySection104Pooling(
         // Add to pool
         addToPool(pool, tx, remainingQuantity)
       } else if (tx.type === TransactionType.SELL) {
-        // Match against pool
+        // Match against pool (always returns a result, even if pool is empty/insufficient)
         const matching = matchAgainstPool(pool, tx, remainingQuantity)
-        if (matching) {
-          matchings.push(matching)
-        }
+        matchings.push(matching)
       }
     }
 
@@ -110,27 +108,27 @@ function addToPool(
 
 /**
  * Match a disposal against the Section 104 pool
+ *
+ * Returns a MatchingResult even if the pool is empty or insufficient.
+ * This allows us to track unmatched disposals for user transparency.
  */
 function matchAgainstPool(
   pool: Section104Pool,
   transaction: EnrichedTransaction,
   quantity: number
-): MatchingResult | null {
-  if (pool.quantity <= 0) {
-    console.warn(`Cannot match disposal ${transaction.id}: Section 104 pool for ${pool.symbol} is empty`)
-    return null
-  }
+): MatchingResult {
+  // Can only match up to available pool quantity (0 if pool is empty)
+  const quantityToMatch = Math.min(quantity, Math.max(0, pool.quantity))
 
-  // Can only match up to available pool quantity
-  const quantityToMatch = Math.min(quantity, pool.quantity)
-
-  // Calculate cost basis at average cost
+  // Calculate cost basis at average cost (0 if pool is empty)
   const costBasisGbp = pool.averageCostGbp * quantityToMatch
 
-  // Update pool
-  pool.quantity -= quantityToMatch
-  pool.totalCostGbp -= costBasisGbp
-  pool.averageCostGbp = pool.quantity > 0 ? pool.totalCostGbp / pool.quantity : 0
+  // Update pool only if we matched something
+  if (quantityToMatch > 0) {
+    pool.quantity -= quantityToMatch
+    pool.totalCostGbp -= costBasisGbp
+    pool.averageCostGbp = pool.quantity > 0 ? pool.totalCostGbp / pool.quantity : 0
+  }
 
   // Calculate proceeds (including selling fees, use split-adjusted price if available)
   const pricePerShare = getEffectivePrice(transaction)
@@ -139,19 +137,21 @@ function matchAgainstPool(
   const proceedsPerShare = pricePerShare - feePerShare
   const proceeds = proceedsPerShare * quantityToMatch
 
-  // Record in history
-  pool.history.push({
-    date: transaction.date,
-    type: 'SELL',
-    quantity: quantityToMatch,
-    costOrProceeds: proceeds,
-    balanceQuantity: pool.quantity,
-    balanceCost: pool.totalCostGbp,
-    transactionId: transaction.id,
-  })
+  // Record in history only if we matched something
+  if (quantityToMatch > 0) {
+    pool.history.push({
+      date: transaction.date,
+      type: 'SELL',
+      quantity: quantityToMatch,
+      costOrProceeds: proceeds,
+      balanceQuantity: pool.quantity,
+      balanceCost: pool.totalCostGbp,
+      transactionId: transaction.id,
+    })
+  }
 
-  // Create a synthetic acquisition representing the pool
-  const poolAcquisition: MatchingResult['acquisitions'][0] = {
+  // Create a synthetic acquisition representing the pool (empty array if nothing matched)
+  const acquisitions: MatchingResult['acquisitions'] = quantityToMatch > 0 ? [{
     transaction: {
       ...transaction,
       id: `${transaction.id}-s104-pool`,
@@ -161,11 +161,11 @@ function matchAgainstPool(
     },
     quantityMatched: quantityToMatch,
     costBasisGbp,
-  }
+  }] : []
 
   return {
     disposal: transaction,
-    acquisitions: [poolAcquisition],
+    acquisitions,
     rule: 'SECTION_104',
     quantityMatched: quantityToMatch,
     totalCostBasisGbp: costBasisGbp,

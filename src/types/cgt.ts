@@ -50,6 +50,10 @@ export interface DisposalRecord {
   gainOrLossGbp: number
   /** UK tax year when disposal occurred (e.g., "2023/24") */
   taxYear: string
+  /** Quantity that could not be matched to any acquisitions */
+  unmatchedQuantity?: number
+  /** True if disposal has insufficient acquisition data */
+  isIncomplete: boolean
 }
 
 /**
@@ -117,6 +121,8 @@ export interface TaxYearSummary {
   totalInterest: number
   /** Total interest income in GBP */
   totalInterestGbp: number
+  /** Number of disposals with incomplete/missing acquisition data */
+  incompleteDisposals: number
 }
 
 /**
@@ -168,6 +174,8 @@ export const DisposalRecordSchema = z.object({
   allowableCostsGbp: z.number(),
   gainOrLossGbp: z.number(),
   taxYear: z.string(),
+  unmatchedQuantity: z.number().optional(),
+  isIncomplete: z.boolean(),
 })
 
 export const TaxYearSummarySchema = z.object({
@@ -188,4 +196,5 @@ export const TaxYearSummarySchema = z.object({
   dividendAllowance: z.number().nonnegative(),
   totalInterest: z.number().int().nonnegative(),
   totalInterestGbp: z.number().nonnegative(),
+  incompleteDisposals: z.number().int().nonnegative(),
 })
