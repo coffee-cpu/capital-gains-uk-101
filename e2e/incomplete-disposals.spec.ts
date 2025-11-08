@@ -32,9 +32,6 @@ test.describe('Incomplete Disposal Tracking', () => {
     // Check for the red Incomplete badge
     const incompleteBadge = foodRow.locator('span.bg-red-100.text-red-800').filter({ hasText: 'Incomplete' })
     await expect(incompleteBadge).toBeVisible()
-
-    // Verify the badge exists (tooltip is handled by hover, not title attribute)
-    await expect(incompleteBadge).toBeVisible()
   })
 
   test('should show Incomplete badge for GlobalBank disposal in transaction list', async ({ page }) => {
