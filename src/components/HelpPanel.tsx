@@ -38,15 +38,16 @@ export function HelpPanel() {
       }
     }
 
-    // Add listener with a small delay to avoid closing immediately after opening
+    // Add listener with a delay to avoid closing immediately after opening
+    // The delay must be long enough for badge clicks to complete before the listener is attached
     if (isOpen) {
       const timeoutId = setTimeout(() => {
-        document.addEventListener('mousedown', handleClickOutside)
-      }, 100)
+        document.addEventListener('click', handleClickOutside)
+      }, 300)
 
       return () => {
         clearTimeout(timeoutId)
-        document.removeEventListener('mousedown', handleClickOutside)
+        document.removeEventListener('click', handleClickOutside)
       }
     }
   }, [isOpen, setHelpPanelOpen])

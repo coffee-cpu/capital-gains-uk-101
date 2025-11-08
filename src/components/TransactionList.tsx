@@ -22,14 +22,29 @@ export function TransactionList() {
   const transactions = useTransactionStore((state) => state.transactions)
   const getDisposals = useTransactionStore((state) => state.getDisposals)
   const getSection104Pools = useTransactionStore((state) => state.getSection104Pools)
-  const setHelpPanelOpen = useTransactionStore((state) => state.setHelpPanelOpen)
-  const setHelpContext = useTransactionStore((state) => state.setHelpContext)
+  const toggleHelpPanelWithContext = useTransactionStore((state) => state.toggleHelpPanelWithContext)
   const [showFxInfo, setShowFxInfo] = useState(false)
   const [hoveredMatchGroup, setHoveredMatchGroup] = useState<string | null>(null)
 
   // Get disposal records and Section 104 pools
   const disposals = getDisposals()
   const section104Pools = getSection104Pools()
+
+  // Helper to get help context for a badge label
+  const getContextForBadge = (label: string) => {
+    if (label === 'Same Day') return 'same-day'
+    if (label === '30-Day') return '30-day'
+    if (label === 'Section 104') return 'section104'
+    if (label === 'Incomplete') return 'incomplete'
+    return 'default'
+  }
+
+  // Handle badge click - toggle help panel with context
+  const handleBadgeClick = (e: React.MouseEvent, badgeLabel: string) => {
+    e.stopPropagation() // Prevent click from bubbling to document (which would close the panel)
+    const context = getContextForBadge(badgeLabel)
+    toggleHelpPanelWithContext(context as any)
+  }
 
   // Helper to find disposal record for a transaction
   const getDisposalForTransaction = (txId: string) => {
@@ -231,9 +246,9 @@ export function TransactionList() {
                     </span>
                   </Tooltip>
                   <button
-                    onClick={() => {
-                      setHelpContext('default')
-                      setHelpPanelOpen(true)
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      toggleHelpPanelWithContext('default')
                     }}
                     className="p-0.5 rounded hover:bg-blue-100 transition-colors"
                     aria-label="Learn about CGT rules"
@@ -514,30 +529,16 @@ export function TransactionList() {
                   }`}>
                     {cgtBadges ? (
                       <div className="flex flex-wrap gap-1">
-                        {cgtBadges.map((badge, index) => {
-                          // Determine which help context to show
-                          const getContextForBadge = (label: string) => {
-                            if (label === 'Same Day') return 'same-day'
-                            if (label === '30-Day') return '30-day'
-                            if (label === 'Section 104') return 'section104'
-                            if (label === 'Incomplete') return 'incomplete'
-                            return 'default'
-                          }
-
-                          return (
-                            <Tooltip key={index} content={badge.title}>
-                              <span
-                                className={`inline-flex px-1.5 py-0.5 text-[10px] font-semibold rounded-full border whitespace-nowrap cursor-pointer hover:ring-2 hover:ring-offset-1 transition-all ${badge.className}`}
-                                onClick={() => {
-                                  setHelpContext(getContextForBadge(badge.label) as any)
-                                  setHelpPanelOpen(true)
-                                }}
-                              >
-                                {badge.label}
-                              </span>
-                            </Tooltip>
-                          )
-                        })}
+                        {cgtBadges.map((badge, index) => (
+                          <Tooltip key={index} content={badge.title}>
+                            <span
+                              className={`inline-flex px-1.5 py-0.5 text-[10px] font-semibold rounded-full border whitespace-nowrap cursor-pointer hover:ring-2 hover:ring-offset-1 transition-all ${badge.className}`}
+                              onClick={(e) => handleBadgeClick(e, badge.label)}
+                            >
+                              {badge.label}
+                            </span>
+                          </Tooltip>
+                        ))}
                       </div>
                     ) : (
                       <span className="text-gray-400">—</span>

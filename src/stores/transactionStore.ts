@@ -19,7 +19,7 @@ interface TransactionState {
   // Help panel actions
   setHelpPanelOpen: (open: boolean) => void
   setHelpContext: (context: HelpContext) => void
-  toggleHelpPanel: () => void
+  toggleHelpPanelWithContext: (context: HelpContext) => void
   // Computed getters for CGT data
   getDisposals: () => DisposalRecord[]
   getTaxYearSummary: (taxYear: string) => TaxYearSummary | undefined
@@ -59,7 +59,16 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
 
   setHelpContext: (context) => set({ helpContext: context }),
 
-  toggleHelpPanel: () => set({ isHelpPanelOpen: !get().isHelpPanelOpen }),
+  toggleHelpPanelWithContext: (context) => {
+    const state = get()
+    // If panel is open and showing the same context, close it
+    if (state.isHelpPanelOpen && state.helpContext === context) {
+      set({ isHelpPanelOpen: false })
+    } else {
+      // Otherwise, open panel with this context (or switch context if already open)
+      set({ helpContext: context, isHelpPanelOpen: true })
+    }
+  },
 
   addTransactions: (newTransactions) =>
     set((state) => ({

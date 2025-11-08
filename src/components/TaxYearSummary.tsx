@@ -10,8 +10,7 @@ export function TaxYearSummary() {
   const selectedTaxYear = useTransactionStore((state) => state.selectedTaxYear)
   const setSelectedTaxYear = useTransactionStore((state) => state.setSelectedTaxYear)
   const hasExportedPDF = useTransactionStore((state) => state.hasExportedPDF)
-  const setHelpPanelOpen = useTransactionStore((state) => state.setHelpPanelOpen)
-  const setHelpContext = useTransactionStore((state) => state.setHelpContext)
+  const toggleHelpPanelWithContext = useTransactionStore((state) => state.toggleHelpPanelWithContext)
   const [showDisposals, setShowDisposals] = useState(false)
   const [showDividends, setShowDividends] = useState(false)
   const [showInterest, setShowInterest] = useState(false)
@@ -314,9 +313,9 @@ export function TaxYearSummary() {
                       </p>
                     </div>
                     <button
-                      onClick={() => {
-                        setHelpContext('dividend')
-                        setHelpPanelOpen(true)
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        toggleHelpPanelWithContext('dividend')
                       }}
                       className="p-1 rounded hover:bg-purple-100 transition-colors flex-shrink-0"
                       aria-label="Learn about dividend tax"
@@ -416,9 +415,9 @@ export function TaxYearSummary() {
                       </p>
                     </div>
                     <button
-                      onClick={() => {
-                        setHelpContext('interest')
-                        setHelpPanelOpen(true)
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        toggleHelpPanelWithContext('interest')
                       }}
                       className="p-1 rounded hover:bg-purple-100 transition-colors flex-shrink-0"
                       aria-label="Learn about interest tax"
