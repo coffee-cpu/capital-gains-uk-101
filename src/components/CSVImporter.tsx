@@ -5,6 +5,7 @@ import { normalizeSchwabTransactions } from '../lib/parsers/schwab'
 import { normalizeSchwabEquityAwardsTransactions } from '../lib/parsers/schwabEquityAwards'
 import { normalizeGenericTransactions } from '../lib/parsers/generic'
 import { normalizeTrading212Transactions } from '../lib/parsers/trading212'
+import { normalizeFreetradeTransactions } from '../lib/parsers/freetrade'
 import { BrokerType } from '../types/broker'
 import { GenericTransaction } from '../types/transaction'
 import { useTransactionStore } from '../stores/transactionStore'
@@ -62,6 +63,9 @@ export function CSVImporter() {
           break
         case BrokerType.SCHWAB_EQUITY_AWARDS:
           transactions = normalizeSchwabEquityAwardsTransactions(rawRows, fileId)
+          break
+        case BrokerType.FREETRADE:
+          transactions = normalizeFreetradeTransactions(rawRows, fileId)
           break
         case BrokerType.GENERIC:
           transactions = normalizeGenericTransactions(rawRows, fileId)
@@ -282,7 +286,7 @@ export function CSVImporter() {
               Drop your CSV files here, or click to browse
             </p>
             <p className="text-xs text-gray-500">
-              Supports multiple files • Charles Schwab, Schwab Equity Awards, Trading 212, and Generic CSV
+              Supports multiple files • Charles Schwab, Schwab Equity Awards, Freetrade, Trading 212, and Generic CSV
             </p>
           </div>
         </div>
@@ -409,6 +413,48 @@ export function CSVImporter() {
                   </p>
                   <a
                     href="/examples/schwab-equity-awards-example.csv"
+                    className="inline-block text-blue-600 hover:text-blue-800 underline"
+                  >
+                    📥 Download example file
+                  </a>
+                </div>
+              )}
+            </li>
+
+            {/* Freetrade */}
+            <li>
+              <div className="flex justify-between items-center md:justify-start md:gap-4">
+                <span>Freetrade</span>
+                <button
+                  onClick={() => setExpandedFormat(expandedFormat === 'freetrade' ? null : 'freetrade')}
+                  className="text-blue-600 hover:text-blue-800 text-xs underline whitespace-nowrap"
+                >
+                  {expandedFormat === 'freetrade' ? 'hide' : 'instructions & example'}
+                </button>
+              </div>
+              {expandedFormat === 'freetrade' && (
+                <div className="mt-2 ml-4 p-3 bg-gray-50 rounded text-xs space-y-2">
+                  <p className="font-medium">How to download:</p>
+                  <ol className="list-decimal list-inside space-y-1 text-gray-600">
+                    <li>Open Freetrade mobile app (iOS/Android)</li>
+                    <li>Navigate to Activity tab (bottom of screen)</li>
+                    <li>Optional: Use calendar icon to select custom date range</li>
+                    <li>Tap Share icon (arrow pointing up) in top-right corner</li>
+                    <li>Select "All Activity" and export file to device</li>
+                  </ol>
+                  <p className="text-gray-600 italic">
+                    Note: Freetrade exports all activity at once. The CSV includes trades, dividends, interest, deposits, and withdrawals.
+                  </p>
+                  <a
+                    href="https://help.freetrade.io/en/articles/6627908-how-do-i-download-a-csv-export-of-my-activity-feed"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block text-blue-600 hover:text-blue-800 underline mr-4"
+                  >
+                    📖 Official instructions
+                  </a>
+                  <a
+                    href="/examples/freetrade-example.csv"
                     className="inline-block text-blue-600 hover:text-blue-800 underline"
                   >
                     📥 Download example file

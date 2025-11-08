@@ -20,6 +20,12 @@ export function detectBroker(rows: RawCSVRow[]): BrokerDetectionResult {
     return genericResult
   }
 
+  // Check for Freetrade (check before others - distinctive format)
+  const freetradeResult = detectFreetrade(headers, rows)
+  if (freetradeResult.confidence > 0.8) {
+    return freetradeResult
+  }
+
   // Check for Schwab Equity Awards (check before regular Schwab)
   const schwabEquityResult = detectSchwabEquityAwards(headers, rows)
   if (schwabEquityResult.confidence > 0.8) {
@@ -39,7 +45,7 @@ export function detectBroker(rows: RawCSVRow[]): BrokerDetectionResult {
   }
 
   // Return best match or unknown
-  const results = [genericResult, schwabEquityResult, schwabResult, trading212Result]
+  const results = [genericResult, freetradeResult, schwabEquityResult, schwabResult, trading212Result]
   const bestMatch = results.reduce((best, current) =>
     current.confidence > best.confidence ? current : best
   )
@@ -118,6 +124,23 @@ function detectTrading212(headers: string[], _rows: RawCSVRow[]): BrokerDetectio
 
   return {
     broker: BrokerType.TRADING212,
+    confidence,
+    headerMatches: matches,
+  }
+}
+
+/**
+ * Detect Freetrade format
+ * Expected headers: "Title", "Type", "Timestamp", "Buy / Sell", "Ticker", "ISIN", "Order Type"
+ */
+function detectFreetrade(headers: string[], _rows: RawCSVRow[]): BrokerDetectionResult {
+  const freetradeHeaders = ['Title', 'Type', 'Timestamp', 'Buy / Sell', 'Ticker', 'ISIN', 'Order Type']
+
+  const matches = freetradeHeaders.filter(h => headers.includes(h))
+  const confidence = matches.length / freetradeHeaders.length
+
+  return {
+    broker: BrokerType.FREETRADE,
     confidence,
     headerMatches: matches,
   }

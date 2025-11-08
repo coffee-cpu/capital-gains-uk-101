@@ -112,4 +112,30 @@ test.describe('CSV Import', () => {
     // Verify the success message mentions Trading 212
     await expect(page.getByText(/from Trading 212/i)).toBeVisible()
   })
+
+  test('should import Freetrade CSV successfully', async ({ page }) => {
+    await page.goto('/')
+
+    // Find the file input
+    const fileInput = page.locator('input[type="file"]')
+    await expect(fileInput).toBeVisible()
+
+    // Upload the Freetrade example CSV file
+    const filePath = path.join(__dirname, '..', 'public', 'examples', 'freetrade-example.csv')
+    await fileInput.setInputFiles(filePath)
+
+    // Wait for success message
+    await expect(page.getByText(/file\(s\) imported successfully/i)).toBeVisible({ timeout: 10000 })
+
+    // Verify the success message mentions Freetrade
+    await expect(page.getByText(/from Freetrade/i)).toBeVisible()
+
+    // Verify transactions table is visible
+    await expect(page.getByRole('heading', { name: 'Transactions', exact: true })).toBeVisible()
+
+    // Check for some transaction data from the Freetrade example
+    await expect(page.getByText('TECH').first()).toBeVisible() // TechCorp ticker
+    await expect(page.getByText('RTLG').first()).toBeVisible() // RetailGroup ticker
+    await expect(page.getByText('GBNK').first()).toBeVisible() // GlobalBank ticker
+  })
 })
