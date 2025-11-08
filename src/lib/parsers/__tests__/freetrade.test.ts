@@ -46,7 +46,7 @@ describe('Freetrade Parser', () => {
         currency: 'GBP',
         total: 1800.50,
       })
-      expect(result[0].fee).toBeNull() // Zero stamp duty
+      expect(result[0].fee).toBeNull() // Zero stamp duty and no FX fee
       expect(result[0].notes).toBe('ISIN: GB1122334455')
     })
 
@@ -414,6 +414,7 @@ describe('Freetrade Parser', () => {
           'Price per Share in Account Currency': '50.00',
           'Quantity': '100.00',
           'Stamp Duty': '2.50',
+          'FX Fee Amount': '',
         },
       ]
 
@@ -422,6 +423,177 @@ describe('Freetrade Parser', () => {
       expect(result).toHaveLength(1)
       expect(result[0].fee).toBe(2.5)
       expect(result[0].total).toBe(5002.5)
+      expect(result[0].notes).toContain('Stamp Duty: 2.5')
+    })
+
+    it('should handle FX fees as allowable costs', () => {
+      const rows = [
+        {
+          'Title': 'USStock',
+          'Type': 'ORDER',
+          'Timestamp': '2025-02-10T10:00:00.000Z',
+          'Account Currency': 'GBP',
+          'Total Amount': '1000.00',
+          'Buy / Sell': 'BUY',
+          'Ticker': 'USST',
+          'ISIN': 'US1234567890',
+          'Price per Share in Account Currency': '100.00',
+          'Quantity': '10.00',
+          'Stamp Duty': '0.00',
+          'FX Fee Amount': '3.90',
+        },
+      ]
+
+      const result = normalizeFreetradeTransactions(rows, 'test-file')
+
+      expect(result).toHaveLength(1)
+      expect(result[0].fee).toBe(3.90)
+      expect(result[0].total).toBe(1000.0)
+      expect(result[0].notes).toContain('FX Fee: 3.9')
+    })
+
+    it('should combine stamp duty and FX fees', () => {
+      const rows = [
+        {
+          'Title': 'EUStock',
+          'Type': 'ORDER',
+          'Timestamp': '2025-03-15T14:00:00.000Z',
+          'Account Currency': 'GBP',
+          'Total Amount': '2000.00',
+          'Buy / Sell': 'BUY',
+          'Ticker': 'EUST',
+          'ISIN': 'DE0000000000',
+          'Price per Share in Account Currency': '50.00',
+          'Quantity': '40.00',
+          'Stamp Duty': '10.00',
+          'FX Fee Amount': '7.80',
+        },
+      ]
+
+      const result = normalizeFreetradeTransactions(rows, 'test-file')
+
+      expect(result).toHaveLength(1)
+      expect(result[0].fee).toBe(17.80) // 10.00 + 7.80
+      expect(result[0].total).toBe(2000.0)
+      expect(result[0].notes).toContain('Stamp Duty: 10')
+      expect(result[0].notes).toContain('FX Fee: 7.8')
+    })
+
+    it('should not add fee notes when fees are zero', () => {
+      const rows = [
+        {
+          'Title': 'Stock',
+          'Type': 'ORDER',
+          'Timestamp': '2025-04-20T10:00:00.000Z',
+          'Account Currency': 'GBP',
+          'Total Amount': '500.00',
+          'Buy / Sell': 'BUY',
+          'Ticker': 'STK',
+          'ISIN': 'GB0000000000',
+          'Price per Share in Account Currency': '50.00',
+          'Quantity': '10.00',
+          'Stamp Duty': '0.00',
+          'FX Fee Amount': '0.00',
+        },
+      ]
+
+      const result = normalizeFreetradeTransactions(rows, 'test-file')
+
+      expect(result).toHaveLength(1)
+      expect(result[0].fee).toBeNull()
+      expect(result[0].notes).toBe('ISIN: GB0000000000') // Only ISIN, no fee notes
+    })
+
+    it('should handle FREESHARE_ORDER with zero acquisition cost', () => {
+      const rows = [
+        {
+          'Title': 'FreeStock',
+          'Type': 'FREESHARE_ORDER',
+          'Timestamp': '2025-05-10T12:00:00.000Z',
+          'Account Currency': 'GBP',
+          'Total Amount': '0.00',
+          'Buy / Sell': 'BUY',
+          'Ticker': 'FREE',
+          'ISIN': 'US9999999999',
+          'Price per Share in Account Currency': '0.00',
+          'Quantity': '1.00000000',
+          'Stamp Duty': '0.00',
+          'FX Fee Amount': '0.00',
+        },
+      ]
+
+      const result = normalizeFreetradeTransactions(rows, 'test-file')
+
+      expect(result).toHaveLength(1)
+      expect(result[0]).toMatchObject({
+        source: 'Freetrade',
+        symbol: 'FREE',
+        name: 'FreeStock',
+        type: TransactionType.BUY,
+        date: '2025-05-10',
+        quantity: 1.0,
+        price: 0, // Zero acquisition cost
+        total: 0, // Zero total
+        fee: null,
+        currency: 'GBP',
+      })
+      expect(result[0].notes).toContain('Free share (£0 acquisition cost)')
+      expect(result[0].notes).toContain('ISIN: US9999999999')
+    })
+
+    it('should handle FREESHARE_ORDER even when CSV has non-zero values', () => {
+      // Some CSVs might have market value in the amount fields, but we override to £0
+      const rows = [
+        {
+          'Title': 'PromotionStock',
+          'Type': 'FREESHARE_ORDER',
+          'Timestamp': '2025-06-01T09:00:00.000Z',
+          'Account Currency': 'GBP',
+          'Total Amount': '50.00', // Market value shown, but we ignore this
+          'Buy / Sell': 'BUY',
+          'Ticker': 'PROMO',
+          'ISIN': 'GB8888888888',
+          'Price per Share in Account Currency': '50.00', // Market price, but we override
+          'Quantity': '1.00000000',
+          'Stamp Duty': '0.00',
+          'FX Fee Amount': '0.00',
+        },
+      ]
+
+      const result = normalizeFreetradeTransactions(rows, 'test-file')
+
+      expect(result).toHaveLength(1)
+      expect(result[0].price).toBe(0) // Overridden to 0
+      expect(result[0].total).toBe(0) // Overridden to 0
+      expect(result[0].fee).toBeNull()
+      expect(result[0].notes).toContain('Free share (£0 acquisition cost)')
+    })
+
+    it('should handle fractional FREESHARE_ORDER', () => {
+      const rows = [
+        {
+          'Title': 'FractionalFree',
+          'Type': 'FREESHARE_ORDER',
+          'Timestamp': '2025-07-01T10:00:00.000Z',
+          'Account Currency': 'GBP',
+          'Total Amount': '0.00',
+          'Buy / Sell': 'BUY',
+          'Ticker': 'FRAC',
+          'ISIN': 'US7777777777',
+          'Price per Share in Account Currency': '0.00',
+          'Quantity': '0.50000000',
+          'Stamp Duty': '0.00',
+          'FX Fee Amount': '0.00',
+        },
+      ]
+
+      const result = normalizeFreetradeTransactions(rows, 'test-file')
+
+      expect(result).toHaveLength(1)
+      expect(result[0].quantity).toBe(0.5)
+      expect(result[0].price).toBe(0)
+      expect(result[0].total).toBe(0)
+      expect(result[0].notes).toContain('Free share (£0 acquisition cost)')
     })
   })
 })

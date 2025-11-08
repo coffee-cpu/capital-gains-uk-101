@@ -38,8 +38,8 @@ function normalizeFreetradeRow(row: RawCSVRow, fileId: string, rowIndex: number)
   }
 
   // Handle different transaction types
-  if (type === 'ORDER') {
-    return parseOrderTransaction(row, fileId, rowIndex, date, title, ticker, isin)
+  if (type === 'ORDER' || type === 'FREESHARE_ORDER') {
+    return parseOrderTransaction(row, fileId, rowIndex, date, title, ticker, isin, type === 'FREESHARE_ORDER')
   } else if (type === 'DIVIDEND') {
     return parseDividendTransaction(row, fileId, rowIndex, date, title, ticker, isin)
   } else if (type === 'INTEREST_FROM_CASH') {
@@ -55,7 +55,7 @@ function normalizeFreetradeRow(row: RawCSVRow, fileId: string, rowIndex: number)
 }
 
 /**
- * Parse ORDER transaction (BUY or SELL)
+ * Parse ORDER transaction (BUY or SELL) or FREESHARE_ORDER
  */
 function parseOrderTransaction(
   row: RawCSVRow,
@@ -64,18 +64,54 @@ function parseOrderTransaction(
   date: string,
   title: string,
   ticker: string,
-  isin: string
+  isin: string,
+  isFreeShare = false
 ): GenericTransaction | null {
   const buySell = row['Buy / Sell']?.trim()
   const quantity = parseFloat(row['Quantity']) || null
-  const pricePerShare = parseFloat(row['Price per Share in Account Currency']) || null
-  const totalAmount = parseFloat(row['Total Amount']) || null
-  const stampDuty = parseFloat(row['Stamp Duty']) || null
   const accountCurrency = row['Account Currency']?.trim() || 'GBP'
 
-  // Determine if this is a buy or sell
-  const isBuy = buySell === 'BUY'
+  // For free shares, price and amount are £0 (no acquisition cost per HMRC)
+  let pricePerShare: number | null
+  let totalAmount: number | null
+  let stampDuty: number | null
+  let fxFeeAmount: number | null
+
+  if (isFreeShare) {
+    pricePerShare = 0
+    totalAmount = 0
+    stampDuty = 0
+    fxFeeAmount = 0
+  } else {
+    pricePerShare = parseFloat(row['Price per Share in Account Currency']) || null
+    totalAmount = parseFloat(row['Total Amount']) || null
+    stampDuty = parseFloat(row['Stamp Duty']) || null
+    fxFeeAmount = parseFloat(row['FX Fee Amount']) || null
+  }
+
+  // Determine if this is a buy or sell (free shares are always BUY)
+  const isBuy = isFreeShare || buySell === 'BUY'
   const type = isBuy ? TransactionType.BUY : TransactionType.SELL
+
+  // Combine stamp duty and FX fees (both are allowable costs per HMRC CG15250)
+  let totalFee: number | null = null
+  const feeNotes: string[] = []
+
+  if (stampDuty !== null && stampDuty > 0) {
+    totalFee = stampDuty
+    feeNotes.push(`Stamp Duty: ${stampDuty}`)
+  }
+
+  if (fxFeeAmount !== null && fxFeeAmount > 0) {
+    totalFee = totalFee !== null ? totalFee + fxFeeAmount : fxFeeAmount
+    feeNotes.push(`FX Fee: ${fxFeeAmount}`)
+  }
+
+  // Build notes
+  const notes: string[] = []
+  if (isin) notes.push(`ISIN: ${isin}`)
+  if (isFreeShare) notes.push('Free share (£0 acquisition cost)')
+  if (feeNotes.length > 0) notes.push(feeNotes.join(', '))
 
   return {
     id: `${fileId}-${rowIndex}`,
@@ -88,9 +124,9 @@ function parseOrderTransaction(
     price: pricePerShare,
     currency: accountCurrency,
     total: totalAmount !== null ? Math.abs(totalAmount) : null,
-    fee: stampDuty,
+    fee: totalFee,
     ratio: null,
-    notes: isin ? `ISIN: ${isin}` : null,
+    notes: notes.length > 0 ? notes.join(', ') : null,
     incomplete: false,
     ignored: false,
   }
