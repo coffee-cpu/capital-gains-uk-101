@@ -164,45 +164,84 @@ export function DisposalRecords({
                     </div>
                   </div>
 
-                  {/* Matchings */}
+                  {/* Matchings or Incomplete Warning */}
                   <div>
                     <div className="text-xs text-gray-500 uppercase mb-2">Matched Acquisitions</div>
-                    <div className="space-y-2">
-                      {disposal.matchings.map((matching, idx) => (
-                        <div key={idx} className="bg-gray-50 rounded p-3">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${
-                              matching.rule === 'SAME_DAY' ? 'bg-blue-100 text-blue-800 border-blue-300' :
-                              matching.rule === '30_DAY' ? 'bg-orange-100 text-orange-800 border-orange-300' :
-                              'bg-green-100 text-green-800 border-green-300'
-                            }`}>
-                              {matching.rule === 'SAME_DAY' ? 'Same Day' :
-                               matching.rule === '30_DAY' ? '30-Day Rule' :
-                               'Section 104 Pool'}
-                            </span>
-                            <span className="text-sm font-medium">
-                              {matching.quantityMatched.toFixed(2)} shares
-                            </span>
+                    {disposal.isIncomplete && disposal.unmatchedQuantity === disposal.disposal.quantity ? (
+                      // Fully unmatched disposal - show warning instead of matching section
+                      <div className="bg-red-50 border border-red-200 rounded p-3">
+                        <div className="flex items-start gap-2">
+                          <svg className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293z" clipRule="evenodd" />
+                          </svg>
+                          <div className="flex-1">
+                            <div className="text-sm font-medium text-red-800 mb-1">No Matching Acquisitions</div>
+                            <div className="text-xs text-red-700">
+                              {disposal.unmatchedQuantity?.toFixed(2)} shares could not be matched to any acquisition records.
+                              This typically occurs when shares were purchased before you started importing transactions.
+                            </div>
+                            <div className="text-xs text-red-700 mt-2">
+                              <strong>Action Required:</strong> You'll need to manually calculate the cost basis and gain for these shares
+                              using your original purchase records.
+                            </div>
                           </div>
-                          {matching.acquisitions.map((acq, acqIdx) => (
-                            <div key={acqIdx} className="text-xs text-gray-600">
-                              {matching.rule !== 'SECTION_104' && (
-                                <>
-                                  {acq.transaction.date}: {acq.quantityMatched.toFixed(2)} shares at £{(acq.costBasisGbp / acq.quantityMatched).toFixed(2)}
-                                  {' '}(cost: £{acq.costBasisGbp.toFixed(2)})
-                                </>
-                              )}
-                              {matching.rule === 'SECTION_104' && (
-                                <>
-                                  Pool average cost: £{(acq.costBasisGbp / acq.quantityMatched).toFixed(2)} per share
-                                  {' '}(total: £{acq.costBasisGbp.toFixed(2)})
-                                </>
-                              )}
+                        </div>
+                      </div>
+                    ) : (
+                      // Has some matched acquisitions - show matching details
+                      <div className="space-y-2">
+                        {disposal.matchings
+                          .filter(matching => matching.quantityMatched > 0)
+                          .map((matching, idx) => (
+                            <div key={idx} className="bg-gray-50 rounded p-3">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${
+                                  matching.rule === 'SAME_DAY' ? 'bg-blue-100 text-blue-800 border-blue-300' :
+                                  matching.rule === '30_DAY' ? 'bg-orange-100 text-orange-800 border-orange-300' :
+                                  'bg-green-100 text-green-800 border-green-300'
+                                }`}>
+                                  {matching.rule === 'SAME_DAY' ? 'Same Day' :
+                                   matching.rule === '30_DAY' ? '30-Day Rule' :
+                                   'Section 104 Pool'}
+                                </span>
+                                <span className="text-sm font-medium">
+                                  {matching.quantityMatched.toFixed(2)} shares
+                                </span>
+                              </div>
+                              {matching.acquisitions.map((acq, acqIdx) => (
+                                <div key={acqIdx} className="text-xs text-gray-600">
+                                  {matching.rule !== 'SECTION_104' && (
+                                    <>
+                                      {acq.transaction.date}: {acq.quantityMatched.toFixed(2)} shares at £{(acq.costBasisGbp / acq.quantityMatched).toFixed(2)}
+                                      {' '}(cost: £{acq.costBasisGbp.toFixed(2)})
+                                    </>
+                                  )}
+                                  {matching.rule === 'SECTION_104' && (
+                                    <>
+                                      Pool average cost: £{(acq.costBasisGbp / acq.quantityMatched).toFixed(2)} per share
+                                      {' '}(total: £{acq.costBasisGbp.toFixed(2)})
+                                    </>
+                                  )}
+                                </div>
+                              ))}
                             </div>
                           ))}
-                        </div>
-                      ))}
-                    </div>
+                        {disposal.isIncomplete && disposal.unmatchedQuantity && disposal.unmatchedQuantity > 0 && (
+                          // Partially matched - show warning about unmatched portion
+                          <div className="bg-yellow-50 border border-yellow-200 rounded p-3">
+                            <div className="flex items-start gap-2">
+                              <svg className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                              </svg>
+                              <div className="text-xs text-yellow-800">
+                                <strong>Partially matched:</strong> {disposal.unmatchedQuantity.toFixed(2)} shares could not be matched.
+                                You'll need to manually calculate the cost basis for the unmatched portion.
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Calculation Summary */}
