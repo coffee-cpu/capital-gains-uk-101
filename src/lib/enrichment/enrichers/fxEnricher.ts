@@ -19,13 +19,16 @@ import { Enricher } from '../types'
 export class FxEnricher implements Enricher {
   name = 'FxEnricher'
 
+  // In-memory cache to prevent duplicate requests during a single enrichment run
+  private rateCache = new Map<string, Promise<number>>()
+
   async enrich(transactions: EnrichedTransaction[]): Promise<EnrichedTransaction[]> {
     const enriched: EnrichedTransaction[] = []
 
     for (const tx of transactions) {
       try {
-        // Fetch FX rate for this transaction's date and currency
-        const fxRate = await getFXRate(tx.date, tx.currency)
+        // Fetch FX rate for this transaction's date and currency (with in-memory cache)
+        const fxRate = await this.getCachedFXRate(tx.date, tx.currency)
 
         // Convert prices to GBP
         const priceGbp = tx.price !== null ? convertToGBP(tx.price, fxRate) : null
@@ -66,5 +69,28 @@ export class FxEnricher implements Enricher {
     }
 
     return enriched
+  }
+
+  /**
+   * Get FX rate with in-memory caching to prevent duplicate requests
+   * during a single enrichment run.
+   *
+   * HMRC rates are monthly, so we cache by year-month-currency key.
+   */
+  private async getCachedFXRate(date: string, currency: string): Promise<number> {
+    // Extract year and month for cache key (HMRC rates are monthly)
+    const [year, month] = date.split('-')
+    const cacheKey = `${year}-${month}-${currency}`
+
+    // Check in-memory cache first
+    let ratePromise = this.rateCache.get(cacheKey)
+
+    if (!ratePromise) {
+      // If not in cache, fetch and store the promise
+      ratePromise = getFXRate(date, currency)
+      this.rateCache.set(cacheKey, ratePromise)
+    }
+
+    return ratePromise
   }
 }
