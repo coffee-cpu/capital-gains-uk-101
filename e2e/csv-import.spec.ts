@@ -100,7 +100,7 @@ test.describe('CSV Import', () => {
     await expect(fileInput).toBeVisible()
 
     // Upload the Trading 212 test CSV file
-    const filePath = path.join(__dirname, '..', 'test-data', 'trading212-sample.csv')
+    const filePath = path.join(__dirname, 'fixtures', 'trading212-sample.csv')
     await fileInput.setInputFiles(filePath)
 
     // Wait for success message
