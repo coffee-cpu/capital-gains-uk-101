@@ -4,6 +4,11 @@ import { SplitEnricher } from './enrichers/splitEnricher'
 import { FxEnricher } from './enrichers/fxEnricher'
 import { TaxYearEnricher } from './enrichers/taxYearEnricher'
 
+// Singleton enricher instances to maintain in-memory caches across enrichment runs
+const splitEnricher = new SplitEnricher()
+const fxEnricher = new FxEnricher()
+const taxYearEnricher = new TaxYearEnricher()
+
 /**
  * Enrich transactions with computed fields
  *
@@ -12,17 +17,20 @@ import { TaxYearEnricher } from './enrichers/taxYearEnricher'
  * 2. FX conversion - convert to GBP using HMRC official rates
  * 3. Tax year calculation - assign UK tax years
  *
+ * Uses singleton enricher instances to maintain in-memory caches (e.g., FX rates)
+ * across multiple enrichment runs for better performance.
+ *
  * @param transactions Array of generic transactions (raw parsed data from CSV)
  * @returns Array of enriched transactions with all computed fields
  */
 export async function enrichTransactions(
   transactions: GenericTransaction[]
 ): Promise<EnrichedTransaction[]> {
-  // Create enrichment engine with the standard pipeline
+  // Create enrichment engine with singleton enrichers
   const engine = new EnrichmentEngine([
-    new SplitEnricher(),
-    new FxEnricher(),
-    new TaxYearEnricher(),
+    splitEnricher,
+    fxEnricher,
+    taxYearEnricher,
   ])
 
   return engine.enrich(transactions)
