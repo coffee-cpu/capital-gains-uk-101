@@ -14,7 +14,13 @@ export function detectBroker(rows: RawCSVRow[]): BrokerDetectionResult {
 
   const headers = Object.keys(rows[0])
 
-  // Check for Generic CSV (check first - most explicit format)
+  // Check for Interactive Brokers (check first - very distinctive multi-section format)
+  const ibResult = detectInteractiveBrokers(headers, rows)
+  if (ibResult.confidence > 0.8) {
+    return ibResult
+  }
+
+  // Check for Generic CSV (check second - most explicit format)
   const genericResult = detectGeneric(headers, rows)
   if (genericResult.confidence > 0.8) {
     return genericResult
@@ -45,7 +51,7 @@ export function detectBroker(rows: RawCSVRow[]): BrokerDetectionResult {
   }
 
   // Return best match or unknown
-  const results = [genericResult, freetradeResult, schwabEquityResult, schwabResult, trading212Result]
+  const results = [ibResult, genericResult, freetradeResult, schwabEquityResult, schwabResult, trading212Result]
   const bestMatch = results.reduce((best, current) =>
     current.confidence > best.confidence ? current : best
   )
@@ -143,5 +149,52 @@ function detectFreetrade(headers: string[], _rows: RawCSVRow[]): BrokerDetection
     broker: BrokerType.FREETRADE,
     confidence,
     headerMatches: matches,
+  }
+}
+
+/**
+ * Detect Interactive Brokers format
+ * Multi-section CSV with distinctive structure:
+ * - First column is section name (e.g., "Trades", "Cash Transactions")
+ * - Second column is row type ("Header" or "Data")
+ * - Characteristic headers: "DataDiscriminator", "Asset Category", "Symbol", "Date/Time"
+ */
+function detectInteractiveBrokers(headers: string[], rows: RawCSVRow[]): BrokerDetectionResult {
+  // IB CSV has a very distinctive multi-section format
+  // First column contains section names like "Trades", "Cash Transactions", "Corporate Actions"
+  // Second column is always "Header" or "Data"
+
+  const firstColumnValues = rows.slice(0, 10).map(row => Object.values(row)[0]).filter(Boolean)
+  const hasTradesSection = firstColumnValues.some(val => val === 'Trades')
+  const hasCashTransactions = firstColumnValues.some(val => val === 'Cash Transactions')
+  const hasSectionFormat = firstColumnValues.some(val =>
+    val === 'Trades' || val === 'Cash Transactions' || val === 'Corporate Actions'
+  )
+
+  // Check for second column being "Header" or "Data"
+  const secondColumnValues = rows.slice(0, 10).map(row => Object.values(row)[1]).filter(Boolean)
+  const hasRowTypeColumn = secondColumnValues.some(val => val === 'Header' || val === 'Data')
+
+  // Check for characteristic IB headers
+  const ibHeaders = ['DataDiscriminator', 'Asset Category', 'Date/Time', 'T. Price', 'Comm/Fee']
+  const headerMatches = ibHeaders.filter(h => headers.includes(h))
+
+  let confidence = 0
+
+  // Strong indicators
+  if (hasSectionFormat && hasRowTypeColumn) {
+    confidence = 0.9
+  } else if (hasTradesSection || hasCashTransactions) {
+    confidence = 0.7
+  } else if (headerMatches.length >= 3) {
+    confidence = 0.6
+  } else if (headerMatches.length >= 2) {
+    confidence = 0.4
+  }
+
+  return {
+    broker: BrokerType.INTERACTIVE_BROKERS,
+    confidence,
+    headerMatches: headerMatches.length > 0 ? headerMatches : (hasSectionFormat ? ['Trades/Cash Transactions section format'] : []),
   }
 }

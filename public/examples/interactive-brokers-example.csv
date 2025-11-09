@@ -1,0 +1,13 @@
+Trades,Header,DataDiscriminator,Asset Category,Currency,Symbol,Date/Time,Exchange,Quantity,T. Price,Proceeds,Comm/Fee,Basis,Realized P/L,Code
+Trades,Data,Order,Stocks,USD,AAPL,2024-01-15 10:30:42,NASDAQ,100,170.50,-17050.00,-1.00,,,
+Trades,Data,Trade,Stocks,USD,AAPL,2024-01-15 10:30:42,NASDAQ,100,170.50,-17050.00,-1.00,,,
+Trades,Data,Order,Stocks,USD,MSFT,2024-02-20 14:22:15,NASDAQ,50,400.00,-20000.00,-1.50,,,
+Trades,Data,Trade,Stocks,USD,MSFT,2024-02-20 14:22:15,NASDAQ,50,400.00,-20000.00,-1.50,,,
+Trades,Data,Order,Stocks,USD,NVDA,2024-03-10 09:15:30,NASDAQ,-25,850.00,21250.00,-2.00,,15000.00,
+Trades,Data,Trade,Stocks,USD,NVDA,2024-03-10 09:15:30,NASDAQ,-25,850.00,21250.00,-2.00,,15000.00,
+Trades,Data,ClosedLot,Stocks,USD,NVDA,2024-01-05 11:00:00,NASDAQ,25,250.00,-6250.00,,6250.00,,
+Trades,Data,SubTotal,Stocks,USD,NVDA,,,,-25,,21250.00,,,15000.00
+Trades,Data,Order,Stocks,SEK,HMBs,2024-04-15 08:45:20,STOCKHOLM,257,176.85,-45450.45,-12.50,,,
+Trades,Data,Trade,Stocks,SEK,HMBs,2024-04-15 08:45:20,STOCKHOLM,257,176.85,-45450.45,-12.50,,,
+Trades,Data,Order,Stocks,GBP,TSCO,2024-05-10 11:20:30,LSE,100,3.50,-350.00,-0.50,,,
+Trades,Data,Trade,Stocks,GBP,TSCO,2024-05-10 11:20:30,LSE,100,3.50,-350.00,-0.50,,,

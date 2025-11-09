@@ -3,6 +3,7 @@ import { parseCSV } from '../lib/csvParser'
 import { detectBroker } from '../lib/brokerDetector'
 import { normalizeSchwabTransactions } from '../lib/parsers/schwab'
 import { normalizeSchwabEquityAwardsTransactions } from '../lib/parsers/schwabEquityAwards'
+import { normalizeInteractiveBrokersTransactions } from '../lib/parsers/interactiveBrokers'
 import { normalizeGenericTransactions } from '../lib/parsers/generic'
 import { normalizeTrading212Transactions } from '../lib/parsers/trading212'
 import { normalizeFreetradeTransactions } from '../lib/parsers/freetrade'
@@ -63,6 +64,9 @@ export function CSVImporter() {
           break
         case BrokerType.SCHWAB_EQUITY_AWARDS:
           transactions = normalizeSchwabEquityAwardsTransactions(rawRows, fileId)
+          break
+        case BrokerType.INTERACTIVE_BROKERS:
+          transactions = normalizeInteractiveBrokersTransactions(rawRows, fileId)
           break
         case BrokerType.FREETRADE:
           transactions = normalizeFreetradeTransactions(rawRows, fileId)
@@ -286,7 +290,7 @@ export function CSVImporter() {
               Drop your CSV files here, or click to browse
             </p>
             <p className="text-xs text-gray-500">
-              Supports multiple files • Charles Schwab, Schwab Equity Awards, Freetrade, Trading 212, and Generic CSV
+              Supports multiple files • Charles Schwab, Schwab Equity Awards, Interactive Brokers, Freetrade, Trading 212, and Generic CSV
             </p>
           </div>
         </div>
@@ -413,6 +417,48 @@ export function CSVImporter() {
                   </p>
                   <a
                     href="/examples/schwab-equity-awards-example.csv"
+                    className="inline-block text-blue-600 hover:text-blue-800 underline"
+                  >
+                    📥 Download example file
+                  </a>
+                </div>
+              )}
+            </li>
+
+            {/* Interactive Brokers */}
+            <li>
+              <div className="flex justify-between items-center md:justify-start md:gap-4">
+                <span>Interactive Brokers</span>
+                <button
+                  onClick={() => setExpandedFormat(expandedFormat === 'ibkr' ? null : 'ibkr')}
+                  className="text-blue-600 hover:text-blue-800 text-xs underline whitespace-nowrap"
+                >
+                  {expandedFormat === 'ibkr' ? 'hide' : 'instructions & example'}
+                </button>
+              </div>
+              {expandedFormat === 'ibkr' && (
+                <div className="mt-2 ml-4 p-3 bg-gray-50 rounded text-xs space-y-2">
+                  <p className="font-medium">How to download:</p>
+                  <ol className="list-decimal list-inside space-y-1 text-gray-600">
+                    <li>Log into Client Portal → Performance & Reports → Flex Queries</li>
+                    <li>Click + to create new Activity Flex Query</li>
+                    <li>Enable sections: Trades, Cash Transactions (optional: Corporate Actions)</li>
+                    <li>Set format to CSV, date format to "yyyyMMdd", separator to semicolon</li>
+                    <li>Run query and download CSV (max 1 year per export)</li>
+                  </ol>
+                  <p className="text-gray-600 italic">
+                    Note: Interactive Brokers allows 1 year per export. For longer history, run the query for each year and upload multiple files.
+                  </p>
+                  <a
+                    href="https://www.ibkrguides.com/clientportal/performanceandstatements/activityflex.htm"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block text-blue-600 hover:text-blue-800 underline mr-4"
+                  >
+                    📖 Official instructions
+                  </a>
+                  <a
+                    href="/examples/interactive-brokers-example.csv"
                     className="inline-block text-blue-600 hover:text-blue-800 underline"
                   >
                     📥 Download example file
