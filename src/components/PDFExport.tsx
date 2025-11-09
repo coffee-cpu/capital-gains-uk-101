@@ -346,7 +346,7 @@ function createCGTReportDocument(Document: any, Page: any, Text: any, View: any,
           <View style={styles.footer}>
             <View>
               <Text style={[styles.footerText, styles.footerBold]}>Capital Gains Tax Visualiser • cgtvisualiser.co.uk</Text>
-              <Text style={styles.footerText}>Free, Open Source, Privacy Focused tool</Text>
+              <Text style={styles.footerText}>Free, open source, privacy focused tool</Text>
             </View>
             <View>
               <Text style={[styles.footerText, { textAlign: 'right' }]}>Generated:</Text>
