@@ -18,6 +18,7 @@ function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const setTransactions = useTransactionStore((state) => state.setTransactions)
   const setCGTResults = useTransactionStore((state) => state.setCGTResults)
+  const setIsLoading = useTransactionStore((state) => state.setIsLoading)
 
   // Handle hash-based routing
   useEffect(() => {
@@ -37,24 +38,29 @@ function App() {
   // Load transactions from IndexedDB on mount
   useEffect(() => {
     const loadTransactions = async () => {
-      const stored = await db.transactions.toArray()
-      if (stored.length > 0) {
-        // Deduplicate incomplete Stock Plan Activity when Equity Awards data exists
-        const deduplicated = deduplicateTransactions(stored)
+      setIsLoading(true)
+      try {
+        const stored = await db.transactions.toArray()
+        if (stored.length > 0) {
+          // Deduplicate incomplete Stock Plan Activity when Equity Awards data exists
+          const deduplicated = deduplicateTransactions(stored)
 
-        // Enrich with FX rates and GBP conversions
-        const enriched = await enrichTransactions(deduplicated)
+          // Enrich with FX rates and GBP conversions
+          const enriched = await enrichTransactions(deduplicated)
 
-        // Calculate CGT with HMRC matching rules
-        const cgtResults = calculateCGT(enriched)
+          // Calculate CGT with HMRC matching rules
+          const cgtResults = calculateCGT(enriched)
 
-        // Update store with enriched transactions and CGT results
-        setTransactions(cgtResults.transactions)
-        setCGTResults(cgtResults)
+          // Update store with enriched transactions and CGT results
+          setTransactions(cgtResults.transactions)
+          setCGTResults(cgtResults)
+        }
+      } finally {
+        setIsLoading(false)
       }
     }
     loadTransactions()
-  }, [setTransactions, setCGTResults])
+  }, [setTransactions, setCGTResults, setIsLoading])
 
   // Render About page
   if (currentPage === 'about') {

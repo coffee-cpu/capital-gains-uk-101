@@ -8,6 +8,7 @@ interface TransactionState {
   selectedTaxYear: string
   cgtResults: CGTCalculationResult | null
   hasExportedPDF: boolean
+  isLoading: boolean
   // Help panel state
   isHelpPanelOpen: boolean
   helpContext: HelpContext
@@ -16,6 +17,7 @@ interface TransactionState {
   setCGTResults: (results: CGTCalculationResult) => void
   addTransactions: (transactions: GenericTransaction[]) => void
   setHasExportedPDF: (hasExported: boolean) => void
+  setIsLoading: (isLoading: boolean) => void
   // Help panel actions
   setHelpPanelOpen: (open: boolean) => void
   setHelpContext: (context: HelpContext) => void
@@ -34,6 +36,7 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
   selectedTaxYear: '2024/25',
   cgtResults: null,
   hasExportedPDF: false,
+  isLoading: false,
   isHelpPanelOpen: false, // Always start closed on page load
   helpContext: 'default',
 
@@ -54,6 +57,8 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
   },
 
   setHasExportedPDF: (hasExported) => set({ hasExportedPDF: hasExported }),
+
+  setIsLoading: (isLoading) => set({ isLoading }),
 
   setHelpPanelOpen: (open) => set({ isHelpPanelOpen: open }),
 

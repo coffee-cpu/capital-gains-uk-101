@@ -20,6 +20,7 @@ function getCurrencySymbol(currency: string): string {
 
 export function TransactionList() {
   const transactions = useTransactionStore((state) => state.transactions)
+  const isLoading = useTransactionStore((state) => state.isLoading)
   const getDisposals = useTransactionStore((state) => state.getDisposals)
   const getSection104Pools = useTransactionStore((state) => state.getSection104Pools)
   const toggleHelpPanelWithContext = useTransactionStore((state) => state.toggleHelpPanelWithContext)
@@ -79,6 +80,18 @@ export function TransactionList() {
   // Check for FX rate errors
   const fxErrorTransactions = transactions.filter(tx => tx.fx_error)
   const fxErrorCount = fxErrorTransactions.length
+
+  if (isLoading) {
+    return (
+      <div className="bg-white shadow rounded-lg p-6">
+        <div className="flex flex-col items-center justify-center py-8">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <p className="text-gray-600 mt-4 font-medium">Loading your previously uploaded transactions...</p>
+          <p className="text-gray-500 text-sm mt-2">Applying FX rates and calculating CGT rules</p>
+        </div>
+      </div>
+    )
+  }
 
   if (transactions.length === 0) {
     return (

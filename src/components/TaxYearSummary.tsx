@@ -7,6 +7,7 @@ import { BuyMeACoffee } from './BuyMeACoffee'
 
 export function TaxYearSummary() {
   const cgtResults = useTransactionStore((state) => state.cgtResults)
+  const isLoading = useTransactionStore((state) => state.isLoading)
   const selectedTaxYear = useTransactionStore((state) => state.selectedTaxYear)
   const setSelectedTaxYear = useTransactionStore((state) => state.setSelectedTaxYear)
   const hasExportedPDF = useTransactionStore((state) => state.hasExportedPDF)
@@ -14,6 +15,20 @@ export function TaxYearSummary() {
   const [showDisposals, setShowDisposals] = useState(false)
   const [showDividends, setShowDividends] = useState(false)
   const [showInterest, setShowInterest] = useState(false)
+
+  if (isLoading) {
+    return (
+      <div className="bg-white shadow rounded-lg overflow-hidden">
+        <div className="p-6">
+          <div className="flex flex-col items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <p className="text-gray-600 mt-4 font-medium">Calculating tax summary from your data...</p>
+            <p className="text-gray-500 text-sm mt-2">Processing disposals and applying HMRC rules</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   if (!cgtResults || cgtResults.taxYearSummaries.length === 0) {
     return null
