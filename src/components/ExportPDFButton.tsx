@@ -10,7 +10,6 @@ export function ExportPDFButton() {
   const cgtResults = useTransactionStore((state) => state.cgtResults)
   const getTaxYearSummary = useTransactionStore((state) => state.getTaxYearSummary)
   const getDisposals = useTransactionStore((state) => state.getDisposals)
-  const getSection104Pools = useTransactionStore((state) => state.getSection104Pools)
   const transactions = useTransactionStore((state) => state.transactions)
   const setHasExportedPDF = useTransactionStore((state) => state.setHasExportedPDF)
 
@@ -30,15 +29,11 @@ export function ExportPDFButton() {
       const allDisposals = getDisposals()
       const disposalsForYear = allDisposals.filter(d => d.taxYear === selectedTaxYear)
 
-      // Get Section 104 pools
-      const section104Pools = getSection104Pools()
-
       // Generate PDF
       await generatePDFReport(
         taxYearSummary,
         disposalsForYear,
-        transactions,
-        section104Pools
+        transactions
       )
 
       // Mark that user has successfully exported a PDF
