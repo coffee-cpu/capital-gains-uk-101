@@ -412,7 +412,7 @@ export function TransactionList() {
                   }
                 } else if (tx.type === 'BUY') {
                   // For BUY transactions, find all matchings where this BUY is an acquisition
-                  const allDisposals = getDisposals()
+                  const allDisposals = disposals // Use cached disposals instead of calling getDisposals() again
                   let totalMatched = 0
                   const ruleQuantities: Map<string, number> = new Map()
 
