@@ -250,7 +250,10 @@ export function TaxYearSummary() {
         {(currentSummary.totalDividends > 0 || currentSummary.totalInterest > 0) && (
           <>
             <div className="border-t border-gray-200 pt-4">
-              <h3 className="text-base font-semibold text-gray-900 mb-3">Other Income (For Reference)</h3>
+              <h3 className="text-base font-semibold text-gray-900 mb-1">Other Income (for reference)</h3>
+              <p className="text-xs text-gray-500 mb-3">
+                Dividends and interest are taxed separately from capital gains and do not affect your CGT calculation above.
+              </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {/* Dividend Income Card */}
                 {currentSummary.totalDividends > 0 && (
