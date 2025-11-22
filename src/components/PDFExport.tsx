@@ -152,12 +152,20 @@ interface PDFDocumentProps {
   taxYearSummary: TaxYearSummary
   disposals: DisposalRecord[]
   transactions: EnrichedTransaction[]
+  includeTransactions?: boolean
 }
 
 function createCGTReportDocument(Document: any, Page: any, Text: any, View: any, styles: any) {
-  return ({ taxYearSummary, disposals }: PDFDocumentProps) => {
+  return ({ taxYearSummary, disposals, transactions, includeTransactions }: PDFDocumentProps) => {
     const formatCurrency = (value: number) => `£${value.toFixed(2)}`
     const formatDate = (date: string) => new Date(date).toLocaleDateString('en-GB')
+
+    // Filter transactions up to and including the tax year end date
+    const filteredTransactions = includeTransactions
+      ? transactions
+          .filter(tx => tx.date <= taxYearSummary.endDate && !tx.ignored)
+          .sort((a, b) => a.date.localeCompare(b.date) || a.symbol.localeCompare(b.symbol))
+      : []
 
     return (
       <Document>
@@ -342,6 +350,45 @@ function createCGTReportDocument(Document: any, Page: any, Text: any, View: any,
             </>
           )}
 
+          {/* All Transactions (optional) */}
+          {includeTransactions && filteredTransactions.length > 0 && (
+            <>
+              <Text style={styles.subtitle} break>All Transactions (to {formatDate(taxYearSummary.endDate)})</Text>
+              <View style={styles.table}>
+                {/* Table Header */}
+                <View style={styles.tableHeader}>
+                  <Text style={[styles.tableHeaderCell, { width: '12%' }]}>Date</Text>
+                  <Text style={[styles.tableHeaderCell, { width: '10%' }]}>Type</Text>
+                  <Text style={[styles.tableHeaderCell, { width: '15%' }]}>Symbol</Text>
+                  <Text style={[styles.tableHeaderCell, { width: '12%', textAlign: 'right' }]}>Qty</Text>
+                  <Text style={[styles.tableHeaderCell, { width: '15%', textAlign: 'right' }]}>Price (£)</Text>
+                  <Text style={[styles.tableHeaderCell, { width: '18%', textAlign: 'right' }]}>Value (£)</Text>
+                  <Text style={[styles.tableHeaderCell, { width: '18%', textAlign: 'right' }]}>Fee (£)</Text>
+                </View>
+                {/* Table Rows */}
+                {filteredTransactions.map((tx) => (
+                  <View key={tx.id} style={styles.tableRow} wrap={false}>
+                    <Text style={[styles.tableCell, { width: '12%' }]}>{formatDate(tx.date)}</Text>
+                    <Text style={[styles.tableCell, { width: '10%' }]}>{tx.type}</Text>
+                    <Text style={[styles.tableCell, { width: '15%' }]}>{tx.symbol}</Text>
+                    <Text style={[styles.tableCell, { width: '12%', textAlign: 'right' }]}>
+                      {tx.quantity?.toFixed(2) ?? '-'}
+                    </Text>
+                    <Text style={[styles.tableCell, { width: '15%', textAlign: 'right' }]}>
+                      {tx.price_gbp?.toFixed(2) ?? '-'}
+                    </Text>
+                    <Text style={[styles.tableCell, { width: '18%', textAlign: 'right' }]}>
+                      {tx.value_gbp?.toFixed(2) ?? '-'}
+                    </Text>
+                    <Text style={[styles.tableCell, { width: '18%', textAlign: 'right' }]}>
+                      {tx.fee_gbp?.toFixed(2) ?? '-'}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </>
+          )}
+
           {/* Footer */}
           <View style={styles.footer}>
             <View>
@@ -364,11 +411,13 @@ function createCGTReportDocument(Document: any, Page: any, Text: any, View: any,
 /**
  * Generate and download a PDF report for the given tax year.
  * This function lazy-loads @react-pdf/renderer only when called.
+ * @param includeTransactions - If true, includes a full list of all transactions up to the tax year end
  */
 export async function generatePDFReport(
   taxYearSummary: TaxYearSummary,
   disposals: DisposalRecord[],
-  transactions: EnrichedTransaction[]
+  transactions: EnrichedTransaction[],
+  includeTransactions: boolean = false
 ): Promise<void> {
   // Lazy-load the PDF library
   const { Document, Page, Text, View, StyleSheet, pdf } = await loadPdfLibrary()
@@ -383,6 +432,7 @@ export async function generatePDFReport(
     taxYearSummary={taxYearSummary}
     disposals={disposals}
     transactions={transactions}
+    includeTransactions={includeTransactions}
   />
 
   const blob = await pdf(doc).toBlob()

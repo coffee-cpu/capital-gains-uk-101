@@ -5,6 +5,7 @@ import { generatePDFReport } from './PDFExport'
 export function ExportPDFButton() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [includeTransactions, setIncludeTransactions] = useState(false)
 
   const selectedTaxYear = useTransactionStore((state) => state.selectedTaxYear)
   const cgtResults = useTransactionStore((state) => state.cgtResults)
@@ -33,7 +34,8 @@ export function ExportPDFButton() {
       await generatePDFReport(
         taxYearSummary,
         disposalsForYear,
-        transactions
+        transactions,
+        includeTransactions
       )
 
       // Mark that user has successfully exported a PDF
@@ -53,22 +55,23 @@ export function ExportPDFButton() {
 
   return (
     <div>
-      <button
-        onClick={handleExport}
-        disabled={!hasCGTResults || !hasDataForYear || isGenerating}
-        className={`inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white ${
-          !hasCGTResults || !hasDataForYear || isGenerating
-            ? 'bg-gray-400 cursor-not-allowed'
-            : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
-        }`}
-        title={
-          !hasCGTResults
-            ? 'Run CGT calculations first'
-            : !hasDataForYear
-            ? `No data for tax year ${selectedTaxYear}`
-            : 'Export PDF report'
-        }
-      >
+      <div className="flex items-center gap-3 mb-2">
+        <button
+          onClick={handleExport}
+          disabled={!hasCGTResults || !hasDataForYear || isGenerating}
+          className={`inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white ${
+            !hasCGTResults || !hasDataForYear || isGenerating
+              ? 'bg-gray-400 cursor-not-allowed'
+              : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
+          }`}
+          title={
+            !hasCGTResults
+              ? 'Run CGT calculations first'
+              : !hasDataForYear
+              ? `No data for tax year ${selectedTaxYear}`
+              : 'Export PDF report'
+          }
+        >
         {isGenerating ? (
           <>
             <svg
@@ -112,7 +115,19 @@ export function ExportPDFButton() {
             Export PDF
           </>
         )}
-      </button>
+        </button>
+      </div>
+
+      <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={includeTransactions}
+          onChange={(e) => setIncludeTransactions(e.target.checked)}
+          className="h-3 w-3 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+          disabled={!hasCGTResults || !hasDataForYear}
+        />
+        Include all transactions
+      </label>
 
       {error && (
         <div className="mt-2 text-sm text-red-600">
