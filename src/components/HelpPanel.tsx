@@ -243,35 +243,99 @@ export function HelpPanel() {
  */
 function formatExplanationText(text: string): JSX.Element[] {
   const paragraphs = text.split('\n\n')
+  const elements: JSX.Element[] = []
 
-  return paragraphs.map((paragraph, pIdx) => {
-    // Check if it's a list item
+  paragraphs.forEach((paragraph, pIdx) => {
+    const lines = paragraph.split('\n')
+
+    // Check if paragraph contains mixed content (text + list)
+    const hasText = lines.some(line => line.trim() && !line.trim().startsWith('-') && !/^\d+\./.test(line.trim()))
+    const hasBullets = lines.some(line => line.trim().startsWith('-'))
+    const hasNumbers = lines.some(line => /^\d+\./.test(line.trim()))
+
+    if (hasText && (hasBullets || hasNumbers)) {
+      // Mixed content: split into text and list parts
+      const textLines: string[] = []
+      const listLines: string[] = []
+      let inList = false
+
+      for (const line of lines) {
+        const trimmed = line.trim()
+        if (trimmed.startsWith('-') || /^\d+\./.test(trimmed)) {
+          inList = true
+          listLines.push(line)
+        } else if (inList && trimmed) {
+          // Continuation of list item or new text after list
+          listLines.push(line)
+        } else if (!inList) {
+          textLines.push(line)
+        }
+      }
+
+      // Render text part
+      if (textLines.length > 0) {
+        const textContent = textLines.join(' ').trim()
+        if (textContent) {
+          elements.push(<p key={`${pIdx}-text`}>{formatInlineText(textContent)}</p>)
+        }
+      }
+
+      // Render list part
+      if (listLines.length > 0) {
+        if (listLines[0].trim().startsWith('-')) {
+          const items = listLines.filter(line => line.trim().startsWith('-'))
+          elements.push(
+            <ul key={`${pIdx}-list`} className="list-disc pl-5 space-y-1">
+              {items.map((item, iIdx) => (
+                <li key={iIdx}>{formatInlineText(item.replace(/^-\s*/, '').trim())}</li>
+              ))}
+            </ul>
+          )
+        } else {
+          const items = listLines.filter(line => /^\d+\./.test(line.trim()))
+          elements.push(
+            <ol key={`${pIdx}-list`} className="list-decimal pl-5 space-y-1">
+              {items.map((item, iIdx) => (
+                <li key={iIdx}>{formatInlineText(item.replace(/^\d+\.\s*/, '').trim())}</li>
+              ))}
+            </ol>
+          )
+        }
+      }
+      return
+    }
+
+    // Check if it's a pure list
     if (paragraph.trim().startsWith('-')) {
       const items = paragraph.split('\n').filter(line => line.trim().startsWith('-'))
-      return (
+      elements.push(
         <ul key={pIdx} className="list-disc pl-5 space-y-1">
           {items.map((item, iIdx) => (
-            <li key={iIdx}>{formatInlineText(item.replace(/^-\s*/, ''))}</li>
+            <li key={iIdx}>{formatInlineText(item.replace(/^-\s*/, '').trim())}</li>
           ))}
         </ul>
       )
+      return
     }
 
     // Check if it's a numbered list
     if (/^\d+\./.test(paragraph.trim())) {
       const items = paragraph.split('\n').filter(line => /^\d+\./.test(line.trim()))
-      return (
+      elements.push(
         <ol key={pIdx} className="list-decimal pl-5 space-y-1">
           {items.map((item, iIdx) => (
-            <li key={iIdx}>{formatInlineText(item.replace(/^\d+\.\s*/, ''))}</li>
+            <li key={iIdx}>{formatInlineText(item.replace(/^\d+\.\s*/, '').trim())}</li>
           ))}
         </ol>
       )
+      return
     }
 
     // Regular paragraph
-    return <p key={pIdx}>{formatInlineText(paragraph)}</p>
+    elements.push(<p key={pIdx}>{formatInlineText(paragraph)}</p>)
   })
+
+  return elements
 }
 
 /**

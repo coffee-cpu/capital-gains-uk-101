@@ -590,16 +590,22 @@ export function TransactionList() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
                     <div className="flex items-center gap-2">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        tx.type === 'BUY' ? 'bg-green-100 text-green-800' :
-                        tx.type === 'SELL' ? 'bg-red-100 text-red-800' :
-                        tx.type === 'DIVIDEND' ? 'bg-blue-100 text-blue-800' :
-                        tx.type === 'INTEREST' ? 'bg-purple-100 text-purple-800' :
-                        tx.type === 'TAX' ? 'bg-yellow-100 text-yellow-800' :
-                        tx.type === 'TRANSFER' ? 'bg-orange-100 text-orange-800' :
-                        tx.type === 'STOCK_SPLIT' ? 'bg-indigo-100 text-indigo-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
+                      <span
+                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          tx.type === 'BUY' ? 'bg-green-100 text-green-800' :
+                          tx.type === 'SELL' ? 'bg-red-100 text-red-800' :
+                          tx.type === 'DIVIDEND' ? 'bg-blue-100 text-blue-800' :
+                          tx.type === 'INTEREST' ? 'bg-purple-100 text-purple-800' :
+                          tx.type === 'TAX' ? 'bg-yellow-100 text-yellow-800' :
+                          tx.type === 'TRANSFER' ? 'bg-orange-100 text-orange-800' :
+                          tx.type === 'STOCK_SPLIT' ? 'bg-indigo-100 text-indigo-800 cursor-pointer hover:ring-2 hover:ring-offset-1 hover:ring-indigo-400 transition-all' :
+                          'bg-gray-100 text-gray-800'
+                        }`}
+                        onClick={tx.type === 'STOCK_SPLIT' ? (e) => {
+                          e.stopPropagation()
+                          toggleHelpPanelWithContext('stock-split' as any)
+                        } : undefined}
+                      >
                         {tx.type}
                       </span>
                       {tx.type === 'STOCK_SPLIT' && tx.ratio && (
