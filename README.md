@@ -6,7 +6,7 @@ A free, privacy-focused web application that helps UK taxpayers understand and c
 
 ## Features
 
-- ✅ CSV import from popular brokers (Charles Schwab, Trading 212, EquatePlus, Interactive Brokers, Freetrade, Generic CSV format)
+- ✅ CSV import from popular brokers (Charles Schwab, Trading 212, EquatePlus, Generic CSV format)
 - ✅ Transaction management with persistent storage
 - ✅ Support for all transaction types (buys, sells, dividends, transfers, stock splits, etc.)
 - ✅ Stock split handling (TCGA92/S127) with split-adjusted quantities
@@ -93,10 +93,9 @@ Each disposal generates a detailed record showing:
 
 - ✅ Charles Schwab (standard transactions + equity awards)
 - ✅ EquatePlus (employee stock plans: RSUs, RSPs, ESPP)
-- ✅ Interactive Brokers
-- ✅ Freetrade
 - ✅ Trading 212 (with stock split support)
 - ✅ Generic CSV format (universal import)
+- 🚧 Interactive Brokers (planned)
 - 🚧 Vanguard (planned)
 - 🚧 Hargreaves Lansdown (planned)
 
