@@ -260,6 +260,7 @@ Always store dates as ISO 8601: `YYYY-MM-DD`. Parsers must convert from broker-s
 - Never commit code without explicit user approval
 - Show a summary of changes and ask: "Should I commit and push these changes?"
 - Only proceed with `git commit` and `git push` after receiving confirmation
+- **Run E2E tests before committing**: Always run `npm run test:e2e` to ensure no regressions before committing changes
 
 ### Testing Strategy
 - **Unit tests**: All parsers, detector logic, utility functions
