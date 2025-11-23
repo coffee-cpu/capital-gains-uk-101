@@ -50,8 +50,14 @@ export function detectBroker(rows: RawCSVRow[]): BrokerDetectionResult {
     return trading212Result
   }
 
+  // Check for EquatePlus
+  const equatePlusResult = detectEquatePlus(headers, rows)
+  if (equatePlusResult.confidence > 0.8) {
+    return equatePlusResult
+  }
+
   // Return best match or unknown
-  const results = [ibResult, genericResult, freetradeResult, schwabEquityResult, schwabResult, trading212Result]
+  const results = [ibResult, genericResult, freetradeResult, schwabEquityResult, schwabResult, trading212Result, equatePlusResult]
   const bestMatch = results.reduce((best, current) =>
     current.confidence > best.confidence ? current : best
   )
@@ -147,6 +153,23 @@ function detectFreetrade(headers: string[], _rows: RawCSVRow[]): BrokerDetection
 
   return {
     broker: BrokerType.FREETRADE,
+    confidence,
+    headerMatches: matches,
+  }
+}
+
+/**
+ * Detect EquatePlus format
+ * Expected headers: "Order reference", "Date", "Order type", "Quantity", "Execution price", "Instrument", "Product type"
+ */
+function detectEquatePlus(headers: string[], _rows: RawCSVRow[]): BrokerDetectionResult {
+  const equatePlusHeaders = ['Order reference', 'Date', 'Order type', 'Quantity', 'Execution price', 'Instrument', 'Product type']
+
+  const matches = equatePlusHeaders.filter(h => headers.includes(h))
+  const confidence = matches.length / equatePlusHeaders.length
+
+  return {
+    broker: BrokerType.EQUATE_PLUS,
     confidence,
     headerMatches: matches,
   }

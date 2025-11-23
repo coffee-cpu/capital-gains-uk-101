@@ -7,6 +7,7 @@ import { normalizeInteractiveBrokersTransactions } from '../lib/parsers/interact
 import { normalizeGenericTransactions } from '../lib/parsers/generic'
 import { normalizeTrading212Transactions } from '../lib/parsers/trading212'
 import { normalizeFreetradeTransactions } from '../lib/parsers/freetrade'
+import { normalizeEquatePlusTransactions } from '../lib/parsers/equatePlus'
 import { BrokerType } from '../types/broker'
 import { GenericTransaction } from '../types/transaction'
 import { useTransactionStore } from '../stores/transactionStore'
@@ -70,6 +71,9 @@ export function CSVImporter() {
           break
         case BrokerType.FREETRADE:
           transactions = normalizeFreetradeTransactions(rawRows, fileId)
+          break
+        case BrokerType.EQUATE_PLUS:
+          transactions = normalizeEquatePlusTransactions(rawRows, fileId)
           break
         case BrokerType.GENERIC:
           transactions = normalizeGenericTransactions(rawRows, fileId)
@@ -256,11 +260,10 @@ export function CSVImporter() {
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-            isDragging
-              ? 'border-blue-500 bg-blue-50'
-              : 'border-gray-300 hover:border-gray-400 bg-gray-50'
-          } ${isProcessing ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+          className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors ${isDragging
+            ? 'border-blue-500 bg-blue-50'
+            : 'border-gray-300 hover:border-gray-400 bg-gray-50'
+            } ${isProcessing ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
         >
           <input
             id="csv-upload"
@@ -290,7 +293,7 @@ export function CSVImporter() {
               Drop your CSV files here, or click to browse
             </p>
             <p className="text-xs text-gray-500">
-              Supports multiple files • Charles Schwab, Schwab Equity Awards, Interactive Brokers, Freetrade, Trading 212, and Generic CSV
+              Supports multiple files • Charles Schwab, Schwab Equity Awards, Interactive Brokers, Freetrade, Trading 212, EquatePlus, and Generic CSV
             </p>
           </div>
         </div>
@@ -501,6 +504,39 @@ export function CSVImporter() {
                   </a>
                   <a
                     href="/examples/freetrade-example.csv"
+                    className="inline-block text-blue-600 hover:text-blue-800 underline"
+                  >
+                    📥 Download example file
+                  </a>
+                </div>
+              )}
+            </li>
+
+            {/* EquatePlus */}
+            <li>
+              <div className="flex justify-between items-center md:justify-start md:gap-4">
+                <span>EquatePlus</span>
+                <button
+                  onClick={() => setExpandedFormat(expandedFormat === 'equateplus' ? null : 'equateplus')}
+                  className="text-blue-600 hover:text-blue-800 text-xs underline whitespace-nowrap"
+                >
+                  {expandedFormat === 'equateplus' ? 'hide' : 'instructions & example'}
+                </button>
+              </div>
+              {expandedFormat === 'equateplus' && (
+                <div className="mt-2 ml-4 p-3 bg-gray-50 rounded text-xs space-y-2">
+                  <p className="font-medium">How to download:</p>
+                  <ol className="list-decimal list-inside space-y-1 text-gray-600">
+                    <li>Log into your EquatePlus account</li>
+                    <li>Navigate to Activity or Transaction History</li>
+                    <li>Select the date range for your transactions</li>
+                    <li>Export (it will be XLSX, you need to convert it to CSV)</li>
+                  </ol>
+                  <p className="text-gray-600 italic">
+                    Note: EquatePlus is commonly used for employee stock plans (RSUs, RSPs, ESPP). The CSV includes vesting events, sales, dividends, and withholding transactions.
+                  </p>
+                  <a
+                    href="/examples/equateplus-example.csv"
                     className="inline-block text-blue-600 hover:text-blue-800 underline"
                   >
                     📥 Download example file
