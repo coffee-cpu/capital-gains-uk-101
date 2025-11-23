@@ -121,7 +121,10 @@ Detection order (important for overlapping formats):
 1. Generic CSV (checks first - most explicit with required headers: `date`, `type`, `symbol`, `currency`)
 2. Schwab Equity Awards (before regular Schwab - has unique headers like `FairMarketValuePrice`, `NetSharesDeposited`)
 3. Charles Schwab (standard brokerage transactions)
-4. Trading 212 (planned)
+4. Trading 212
+5. Freetrade
+6. EquatePlus
+7. Interactive Brokers
 
 Each parser must:
 - Generate unique IDs (pattern: `${fileId}-${rowIndex}`)
@@ -177,35 +180,15 @@ See `docs/SPECIFICATION.md` for complete HMRC rule references.
 
 ## Project Structure
 
-```
-src/
-├── lib/
-│   ├── brokerDetector.ts      # CSV format detection logic
-│   ├── csvParser.ts            # PapaParse wrapper
-│   ├── db.ts                   # Dexie IndexedDB setup
-│   └── parsers/                # Broker-specific normalizers
-│       ├── schwab.ts           # Charles Schwab standard transactions
-│       ├── schwabEquityAwards.ts # Schwab equity award releases
-│       └── generic.ts          # Generic CSV (already normalized)
-├── types/
-│   ├── transaction.ts          # Zod schemas for GenericTransaction & EnrichedTransaction
-│   └── broker.ts               # BrokerType enum, detection types
-├── stores/
-│   └── transactionStore.ts     # Zustand runtime state
-├── utils/
-│   └── taxYear.ts              # Tax year calculation helpers
-├── components/
-│   ├── CSVImporter.tsx         # File upload & import workflow
-│   ├── TransactionList.tsx     # Display transaction table
-│   ├── ClearDataButton.tsx     # IndexedDB reset
-│   └── Footer.tsx              # App footer
-├── App.tsx                     # Main app component
-└── main.tsx                    # React entry point
-
-e2e/                            # Playwright E2E tests
-test-data/                      # Sample CSV files for testing
-docs/SPECIFICATION.md           # Detailed technical spec
-```
+Key directories:
+- `src/lib/` - Core logic (parsers, CGT engine, enrichment, database)
+- `src/lib/parsers/` - Broker-specific CSV parsers
+- `src/lib/cgt/` - CGT matching engine
+- `src/types/` - Zod schemas and TypeScript types
+- `src/stores/` - Zustand state management
+- `src/components/` - React components
+- `e2e/` - Playwright E2E tests
+- `docs/` - Technical specifications
 
 ## Development Guidelines
 
@@ -340,32 +323,20 @@ PapaParse configuration:
 - `skipEmptyLines: true` - Ignore blank rows
 - Always handle parsing errors gracefully
 
-### FX Rate Enrichment (✅ Completed)
+### FX Rate Enrichment
 Bank of England API provides historical GBP rates via HMRC's official exchange rate service. Rates are cached in `fx_rates` IndexedDB table with composite key `[date+currency]`.
 
-### Stock Splits (✅ Completed)
+### Stock Splits
 Stock splits are handled per HMRC TCGA92/S127 (share reorganisations):
 - Split adjustments are the first enrichment pass (`applySplitNormalization`)
 - Pre-split quantities normalized to post-split units for CGT matching
 - Original quantities preserved for audit trail
 - UI displays both original and split-adjusted values with purple badges
 
-### HMRC CGT Rules (✅ Completed)
+### HMRC CGT Rules
 Reference official HMRC guidance:
 - CG51560 - Same-day rule (TCGA92/S105(1)) and 30-day "bed and breakfast" rule (TCGA92/S106A(5))
 - CG51620 - Section 104 pooled holdings (TCGA92/S104)
 - CG51127 - Share reorganisations and stock splits (TCGA92/S127)
 
-### Current Status
-As of the latest commits:
-- ✅ Basic CSV import and storage
-- ✅ Schwab parser (standard + equity awards)
-- ✅ Generic CSV format support
-- ✅ Duplicate file detection
-- ✅ Transaction list UI with CGT rule badges
-- ✅ FX rate enrichment (HMRC official rates)
-- ✅ Stock splits (TCGA92/S127) - full implementation with normalization and CGT integration
-- ✅ CGT matching engine (all three rules implemented with 131 passing tests)
-- 🚧 PDF export (not yet implemented)
-
-Refer to README.md for user-facing status and ROADMAP.md for planned features.
+Refer to README.md for user-facing feature status.
