@@ -85,5 +85,29 @@ describe('brokerDetector', () => {
 
       expect(result.broker).toBe(BrokerType.SCHWAB)
     })
+
+    it('should detect EquatePlus format with high confidence', () => {
+      const equatePlusRows = [
+        {
+          'Order reference': 'TBPP230615001234',
+          'Date': '15 Jun 2023',
+          'Order type': 'Sell at market price',
+          'Quantity': '1,200',
+          'Status': 'Executed',
+          'Execution price': '£5.25',
+          'Instrument': 'BP Ordinary Shares',
+          'Product type': 'shares',
+        },
+      ]
+
+      const result = detectBroker(equatePlusRows)
+
+      expect(result.broker).toBe(BrokerType.EQUATE_PLUS)
+      expect(result.confidence).toBeGreaterThan(0.8)
+      expect(result.headerMatches).toContain('Order reference')
+      expect(result.headerMatches).toContain('Date')
+      expect(result.headerMatches).toContain('Order type')
+      expect(result.headerMatches).toContain('Instrument')
+    })
   })
 })

@@ -1,0 +1,11 @@
+Order reference,Date,Order type,Quantity,Status,Execution price,Instrument,Product type,Strike price / cost basis,Taxes withheld,Fees,Net proceeds,Net units,Foreign exchange currency,Foreign exchange rate,Net proceeds after foreign exchange
+TBPP230615001234,15 Jun 2023,Sell at market price,"1,200",Executed,£5.25,BP Ordinary Shares,shares,,£0.00,£15.00,"£6,285.00",,,,
+TBPP230615000567,15 Jun 2023,Withhold-to-cover,"1,000",Executed,£5.25,BP Ordinary Shares,restricted stock units,,£0.00,£0.00,,"1,000",,,
+76384201,15 Jun 2023,Withhold-to-cover,"800",Executed,-,XXX Award,restricted stock units,-,-,-,-,-,-,-,-
+893765,10 Aug 2023,Dividend,100,Executed,£0.08,BP Ordinary Shares,shares,-,,,£8.00,,,,
+848807,12 May 2023,Dividend,100,Executed,£0.08,BP Ordinary Shares,shares,-,,,£8.00,,,,
+784130,15 Feb 2023,Dividend,100,Executed,£0.08,BP Ordinary Shares,shares,-,,,£8.00,,,,
+TBPP221110000123,10 Nov 2022,Sell at market price,"1,500",Executed,£4.80,BP Ordinary Shares,shares,,£0.00,£18.00,"£7,182.00",,,,
+730244,10 Nov 2022,Dividend,"1,500",Executed,£0.08,BP Ordinary Shares,shares,-,,,£120.00,,,,
+TBPP221109000456,9 Nov 2022,Withhold-to-cover,"1,500",Executed,£4.75,BP Ordinary Shares,restricted stock units,,£0.00,£0.00,,"1,500",,,
+74239980,9 Nov 2022,Withhold-to-cover,"1,200",Executed,-, XXX Award,restricted stock units,-,-,-,-,-,-,-,-

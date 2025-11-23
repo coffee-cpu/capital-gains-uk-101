@@ -8,6 +8,7 @@ export enum BrokerType {
   INTERACTIVE_BROKERS = 'Interactive Brokers',
   TRADING212 = 'Trading 212',
   FREETRADE = 'Freetrade',
+  EQUATE_PLUS = 'EquatePlus',
   GENERIC = 'Generic CSV',
   UNKNOWN = 'Unknown',
 }

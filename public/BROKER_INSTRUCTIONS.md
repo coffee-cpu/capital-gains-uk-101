@@ -63,6 +63,29 @@ This guide explains how to download transaction history CSV files from supported
 
 ---
 
+## EquatePlus
+
+**What it includes:** Employee stock plan transactions (RSU vests, stock sales, dividends, withhold-to-cover)
+
+### Steps to Download:
+
+1. Log into your EquatePlus account
+2. Navigate to **Activity** or **Transaction History**
+3. Select the date range for your transactions
+4. Click the **Export**
+5. Download the file
+6. Convert it to **CSV** and remove the first 3 lines, so only history table is there
+
+**Important Notes:**
+- EquatePlus is commonly used by UK employees for company stock plans
+- The CSV includes vesting events, sales, dividends, and withholding transactions
+- "Withhold-to-cover" transactions represent RSU/RSP vests where shares are withheld for taxes
+- Only transactions with "Net units" > 0 are imported as acquisitions
+
+[📥 Download Example File](./examples/equateplus-example.csv)
+
+---
+
 ## Generic CSV Format
 
 If your broker isn't directly supported, you can create a CSV file in our standard format.
@@ -116,12 +139,6 @@ date,type,symbol,split_ratio
 - **Apple** (AAPL): 4:1 split on August 31, 2020
 
 [📥 Download Example File](./examples/generic-example.csv) | [📥 Download Stock Splits Example](./examples/stock-splits-example.csv)
-
----
-
-## Trading 212 *(Coming Soon)*
-
-Support for Trading 212 is currently in development.
 
 ---
 
