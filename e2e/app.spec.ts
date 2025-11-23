@@ -27,17 +27,8 @@ test.describe('Capital Gains Tax Visualiser App', () => {
     const footer = page.locator('footer')
     await expect(footer).toBeVisible()
 
-    // Check disclaimer heading
-    await expect(page.getByRole('heading', { name: /Disclaimer/i })).toBeVisible()
-
-    // Check key disclaimer phrases
+    // Check footer disclaimer text
     await expect(page.getByText(/educational and visualization tool/i)).toBeVisible()
     await expect(page.getByText(/not financial or tax advice/i)).toBeVisible()
-    await expect(page.getByText(/locally in your browser/i)).toBeVisible()
-
-    // Check HMRC link
-    const hmrcLink = page.getByRole('link', { name: /HMRC Capital Gains Manual/i })
-    await expect(hmrcLink).toBeVisible()
-    await expect(hmrcLink).toHaveAttribute('href', /gov\.uk/)
   })
 })

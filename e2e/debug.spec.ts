@@ -89,9 +89,8 @@ test.describe('Debug - Console Logs', () => {
 
     await page.goto('/')
 
-    // Check all main components render
-    await expect(page.getByText(/Capital Gains Tax/i)).toBeVisible()
-    await expect(page.getByText(/Visualiser/i)).toBeVisible()
+    // Check page title and main components render
+    await expect(page).toHaveTitle(/Capital Gains Tax Visualiser/)
     await expect(page.getByText(/Import Transactions/i)).toBeVisible()
 
     console.log(`\nCaptured ${consoleLogs.length} console messages`)

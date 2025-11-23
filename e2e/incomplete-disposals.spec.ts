@@ -165,6 +165,13 @@ test.describe('Incomplete Disposal Tracking', () => {
     await page.reload()
     await page.waitForTimeout(1000)
 
+    // Handle session resume dialog if it appears
+    const continueButton = page.getByRole('button', { name: /Continue Session/i })
+    if (await continueButton.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await continueButton.click()
+      await page.waitForTimeout(500)
+    }
+
     // Select tax year again
     const taxYearSelectAfterReload = page.locator('select').filter({ hasText: /2024\/25/ }).first()
     await taxYearSelectAfterReload.selectOption('2024/25')
