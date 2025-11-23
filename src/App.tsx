@@ -7,6 +7,7 @@ import { Footer } from './components/Footer'
 import { Sidebar } from './components/Sidebar'
 import { FlowGuide } from './components/FlowGuide'
 import { HelpPanel } from './components/HelpPanel'
+import { SessionResumeDialog } from './components/SessionResumeDialog'
 import { useTransactionStore } from './stores/transactionStore'
 import { db } from './lib/db'
 import { deduplicateTransactions } from './utils/deduplication'
@@ -16,6 +17,9 @@ import { calculateCGT } from './lib/cgt/engine'
 function App() {
   const [currentPage, setCurrentPage] = useState<'calculator' | 'about'>('calculator')
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [showSessionDialog, setShowSessionDialog] = useState(false)
+  const [pendingTransactionCount, setPendingTransactionCount] = useState(0)
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const setTransactions = useTransactionStore((state) => state.setTransactions)
   const setCGTResults = useTransactionStore((state) => state.setCGTResults)
   const setIsLoading = useTransactionStore((state) => state.setIsLoading)
@@ -35,32 +39,62 @@ function App() {
     return () => window.removeEventListener('hashchange', handleHashChange)
   }, [])
 
-  // Load transactions from IndexedDB on mount
+  // Check for existing transactions on mount
   useEffect(() => {
-    const loadTransactions = async () => {
-      setIsLoading(true)
-      try {
-        const stored = await db.transactions.toArray()
-        if (stored.length > 0) {
-          // Deduplicate incomplete Stock Plan Activity when Equity Awards data exists
-          const deduplicated = deduplicateTransactions(stored)
+    const checkExistingSession = async () => {
+      const count = await db.transactions.count()
+      if (count > 0) {
+        setPendingTransactionCount(count)
 
-          // Enrich with FX rates and GBP conversions
-          const enriched = await enrichTransactions(deduplicated)
+        // Find the most recent import timestamp
+        const transactions = await db.transactions.toArray()
+        const mostRecentImport = transactions
+          .filter(tx => tx.imported_at)
+          .map(tx => new Date(tx.imported_at!))
+          .sort((a, b) => b.getTime() - a.getTime())[0]
 
-          // Calculate CGT with HMRC matching rules
-          const cgtResults = calculateCGT(enriched)
-
-          // Update store with enriched transactions and CGT results
-          setTransactions(cgtResults.transactions)
-          setCGTResults(cgtResults)
-        }
-      } finally {
-        setIsLoading(false)
+        setLastUpdated(mostRecentImport || null)
+        setShowSessionDialog(true)
       }
     }
-    loadTransactions()
-  }, [setTransactions, setCGTResults, setIsLoading])
+    checkExistingSession()
+  }, [])
+
+  // Load and process transactions from IndexedDB
+  const loadTransactions = async () => {
+    setIsLoading(true)
+    try {
+      const stored = await db.transactions.toArray()
+      if (stored.length > 0) {
+        // Deduplicate incomplete Stock Plan Activity when Equity Awards data exists
+        const deduplicated = deduplicateTransactions(stored)
+
+        // Enrich with FX rates and GBP conversions
+        const enriched = await enrichTransactions(deduplicated)
+
+        // Calculate CGT with HMRC matching rules
+        const cgtResults = calculateCGT(enriched)
+
+        // Update store with enriched transactions and CGT results
+        setTransactions(cgtResults.transactions)
+        setCGTResults(cgtResults)
+      }
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleContinueSession = async () => {
+    setShowSessionDialog(false)
+    await loadTransactions()
+  }
+
+  const handleStartFresh = async () => {
+    await db.transactions.clear()
+    await db.fx_rates.clear()
+    setTransactions([])
+    setShowSessionDialog(false)
+  }
 
   // Render About page
   if (currentPage === 'about') {
@@ -172,6 +206,16 @@ function App() {
 
       {/* Help Panel (sticky sidebar on desktop, overlay on mobile) */}
       <HelpPanel />
+
+      {/* Session resume dialog */}
+      {showSessionDialog && (
+        <SessionResumeDialog
+          transactionCount={pendingTransactionCount}
+          lastUpdated={lastUpdated}
+          onContinue={handleContinueSession}
+          onStartFresh={handleStartFresh}
+        />
+      )}
     </div>
   )
 }

@@ -20,6 +20,7 @@ export const GenericTransactionSchema = z.object({
   ratio: z.string().nullable().optional().describe('Stock split ratio (e.g., "10:1", "2:1", "1:10"). Only used for STOCK_SPLIT transactions.'),
   incomplete: z.boolean().optional().describe('True if transaction is missing required data (e.g., Stock Plan Activity without price)'),
   ignored: z.boolean().optional().describe('True if transaction should be excluded from calculations (e.g., Stock Plan Activity which is always incomplete)'),
+  imported_at: z.string().optional().describe('ISO timestamp when transaction was imported (e.g., 2024-01-15T10:30:00.000Z)'),
 })
 
 export type GenericTransaction = z.infer<typeof GenericTransactionSchema>

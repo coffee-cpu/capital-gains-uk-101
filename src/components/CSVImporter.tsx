@@ -92,6 +92,10 @@ export function CSVImporter() {
       // Apply symbol normalization (e.g., FB -> META)
       transactions = normalizeTransactionSymbols(transactions)
 
+      // Add import timestamp
+      const importedAt = new Date().toISOString()
+      transactions = transactions.map(tx => ({ ...tx, imported_at: importedAt }))
+
       await db.transactions.bulkAdd(transactions)
 
       return {
