@@ -17,6 +17,7 @@ export function ClearDataButton({ variant = 'default' }: ClearDataButtonProps) {
       // Clear IndexedDB
       await db.transactions.clear()
       await db.fx_rates.clear()
+      await db.imported_files.clear()
 
       // Clear Zustand store
       setTransactions([])

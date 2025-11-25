@@ -96,6 +96,15 @@ export function CSVImporter() {
       const importedAt = new Date().toISOString()
       transactions = transactions.map(tx => ({ ...tx, imported_at: importedAt }))
 
+      // Store file metadata
+      await db.imported_files.add({
+        fileId,
+        filename: file.name,
+        broker: detection.broker,
+        transactionCount: transactions.length,
+        importedAt
+      })
+
       await db.transactions.bulkAdd(transactions)
 
       return {

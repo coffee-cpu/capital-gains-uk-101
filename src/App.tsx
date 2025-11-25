@@ -20,6 +20,7 @@ function App() {
   const [showSessionDialog, setShowSessionDialog] = useState(false)
   const [pendingTransactionCount, setPendingTransactionCount] = useState(0)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const [fileSources, setFileSources] = useState<string[]>([])
   const setTransactions = useTransactionStore((state) => state.setTransactions)
   const setCGTResults = useTransactionStore((state) => state.setCGTResults)
   const setIsLoading = useTransactionStore((state) => state.setIsLoading)
@@ -46,14 +47,15 @@ function App() {
       if (count > 0) {
         setPendingTransactionCount(count)
 
-        // Find the most recent import timestamp
-        const transactions = await db.transactions.toArray()
-        const mostRecentImport = transactions
-          .filter(tx => tx.imported_at)
-          .map(tx => new Date(tx.imported_at!))
+        const files = await db.imported_files.toArray()
+
+        const mostRecentFile = files
+          .map(f => new Date(f.importedAt))
           .sort((a, b) => b.getTime() - a.getTime())[0]
 
-        setLastUpdated(mostRecentImport || null)
+        setLastUpdated(mostRecentFile || null)
+        setFileSources(files.map(f => f.filename))
+
         setShowSessionDialog(true)
       }
     }
@@ -92,6 +94,7 @@ function App() {
   const handleStartFresh = async () => {
     await db.transactions.clear()
     await db.fx_rates.clear()
+    await db.imported_files.clear()
     setTransactions([])
     setShowSessionDialog(false)
   }
@@ -212,6 +215,7 @@ function App() {
         <SessionResumeDialog
           transactionCount={pendingTransactionCount}
           lastUpdated={lastUpdated}
+          fileSources={fileSources}
           onContinue={handleContinueSession}
           onStartFresh={handleStartFresh}
         />
