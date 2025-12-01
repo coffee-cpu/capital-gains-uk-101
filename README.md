@@ -94,10 +94,9 @@ Each disposal generates a detailed record showing:
 - ✅ Charles Schwab (standard transactions + equity awards)
 - ✅ EquatePlus (employee stock plans: RSUs, RSPs, ESPP)
 - ✅ Trading 212 (with stock split support)
+- ✅ Interactive Brokers
+- ✅ Freetrade
 - ✅ Generic CSV format (universal import)
-- 🚧 Interactive Brokers (planned)
-- 🚧 Vanguard (planned)
-- 🚧 Hargreaves Lansdown (planned)
 
 ## Tech Stack
 
@@ -114,7 +113,7 @@ Each disposal generates a detailed record showing:
 
 ## Contributing
 
-Contributions are welcome! Please see [SPECIFICATION.md](./docs/SPECIFICATION.md) for technical details and [ROADMAP.md](./ROADMAP.md) for planned features.
+Contributions are welcome! Please open an issue or pull request on GitHub.
 
 ## Disclaimer
 
