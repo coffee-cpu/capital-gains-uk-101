@@ -398,6 +398,9 @@ export function CSVImporter() {
                   <p className="text-gray-600 italic">
                     Note: Schwab limits downloads to 4 years. For longer history, download in 4-year chunks and upload multiple files.
                   </p>
+                  <p className="text-blue-700 font-medium bg-blue-50 border border-blue-200 rounded p-2">
+                    💡 If you have equity awards (RSUs, stock options), also download "Equity Awards" history separately and upload both files together.
+                  </p>
                   <a
                     href="/examples/schwab-transactions-example.csv"
                     className="inline-block text-blue-600 hover:text-blue-800 underline"
@@ -430,6 +433,9 @@ export function CSVImporter() {
                   </ol>
                   <p className="text-gray-600 italic">
                     Note: Schwab limits downloads to 4 years. For longer history, download in 4-year chunks and upload multiple files.
+                  </p>
+                  <p className="text-amber-700 font-medium bg-amber-50 border border-amber-200 rounded p-2">
+                    ⚠️ Equity Awards files only contain acquisitions (RSU vests). You must also upload "Transactions" history from Charles Schwab to include disposals (sales) for CGT calculations.
                   </p>
                   <a
                     href="/examples/schwab-equity-awards-example.csv"

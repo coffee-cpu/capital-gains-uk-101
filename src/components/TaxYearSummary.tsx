@@ -5,6 +5,53 @@ import { Tooltip } from './Tooltip'
 import { ExportPDFButton } from './ExportPDFButton'
 import { BuyMeACoffee } from './BuyMeACoffee'
 
+function BuyOnlyInfoBanner({ transactions }: { transactions: any[] }) {
+  // Check if any transactions are from Schwab Equity Awards
+  const hasSchwabEquityAwards = transactions.some(
+    tx => tx.source === 'Charles Schwab Equity Awards'
+  )
+
+  return (
+    <div className="bg-white shadow rounded-lg overflow-hidden">
+      <div className="p-6">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+          <div className="flex">
+            <svg className="h-5 w-5 text-blue-400 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+            </svg>
+            <div className="ml-3">
+              <h3 className="text-lg font-semibold text-blue-900 mb-2">
+                No Capital Gains Tax Calculations Available
+              </h3>
+              <div className="text-sm text-blue-800 space-y-3">
+                <p>
+                  You've imported BUY transactions (purchases, RSU vests), but CGT
+                  calculations also require SELL transactions (disposals).
+                </p>
+                <div>
+                  <p className="font-medium mb-2">To calculate your capital gains tax:</p>
+                  <ul className="list-disc list-inside space-y-1 ml-2">
+                    <li>Upload your brokerage statements containing SELL transactions</li>
+                    {hasSchwabEquityAwards && (
+                      <li>
+                        Upload "Transactions" history from Schwab.com in addition to Equity Awards statements
+                      </li>
+                    )}
+                  </ul>
+                </div>
+                <p className="text-xs text-blue-700 italic mt-4">
+                  Your imported BUY transactions are shown in the table below and will
+                  be used for cost basis calculations once you upload SELL transactions.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function TaxYearSummary() {
   const cgtResults = useTransactionStore((state) => state.cgtResults)
   const isLoading = useTransactionStore((state) => state.isLoading)
@@ -30,7 +77,11 @@ export function TaxYearSummary() {
     )
   }
 
-  if (!cgtResults || cgtResults.taxYearSummaries.length === 0) {
+  if (!cgtResults) {
+    return null
+  }
+
+  if (cgtResults.taxYearSummaries.length === 0) {
     return null
   }
 
@@ -39,6 +90,14 @@ export function TaxYearSummary() {
 
   if (!currentSummary) {
     return null
+  }
+
+  // Check if we have BUY transactions but no SELL transactions (no disposals at all)
+  const metadata = cgtResults.metadata
+  const hasBuysOnly = metadata && metadata.totalBuys > 0 && metadata.totalSells === 0
+
+  if (hasBuysOnly) {
+    return <BuyOnlyInfoBanner transactions={cgtResults.transactions} />
   }
 
   const hasTaxableGain = currentSummary.taxableGainGbp > 0
