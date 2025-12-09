@@ -56,8 +56,14 @@ export function detectBroker(rows: RawCSVRow[]): BrokerDetectionResult {
     return equatePlusResult
   }
 
+  // Check for Revolut
+  const revolutResult = detectRevolut(headers, rows)
+  if (revolutResult.confidence > 0.8) {
+    return revolutResult
+  }
+
   // Return best match or unknown
-  const results = [ibResult, genericResult, freetradeResult, schwabEquityResult, schwabResult, trading212Result, equatePlusResult]
+  const results = [ibResult, genericResult, freetradeResult, schwabEquityResult, schwabResult, trading212Result, equatePlusResult, revolutResult]
   const bestMatch = results.reduce((best, current) =>
     current.confidence > best.confidence ? current : best
   )
@@ -219,5 +225,22 @@ function detectInteractiveBrokers(headers: string[], rows: RawCSVRow[]): BrokerD
     broker: BrokerType.INTERACTIVE_BROKERS,
     confidence,
     headerMatches: headerMatches.length > 0 ? headerMatches : (hasSectionFormat ? ['Trades/Cash Transactions section format'] : []),
+  }
+}
+
+/**
+ * Detect Revolut format
+ * Expected headers: "Date", "Ticker", "Type", "Quantity", "Price per share", "Total Amount", "Currency", "FX Rate"
+ */
+function detectRevolut(headers: string[], _rows: RawCSVRow[]): BrokerDetectionResult {
+  const revolutHeaders = ['Date', 'Ticker', 'Type', 'Quantity', 'Price per share', 'Total Amount', 'Currency', 'FX Rate']
+
+  const matches = revolutHeaders.filter(h => headers.includes(h))
+  const confidence = matches.length / revolutHeaders.length
+
+  return {
+    broker: BrokerType.REVOLUT,
+    confidence,
+    headerMatches: matches,
   }
 }

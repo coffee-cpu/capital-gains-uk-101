@@ -109,5 +109,32 @@ describe('brokerDetector', () => {
       expect(result.headerMatches).toContain('Order type')
       expect(result.headerMatches).toContain('Instrument')
     })
+
+    it('should detect Revolut format with high confidence', () => {
+      const revolutRows = [
+        {
+          'Date': '2024-01-15T10:30:45.123Z',
+          'Ticker': 'AAPL',
+          'Type': 'BUY - MARKET',
+          'Quantity': '10.25684932',
+          'Price per share': '$182.50',
+          'Total Amount': '$1,871.87',
+          'Currency': 'USD',
+          'FX Rate': '1.2751',
+        },
+      ]
+
+      const result = detectBroker(revolutRows)
+
+      expect(result.broker).toBe(BrokerType.REVOLUT)
+      expect(result.confidence).toBeGreaterThan(0.8)
+      expect(result.headerMatches).toContain('Date')
+      expect(result.headerMatches).toContain('Ticker')
+      expect(result.headerMatches).toContain('Type')
+      expect(result.headerMatches).toContain('Price per share')
+      expect(result.headerMatches).toContain('Total Amount')
+      expect(result.headerMatches).toContain('Currency')
+      expect(result.headerMatches).toContain('FX Rate')
+    })
   })
 })

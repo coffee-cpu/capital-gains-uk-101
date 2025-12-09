@@ -8,6 +8,7 @@ import { normalizeGenericTransactions } from '../lib/parsers/generic'
 import { normalizeTrading212Transactions } from '../lib/parsers/trading212'
 import { normalizeFreetradeTransactions } from '../lib/parsers/freetrade'
 import { normalizeEquatePlusTransactions } from '../lib/parsers/equatePlus'
+import { normalizeRevolutTransactions } from '../lib/parsers/revolut'
 import { BrokerType } from '../types/broker'
 import { GenericTransaction } from '../types/transaction'
 import { useTransactionStore } from '../stores/transactionStore'
@@ -74,6 +75,9 @@ export function CSVImporter() {
           break
         case BrokerType.EQUATE_PLUS:
           transactions = normalizeEquatePlusTransactions(rawRows, fileId)
+          break
+        case BrokerType.REVOLUT:
+          transactions = normalizeRevolutTransactions(rawRows, fileId)
           break
         case BrokerType.GENERIC:
           transactions = normalizeGenericTransactions(rawRows, fileId)
@@ -556,6 +560,39 @@ export function CSVImporter() {
                   </p>
                   <a
                     href="/examples/equateplus-example.csv"
+                    className="inline-block text-blue-600 hover:text-blue-800 underline"
+                  >
+                    📥 Download example file
+                  </a>
+                </div>
+              )}
+            </li>
+
+            {/* Revolut */}
+            <li>
+              <div className="flex justify-between items-center md:justify-start md:gap-4">
+                <span>Revolut</span>
+                <button
+                  onClick={() => setExpandedFormat(expandedFormat === 'revolut' ? null : 'revolut')}
+                  className="text-blue-600 hover:text-blue-800 text-xs underline whitespace-nowrap"
+                >
+                  {expandedFormat === 'revolut' ? 'hide' : 'instructions & example'}
+                </button>
+              </div>
+              {expandedFormat === 'revolut' && (
+                <div className="mt-2 ml-4 p-3 bg-gray-50 rounded text-xs space-y-2">
+                  <a
+                    href="https://help.revolut.com/help/profile-and-plan/managing-my-account/trading-statements-and-reports/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block text-blue-600 hover:text-blue-800 underline mr-4"
+                  >
+                    📖 Official instructions
+                  </a>
+                  <a
+                    href="/examples/revolut-example.csv"
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="inline-block text-blue-600 hover:text-blue-800 underline"
                   >
                     📥 Download example file
