@@ -25,6 +25,7 @@ export function CSVImporter() {
   const [expandedFormat, setExpandedFormat] = useState<string | null>(null)
   const [isDragging, setIsDragging] = useState(false)
   const [showImportInfo, setShowImportInfo] = useState(false)
+  const [showFormats, setShowFormats] = useState(false)
   const [processingStatus, setProcessingStatus] = useState<string>('')
   const setTransactions = useTransactionStore((state) => state.setTransactions)
   const setCGTResults = useTransactionStore((state) => state.setCGTResults)
@@ -310,7 +311,7 @@ export function CSVImporter() {
               Drop your CSV files here, or click to browse
             </p>
             <p className="text-xs text-gray-500">
-              Supports multiple files • Charles Schwab, Schwab Equity Awards, Interactive Brokers, Freetrade, Trading 212, EquatePlus, and Generic CSV
+              Supports multiple files • Charles Schwab, Schwab Equity Awards, Interactive Brokers, Freetrade, Trading 212, EquatePlus, Revolut, and Generic CSV
             </p>
           </div>
         </div>
@@ -377,8 +378,21 @@ export function CSVImporter() {
         )}
 
         <div className="text-sm text-gray-500">
-          <p className="mb-2">Supported formats (auto-detected):</p>
-          <ul className="space-y-2">
+          <button
+            onClick={() => setShowFormats(!showFormats)}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-800 mb-2"
+          >
+            <svg
+              className={`w-4 h-4 transition-transform ${showFormats ? 'rotate-90' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+            <span>Supported formats (8)</span>
+          </button>
+          {showFormats && <ul className="space-y-2 ml-6">
             {/* Charles Schwab */}
             <li>
               <div className="flex justify-between items-center md:justify-start md:gap-4">
@@ -689,7 +703,7 @@ export function CSVImporter() {
                 </div>
               )}
             </li>
-          </ul>
+          </ul>}
         </div>
       </div>
     </div>
