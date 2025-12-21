@@ -4,3 +4,8 @@ date,type,symbol,currency,name,quantity,price,total,fee,notes
 2024-03-10,BUY,MSFT,USD,Microsoft Corp.,15,350.00,5250.00,0.00,
 2024-04-05,DIVIDEND,AAPL,USD,Apple Inc. Dividend,,,12.50,0.00,Quarterly dividend
 2024-05-12,SELL,MSFT,USD,Microsoft Corp.,10,370.00,3700.00,1.00,
+2024-06-01,BUY,INTC,USD,Intel Corp.,200,35.00,7000.00,5.00,INTC pool
+2024-08-01,SELL,INTC,USD,Intel Corp.,100,38.00,3800.00,3.00,First same-day SELL
+2024-08-01,SELL,INTC,USD,Intel Corp.,50,38.00,1900.00,2.00,Second same-day SELL
+2024-08-15,BUY,INTC,USD,Intel Corp.,30,36.00,1080.00,1.50,B&B buy 1 - 30 shares
+2024-08-15,BUY,INTC,USD,Intel Corp.,90,36.00,3240.00,2.50,B&B buy 2 - 90 shares (total 120 for 150 sold)

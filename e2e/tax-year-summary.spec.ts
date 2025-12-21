@@ -128,6 +128,9 @@ test.describe('Tax Year Summary Verification', () => {
   })
 
   test('should calculate correct taxable gain with generic-example.csv', async ({ page }) => {
+    // Increase timeout for FX rate fetching with larger file (56 transactions)
+    test.setTimeout(60000)
+
     await page.goto('/')
 
     // Upload the public generic example file
@@ -137,8 +140,8 @@ test.describe('Tax Year Summary Verification', () => {
     const filePath = path.join(__dirname, '..', 'public', 'examples', 'generic-example.csv')
     await fileInput.setInputFiles(filePath)
 
-    // Wait for import to complete
-    await expect(page.getByText(/file\(s\) imported successfully/i)).toBeVisible({ timeout: 15000 })
+    // Wait for import to complete - longer timeout for FX rate fetching
+    await expect(page.getByText(/file\(s\) imported successfully/i)).toBeVisible({ timeout: 45000 })
 
     // Wait for Tax Year Summary section to appear
     await expect(page.getByRole('heading', { name: 'Tax Year Summary' })).toBeVisible({ timeout: 10000 })
@@ -158,7 +161,7 @@ test.describe('Tax Year Summary Verification', () => {
     // This test verifies that taxable gain calculation works end-to-end with:
     // - Stock splits (AAPL 4:1, TSLA 3:1, NVDA 10:1, AMZN 20:1)
     // - Same-day matching rules
-    // - 30-day bed-and-breakfast rules
+    // - 30-day bed-and-breakfast rules (including multiple same-day SELLs with INTC)
     // - Section 104 pooling
     // - Annual exemption deduction (£3,000 for 2024/25)
 
@@ -166,13 +169,16 @@ test.describe('Tax Year Summary Verification', () => {
     // This value is calculated with:
     // - Stock splits applied (AAPL 4:1, TSLA 3:1, NVDA 10:1, AMZN 20:1)
     // - Same-day matching (e.g., AAPL 2024-03-10, NVDA 2024-10-01, TSLA 2024-05-10)
-    // - 30-day bed-and-breakfast (e.g., AAPL 2024-03-25, TSLA 2024-06-20)
+    // - 30-day bed-and-breakfast (e.g., AAPL 2024-03-25, TSLA 2024-06-20, INTC 2024-11-01/15)
     // - Section 104 pooling for remaining shares
     // - Annual exemption (£3,000) deducted
-    await expect(page.getByText('£7,256.83')).toBeVisible()
+    await expect(page.getByText('£7,509.07')).toBeVisible()
   })
 
   test('should display dividend income summary when dividends are present', async ({ page }) => {
+    // Increase timeout for FX rate fetching with larger file (56 transactions)
+    test.setTimeout(60000)
+
     await page.goto('/')
 
     // Upload the public generic example file (contains dividends)
@@ -182,8 +188,8 @@ test.describe('Tax Year Summary Verification', () => {
     const filePath = path.join(__dirname, '..', 'public', 'examples', 'generic-example.csv')
     await fileInput.setInputFiles(filePath)
 
-    // Wait for import to complete
-    await expect(page.getByText(/file\(s\) imported successfully/i)).toBeVisible({ timeout: 15000 })
+    // Wait for import to complete - longer timeout for FX rate fetching
+    await expect(page.getByText(/file\(s\) imported successfully/i)).toBeVisible({ timeout: 45000 })
 
     // Wait for Tax Year Summary section to appear
     await expect(page.getByRole('heading', { name: 'Tax Year Summary' })).toBeVisible({ timeout: 10000 })
@@ -226,6 +232,9 @@ test.describe('Tax Year Summary Verification', () => {
   })
 
   test('should show different dividend allowances for different tax years', async ({ page }) => {
+    // Increase timeout for FX rate fetching with larger file (56 transactions)
+    test.setTimeout(60000)
+
     await page.goto('/')
 
     // Upload the generic example file
@@ -233,8 +242,8 @@ test.describe('Tax Year Summary Verification', () => {
     const filePath = path.join(__dirname, '..', 'public', 'examples', 'generic-example.csv')
     await fileInput.setInputFiles(filePath)
 
-    // Wait for import
-    await expect(page.getByText(/file\(s\) imported successfully/i)).toBeVisible({ timeout: 15000 })
+    // Wait for import - longer timeout for FX rate fetching
+    await expect(page.getByText(/file\(s\) imported successfully/i)).toBeVisible({ timeout: 45000 })
 
     // Wait for Tax Year Summary section
     await expect(page.getByRole('heading', { name: 'Tax Year Summary' })).toBeVisible({ timeout: 10000 })

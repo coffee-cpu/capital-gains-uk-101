@@ -46,6 +46,11 @@ date,type,symbol,currency,name,quantity,price,total,fee,notes,split_ratio
 2025-03-15,DIVIDEND,GOOGL,USD,Alphabet Inc. Dividend,,,60.00,0.00,Q1 2025 dividend,
 2025-04-01,SELL,NVDA,USD,NVIDIA Corp.,35,510.00,17850.00,9.00,NVDA disposal from Section 104 pool (tax year 2024/25),
 2025-04-01,BUY,NVDA,USD,NVIDIA Corp.,10,512.00,5120.00,3.00,"Same-day match with disposal above (10 shares), 25 from pool",
+2024-09-01,BUY,INTC,USD,Intel Corp.,200,35.00,7000.00,5.00,INTC initial purchase - Section 104 pool,
+2024-11-01,SELL,INTC,USD,Intel Corp.,100,38.00,3800.00,3.00,"First of two same-day SELLs - 30-day rule matches 100 shares from Nov 15 BUYs",
+2024-11-01,SELL,INTC,USD,Intel Corp.,50,38.00,1900.00,2.00,"Second same-day SELL - only 20 shares left from Nov 15 BUYs, 30 from pool",
+2024-11-15,BUY,INTC,USD,Intel Corp.,30,36.00,1080.00,1.50,"B&B buy 1: 30 shares within 30 days of Nov 1 SELLs",
+2024-11-15,BUY,INTC,USD,Intel Corp.,90,36.00,3240.00,2.50,"B&B buy 2: 90 shares within 30 days - total 120 available for 150 sold",
 2022-05-10,BUY,AMZN,USD,Amazon.com Inc.,5,2400.00,12000.00,8.00,"AMZN pre-split initial purchase",
 2022-05-25,SELL,AMZN,USD,Amazon.com Inc.,2,2450.00,4900.00,3.50,"Pre-split disposal (2 shares) - will be adjusted to 40 shares after 20:1 split, triggering bed-and-breakfast",
 2022-06-06,STOCK_SPLIT,AMZN,USD,Amazon.com Inc.,,,,,,20:1
