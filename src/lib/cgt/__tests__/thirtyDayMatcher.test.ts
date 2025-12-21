@@ -443,6 +443,120 @@ describe('30-Day Matcher', () => {
       expect(matchings[0].acquisitions[1].transaction.id).toBe('tx-3')
       expect(matchings[0].quantityMatched).toBe(15)
     })
+
+    it('should not double-match BUY shares when multiple SELLs match within 30 days', () => {
+      // Scenario: Multiple SELLs on same day trying to match BUYs within 30 days
+      // Two SELLs on 2023-06-01 (100 and 50 shares = 150 total)
+      // Two BUYs on 2023-06-15 (30 and 90 shares = 120 total)
+      // Expected: First SELL matches 100 shares, second SELL only gets remaining 20 shares
+      const transactions: EnrichedTransaction[] = [
+        {
+          id: 'sell-1',
+          source: 'test',
+          symbol: 'AAPL',
+          name: 'Apple Inc.',
+          date: '2023-06-01',
+          type: 'SELL',
+          quantity: 100,
+          price: 180,
+          currency: 'USD',
+          total: 18000,
+          fee: 5,
+          notes: null,
+          fx_rate: 1.27,
+          price_gbp: 141.73,
+          value_gbp: 14173,
+          fee_gbp: 3.94,
+          fx_source: 'HMRC',
+          fx_error: null,
+          tax_year: '2023/24',
+          gain_group: 'NONE',
+        },
+        {
+          id: 'sell-2',
+          source: 'test',
+          symbol: 'AAPL',
+          name: 'Apple Inc.',
+          date: '2023-06-01',
+          type: 'SELL',
+          quantity: 50,
+          price: 180,
+          currency: 'USD',
+          total: 9000,
+          fee: 5,
+          notes: null,
+          fx_rate: 1.27,
+          price_gbp: 141.73,
+          value_gbp: 7086.5,
+          fee_gbp: 3.94,
+          fx_source: 'HMRC',
+          fx_error: null,
+          tax_year: '2023/24',
+          gain_group: 'NONE',
+        },
+        {
+          id: 'buy-1',
+          source: 'test',
+          symbol: 'AAPL',
+          name: 'Apple Inc.',
+          date: '2023-06-15',
+          type: 'BUY',
+          quantity: 30,
+          price: 185,
+          currency: 'USD',
+          total: 5550,
+          fee: 5,
+          notes: null,
+          fx_rate: 1.27,
+          price_gbp: 145.67,
+          value_gbp: 4370.1,
+          fee_gbp: 3.94,
+          fx_source: 'HMRC',
+          fx_error: null,
+          tax_year: '2023/24',
+          gain_group: 'NONE',
+        },
+        {
+          id: 'buy-2',
+          source: 'test',
+          symbol: 'AAPL',
+          name: 'Apple Inc.',
+          date: '2023-06-15',
+          type: 'BUY',
+          quantity: 90,
+          price: 185,
+          currency: 'USD',
+          total: 16650,
+          fee: 5,
+          notes: null,
+          fx_rate: 1.27,
+          price_gbp: 145.67,
+          value_gbp: 13110.3,
+          fee_gbp: 3.94,
+          fx_source: 'HMRC',
+          fx_error: null,
+          tax_year: '2023/24',
+          gain_group: 'NONE',
+        },
+      ]
+
+      const matchings = applyThirtyDayRule(transactions, [])
+
+      // Should have 2 matchings (one per SELL)
+      expect(matchings).toHaveLength(2)
+
+      // First SELL should match 100 shares (30 from buy-1 + 70 from buy-2)
+      const firstSellMatching = matchings.find(m => m.disposal.id === 'sell-1')!
+      expect(firstSellMatching.quantityMatched).toBe(100)
+
+      // Second SELL should only match 20 shares (remaining from buy-2: 90 - 70 = 20)
+      const secondSellMatching = matchings.find(m => m.disposal.id === 'sell-2')!
+      expect(secondSellMatching.quantityMatched).toBe(20)
+
+      // Total matched should equal total BUY shares (120), not exceed it
+      const totalMatched = matchings.reduce((sum, m) => sum + m.quantityMatched, 0)
+      expect(totalMatched).toBe(120) // 30 + 90 = 120 total available from BUYs
+    })
   })
 
   describe('markThirtyDayMatches', () => {
