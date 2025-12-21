@@ -45,20 +45,22 @@ export function applyThirtyDayRule(
     const sells = sorted.filter(tx => tx.type === TransactionType.SELL)
 
     for (const sell of sells) {
-      const remainingSellQuantity = getRemainingQuantity(sell, sameDayMatchings)
+      // Combine same-day + existing 30-day matchings for accurate remaining quantity
+      const allMatchings = [...sameDayMatchings, ...matchings]
+      const remainingSellQuantity = getRemainingQuantity(sell, allMatchings)
       if (remainingSellQuantity <= 0) {
         continue
       }
 
       // Find buys within 30 days AFTER this sell
-      const matchingBuys = findBuysWithin30Days(sell, sorted, sameDayMatchings)
+      const matchingBuys = findBuysWithin30Days(sell, sorted, allMatchings)
 
       if (matchingBuys.length === 0) {
         continue
       }
 
       // Match the sell against the buys
-      const matching = matchSellAgainstBuys(sell, matchingBuys, remainingSellQuantity, sameDayMatchings)
+      const matching = matchSellAgainstBuys(sell, matchingBuys, remainingSellQuantity, allMatchings)
       if (matching) {
         matchings.push(matching)
       }
