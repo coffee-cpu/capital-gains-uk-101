@@ -247,6 +247,120 @@ describe('Same-Day Matcher', () => {
       expect(matchings).toHaveLength(0)
     })
 
+    it('should not double-match BUY shares when multiple SELLs on same day', () => {
+      // Scenario: Multiple SELLs on same day competing for limited BUY shares
+      // Two SELLs (100 and 50 shares = 150 total)
+      // Two BUYs (30 and 90 shares = 120 total)
+      // Expected: First SELL matches 100, second SELL only gets remaining 20
+      const transactions: EnrichedTransaction[] = [
+        {
+          id: 'sell-1',
+          source: 'test',
+          symbol: 'AAPL',
+          name: 'Apple Inc.',
+          date: '2023-06-15',
+          type: 'SELL',
+          quantity: 100,
+          price: 185,
+          currency: 'USD',
+          total: 18500,
+          fee: 5,
+          notes: null,
+          fx_rate: 1.27,
+          price_gbp: 145.67,
+          value_gbp: 14566.93,
+          fee_gbp: 3.94,
+          fx_source: 'HMRC',
+          fx_error: null,
+          tax_year: '2023/24',
+          gain_group: 'NONE',
+        },
+        {
+          id: 'sell-2',
+          source: 'test',
+          symbol: 'AAPL',
+          name: 'Apple Inc.',
+          date: '2023-06-15',
+          type: 'SELL',
+          quantity: 50,
+          price: 185,
+          currency: 'USD',
+          total: 9250,
+          fee: 5,
+          notes: null,
+          fx_rate: 1.27,
+          price_gbp: 145.67,
+          value_gbp: 7283.46,
+          fee_gbp: 3.94,
+          fx_source: 'HMRC',
+          fx_error: null,
+          tax_year: '2023/24',
+          gain_group: 'NONE',
+        },
+        {
+          id: 'buy-1',
+          source: 'test',
+          symbol: 'AAPL',
+          name: 'Apple Inc.',
+          date: '2023-06-15',
+          type: 'BUY',
+          quantity: 30,
+          price: 180,
+          currency: 'USD',
+          total: 5400,
+          fee: 5,
+          notes: null,
+          fx_rate: 1.27,
+          price_gbp: 141.73,
+          value_gbp: 4251.97,
+          fee_gbp: 3.94,
+          fx_source: 'HMRC',
+          fx_error: null,
+          tax_year: '2023/24',
+          gain_group: 'NONE',
+        },
+        {
+          id: 'buy-2',
+          source: 'test',
+          symbol: 'AAPL',
+          name: 'Apple Inc.',
+          date: '2023-06-15',
+          type: 'BUY',
+          quantity: 90,
+          price: 180,
+          currency: 'USD',
+          total: 16200,
+          fee: 5,
+          notes: null,
+          fx_rate: 1.27,
+          price_gbp: 141.73,
+          value_gbp: 12755.91,
+          fee_gbp: 3.94,
+          fx_source: 'HMRC',
+          fx_error: null,
+          tax_year: '2023/24',
+          gain_group: 'NONE',
+        },
+      ]
+
+      const matchings = applySameDayRule(transactions)
+
+      // Should have 2 matchings (one per SELL)
+      expect(matchings).toHaveLength(2)
+
+      // First SELL should match 100 shares (30 from buy-1 + 70 from buy-2)
+      const firstSellMatching = matchings.find(m => m.disposal.id === 'sell-1')!
+      expect(firstSellMatching.quantityMatched).toBe(100)
+
+      // Second SELL should only match 20 shares (remaining from buy-2: 90 - 70 = 20)
+      const secondSellMatching = matchings.find(m => m.disposal.id === 'sell-2')!
+      expect(secondSellMatching.quantityMatched).toBe(20)
+
+      // Total matched should equal total BUY shares (120), not exceed it
+      const totalMatched = matchings.reduce((sum, m) => sum + m.quantityMatched, 0)
+      expect(totalMatched).toBe(120)
+    })
+
     it('should handle different symbols independently', () => {
       const transactions: EnrichedTransaction[] = [
         {
