@@ -26,8 +26,8 @@ test.describe('BUY-Only Transaction Imports', () => {
     await expect(page.getByText(/Upload "Transactions" history from Schwab.com in addition to Equity Awards statements/i)).toBeVisible()
 
     // Verify transaction list still shows the imported BUY transactions
-    await expect(page.getByText('AAPL').first()).toBeVisible()
-    await expect(page.getByText('MSFT')).toBeVisible()
+    await expect(page.getByRole('table').getByText('AAPL').first()).toBeVisible()
+    await expect(page.getByRole('table').getByText('MSFT').first()).toBeVisible()
   })
 
   test('should hide info banner when SELL transactions added', async ({ page }) => {

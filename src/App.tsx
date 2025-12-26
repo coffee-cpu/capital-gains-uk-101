@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { CSVImporter } from './components/CSVImporter'
 import { TransactionList } from './components/TransactionList'
 import { TaxYearSummary } from './components/TaxYearSummary'
+import { Dashboard } from './components/Dashboard'
 import { About } from './components/About'
 import { Footer } from './components/Footer'
 import { Sidebar } from './components/Sidebar'
@@ -199,6 +200,7 @@ function App() {
               <FlowGuide />
               <CSVImporter />
               <TaxYearSummary />
+              <Dashboard />
               <TransactionList />
             </div>
           </div>
