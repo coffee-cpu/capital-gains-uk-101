@@ -149,8 +149,20 @@ export function TransactionsChart({ data }: TransactionsChartProps) {
     return filtered
   }, [data, dataWithTimestamp])
 
-  // Calculate Y axis domain
+  // Calculate Y axis domain and ticks
   const maxValue = Math.max(...data.map(d => Math.abs(d.barValue)), 1) * 1.1
+
+  // Generate Y-axis ticks excluding extremes (BUY/SELL labels go there)
+  const yAxisTicks = useMemo(() => {
+    const tickCount = 4 // Number of ticks on each side of zero
+    const step = maxValue / (tickCount + 1)
+    const ticks: number[] = [0]
+    for (let i = 1; i <= tickCount; i++) {
+      ticks.push(step * i)
+      ticks.push(-step * i)
+    }
+    return ticks.sort((a, b) => a - b)
+  }, [maxValue])
 
   // Get bar color based on transaction type and gain/loss
   const getBarColor = (entry: TransactionTimelinePoint) => {
@@ -167,27 +179,8 @@ export function TransactionsChart({ data }: TransactionsChartProps) {
     return CHART_COLORS.neutral // Gray if no gain/loss info
   }
 
-  // Legend component (rendered outside scroll area)
-  const legendContent = (
-    <div className="flex justify-center gap-4 text-xs py-2">
-      <div className="flex items-center gap-1">
-        <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: CHART_COLORS.primary }} />
-        <span className="text-gray-600">BUY</span>
-      </div>
-      <div className="flex items-center gap-1">
-        <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: CHART_COLORS.gain }} />
-        <span className="text-gray-600">SELL (Gain)</span>
-      </div>
-      <div className="flex items-center gap-1">
-        <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: CHART_COLORS.loss }} />
-        <span className="text-gray-600">SELL (Loss)</span>
-      </div>
-    </div>
-  )
-
   return (
     <div>
-      {legendContent}
       <ResponsiveContainer width="100%" height={showBrush ? 340 : 280}>
         <ComposedChart
           data={dataWithTimestamp}
@@ -199,6 +192,8 @@ export function TransactionsChart({ data }: TransactionsChartProps) {
             type="number"
             domain={[-0.5, dataWithTimestamp.length - 0.5]}
             tickFormatter={(index) => {
+              // Skip first tick to avoid cluttering bottom-left corner with SELL label
+              if (Math.round(index) === 0) return ''
               const point = dataWithTimestamp[Math.round(index)]
               return point ? formatDateLabel(point.date) : ''
             }}
@@ -213,11 +208,36 @@ export function TransactionsChart({ data }: TransactionsChartProps) {
             axisLine={{ stroke: '#E5E7EB' }}
             tickFormatter={(value) => `£${Math.abs(value / 1000).toFixed(0)}k`}
             domain={[-maxValue, maxValue]}
+            ticks={yAxisTicks}
           />
           <Tooltip content={<CustomTooltip />} />
 
           {/* Zero line */}
           <ReferenceLine y={0} stroke="#9CA3AF" strokeWidth={1} />
+
+          {/* BUY/SELL axis labels */}
+          <ReferenceLine
+            y={maxValue}
+            stroke="transparent"
+            label={{
+              value: 'BUY',
+              position: 'left',
+              fill: CHART_COLORS.primary,
+              fontSize: 13,
+              fontWeight: 700,
+            }}
+          />
+          <ReferenceLine
+            y={-maxValue}
+            stroke="transparent"
+            label={{
+              value: 'SELL',
+              position: 'left',
+              fill: '#6B7280',
+              fontSize: 13,
+              fontWeight: 700,
+            }}
+          />
 
           {/* Tax year boundary lines */}
           {taxYearBoundaries.map((boundary) => (
