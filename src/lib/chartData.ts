@@ -122,6 +122,7 @@ export interface TransactionTimelinePoint {
   barValue: number        // Positive for BUY, negative for SELL (for mirrored chart)
   gainLoss?: number       // Only for SELLs - the gain or loss
   isGain?: boolean        // Only for SELLs - true if gain, false if loss
+  gainLossPercent?: number // Only for SELLs - percentage gain/loss relative to cost basis
   quantity: number        // Total shares
   txCount: number         // Number of transactions aggregated
   priceGbp: number
@@ -211,6 +212,15 @@ export function buildTransactionTimeline(
       ? [...data.symbols][0]
       : `${data.count} ${isBuy ? 'buys' : 'sells'} (${[...data.symbols].join(', ')})`
 
+    // Calculate percentage gain/loss for SELLs
+    let gainLossPercent: number | undefined
+    if (!isBuy && data.gainLoss !== 0) {
+      const costBasis = data.totalValue - data.gainLoss
+      if (costBasis > 0) {
+        gainLossPercent = (data.gainLoss / costBasis) * 100
+      }
+    }
+
     return {
       id: `${data.date}-${data.type}`,
       date: data.date,
@@ -221,6 +231,7 @@ export function buildTransactionTimeline(
       barValue: isBuy ? data.totalValue : -data.totalValue,
       gainLoss: !isBuy && data.gainLoss !== 0 ? data.gainLoss : undefined,
       isGain: !isBuy ? data.gainLoss >= 0 : undefined,
+      gainLossPercent,
       quantity: data.totalQuantity,
       txCount: data.count,
       priceGbp: 0,

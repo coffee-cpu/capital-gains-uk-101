@@ -68,6 +68,11 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
             <span className="text-gray-500">{data.isGain ? 'Gain:' : 'Loss:'}</span>
             <span className={data.isGain ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
               {formatCurrency(Math.abs(data.gainLoss))}
+              {data.gainLossPercent !== undefined && (
+                <span className="ml-1 opacity-75">
+                  ({data.gainLossPercent >= 0 ? '+' : ''}{data.gainLossPercent.toFixed(1)}%)
+                </span>
+              )}
             </span>
           </div>
         )}
@@ -78,6 +83,7 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
 
 const BAR_SIZE = 12
 const BRUSH_THRESHOLD = 80 // Show brush when more than this many bars
+
 
 export function TransactionsChart({ data }: TransactionsChartProps) {
   if (!data || data.length === 0) {
