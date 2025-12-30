@@ -452,6 +452,15 @@ export function buildCurrentHoldingsData(
   let lastDate: string | null = null
 
   pools.forEach((pool, symbol) => {
+    // Track the last transaction date across ALL pools (not just those with holdings)
+    if (pool.history.length > 0) {
+      const poolLastDate = pool.history[pool.history.length - 1].date
+      if (!lastDate || poolLastDate > lastDate) {
+        lastDate = poolLastDate
+      }
+    }
+
+    // Only include pools with positive holdings in the pie chart
     if (symbol && symbol.trim() && pool.quantity > 0) {
       holdings.push({
         symbol,
@@ -459,14 +468,6 @@ export function buildCurrentHoldingsData(
         valueGbp: pool.totalCostGbp,
         averageCostGbp: pool.averageCostGbp,
       })
-
-      // Find the last transaction date across all pools
-      if (pool.history.length > 0) {
-        const poolLastDate = pool.history[pool.history.length - 1].date
-        if (!lastDate || poolLastDate > lastDate) {
-          lastDate = poolLastDate
-        }
-      }
     }
   })
 
