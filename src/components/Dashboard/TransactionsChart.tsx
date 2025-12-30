@@ -17,6 +17,8 @@ import {
   formatCurrency,
   getTaxYearBoundaries,
   formatDateLabel,
+  calculateTradeStats,
+  TradeStats,
 } from '../../lib/chartData'
 import { EmptyState } from './EmptyState'
 
@@ -148,6 +150,109 @@ function StripedPatternDefs() {
   )
 }
 
+// Trade statistics panel component
+interface TradeStatsPanelProps {
+  stats: TradeStats
+}
+
+function TradeStatsPanel({ stats }: TradeStatsPanelProps) {
+  const hasStats = stats.sellCount > 0
+
+  // Format percentage with sign
+  const formatPercent = (value: number) => {
+    const sign = value >= 0 ? '+' : ''
+    return `${sign}${value.toFixed(1)}%`
+  }
+
+  return (
+    <div className="flex flex-col justify-center h-full">
+      {/* Header with total gain/loss */}
+      <div className="text-center mb-3">
+        <p className="text-xs text-gray-500 uppercase tracking-wide">Total Gain/Loss</p>
+        <p className={`text-xl font-bold ${stats.totalGainLossGbp >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+          {stats.totalGainLossGbp >= 0 ? '+' : ''}{formatCurrency(stats.totalGainLossGbp)}
+        </p>
+        {hasStats && (
+          <p className="text-xs text-gray-400">
+            {stats.sellCount} disposal{stats.sellCount !== 1 ? 's' : ''}
+          </p>
+        )}
+      </div>
+
+      {hasStats ? (
+        <div className="space-y-2">
+          {/* Best Trade */}
+          {stats.bestTrade && (
+            <div className="bg-green-50 rounded-lg px-3 py-2">
+              <p className="text-xs text-green-700 font-medium">Best Trade</p>
+              <div className="flex items-baseline justify-between">
+                <div>
+                  <span className="font-semibold text-gray-900 text-sm">{stats.bestTrade.symbol}</span>
+                  <span className="text-xs text-gray-500 ml-2">{stats.bestTrade.dateLabel}</span>
+                </div>
+                <div className="text-right">
+                  <span className="text-green-600 font-bold text-sm">
+                    {formatPercent(stats.bestTrade.gainLossPercent)}
+                  </span>
+                  <span className="text-green-600 text-xs ml-1">
+                    ({formatCurrency(stats.bestTrade.gainLossGbp)})
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Worst Trade */}
+          {stats.worstTrade && stats.worstTrade.gainLossPercent < 0 && (
+            <div className="bg-red-50 rounded-lg px-3 py-2">
+              <p className="text-xs text-red-700 font-medium">Worst Trade</p>
+              <div className="flex items-baseline justify-between">
+                <div>
+                  <span className="font-semibold text-gray-900 text-sm">{stats.worstTrade.symbol}</span>
+                  <span className="text-xs text-gray-500 ml-2">{stats.worstTrade.dateLabel}</span>
+                </div>
+                <div className="text-right">
+                  <span className="text-red-600 font-bold text-sm">
+                    {formatPercent(stats.worstTrade.gainLossPercent)}
+                  </span>
+                  <span className="text-red-600 text-xs ml-1">
+                    ({formatCurrency(stats.worstTrade.gainLossGbp)})
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Win Rate & Average */}
+          <div className="border-t border-gray-200 pt-2 space-y-1">
+            <div className="flex justify-between items-center">
+              <span className="text-xs text-gray-500">Win Rate</span>
+              <span className="text-sm font-semibold text-gray-900">
+                {stats.winRate.toFixed(0)}%
+                <span className="text-xs text-gray-400 font-normal ml-1">
+                  ({stats.winCount}/{stats.sellCount})
+                </span>
+              </span>
+            </div>
+            {stats.avgReturnPercent !== null && (
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-500">Avg Return</span>
+                <span className={`text-sm font-semibold ${stats.avgReturnPercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {formatPercent(stats.avgReturnPercent)}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="flex items-center justify-center text-gray-400 text-sm">
+          No disposals yet
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function TransactionsChart({ data }: TransactionsChartProps) {
   if (!data || data.length === 0) {
     return <EmptyState message="No transactions to display" />
@@ -244,14 +349,19 @@ export function TransactionsChart({ data }: TransactionsChartProps) {
     return isIncomplete ? 'url(#stripe-neutral)' : CHART_COLORS.neutral
   }
 
+  // Calculate trade statistics
+  const tradeStats = useMemo(() => calculateTradeStats(data), [data])
+
   return (
-    <div className="relative">
-      <StripedPatternDefs />
-      <ResponsiveContainer width="100%" height={showBrush ? 340 : 280}>
-        <ComposedChart
-          data={dataWithTimestamp}
-          margin={{ top: 20, right: 50, left: 20, bottom: showBrush ? 5 : 20 }}
-        >
+    <div className="flex gap-6">
+      {/* Chart (70%) */}
+      <div className="flex-[7] min-w-0 relative">
+        <StripedPatternDefs />
+        <ResponsiveContainer width="100%" height={showBrush ? 340 : 280}>
+          <ComposedChart
+            data={dataWithTimestamp}
+            margin={{ top: 20, right: 30, left: 20, bottom: showBrush ? 5 : 20 }}
+          >
           <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
           <XAxis
             dataKey="index"
@@ -351,6 +461,12 @@ export function TransactionsChart({ data }: TransactionsChartProps) {
           )}
         </ComposedChart>
       </ResponsiveContainer>
+      </div>
+
+      {/* Stats Panel (30%) */}
+      <div className="flex-[3] border-l border-gray-200 pl-6">
+        <TradeStatsPanel stats={tradeStats} />
+      </div>
     </div>
   )
 }

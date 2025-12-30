@@ -514,3 +514,109 @@ export function getRuleColor(rule: string): string {
       return CHART_COLORS.neutral
   }
 }
+
+// ============================================================================
+// Trade Statistics
+// ============================================================================
+
+export interface BestWorstTrade {
+  symbol: string
+  date: string
+  dateLabel: string
+  gainLossPercent: number
+  gainLossGbp: number
+}
+
+export interface TradeStats {
+  totalGainLossGbp: number
+  totalGains: number
+  totalLosses: number
+  sellCount: number
+  winCount: number
+  lossCount: number
+  winRate: number
+  avgReturnPercent: number | null
+  bestTrade: BestWorstTrade | null
+  worstTrade: BestWorstTrade | null
+}
+
+/**
+ * Calculate trade statistics from transaction timeline data
+ */
+export function calculateTradeStats(data: TransactionTimelinePoint[]): TradeStats {
+  const sells = data.filter(d => d.type === 'SELL' && d.gainLossPercent !== undefined)
+
+  if (sells.length === 0) {
+    return {
+      totalGainLossGbp: 0,
+      totalGains: 0,
+      totalLosses: 0,
+      sellCount: 0,
+      winCount: 0,
+      lossCount: 0,
+      winRate: 0,
+      avgReturnPercent: null,
+      bestTrade: null,
+      worstTrade: null,
+    }
+  }
+
+  // Calculate totals
+  let totalGainLossGbp = 0
+  let totalGains = 0
+  let totalLosses = 0
+  let winCount = 0
+  let lossCount = 0
+  let totalPercent = 0
+  let bestTrade: BestWorstTrade | null = null
+  let worstTrade: BestWorstTrade | null = null
+
+  sells.forEach(sell => {
+    const gainLoss = sell.gainLoss ?? 0
+    totalGainLossGbp += gainLoss
+
+    if (gainLoss >= 0) {
+      totalGains += gainLoss
+      winCount++
+    } else {
+      totalLosses += Math.abs(gainLoss)
+      lossCount++
+    }
+
+    const percent = sell.gainLossPercent ?? 0
+    totalPercent += percent
+
+    // Track best and worst trades by percentage
+    if (!bestTrade || percent > bestTrade.gainLossPercent) {
+      bestTrade = {
+        symbol: sell.symbol,
+        date: sell.date,
+        dateLabel: sell.dateLabel,
+        gainLossPercent: percent,
+        gainLossGbp: gainLoss,
+      }
+    }
+    if (!worstTrade || percent < worstTrade.gainLossPercent) {
+      worstTrade = {
+        symbol: sell.symbol,
+        date: sell.date,
+        dateLabel: sell.dateLabel,
+        gainLossPercent: percent,
+        gainLossGbp: gainLoss,
+      }
+    }
+  })
+
+  return {
+    totalGainLossGbp,
+    totalGains,
+    totalLosses,
+    sellCount: sells.length,
+    winCount,
+    lossCount,
+    winRate: sells.length > 0 ? (winCount / sells.length) * 100 : 0,
+    avgReturnPercent: sells.length > 0 ? totalPercent / sells.length : null,
+    bestTrade,
+    worstTrade,
+  }
+}
