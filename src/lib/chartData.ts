@@ -390,6 +390,94 @@ export function formatCurrencyPrecise(value: number): string {
   }).format(value)
 }
 
+// ============================================================================
+// Current Holdings Pie Chart Data
+// ============================================================================
+
+export interface CurrentHoldingPoint {
+  symbol: string
+  quantity: number
+  valueGbp: number
+  averageCostGbp: number
+  color: string
+  percentage: number
+}
+
+export interface CurrentHoldingsResult {
+  holdings: CurrentHoldingPoint[]
+  totalValueGbp: number
+  totalQuantity: number
+  lastTransactionDate: string | null
+}
+
+/**
+ * Build current holdings data for pie chart from Section 104 pools
+ * Shows holdings as of the last known transaction date
+ */
+export function buildCurrentHoldingsData(
+  pools: Map<string, Section104Pool>
+): CurrentHoldingsResult {
+  if (!pools || pools.size === 0) {
+    return { holdings: [], totalValueGbp: 0, totalQuantity: 0, lastTransactionDate: null }
+  }
+
+  // Collect holdings with positive quantities
+  const holdings: Array<{
+    symbol: string
+    quantity: number
+    valueGbp: number
+    averageCostGbp: number
+  }> = []
+
+  let lastDate: string | null = null
+
+  pools.forEach((pool, symbol) => {
+    if (symbol && symbol.trim() && pool.quantity > 0) {
+      holdings.push({
+        symbol,
+        quantity: pool.quantity,
+        valueGbp: pool.totalCostGbp,
+        averageCostGbp: pool.averageCostGbp,
+      })
+
+      // Find the last transaction date across all pools
+      if (pool.history.length > 0) {
+        const poolLastDate = pool.history[pool.history.length - 1].date
+        if (!lastDate || poolLastDate > lastDate) {
+          lastDate = poolLastDate
+        }
+      }
+    }
+  })
+
+  if (holdings.length === 0) {
+    return { holdings: [], totalValueGbp: 0, totalQuantity: 0, lastTransactionDate: lastDate }
+  }
+
+  // Sort by value descending
+  holdings.sort((a, b) => b.valueGbp - a.valueGbp)
+
+  // Calculate totals
+  const totalValueGbp = holdings.reduce((sum, h) => sum + h.valueGbp, 0)
+  const totalQuantity = holdings.reduce((sum, h) => sum + h.quantity, 0)
+
+  // Generate colors and percentages
+  const colors = generateSymbolColors(holdings.map(h => h.symbol))
+
+  const result: CurrentHoldingPoint[] = holdings.map(h => ({
+    ...h,
+    color: colors[h.symbol],
+    percentage: totalValueGbp > 0 ? (h.valueGbp / totalValueGbp) * 100 : 0,
+  }))
+
+  return {
+    holdings: result,
+    totalValueGbp,
+    totalQuantity,
+    lastTransactionDate: lastDate,
+  }
+}
+
 /**
  * Get color for a disposal based on its matching rule
  */

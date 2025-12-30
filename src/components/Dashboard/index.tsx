@@ -5,6 +5,7 @@ import { PoolBreakdownChart } from './PoolBreakdownChart'
 import {
   buildTransactionTimeline,
   buildPoolBreakdownData,
+  buildCurrentHoldingsData,
 } from '../../lib/chartData'
 import { Section104Pool } from '../../types/cgt'
 import { EnrichedTransaction } from '../../types/transaction'
@@ -40,6 +41,11 @@ export function Dashboard() {
     [section104Pools]
   )
 
+  const holdingsData = useMemo(
+    () => buildCurrentHoldingsData(section104Pools),
+    [section104Pools]
+  )
+
   // Don't render if no data
   const hasData = disposals.length > 0 || section104Pools.size > 0 || transactions.length > 0
 
@@ -50,7 +56,7 @@ export function Dashboard() {
   const renderChart = () => {
     switch (selectedChart) {
       case 'section104':
-        return <PoolBreakdownChart data={poolData} />
+        return <PoolBreakdownChart data={poolData} holdingsData={holdingsData} />
       case 'transactions':
         return <TransactionsChart data={transactionData} />
     }
