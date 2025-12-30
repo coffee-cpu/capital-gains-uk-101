@@ -126,6 +126,9 @@ export interface TransactionTimelinePoint {
   quantity: number        // Total shares
   txCount: number         // Number of transactions aggregated
   priceGbp: number
+  // Incomplete disposal tracking
+  isIncomplete?: boolean           // True if any disposal on this day is incomplete
+  unmatchedQuantity?: number       // Sum of unmatched quantities for incomplete disposals
 }
 
 /**
@@ -143,11 +146,18 @@ export function buildTransactionTimeline(
   }
 
   // Create a map of disposal gains by transaction ID
-  const disposalGains = new Map<string, { gain: number; isGain: boolean }>()
+  const disposalGains = new Map<string, {
+    gain: number
+    isGain: boolean
+    isIncomplete: boolean
+    unmatchedQuantity?: number
+  }>()
   disposals.forEach(d => {
     disposalGains.set(d.disposal.id, {
       gain: d.gainOrLossGbp,
       isGain: d.gainOrLossGbp >= 0,
+      isIncomplete: d.isIncomplete,
+      unmatchedQuantity: d.unmatchedQuantity,
     })
   })
 
@@ -168,6 +178,8 @@ export function buildTransactionTimeline(
     gainLoss: number
     count: number
     symbols: Set<string>
+    hasIncomplete: boolean
+    totalUnmatchedQty: number
   }>()
 
   sorted.forEach(tx => {
@@ -186,6 +198,10 @@ export function buildTransactionTimeline(
       existing.symbols.add(tx.symbol)
       if (disposalInfo) {
         existing.gainLoss += disposalInfo.gain
+        if (disposalInfo.isIncomplete) {
+          existing.hasIncomplete = true
+          existing.totalUnmatchedQty += disposalInfo.unmatchedQuantity ?? 0
+        }
       }
     } else {
       dailyData.set(key, {
@@ -196,6 +212,8 @@ export function buildTransactionTimeline(
         gainLoss: disposalInfo?.gain ?? 0,
         count: 1,
         symbols: new Set([tx.symbol]),
+        hasIncomplete: disposalInfo?.isIncomplete ?? false,
+        totalUnmatchedQty: disposalInfo?.unmatchedQuantity ?? 0,
       })
     }
   })
@@ -235,6 +253,8 @@ export function buildTransactionTimeline(
       quantity: data.totalQuantity,
       txCount: data.count,
       priceGbp: 0,
+      isIncomplete: !isBuy && data.hasIncomplete ? true : undefined,
+      unmatchedQuantity: !isBuy && data.totalUnmatchedQty > 0 ? data.totalUnmatchedQty : undefined,
     }
   })
 }

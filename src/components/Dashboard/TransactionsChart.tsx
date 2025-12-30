@@ -37,9 +37,19 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
   const data = payload[0].payload
   const isBuy = data.type === 'BUY'
   const isAggregated = data.txCount > 1
+  const isIncomplete = data.isIncomplete
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3 text-sm">
+      {/* Incomplete Warning Banner */}
+      {isIncomplete && (
+        <div className="flex items-center gap-2 mb-2 px-2 py-1.5 bg-amber-50 border border-amber-200 rounded text-amber-800">
+          <svg className="h-4 w-4 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+          </svg>
+          <span className="text-xs font-medium">Incomplete Data</span>
+        </div>
+      )}
       <div className="flex items-center gap-2 mb-1">
         <span className={`font-semibold ${isBuy ? 'text-blue-600' : 'text-gray-900'}`}>
           {data.type}
@@ -76,6 +86,15 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
             </span>
           </div>
         )}
+        {/* Unmatched quantity details for incomplete disposals */}
+        {isIncomplete && data.unmatchedQuantity && (
+          <div className="flex justify-between gap-4 pt-1 border-t border-amber-200 text-amber-700">
+            <span>Unmatched:</span>
+            <span className="font-medium">
+              {data.unmatchedQuantity.toLocaleString()} shares
+            </span>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -84,6 +103,50 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
 const BAR_SIZE = 12
 const BRUSH_THRESHOLD = 80 // Show brush when more than this many bars
 
+// SVG pattern definitions for striped bars (incomplete disposals)
+function StripedPatternDefs() {
+  return (
+    <svg className="absolute" width="0" height="0">
+      <defs>
+        {/* Striped pattern for incomplete gains (green with darker stripes) */}
+        <pattern
+          id="stripe-gain"
+          width="8"
+          height="8"
+          patternUnits="userSpaceOnUse"
+          patternTransform="rotate(45)"
+        >
+          <rect width="4" height="8" fill={CHART_COLORS.gain} />
+          <rect x="4" width="4" height="8" fill="#16A34A" />
+        </pattern>
+
+        {/* Striped pattern for incomplete losses (red with darker stripes) */}
+        <pattern
+          id="stripe-loss"
+          width="8"
+          height="8"
+          patternUnits="userSpaceOnUse"
+          patternTransform="rotate(45)"
+        >
+          <rect width="4" height="8" fill={CHART_COLORS.loss} />
+          <rect x="4" width="4" height="8" fill="#DC2626" />
+        </pattern>
+
+        {/* Striped pattern for incomplete neutral (gray with darker stripes) */}
+        <pattern
+          id="stripe-neutral"
+          width="8"
+          height="8"
+          patternUnits="userSpaceOnUse"
+          patternTransform="rotate(45)"
+        >
+          <rect width="4" height="8" fill={CHART_COLORS.neutral} />
+          <rect x="4" width="4" height="8" fill="#4B5563" />
+        </pattern>
+      </defs>
+    </svg>
+  )
+}
 
 export function TransactionsChart({ data }: TransactionsChartProps) {
   if (!data || data.length === 0) {
@@ -165,22 +228,25 @@ export function TransactionsChart({ data }: TransactionsChartProps) {
   }, [maxValue])
 
   // Get bar color based on transaction type and gain/loss
+  // Returns pattern URL for incomplete disposals
   const getBarColor = (entry: TransactionTimelinePoint) => {
     if (entry.type === 'BUY') {
-      return CHART_COLORS.primary // Blue for buys
+      return CHART_COLORS.primary // Blue for buys (never incomplete)
     }
-    // For sells, color by gain/loss
+    // For sells, check if incomplete and use striped pattern
+    const isIncomplete = entry.isIncomplete
     if (entry.isGain === true) {
-      return CHART_COLORS.gain // Green for gains
+      return isIncomplete ? 'url(#stripe-gain)' : CHART_COLORS.gain
     }
     if (entry.isGain === false) {
-      return CHART_COLORS.loss // Red for losses
+      return isIncomplete ? 'url(#stripe-loss)' : CHART_COLORS.loss
     }
-    return CHART_COLORS.neutral // Gray if no gain/loss info
+    return isIncomplete ? 'url(#stripe-neutral)' : CHART_COLORS.neutral
   }
 
   return (
-    <div>
+    <div className="relative">
+      <StripedPatternDefs />
       <ResponsiveContainer width="100%" height={showBrush ? 340 : 280}>
         <ComposedChart
           data={dataWithTimestamp}

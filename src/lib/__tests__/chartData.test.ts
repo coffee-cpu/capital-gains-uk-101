@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   buildDisposalGainsData,
   buildPoolBreakdownData,
+  buildTransactionTimeline,
   formatDateLabel,
   formatMonthYear,
   formatCurrency,
@@ -280,6 +281,163 @@ describe('chartData', () => {
 
       expect(result.symbols[0]).toBe('BIG')
       expect(result.symbols[1]).toBe('SMALL')
+    })
+  })
+
+  describe('buildTransactionTimeline', () => {
+    // Helper to create mock enriched transaction
+    function createMockTransaction(overrides: Partial<EnrichedTransaction> = {}): EnrichedTransaction {
+      return {
+        id: 'tx-1',
+        source: 'Test',
+        date: '2024-01-15',
+        type: 'SELL',
+        symbol: 'AAPL',
+        currency: 'GBP',
+        quantity: 10,
+        price: 100,
+        total: 1000,
+        fee: 0,
+        value_gbp: 1000,
+        price_gbp: 100,
+        tax_year: '2023/24',
+        ...overrides,
+      } as EnrichedTransaction
+    }
+
+    it('returns empty array for empty input', () => {
+      expect(buildTransactionTimeline([], [])).toEqual([])
+    })
+
+    it('returns empty array for undefined input', () => {
+      expect(buildTransactionTimeline(undefined as unknown as EnrichedTransaction[], [])).toEqual([])
+    })
+
+    it('transforms single SELL transaction with disposal', () => {
+      const transactions = [createMockTransaction({ type: 'SELL' })]
+      const disposals = [createMockDisposal({ gainOrLossGbp: 200 })]
+
+      const result = buildTransactionTimeline(transactions, disposals)
+
+      expect(result).toHaveLength(1)
+      expect(result[0]).toMatchObject({
+        type: 'SELL',
+        symbol: 'AAPL',
+        gainLoss: 200,
+        isGain: true,
+      })
+    })
+
+    it('transforms single BUY transaction', () => {
+      const transactions = [createMockTransaction({ id: 'buy-1', type: 'BUY' })]
+
+      const result = buildTransactionTimeline(transactions, [])
+
+      expect(result).toHaveLength(1)
+      expect(result[0]).toMatchObject({
+        type: 'BUY',
+        symbol: 'AAPL',
+        gainLoss: undefined,
+        isGain: undefined,
+      })
+    })
+
+    it('passes through isIncomplete for incomplete disposals', () => {
+      const transactions = [createMockTransaction({ type: 'SELL' })]
+      const disposals = [createMockDisposal({
+        gainOrLossGbp: 0,
+        isIncomplete: true,
+        unmatchedQuantity: 5,
+      })]
+
+      const result = buildTransactionTimeline(transactions, disposals)
+
+      expect(result).toHaveLength(1)
+      expect(result[0].isIncomplete).toBe(true)
+      expect(result[0].unmatchedQuantity).toBe(5)
+    })
+
+    it('returns undefined for isIncomplete when disposal is complete', () => {
+      const transactions = [createMockTransaction({ type: 'SELL' })]
+      const disposals = [createMockDisposal({
+        gainOrLossGbp: 200,
+        isIncomplete: false,
+      })]
+
+      const result = buildTransactionTimeline(transactions, disposals)
+
+      expect(result).toHaveLength(1)
+      expect(result[0].isIncomplete).toBeUndefined()
+      expect(result[0].unmatchedQuantity).toBeUndefined()
+    })
+
+    it('aggregates same-day transactions and ORs incomplete status', () => {
+      const transactions = [
+        createMockTransaction({ id: 'sell-1', type: 'SELL', date: '2024-01-15', symbol: 'AAPL' }),
+        createMockTransaction({ id: 'sell-2', type: 'SELL', date: '2024-01-15', symbol: 'MSFT' }),
+      ]
+      const disposals = [
+        createMockDisposal({
+          id: 'disposal-1',
+          disposal: { id: 'sell-1' } as EnrichedTransaction,
+          gainOrLossGbp: 100,
+          isIncomplete: false,
+        }),
+        createMockDisposal({
+          id: 'disposal-2',
+          disposal: { id: 'sell-2' } as EnrichedTransaction,
+          gainOrLossGbp: 50,
+          isIncomplete: true,
+          unmatchedQuantity: 3,
+        }),
+      ]
+
+      const result = buildTransactionTimeline(transactions, disposals)
+
+      // Should aggregate into single bar
+      expect(result).toHaveLength(1)
+      // Should be marked incomplete because one of them is incomplete
+      expect(result[0].isIncomplete).toBe(true)
+      expect(result[0].unmatchedQuantity).toBe(3)
+      expect(result[0].txCount).toBe(2)
+    })
+
+    it('sums unmatched quantities for multiple incomplete disposals on same day', () => {
+      const transactions = [
+        createMockTransaction({ id: 'sell-1', type: 'SELL', date: '2024-01-15' }),
+        createMockTransaction({ id: 'sell-2', type: 'SELL', date: '2024-01-15' }),
+      ]
+      const disposals = [
+        createMockDisposal({
+          id: 'disposal-1',
+          disposal: { id: 'sell-1' } as EnrichedTransaction,
+          isIncomplete: true,
+          unmatchedQuantity: 5,
+        }),
+        createMockDisposal({
+          id: 'disposal-2',
+          disposal: { id: 'sell-2' } as EnrichedTransaction,
+          isIncomplete: true,
+          unmatchedQuantity: 3,
+        }),
+      ]
+
+      const result = buildTransactionTimeline(transactions, disposals)
+
+      expect(result).toHaveLength(1)
+      expect(result[0].isIncomplete).toBe(true)
+      expect(result[0].unmatchedQuantity).toBe(8) // 5 + 3
+    })
+
+    it('does not set isIncomplete for BUY transactions', () => {
+      const transactions = [createMockTransaction({ id: 'buy-1', type: 'BUY' })]
+
+      const result = buildTransactionTimeline(transactions, [])
+
+      expect(result).toHaveLength(1)
+      expect(result[0].type).toBe('BUY')
+      expect(result[0].isIncomplete).toBeUndefined()
+      expect(result[0].unmatchedQuantity).toBeUndefined()
     })
   })
 })
