@@ -78,44 +78,59 @@ export class HMRCYearlyProvider extends BaseFXProvider {
   /**
    * Fetch yearly average rates from HMRC
    * Uses the CSV endpoint from trade-tariff.service.gov.uk
+   *
+   * Average rates are published semi-annually:
+   * - December file: Full year average (published Dec 31)
+   * - March file: Previous year average (published Mar 31)
+   *
+   * URL format: /exchange_rates/view/files/average_csv_YYYY-M.csv
    */
   private async fetchYearlyRates(year: string): Promise<Record<string, number>> {
-    // The average rates CSV includes data for multiple years
-    // We need to parse it and find the rates for the requested year
-    const url = 'https://www.trade-tariff.service.gov.uk/exchange_rates/average.csv'
+    // Try December file first (end of year average)
+    const decUrl = `https://www.trade-tariff.service.gov.uk/exchange_rates/view/files/average_csv_${year}-12.csv`
 
     try {
-      const response = await fetch(url)
-      if (!response.ok) {
-        throw new Error(`HMRC yearly rates API error: ${response.status}`)
+      const response = await fetch(decUrl)
+      if (response.ok) {
+        const csvText = await response.text()
+        const rates = this.parseYearlyRatesCSV(csvText)
+
+        // Cache all rates for this year in IndexedDB
+        await this.cacheYearlyRates(year, rates)
+        return rates
       }
-
-      const csvText = await response.text()
-      const rates = this.parseYearlyRatesCSV(csvText, year)
-
-      // Cache all rates for this year in IndexedDB
-      await this.cacheYearlyRates(year, rates)
-
-      return rates
     } catch (error) {
-      console.error(`Failed to fetch HMRC yearly rates for ${year}:`, error)
-
-      // Fall back to calculating from monthly rates if available
-      try {
-        return await this.calculateFromMonthlyRates(year)
-      } catch {
-        throw new Error(
-          `Failed to fetch HMRC yearly average rates for ${year}: ${error instanceof Error ? error.message : 'Unknown error'}`
-        )
-      }
+      console.warn(`December average rates not available for ${year}:`, error)
     }
+
+    // Try March file (published in following year with previous year's average)
+    const nextYear = String(parseInt(year) + 1)
+    const marUrl = `https://www.trade-tariff.service.gov.uk/exchange_rates/view/files/average_csv_${nextYear}-3.csv`
+
+    try {
+      const response = await fetch(marUrl)
+      if (response.ok) {
+        const csvText = await response.text()
+        const rates = this.parseYearlyRatesCSV(csvText)
+
+        await this.cacheYearlyRates(year, rates)
+        return rates
+      }
+    } catch (error) {
+      console.warn(`March average rates not available for ${year}:`, error)
+    }
+
+    // Fall back to calculating from monthly rates
+    console.log(`Falling back to calculating yearly average from monthly rates for ${year}`)
+    return await this.calculateFromMonthlyRates(year)
   }
 
   /**
    * Parse the HMRC yearly average rates CSV
-   * Format: currency_code,currency_description,rate,validity_start_date,validity_end_date
+   * Format: Country, Unit Of Currency, Currency Code, Sterling value of Currency Unit £, Currency Units per £1
+   * Example: USA, Dollar, USD, 0.7821, 1.2787
    */
-  private parseYearlyRatesCSV(csvText: string, year: string): Record<string, number> {
+  private parseYearlyRatesCSV(csvText: string): Record<string, number> {
     const lines = csvText.split('\n')
     const rates: Record<string, number> = {}
 
@@ -128,22 +143,20 @@ export class HMRCYearlyProvider extends BaseFXProvider {
       const parts = this.parseCSVLine(line)
       if (parts.length < 5) continue
 
-      const [currencyCode, , rateStr, startDate, endDate] = parts
+      // Column 2 is Currency Code, Column 4 is "Currency Units per £1"
+      const currencyCode = parts[2]?.trim()
+      const rateStr = parts[4]?.trim()
 
-      // Check if this rate is for the requested year
-      // Average rates typically have validity_end_date in the format YYYY-MM-DD
-      const rateYear = endDate?.split('-')[0] || startDate?.split('-')[0]
+      if (!currencyCode || !rateStr) continue
 
-      if (rateYear === year) {
-        const rate = parseFloat(rateStr)
-        if (!isNaN(rate) && rate > 0) {
-          rates[currencyCode] = rate
-        }
+      const rate = parseFloat(rateStr)
+      if (!isNaN(rate) && rate > 0) {
+        rates[currencyCode] = rate
       }
     }
 
     if (Object.keys(rates).length === 0) {
-      throw new Error(`No rates found for year ${year} in HMRC average rates`)
+      throw new Error('No rates found in HMRC average rates CSV')
     }
 
     return rates
