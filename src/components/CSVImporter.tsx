@@ -12,6 +12,7 @@ import { normalizeRevolutTransactions } from '../lib/parsers/revolut'
 import { BrokerType } from '../types/broker'
 import { GenericTransaction } from '../types/transaction'
 import { useTransactionStore } from '../stores/transactionStore'
+import { useSettingsStore } from '../stores/settingsStore'
 import { db } from '../lib/db'
 import { deduplicateTransactions } from '../utils/deduplication'
 import { enrichTransactions } from '../lib/enrichment'
@@ -29,6 +30,7 @@ export function CSVImporter() {
   const [processingStatus, setProcessingStatus] = useState<string>('')
   const setTransactions = useTransactionStore((state) => state.setTransactions)
   const setCGTResults = useTransactionStore((state) => state.setCGTResults)
+  const fxStrategy = useSettingsStore((state) => state.fxStrategy)
 
   const processFile = async (file: File): Promise<{ success: boolean; message: string; count?: number }> => {
     try {
@@ -156,8 +158,8 @@ export function CSVImporter() {
     const allStored = await db.transactions.toArray()
     const deduplicated = deduplicateTransactions(allStored)
 
-    // Enrich with FX rates and GBP conversions
-    const enriched = await enrichTransactions(deduplicated)
+    // Enrich with FX rates and GBP conversions using selected strategy
+    const enriched = await enrichTransactions(deduplicated, fxStrategy)
 
     // Calculate CGT with HMRC matching rules
     const cgtResults = calculateCGT(enriched)

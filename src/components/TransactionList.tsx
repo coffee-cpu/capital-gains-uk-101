@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTransactionStore } from '../stores/transactionStore'
 import { ClearDataButton } from './ClearDataButton'
 import { Tooltip } from './Tooltip'
+import { FXStrategySelector } from './FXStrategySelector'
 import { exportTransactionsToCSV } from '../utils/csvExport'
 
 // Helper to get currency symbol
@@ -190,10 +191,10 @@ export function TransactionList() {
       </div>
 
       {/* FX Rate Information */}
-      {transactions.some(tx => tx.fx_source === 'HMRC') && (
+      {transactions.some(tx => tx.fx_source !== 'Native GBP' && tx.fx_source !== 'Failed') && (
         <div className="px-6 py-4 bg-blue-50 border-b border-blue-200">
-          <div className="flex items-start justify-between">
-            <div className="flex">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex flex-1">
               <div className="flex-shrink-0">
                 <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
@@ -202,34 +203,34 @@ export function TransactionList() {
               <div className="ml-3">
                 <div className="text-sm text-blue-700">
                   <p>
-                    Foreign currency values have been converted to GBP using{' '}
-                    <a
-                      href="https://www.trade-tariff.service.gov.uk/exchange_rates"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-semibold underline hover:text-blue-900"
-                    >
-                      official HMRC exchange rates
-                    </a>.
-                    Hover over any GBP value to see the specific rate applied.
+                    Foreign currency values converted to GBP. Hover over any GBP value to see the specific rate applied.
                   </p>
                   {!showFxInfo && (
                     <button
                       onClick={() => setShowFxInfo(true)}
                       className="mt-1 text-blue-600 hover:text-blue-800 underline text-sm"
                     >
-                      Learn more about HMRC exchange rates
+                      Learn more about exchange rate options
                     </button>
                   )}
                   {showFxInfo && (
                     <div className="mt-2 space-y-2">
                       <p>
-                        <strong>Monthly Granularity:</strong> HMRC publishes one exchange rate per currency per month.
-                        All transactions in the same month use the same official rate, as required for UK tax reporting.
+                        <strong>HMRC Guidance:</strong>{' '}
+                        <a
+                          href="https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg78310"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="underline hover:text-blue-900"
+                        >
+                          CG78310
+                        </a>{' '}
+                        states that HMRC does not prescribe a specific exchange rate source.
+                        A &quot;reasonable and consistent method&quot; is expected across all transactions.
                       </p>
                       <p>
-                        <strong>Publication Schedule:</strong> Exchange rates are published by HMRC on the penultimate Thursday of every month.
-                        These rates represent values as of midday the day before publication, and apply to the <em>following</em> calendar month.
+                        <strong>Available Options:</strong> HMRC Monthly Rates (one rate per month),
+                        HMRC Yearly Average (annual averages), or Daily Spot Rates (ECB rates for each transaction date).
                       </p>
                       <button
                         onClick={() => setShowFxInfo(false)}
@@ -241,6 +242,9 @@ export function TransactionList() {
                   )}
                 </div>
               </div>
+            </div>
+            <div className="flex-shrink-0">
+              <FXStrategySelector />
             </div>
           </div>
         </div>
