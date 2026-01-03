@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 /**
- * FX Conversion Strategy Types
+ * FX Source Types
  *
  * HMRC does not prescribe a specific exchange rate source (CG78310),
  * but requires a "reasonable and consistent method" be used.
@@ -9,27 +9,27 @@ import { z } from 'zod'
  * @see https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg78310
  */
 
-export const FXStrategySchema = z.enum([
+export const FXSourceSchema = z.enum([
   'HMRC_MONTHLY',
   'HMRC_YEARLY_AVG',
   'DAILY_SPOT',
 ])
 
-export type FXStrategy = z.infer<typeof FXStrategySchema>
+export type FXSource = z.infer<typeof FXSourceSchema>
 
 /**
- * Human-readable names for each FX strategy
+ * Human-readable names for each FX source
  */
-export const FXStrategyDisplayNames: Record<FXStrategy, string> = {
+export const FXSourceDisplayNames: Record<FXSource, string> = {
   HMRC_MONTHLY: 'HMRC Monthly Rates',
   HMRC_YEARLY_AVG: 'HMRC Yearly Average',
   DAILY_SPOT: 'Daily Spot Rates (ECB)',
 }
 
 /**
- * Descriptions explaining each strategy
+ * Descriptions explaining each source
  */
-export const FXStrategyDescriptions: Record<FXStrategy, string> = {
+export const FXSourceDescriptions: Record<FXSource, string> = {
   HMRC_MONTHLY:
     'Official HMRC rates published monthly. One fixed rate per currency per month.',
   HMRC_YEARLY_AVG:
@@ -39,9 +39,9 @@ export const FXStrategyDescriptions: Record<FXStrategy, string> = {
 }
 
 /**
- * Source attribution for each strategy
+ * Source attribution for each FX source
  */
-export const FXStrategySources: Record<FXStrategy, string> = {
+export const FXSourceAttributions: Record<FXSource, string> = {
   HMRC_MONTHLY: 'HMRC Monthly Exchange Rates',
   HMRC_YEARLY_AVG: 'HMRC Annual Average Rates',
   DAILY_SPOT: 'European Central Bank (via Frankfurter)',
@@ -50,7 +50,7 @@ export const FXStrategySources: Record<FXStrategy, string> = {
 /**
  * Source URLs for reference
  */
-export const FXStrategySourceUrls: Record<FXStrategy, string> = {
+export const FXSourceUrls: Record<FXSource, string> = {
   HMRC_MONTHLY: 'https://www.trade-tariff.service.gov.uk/exchange_rates/monthly',
   HMRC_YEARLY_AVG: 'https://www.trade-tariff.service.gov.uk/exchange_rates/average',
   DAILY_SPOT: 'https://frankfurter.dev/',
@@ -62,22 +62,22 @@ export const FXStrategySourceUrls: Record<FXStrategy, string> = {
 export interface FXRateResult {
   /** The exchange rate (units of foreign currency per 1 GBP) */
   rate: number
-  /** The date key this rate applies to (format depends on strategy) */
+  /** The date key this rate applies to (format depends on source) */
   dateKey: string
   /** Currency code */
   currency: string
-  /** Which strategy was used */
-  strategy: FXStrategy
+  /** Which source was used */
+  fxSource: FXSource
   /** Human-readable source attribution */
   source: string
 }
 
 /**
- * FX Provider interface - implemented by each strategy provider
+ * FX Provider interface - implemented by each source provider
  */
 export interface FXProvider {
-  /** Which strategy this provider implements */
-  readonly strategy: FXStrategy
+  /** Which source this provider implements */
+  readonly fxSource: FXSource
 
   /**
    * Get the exchange rate for a specific date and currency
@@ -102,6 +102,6 @@ export interface FXProvider {
 }
 
 /**
- * Default FX strategy
+ * Default FX source
  */
-export const DEFAULT_FX_STRATEGY: FXStrategy = 'HMRC_MONTHLY'
+export const DEFAULT_FX_SOURCE: FXSource = 'HMRC_MONTHLY'

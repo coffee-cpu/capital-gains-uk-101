@@ -1,4 +1,4 @@
-import { FXStrategy } from '../../../types/fxStrategy'
+import { FXSource } from '../../../types/fxSource'
 import { db } from '../../db'
 import { BaseFXProvider } from './base'
 
@@ -20,7 +20,7 @@ import { BaseFXProvider } from './base'
  * @see https://frankfurter.dev/
  */
 export class DailySpotProvider extends BaseFXProvider {
-  readonly strategy: FXStrategy = 'DAILY_SPOT'
+  readonly fxSource: FXSource = 'DAILY_SPOT'
 
   // Track pending prefetch operations to avoid duplicates
   private pendingPrefetches = new Map<string, Promise<void>>()
@@ -29,7 +29,7 @@ export class DailySpotProvider extends BaseFXProvider {
    * Generate cache key in format: DAILY_SPOT-YYYY-MM-DD-CURRENCY
    */
   getCacheKey(date: string, currency: string): string {
-    return `${this.strategy}-${date}-${currency}`
+    return `${this.fxSource}-${date}-${currency}`
   }
 
   /**
@@ -257,7 +257,7 @@ export class DailySpotProvider extends BaseFXProvider {
       currency: string
       rate: number
       source: string
-      strategy: FXStrategy
+      fxSource: FXSource
     }> = []
 
     for (const [date, currencyRates] of Object.entries(rates)) {
@@ -270,7 +270,7 @@ export class DailySpotProvider extends BaseFXProvider {
             currency,
             rate,
             source: 'European Central Bank (via Frankfurter)',
-            strategy: this.strategy,
+            fxSource: this.fxSource,
           })
         }
       }

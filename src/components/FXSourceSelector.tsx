@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import {
-  FXStrategy,
-  FXStrategyDisplayNames,
-  FXStrategyDescriptions,
-  FXStrategySourceUrls,
-} from '../types/fxStrategy'
+  FXSource,
+  FXSourceDisplayNames,
+  FXSourceDescriptions,
+  FXSourceUrls,
+} from '../types/fxSource'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useTransactionStore } from '../stores/transactionStore'
 import { db } from '../lib/db'
@@ -12,25 +12,25 @@ import { enrichTransactions } from '../lib/enrichment'
 import { calculateCGT } from '../lib/cgt/engine'
 
 /**
- * FX Strategy Selector Component
+ * FX Source Selector Component
  *
- * Allows users to select their preferred FX conversion strategy.
- * When changed, re-enriches all transactions with the new strategy.
+ * Allows users to select their preferred FX conversion source.
+ * When changed, re-enriches all transactions with the new source.
  *
  * HMRC Guidance (CG78310):
  * "HMRC does not prescribe what reference point should be used for the exchange rate.
  * It is, however, expected that a reasonable and consistent method is used."
  */
-export function FXStrategySelector() {
-  const { fxStrategy, setFXStrategy } = useSettingsStore()
+export function FXSourceSelector() {
+  const { fxSource, setFXSource } = useSettingsStore()
   const { setTransactions, setCGTResults, setIsLoading } = useTransactionStore()
   const [isChanging, setIsChanging] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
 
-  const strategies: FXStrategy[] = ['HMRC_MONTHLY', 'HMRC_YEARLY_AVG', 'DAILY_SPOT']
+  const sources: FXSource[] = ['HMRC_MONTHLY', 'HMRC_YEARLY_AVG', 'DAILY_SPOT']
 
-  const handleStrategyChange = async (newStrategy: FXStrategy) => {
-    if (newStrategy === fxStrategy || isChanging) return
+  const handleSourceChange = async (newSource: FXSource) => {
+    if (newSource === fxSource || isChanging) return
 
     setIsOpen(false)
     setIsChanging(true)
@@ -38,14 +38,14 @@ export function FXStrategySelector() {
 
     try {
       // Update the setting
-      await setFXStrategy(newStrategy)
+      await setFXSource(newSource)
 
       // Get raw transactions from DB
       const rawTransactions = await db.transactions.toArray()
 
       if (rawTransactions.length > 0) {
-        // Re-enrich with new strategy
-        const enriched = await enrichTransactions(rawTransactions, newStrategy)
+        // Re-enrich with new source
+        const enriched = await enrichTransactions(rawTransactions, newSource)
 
         // Re-calculate CGT
         const cgtResults = calculateCGT(enriched)
@@ -55,9 +55,9 @@ export function FXStrategySelector() {
         setCGTResults(cgtResults)
       }
     } catch (error) {
-      console.error('Failed to change FX strategy:', error)
-      // Revert to previous strategy on error
-      await setFXStrategy(fxStrategy)
+      console.error('Failed to change FX source:', error)
+      // Revert to previous source on error
+      await setFXSource(fxSource)
     } finally {
       setIsChanging(false)
       setIsLoading(false)
@@ -98,7 +98,7 @@ export function FXStrategySelector() {
           </>
         ) : (
           <>
-            {FXStrategyDisplayNames[fxStrategy]}
+            {FXSourceDisplayNames[fxSource]}
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
@@ -127,23 +127,23 @@ export function FXStrategySelector() {
                 </p>
               </div>
 
-              {strategies.map((strategy) => (
+              {sources.map((source) => (
                 <button
-                  key={strategy}
-                  onClick={() => handleStrategyChange(strategy)}
+                  key={source}
+                  onClick={() => handleSourceChange(source)}
                   className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors ${
-                    strategy === fxStrategy ? 'bg-blue-50' : ''
+                    source === fxSource ? 'bg-blue-50' : ''
                   }`}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <span
-                          className={`font-medium ${strategy === fxStrategy ? 'text-blue-700' : 'text-gray-900'}`}
+                          className={`font-medium ${source === fxSource ? 'text-blue-700' : 'text-gray-900'}`}
                         >
-                          {FXStrategyDisplayNames[strategy]}
+                          {FXSourceDisplayNames[source]}
                         </span>
-                        {strategy === fxStrategy && (
+                        {source === fxSource && (
                           <svg
                             className="h-4 w-4 text-blue-600"
                             fill="currentColor"
@@ -158,12 +158,12 @@ export function FXStrategySelector() {
                         )}
                       </div>
                       <p className="text-xs text-gray-500 mt-0.5">
-                        {FXStrategyDescriptions[strategy]}
+                        {FXSourceDescriptions[source]}
                       </p>
                     </div>
                   </div>
                   <a
-                    href={FXStrategySourceUrls[strategy]}
+                    href={FXSourceUrls[source]}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={(e) => e.stopPropagation()}

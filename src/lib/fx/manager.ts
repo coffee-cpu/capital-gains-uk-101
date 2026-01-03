@@ -1,9 +1,9 @@
 import {
   FXProvider,
   FXRateResult,
-  FXStrategy,
-  DEFAULT_FX_STRATEGY,
-} from '../../types/fxStrategy'
+  FXSource,
+  DEFAULT_FX_SOURCE,
+} from '../../types/fxSource'
 import { GenericTransaction } from '../../types/transaction'
 import { HMRCMonthlyProvider } from './providers/hmrcMonthly'
 import { HMRCYearlyProvider } from './providers/hmrcYearly'
@@ -12,37 +12,37 @@ import { DailySpotProvider } from './providers/dailySpot'
 /**
  * FX Manager
  *
- * Orchestrates FX rate fetching using the selected strategy.
+ * Orchestrates FX rate fetching using the selected source.
  * Provides a unified interface for getting rates and prefetching.
  */
 export class FXManager {
-  private providers: Map<FXStrategy, FXProvider>
-  private currentStrategy: FXStrategy
+  private providers: Map<FXSource, FXProvider>
+  private currentSource: FXSource
 
   // In-memory cache to prevent duplicate requests during enrichment
   private rateCache = new Map<string, Promise<FXRateResult>>()
 
-  constructor(strategy: FXStrategy = DEFAULT_FX_STRATEGY) {
-    this.currentStrategy = strategy
-    this.providers = new Map<FXStrategy, FXProvider>()
+  constructor(fxSource: FXSource = DEFAULT_FX_SOURCE) {
+    this.currentSource = fxSource
+    this.providers = new Map<FXSource, FXProvider>()
     this.providers.set('HMRC_MONTHLY', new HMRCMonthlyProvider())
     this.providers.set('HMRC_YEARLY_AVG', new HMRCYearlyProvider())
     this.providers.set('DAILY_SPOT', new DailySpotProvider())
   }
 
   /**
-   * Get the current strategy
+   * Get the current FX source
    */
-  getStrategy(): FXStrategy {
-    return this.currentStrategy
+  getFXSource(): FXSource {
+    return this.currentSource
   }
 
   /**
-   * Set the strategy - clears in-memory cache
+   * Set the FX source - clears in-memory cache
    */
-  setStrategy(strategy: FXStrategy): void {
-    if (this.currentStrategy !== strategy) {
-      this.currentStrategy = strategy
+  setFXSource(fxSource: FXSource): void {
+    if (this.currentSource !== fxSource) {
+      this.currentSource = fxSource
       this.rateCache.clear()
     }
   }
@@ -51,9 +51,9 @@ export class FXManager {
    * Get the current provider
    */
   private getProvider(): FXProvider {
-    const provider = this.providers.get(this.currentStrategy)
+    const provider = this.providers.get(this.currentSource)
     if (!provider) {
-      throw new Error(`Unknown FX strategy: ${this.currentStrategy}`)
+      throw new Error(`Unknown FX source: ${this.currentSource}`)
     }
     return provider
   }
@@ -64,7 +64,7 @@ export class FXManager {
    */
   async getRate(date: string, currency: string): Promise<FXRateResult> {
     const provider = this.getProvider()
-    const cacheKey = `${this.currentStrategy}-${provider.getCacheKey(date, currency)}`
+    const cacheKey = `${this.currentSource}-${provider.getCacheKey(date, currency)}`
 
     // Check in-memory cache first
     let ratePromise = this.rateCache.get(cacheKey)

@@ -1,13 +1,13 @@
 import { EnrichedTransaction } from '../../../types/transaction'
-import { FXStrategy, FXStrategySources, DEFAULT_FX_STRATEGY } from '../../../types/fxStrategy'
+import { FXSource, FXSourceAttributions, DEFAULT_FX_SOURCE } from '../../../types/fxSource'
 import { FXManager, convertToGBP } from '../../fx'
 import { Enricher } from '../types'
 
 /**
  * FX Enricher
  *
- * Converts transaction amounts to GBP using the selected FX conversion strategy.
- * Supports multiple strategies: HMRC Monthly, HMRC Yearly Average, Daily Spot (ECB).
+ * Converts transaction amounts to GBP using the selected FX conversion source.
+ * Supports multiple sources: HMRC Monthly, HMRC Yearly Average, Daily Spot (ECB).
  *
  * HMRC Guidance (CG78310):
  * "HMRC does not prescribe what reference point should be used for the exchange rate.
@@ -28,22 +28,22 @@ export class FxEnricher implements Enricher {
 
   private fxManager: FXManager
 
-  constructor(strategy?: FXStrategy) {
-    this.fxManager = new FXManager(strategy ?? DEFAULT_FX_STRATEGY)
+  constructor(fxSource?: FXSource) {
+    this.fxManager = new FXManager(fxSource ?? DEFAULT_FX_SOURCE)
   }
 
   /**
-   * Get the current FX strategy
+   * Get the current FX source
    */
-  getStrategy(): FXStrategy {
-    return this.fxManager.getStrategy()
+  getFXSource(): FXSource {
+    return this.fxManager.getFXSource()
   }
 
   /**
-   * Set the FX strategy - use before enrichment
+   * Set the FX source - use before enrichment
    */
-  setStrategy(strategy: FXStrategy): void {
-    this.fxManager.setStrategy(strategy)
+  setFXSource(fxSource: FXSource): void {
+    this.fxManager.setFXSource(fxSource)
   }
 
   async enrich(transactions: EnrichedTransaction[]): Promise<EnrichedTransaction[]> {
@@ -55,7 +55,7 @@ export class FxEnricher implements Enricher {
     }
 
     const enriched: EnrichedTransaction[] = []
-    const strategy = this.fxManager.getStrategy()
+    const fxSource = this.fxManager.getFXSource()
 
     for (const tx of transactions) {
       try {
@@ -79,7 +79,7 @@ export class FxEnricher implements Enricher {
           split_adjusted_price_gbp: splitAdjustedPriceGbp,
           value_gbp: valueGbp,
           fee_gbp: feeGbp,
-          fx_source: tx.currency === 'GBP' ? 'Native GBP' : FXStrategySources[strategy],
+          fx_source: tx.currency === 'GBP' ? 'Native GBP' : FXSourceAttributions[fxSource],
           fx_error: null,
         })
       } catch (error) {

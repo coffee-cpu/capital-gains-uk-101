@@ -1,7 +1,7 @@
 /**
  * FX Module
  *
- * Provides multiple FX conversion strategies for capital gains calculations.
+ * Provides multiple FX conversion sources for capital gains calculations.
  *
  * HMRC Guidance (CG78310):
  * "HMRC does not prescribe what reference point should be used for the exchange rate.
@@ -11,7 +11,7 @@
  */
 
 // Re-export types
-export * from '../../types/fxStrategy'
+export * from '../../types/fxSource'
 
 // Re-export manager
 export { FXManager, getDefaultFXManager, resetDefaultFXManager, convertToGBP } from './manager'

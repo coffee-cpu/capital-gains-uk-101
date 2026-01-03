@@ -1,4 +1,4 @@
-import { FXStrategy } from '../../../types/fxStrategy'
+import { FXSource } from '../../../types/fxSource'
 import { BaseFXProvider } from './base'
 
 /**
@@ -13,14 +13,14 @@ import { BaseFXProvider } from './base'
  * @see https://github.com/matchilling/hmrc-exchange-rates
  */
 export class HMRCMonthlyProvider extends BaseFXProvider {
-  readonly strategy: FXStrategy = 'HMRC_MONTHLY'
+  readonly fxSource: FXSource = 'HMRC_MONTHLY'
 
   /**
    * Generate cache key in format: HMRC_MONTHLY-YYYY-MM-CURRENCY
    */
   getCacheKey(date: string, currency: string): string {
     const dateKey = this.getDateKey(date)
-    return `${this.strategy}-${dateKey}-${currency}`
+    return `${this.fxSource}-${dateKey}-${currency}`
   }
 
   /**

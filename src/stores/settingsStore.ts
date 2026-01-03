@@ -1,12 +1,12 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import { FXStrategy, DEFAULT_FX_STRATEGY } from '../types/fxStrategy'
+import { FXSource, DEFAULT_FX_SOURCE } from '../types/fxSource'
 import { db } from '../lib/db'
 
 interface SettingsState {
-  // FX Strategy
-  fxStrategy: FXStrategy
-  setFXStrategy: (strategy: FXStrategy) => Promise<void>
+  // FX Source
+  fxSource: FXSource
+  setFXSource: (fxSource: FXSource) => Promise<void>
 
   // Track if settings have been loaded from IndexedDB
   isInitialized: boolean
@@ -22,21 +22,21 @@ interface SettingsState {
 export const useSettingsStore = create<SettingsState>()(
   persist(
     (set, get) => ({
-      fxStrategy: DEFAULT_FX_STRATEGY,
+      fxSource: DEFAULT_FX_SOURCE,
       isInitialized: false,
 
-      setFXStrategy: async (strategy: FXStrategy) => {
-        set({ fxStrategy: strategy })
+      setFXSource: async (fxSource: FXSource) => {
+        set({ fxSource: fxSource })
 
         // Also persist to IndexedDB for consistency
         try {
           await db.settings.put({
-            key: 'fxStrategy',
-            value: strategy,
+            key: 'fxSource',
+            value: fxSource,
             updatedAt: new Date().toISOString(),
           })
         } catch (error) {
-          console.error('Failed to persist FX strategy to IndexedDB:', error)
+          console.error('Failed to persist FX source to IndexedDB:', error)
         }
       },
 
@@ -44,16 +44,16 @@ export const useSettingsStore = create<SettingsState>()(
         if (get().isInitialized) return
 
         try {
-          const setting = await db.settings.get('fxStrategy')
+          const setting = await db.settings.get('fxSource')
           if (setting?.value) {
-            // Validate the value is a valid strategy
-            const validStrategies: FXStrategy[] = ['HMRC_MONTHLY', 'HMRC_YEARLY_AVG', 'DAILY_SPOT']
-            if (validStrategies.includes(setting.value as FXStrategy)) {
-              set({ fxStrategy: setting.value as FXStrategy })
+            // Validate the value is a valid source
+            const validSources: FXSource[] = ['HMRC_MONTHLY', 'HMRC_YEARLY_AVG', 'DAILY_SPOT']
+            if (validSources.includes(setting.value as FXSource)) {
+              set({ fxSource: setting.value as FXSource })
             }
           }
         } catch (error) {
-          console.error('Failed to load FX strategy from IndexedDB:', error)
+          console.error('Failed to load FX source from IndexedDB:', error)
         }
 
         set({ isInitialized: true })
@@ -63,7 +63,7 @@ export const useSettingsStore = create<SettingsState>()(
       name: 'cgt-settings',
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
-        fxStrategy: state.fxStrategy,
+        fxSource: state.fxSource,
       }),
     }
   )

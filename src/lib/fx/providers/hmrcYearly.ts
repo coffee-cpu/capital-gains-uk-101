@@ -1,4 +1,4 @@
-import { FXStrategy } from '../../../types/fxStrategy'
+import { FXSource } from '../../../types/fxSource'
 import { db } from '../../db'
 import { BaseFXProvider } from './base'
 
@@ -14,7 +14,7 @@ import { BaseFXProvider } from './base'
  * For a given calendar year, we use the rates published at the end of that year.
  */
 export class HMRCYearlyProvider extends BaseFXProvider {
-  readonly strategy: FXStrategy = 'HMRC_YEARLY_AVG'
+  readonly fxSource: FXSource = 'HMRC_YEARLY_AVG'
 
   // Cache of fetched yearly rates to avoid repeated API calls
   private yearlyRatesCache = new Map<string, Promise<Record<string, number>>>()
@@ -24,7 +24,7 @@ export class HMRCYearlyProvider extends BaseFXProvider {
    */
   getCacheKey(date: string, currency: string): string {
     const year = this.getDateKey(date)
-    return `${this.strategy}-${year}-${currency}`
+    return `${this.fxSource}-${year}-${currency}`
   }
 
   /**
@@ -195,7 +195,7 @@ export class HMRCYearlyProvider extends BaseFXProvider {
     const monthlyRates = await db.fx_rates
       .where('date')
       .startsWith(`${year}-`)
-      .and((rate) => rate.strategy === 'HMRC_MONTHLY' || !rate.strategy)
+      .and((rate) => rate.fxSource === 'HMRC_MONTHLY' || !rate.fxSource)
       .toArray()
 
     if (monthlyRates.length === 0) {
@@ -231,7 +231,7 @@ export class HMRCYearlyProvider extends BaseFXProvider {
       currency,
       rate,
       source: 'HMRC Annual Average Rates',
-      strategy: this.strategy as FXStrategy,
+      fxSource: this.fxSource,
     }))
 
     await db.fx_rates.bulkPut(entries)

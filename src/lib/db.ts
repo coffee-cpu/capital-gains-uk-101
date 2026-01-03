@@ -1,17 +1,17 @@
 import Dexie, { Table } from 'dexie'
 import { GenericTransaction } from '../types/transaction'
-import { FXStrategy } from '../types/fxStrategy'
+import { FXSource } from '../types/fxSource'
 
 /**
  * FX Rate cache entry
  */
 export interface FXRate {
-  id: string // Composite key: strategy-date-currency (e.g., 'HMRC_MONTHLY-2025-05-USD')
-  date: string // Date key (format varies by strategy: YYYY-MM, YYYY, or YYYY-MM-DD)
+  id: string // Composite key: source-date-currency (e.g., 'HMRC_MONTHLY-2025-05-USD')
+  date: string // Date key (format varies by source: YYYY-MM, YYYY, or YYYY-MM-DD)
   currency: string // e.g. 'USD'
   rate: number // GBP conversion rate
   source: string // e.g. 'HMRC Monthly Exchange Rates'
-  strategy?: FXStrategy // Which strategy this rate belongs to (optional for backward compat)
+  fxSource?: FXSource // Which FX source this rate belongs to (optional for backward compat)
 }
 
 /**
@@ -58,12 +58,12 @@ export class CGTDatabase extends Dexie {
       imported_files: 'fileId, filename, importedAt',
     })
 
-    // Version 3: Add settings table and update fx_rates with strategy field
-    // fx_rates now uses 'id' as primary key (format: STRATEGY-date-currency)
-    // This allows storing rates from multiple strategies
+    // Version 3: Add settings table and update fx_rates with fxSource field
+    // fx_rates now uses 'id' as primary key (format: SOURCE-date-currency)
+    // This allows storing rates from multiple sources
     this.version(3).stores({
       transactions: 'id, source, symbol, date, type',
-      fx_rates: 'id, date, currency, strategy',
+      fx_rates: 'id, date, currency, fxSource',
       imported_files: 'fileId, filename, importedAt',
       settings: 'key',
     })

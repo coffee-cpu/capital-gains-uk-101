@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useTransactionStore } from '../stores/transactionStore'
 import { ClearDataButton } from './ClearDataButton'
 import { Tooltip } from './Tooltip'
-import { FXStrategySelector } from './FXStrategySelector'
+import { FXSourceSelector } from './FXSourceSelector'
 import { exportTransactionsToCSV } from '../utils/csvExport'
 
 // Helper to get currency symbol
@@ -244,7 +244,7 @@ export function TransactionList() {
               </div>
             </div>
             <div className="flex-shrink-0">
-              <FXStrategySelector />
+              <FXSourceSelector />
             </div>
           </div>
         </div>

@@ -1,5 +1,5 @@
 import { GenericTransaction, EnrichedTransaction } from '../../types/transaction'
-import { FXStrategy, DEFAULT_FX_STRATEGY } from '../../types/fxStrategy'
+import { FXSource, DEFAULT_FX_SOURCE } from '../../types/fxSource'
 import { EnrichmentEngine } from './engine'
 import { SplitEnricher } from './enrichers/splitEnricher'
 import { FxEnricher } from './enrichers/fxEnricher'
@@ -9,15 +9,15 @@ import { TaxYearEnricher } from './enrichers/taxYearEnricher'
 const splitEnricher = new SplitEnricher()
 const taxYearEnricher = new TaxYearEnricher()
 
-// FX enricher is created per-call to support different strategies
-// but we cache instances by strategy to maintain rate caches
-const fxEnricherCache = new Map<FXStrategy, FxEnricher>()
+// FX enricher is created per-call to support different sources
+// but we cache instances by source to maintain rate caches
+const fxEnricherCache = new Map<FXSource, FxEnricher>()
 
-function getFxEnricher(strategy: FXStrategy): FxEnricher {
-  let enricher = fxEnricherCache.get(strategy)
+function getFxEnricher(fxSource: FXSource): FxEnricher {
+  let enricher = fxEnricherCache.get(fxSource)
   if (!enricher) {
-    enricher = new FxEnricher(strategy)
-    fxEnricherCache.set(strategy, enricher)
+    enricher = new FxEnricher(fxSource)
+    fxEnricherCache.set(fxSource, enricher)
   }
   return enricher
 }
@@ -27,22 +27,22 @@ function getFxEnricher(strategy: FXStrategy): FxEnricher {
  *
  * Enrichment happens in three stages:
  * 1. Stock split adjustments (HMRC TCGA92/S127) - normalize quantities to post-split units
- * 2. FX conversion - convert to GBP using selected strategy
+ * 2. FX conversion - convert to GBP using selected source
  * 3. Tax year calculation - assign UK tax years
  *
  * Uses singleton enricher instances to maintain in-memory caches (e.g., FX rates)
  * across multiple enrichment runs for better performance.
  *
  * @param transactions Array of generic transactions (raw parsed data from CSV)
- * @param fxStrategy Optional FX strategy to use (defaults to HMRC_MONTHLY)
+ * @param fxSource Optional FX source to use (defaults to HMRC_MONTHLY)
  * @returns Array of enriched transactions with all computed fields
  */
 export async function enrichTransactions(
   transactions: GenericTransaction[],
-  fxStrategy: FXStrategy = DEFAULT_FX_STRATEGY
+  fxSource: FXSource = DEFAULT_FX_SOURCE
 ): Promise<EnrichedTransaction[]> {
-  // Get the FX enricher for the selected strategy
-  const fxEnricher = getFxEnricher(fxStrategy)
+  // Get the FX enricher for the selected source
+  const fxEnricher = getFxEnricher(fxSource)
 
   // Create enrichment engine with enrichers
   const engine = new EnrichmentEngine([

@@ -1,14 +1,14 @@
-import { FXProvider, FXRateResult, FXStrategy, FXStrategySources } from '../../../types/fxStrategy'
+import { FXProvider, FXRateResult, FXSource, FXSourceAttributions } from '../../../types/fxSource'
 import { db } from '../../db'
 
 /**
  * Abstract base class for FX providers
  *
  * Provides common functionality for caching and result creation.
- * Each provider implements strategy-specific rate fetching.
+ * Each provider implements source-specific rate fetching.
  */
 export abstract class BaseFXProvider implements FXProvider {
-  abstract readonly strategy: FXStrategy
+  abstract readonly fxSource: FXSource
 
   /**
    * Get the exchange rate for a specific date and currency
@@ -39,7 +39,7 @@ export abstract class BaseFXProvider implements FXProvider {
 
   /**
    * Generate cache key for a given date and currency
-   * Format: {STRATEGY}-{dateKey}-{currency}
+   * Format: {SOURCE}-{dateKey}-{currency}
    */
   abstract getCacheKey(date: string, currency: string): string
 
@@ -63,8 +63,8 @@ export abstract class BaseFXProvider implements FXProvider {
       rate,
       dateKey: this.getDateKey(date),
       currency,
-      strategy: this.strategy,
-      source: FXStrategySources[this.strategy],
+      fxSource: this.fxSource,
+      source: FXSourceAttributions[this.fxSource],
     }
   }
 
@@ -82,8 +82,8 @@ export abstract class BaseFXProvider implements FXProvider {
       date: this.getDateKey(date),
       currency,
       rate,
-      source: FXStrategySources[this.strategy],
-      strategy: this.strategy,
+      source: FXSourceAttributions[this.fxSource],
+      fxSource: this.fxSource,
     })
   }
 

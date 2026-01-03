@@ -26,7 +26,7 @@ function App() {
   const setTransactions = useTransactionStore((state) => state.setTransactions)
   const setCGTResults = useTransactionStore((state) => state.setCGTResults)
   const setIsLoading = useTransactionStore((state) => state.setIsLoading)
-  const fxStrategy = useSettingsStore((state) => state.fxStrategy)
+  const fxSource = useSettingsStore((state) => state.fxSource)
 
   // Initialize settings from IndexedDB
   useInitializeSettings()
@@ -77,8 +77,8 @@ function App() {
         // Deduplicate incomplete Stock Plan Activity when Equity Awards data exists
         const deduplicated = deduplicateTransactions(stored)
 
-        // Enrich with FX rates and GBP conversions using selected strategy
-        const enriched = await enrichTransactions(deduplicated, fxStrategy)
+        // Enrich with FX rates and GBP conversions using selected source
+        const enriched = await enrichTransactions(deduplicated, fxSource)
 
         // Calculate CGT with HMRC matching rules
         const cgtResults = calculateCGT(enriched)

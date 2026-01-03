@@ -30,7 +30,7 @@ export function CSVImporter() {
   const [processingStatus, setProcessingStatus] = useState<string>('')
   const setTransactions = useTransactionStore((state) => state.setTransactions)
   const setCGTResults = useTransactionStore((state) => state.setCGTResults)
-  const fxStrategy = useSettingsStore((state) => state.fxStrategy)
+  const fxSource = useSettingsStore((state) => state.fxSource)
 
   const processFile = async (file: File): Promise<{ success: boolean; message: string; count?: number }> => {
     try {
@@ -158,8 +158,8 @@ export function CSVImporter() {
     const allStored = await db.transactions.toArray()
     const deduplicated = deduplicateTransactions(allStored)
 
-    // Enrich with FX rates and GBP conversions using selected strategy
-    const enriched = await enrichTransactions(deduplicated, fxStrategy)
+    // Enrich with FX rates and GBP conversions using selected source
+    const enriched = await enrichTransactions(deduplicated, fxSource)
 
     // Calculate CGT with HMRC matching rules
     const cgtResults = calculateCGT(enriched)
