@@ -62,8 +62,14 @@ export function detectBroker(rows: RawCSVRow[]): BrokerDetectionResult {
     return revolutResult
   }
 
+  // Check for Coinbase
+  const coinbaseResult = detectCoinbase(headers, rows)
+  if (coinbaseResult.confidence > 0.8) {
+    return coinbaseResult
+  }
+
   // Return best match or unknown
-  const results = [ibResult, genericResult, freetradeResult, schwabEquityResult, schwabResult, trading212Result, equatePlusResult, revolutResult]
+  const results = [ibResult, genericResult, freetradeResult, schwabEquityResult, schwabResult, trading212Result, equatePlusResult, revolutResult, coinbaseResult]
   const bestMatch = results.reduce((best, current) =>
     current.confidence > best.confidence ? current : best
   )
@@ -240,6 +246,26 @@ function detectRevolut(headers: string[], _rows: RawCSVRow[]): BrokerDetectionRe
 
   return {
     broker: BrokerType.REVOLUT,
+    confidence,
+    headerMatches: matches,
+  }
+}
+
+/**
+ * Detect Coinbase format
+ * Expected headers: "Timestamp", "Transaction Type", "Asset", "Quantity Transacted", "Price at Transaction", "Fees and/or Spread"
+ *
+ * Note: Coinbase CSVs have metadata rows that are skipped by parseCoinbaseCSV() before detection,
+ * so we detect based on the actual data headers.
+ */
+function detectCoinbase(headers: string[], _rows: RawCSVRow[]): BrokerDetectionResult {
+  const coinbaseHeaders = ['Timestamp', 'Transaction Type', 'Asset', 'Quantity Transacted', 'Price at Transaction', 'Fees and/or Spread']
+
+  const matches = coinbaseHeaders.filter(h => headers.includes(h))
+  const confidence = matches.length / coinbaseHeaders.length
+
+  return {
+    broker: BrokerType.COINBASE,
     confidence,
     headerMatches: matches,
   }
