@@ -1,5 +1,6 @@
 import { useTransactionStore } from '../stores/transactionStore'
 import { useState } from 'react'
+import { getUnitLabel } from '../lib/cgt/utils'
 
 const EMPTY_DISPOSALS: never[] = []
 
@@ -44,7 +45,7 @@ export function DisposalRecords({
           </div>
         )}
         <div className="px-6 py-8 text-center text-gray-500">
-          <p>No share disposals recorded for the {selectedTaxYear} tax year.</p>
+          <p>No disposals recorded for the {selectedTaxYear} tax year.</p>
           <p className="text-sm mt-2">Select a different tax year above to view its disposals.</p>
         </div>
       </div>
@@ -113,7 +114,7 @@ export function DisposalRecords({
                         {disposal.disposal.date}
                       </span>
                       <span className="text-sm text-gray-600">
-                        {disposal.disposal.quantity?.toFixed(2)} shares
+                        {disposal.disposal.quantity?.toFixed(2)} {getUnitLabel(disposal.disposal)}
                       </span>
                     </div>
                     <div className="mt-1 text-xs text-gray-500">
@@ -150,7 +151,7 @@ export function DisposalRecords({
                         £{disposal.proceedsGbp.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </div>
                       <div className="text-xs text-gray-500 mt-1">
-                        Sale price: £{disposal.disposal.price_gbp?.toFixed(2)} per share
+                        Sale price: £{disposal.disposal.price_gbp?.toFixed(2)} per {getUnitLabel(disposal.disposal, false)}
                         {disposal.disposal.fee_gbp && disposal.disposal.fee_gbp > 0 && (
                           <span> (fees: £{disposal.disposal.fee_gbp.toFixed(2)})</span>
                         )}
@@ -177,11 +178,11 @@ export function DisposalRecords({
                           <div className="flex-1">
                             <div className="text-sm font-medium text-red-800 mb-1">No Matching Acquisitions</div>
                             <div className="text-xs text-red-700">
-                              {disposal.unmatchedQuantity?.toFixed(2)} shares could not be matched to any acquisition records.
-                              This typically occurs when shares were purchased before you started importing transactions.
+                              {disposal.unmatchedQuantity?.toFixed(2)} {getUnitLabel(disposal.disposal)} could not be matched to any acquisition records.
+                                This typically occurs when {getUnitLabel(disposal.disposal)} were purchased before you started importing transactions.
                             </div>
                             <div className="text-xs text-red-700 mt-2">
-                              <strong>Action Required:</strong> You'll need to manually calculate the cost basis and gain for these shares
+                              <strong>Action Required:</strong> You'll need to manually calculate the cost basis and gain for these {getUnitLabel(disposal.disposal)}
                               using your original purchase records.
                             </div>
                           </div>
@@ -195,30 +196,32 @@ export function DisposalRecords({
                           .map((matching, idx) => (
                             <div key={idx} className="bg-gray-50 rounded p-3">
                               <div className="flex items-center justify-between mb-2">
-                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${
+                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${
                                   matching.rule === 'SAME_DAY' ? 'bg-blue-100 text-blue-800 border-blue-300' :
                                   matching.rule === '30_DAY' ? 'bg-orange-100 text-orange-800 border-orange-300' :
+                                  matching.rule === 'SHORT_SELL' ? 'bg-pink-100 text-pink-800 border-pink-300' :
                                   'bg-green-100 text-green-800 border-green-300'
                                 }`}>
                                   {matching.rule === 'SAME_DAY' ? 'Same Day' :
                                    matching.rule === '30_DAY' ? '30-Day Rule' :
+                                   matching.rule === 'SHORT_SELL' ? 'Short Sell' :
                                    'Section 104 Pool'}
                                 </span>
                                 <span className="text-sm font-medium">
-                                  {matching.quantityMatched.toFixed(2)} shares
+                                  {matching.quantityMatched.toFixed(2)} {getUnitLabel(disposal.disposal)}
                                 </span>
                               </div>
                               {matching.acquisitions.map((acq, acqIdx) => (
                                 <div key={acqIdx} className="text-xs text-gray-600">
                                   {matching.rule !== 'SECTION_104' && (
                                     <>
-                                      {acq.transaction.date}: {acq.quantityMatched.toFixed(2)} shares at £{(acq.costBasisGbp / acq.quantityMatched).toFixed(2)}
+                                      {acq.transaction.date}: {acq.quantityMatched.toFixed(2)} {getUnitLabel(disposal.disposal)} at £{(acq.costBasisGbp / acq.quantityMatched).toFixed(2)}
                                       {' '}(cost: £{acq.costBasisGbp.toFixed(2)})
                                     </>
                                   )}
                                   {matching.rule === 'SECTION_104' && (
                                     <>
-                                      Pool average cost: £{(acq.costBasisGbp / acq.quantityMatched).toFixed(2)} per share
+                                      Pool average cost: £{(acq.costBasisGbp / acq.quantityMatched).toFixed(2)} per {getUnitLabel(disposal.disposal, false)}
                                       {' '}(total: £{acq.costBasisGbp.toFixed(2)})
                                     </>
                                   )}
@@ -234,7 +237,7 @@ export function DisposalRecords({
                                 <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                               </svg>
                               <div className="text-xs text-yellow-800">
-                                <strong>Partially matched:</strong> {disposal.unmatchedQuantity.toFixed(2)} shares could not be matched.
+                                <strong>Partially matched:</strong> {disposal.unmatchedQuantity.toFixed(2)} {getUnitLabel(disposal.disposal)} could not be matched.
                                 You'll need to manually calculate the cost basis for the unmatched portion.
                               </div>
                             </div>

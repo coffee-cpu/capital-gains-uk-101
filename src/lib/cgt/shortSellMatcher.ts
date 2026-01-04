@@ -1,6 +1,6 @@
-import { EnrichedTransaction, TransactionType } from '../../types/transaction'
+import { EnrichedTransaction } from '../../types/transaction'
 import { MatchingResult } from '../../types/cgt'
-import { getEffectiveQuantity, getEffectivePrice } from './utils'
+import { getEffectiveQuantity, getEffectivePrice, isAcquisition, isDisposal } from './utils'
 
 /**
  * Short Sell Matching Rule
@@ -48,8 +48,20 @@ export function applyShortSellRule(
   const bySymbol = groupBySymbol(transactions)
 
   for (const symbolTransactions of bySymbol.values()) {
-    // Sort chronologically
-    const sorted = symbolTransactions.sort((a, b) => a.date.localeCompare(b.date))
+    // Sort chronologically, with short sells (disposals) before acquisitions on same day
+    // This ensures short positions are opened before they can be covered
+    const sorted = symbolTransactions.sort((a, b) => {
+      const dateCompare = a.date.localeCompare(b.date)
+      if (dateCompare !== 0) return dateCompare
+      
+      // On same day: short sells first, then other disposals, then acquisitions
+      const aIsShortSell = isDisposal(a) && a.is_short_sell
+      const bIsShortSell = isDisposal(b) && b.is_short_sell
+      if (aIsShortSell && !bIsShortSell) return -1
+      if (!aIsShortSell && bIsShortSell) return 1
+      
+      return 0
+    })
 
     // Queue of open short positions (FIFO)
     const shortPositions: ShortPosition[] = []
@@ -59,13 +71,13 @@ export function applyShortSellRule(
       const quantity = getEffectiveQuantity(tx)
       if (quantity <= 0) continue
 
-      if (tx.type === TransactionType.SELL && tx.is_short_sell) {
+      if (isDisposal(tx) && tx.is_short_sell) {
         // This is an explicit short sell - add to short positions queue
         shortPositions.push({
           transaction: tx,
           remainingQuantity: quantity,
         })
-      } else if (tx.type === TransactionType.BUY && shortPositions.length > 0) {
+      } else if (isAcquisition(tx) && shortPositions.length > 0) {
         // BUY can cover open short positions
         let remainingBuyQuantity = quantity
 
@@ -110,13 +122,16 @@ function createShortSellMatching(
   quantity: number
 ): MatchingResult {
   // Calculate cost basis for the covering BUY
+  // For options, prices are quoted per-share but quantities are in contracts,
+  // so we need to multiply by contract_size (typically 100)
   const buyPricePerShare = getEffectivePrice(acquisition)
   const buyEffectiveQuantity = getEffectiveQuantity(acquisition)
+  const contractMultiplier = acquisition.contract_size || 1
   const buyFeePerShare = acquisition.fee_gbp
-    ? acquisition.fee_gbp / Math.max(buyEffectiveQuantity, 1)
+    ? acquisition.fee_gbp / Math.max(buyEffectiveQuantity * contractMultiplier, 1)
     : 0
   const costBasisPerShare = buyPricePerShare + buyFeePerShare
-  const costBasisGbp = costBasisPerShare * quantity
+  const costBasisGbp = costBasisPerShare * quantity * contractMultiplier
 
   return {
     disposal,

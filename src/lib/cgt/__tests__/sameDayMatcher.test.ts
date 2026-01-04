@@ -413,6 +413,150 @@ describe('Same-Day Matcher', () => {
 
       expect(matchings).toHaveLength(0) // Different symbols, no match
     })
+
+    it('should apply contract_size multiplier for options cost basis calculation', () => {
+      // Options scenario: Buy to Close and Sell to Open on the same day
+      // Price is per-share ($9.50), quantity is 1 contract, contract_size is 100
+      // Cost should be: $9.50 * 1 * 100 = $950 (plus fees)
+      const transactions: EnrichedTransaction[] = [
+        {
+          id: 'sell-to-open',
+          source: 'Charles Schwab',
+          symbol: 'SMCI 03/22/2024 1200.00 C',
+          name: 'CALL SUPER MICRO COMPUTE$1200 EXP 03/22/24',
+          date: '2024-03-18',
+          type: 'OPTIONS_SELL_TO_OPEN',
+          quantity: 1,
+          price: 41.50,
+          currency: 'USD',
+          total: 4149.31,
+          fee: 0.69,
+          notes: null,
+          fx_rate: 1,
+          price_gbp: 41.50,
+          value_gbp: 4149.31,
+          fee_gbp: 0.69,
+          fx_source: 'test',
+          fx_error: null,
+          tax_year: '2023/24',
+          gain_group: 'NONE',
+          underlying_symbol: 'SMCI',
+          option_type: 'CALL',
+          strike_price: 1200.00,
+          expiration_date: '2024-03-22',
+          contract_size: 100,
+        },
+        {
+          id: 'buy-to-close',
+          source: 'Charles Schwab',
+          symbol: 'SMCI 03/22/2024 1200.00 C',
+          name: 'CALL SUPER MICRO COMPUTE$1200 EXP 03/22/24',
+          date: '2024-03-18',
+          type: 'OPTIONS_BUY_TO_CLOSE',
+          quantity: 1,
+          price: 9.50,
+          currency: 'USD',
+          total: 950.66,
+          fee: 0.66,
+          notes: null,
+          fx_rate: 1,
+          price_gbp: 9.50,
+          value_gbp: 950.66,
+          fee_gbp: 0.66,
+          fx_source: 'test',
+          fx_error: null,
+          tax_year: '2023/24',
+          gain_group: 'NONE',
+          underlying_symbol: 'SMCI',
+          option_type: 'CALL',
+          strike_price: 1200.00,
+          expiration_date: '2024-03-22',
+          contract_size: 100,
+        },
+      ]
+
+      const matchings = applySameDayRule(transactions)
+
+      expect(matchings).toHaveLength(1)
+      expect(matchings[0].rule).toBe('SAME_DAY')
+      expect(matchings[0].disposal.id).toBe('sell-to-open')
+      expect(matchings[0].acquisitions).toHaveLength(1)
+      expect(matchings[0].acquisitions[0].transaction.id).toBe('buy-to-close')
+      expect(matchings[0].quantityMatched).toBe(1)
+
+      // Cost basis should include contract_size multiplier
+      // (price_gbp + fee_gbp/quantity*contract_size) * quantity * contract_size
+      // = (9.50 + 0.66/100) * 1 * 100 = 950.66
+      expect(matchings[0].totalCostBasisGbp).toBeCloseTo(950.66, 1)
+    })
+
+    it('should handle multiple options contracts with contract_size', () => {
+      // 3 contracts of options, each representing 100 shares
+      const transactions: EnrichedTransaction[] = [
+        {
+          id: 'sell-to-open',
+          source: 'Charles Schwab',
+          symbol: 'CRWV 01/15/2027 110.00 C',
+          name: 'CALL COREWEAVE INC $110 EXP 01/15/27',
+          date: '2025-11-10',
+          type: 'OPTIONS_SELL_TO_OPEN',
+          quantity: 3,
+          price: 41.00,
+          currency: 'USD',
+          total: 12298.02,
+          fee: 1.98,
+          notes: null,
+          fx_rate: 1,
+          price_gbp: 41.00,
+          value_gbp: 12298.02,
+          fee_gbp: 1.98,
+          fx_source: 'test',
+          fx_error: null,
+          tax_year: '2025/26',
+          gain_group: 'NONE',
+          underlying_symbol: 'CRWV',
+          option_type: 'CALL',
+          strike_price: 110.00,
+          expiration_date: '2027-01-15',
+          contract_size: 100,
+        },
+        {
+          id: 'buy-to-close',
+          source: 'Charles Schwab',
+          symbol: 'CRWV 01/15/2027 110.00 C',
+          name: 'CALL COREWEAVE INC $110 EXP 01/15/27',
+          date: '2025-11-10',
+          type: 'OPTIONS_BUY_TO_CLOSE',
+          quantity: 3,
+          price: 35.00,
+          currency: 'USD',
+          total: 10501.50,
+          fee: 1.50,
+          notes: null,
+          fx_rate: 1,
+          price_gbp: 35.00,
+          value_gbp: 10501.50,
+          fee_gbp: 1.50,
+          fx_source: 'test',
+          fx_error: null,
+          tax_year: '2025/26',
+          gain_group: 'NONE',
+          underlying_symbol: 'CRWV',
+          option_type: 'CALL',
+          strike_price: 110.00,
+          expiration_date: '2027-01-15',
+          contract_size: 100,
+        },
+      ]
+
+      const matchings = applySameDayRule(transactions)
+
+      expect(matchings).toHaveLength(1)
+      expect(matchings[0].quantityMatched).toBe(3)
+
+      // Cost basis = (35.00 + 1.50/300) * 3 * 100 = 10501.50
+      expect(matchings[0].totalCostBasisGbp).toBeCloseTo(10501.50, 1)
+    })
   })
 
   describe('markSameDayMatches', () => {

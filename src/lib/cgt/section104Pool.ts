@@ -1,6 +1,6 @@
 import { EnrichedTransaction, TransactionType } from '../../types/transaction'
 import { Section104Pool, MatchingResult } from '../../types/cgt'
-import { getEffectiveQuantity, getEffectivePrice } from './utils'
+import { getEffectiveQuantity, getEffectivePrice, isAcquisition, isDisposal } from './utils'
 
 /**
  * Section 104 Pooled Holdings (HMRC CG51620)
@@ -58,10 +58,10 @@ export function applySection104Pooling(
         continue // Already fully matched by other rules
       }
 
-      if (tx.type === TransactionType.BUY) {
+      if (isAcquisition(tx)) {
         // Add to pool
         addToPool(pool, tx, remainingQuantity)
-      } else if (tx.type === TransactionType.SELL) {
+      } else if (isDisposal(tx)) {
         // Match against pool (always returns a result, even if pool is empty/insufficient)
         const matching = matchAgainstPool(pool, tx, remainingQuantity)
         matchings.push(matching)
@@ -83,11 +83,13 @@ function addToPool(
   quantity: number
 ): void {
   // Calculate cost including fees (use split-adjusted price if available)
+  // For options, multiply by contract_size (typically 100) since price is per-share
   const pricePerShare = getEffectivePrice(transaction)
   const effectiveQuantity = getEffectiveQuantity(transaction)
-  const feePerShare = transaction.fee_gbp ? transaction.fee_gbp / Math.max(effectiveQuantity, 1) : 0
+  const contractMultiplier = transaction.contract_size || 1
+  const feePerShare = transaction.fee_gbp ? transaction.fee_gbp / Math.max(effectiveQuantity * contractMultiplier, 1) : 0
   const costPerShare = pricePerShare + feePerShare
-  const totalCost = costPerShare * quantity
+  const totalCost = costPerShare * quantity * contractMultiplier
 
   // Update pool
   pool.quantity += quantity

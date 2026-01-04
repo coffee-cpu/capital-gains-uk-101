@@ -1,6 +1,6 @@
-import { EnrichedTransaction, TransactionType } from '../../types/transaction'
+import { EnrichedTransaction } from '../../types/transaction'
 import { MatchingResult } from '../../types/cgt'
-import { getEffectiveQuantity, getEffectivePrice } from './utils'
+import { getEffectiveQuantity, getEffectivePrice, isAcquisition, isDisposal } from './utils'
 
 /**
  * 30-Day "Bed and Breakfast" Rule (TCGA92/S106A(5) and (5A))
@@ -42,7 +42,7 @@ export function applyThirtyDayRule(
     const sorted = symbolTransactions.sort((a, b) => a.date.localeCompare(b.date))
 
     // Get sells with remaining unmatched quantities
-    const sells = sorted.filter(tx => tx.type === TransactionType.SELL)
+    const sells = sorted.filter(tx => isDisposal(tx))
 
     for (const sell of sells) {
       // Combine same-day + existing 30-day matchings for accurate remaining quantity
@@ -85,7 +85,7 @@ function findBuysWithin30Days(
   const matchingBuys: EnrichedTransaction[] = []
 
   for (const tx of sortedTransactions) {
-    if (tx.type !== TransactionType.BUY) {
+    if (!isAcquisition(tx)) {
       continue
     }
 
@@ -138,11 +138,13 @@ function matchSellAgainstBuys(
     const quantityToMatch = Math.min(remainingSellQuantity, availableBuyQuantity)
 
     // Calculate cost basis for the matched portion (use split-adjusted price if available)
+    // For options, multiply by contract_size (typically 100) since price is per-share
     const pricePerShare = getEffectivePrice(buy)
     const buyEffectiveQuantity = getEffectiveQuantity(buy)
-    const feePerShare = buy.fee_gbp ? buy.fee_gbp / Math.max(buyEffectiveQuantity, 1) : 0
+    const contractMultiplier = buy.contract_size || 1
+    const feePerShare = buy.fee_gbp ? buy.fee_gbp / Math.max(buyEffectiveQuantity * contractMultiplier, 1) : 0
     const costBasisPerShare = pricePerShare + feePerShare
-    const costBasisGbp = costBasisPerShare * quantityToMatch
+    const costBasisGbp = costBasisPerShare * quantityToMatch * contractMultiplier
 
     acquisitions.push({
       transaction: buy,

@@ -6,12 +6,14 @@
  */
 
 import { DisposalRecord, Section104Pool } from '../types/cgt'
+import { isAcquisition, isDisposal } from './cgt/utils'
 
 // Chart color constants (matching tailwind.config.js CGT colors)
 export const CHART_COLORS = {
   sameDay: '#4A90E2',      // cgt-same-day (blue)
   thirtyDay: '#F5A623',    // cgt-30-day (orange)
   section104: '#7ED321',   // cgt-section-104 (green)
+  shortSell: '#EC4899',    // Short sell (pink - matches Tailwind pink-500)
   gain: '#22C55E',         // Tailwind green-500
   loss: '#EF4444',         // Tailwind red-500
   neutral: '#6B7280',      // Tailwind gray-500
@@ -60,7 +62,7 @@ export interface DisposalDataPoint {
   symbol: string
   gain: number          // Positive for gain, negative for loss
   cumulative: number    // Running total of gains/losses
-  rule: 'SAME_DAY' | '30_DAY' | 'SECTION_104' | 'MIXED'
+  rule: 'SAME_DAY' | '30_DAY' | 'SECTION_104' | 'SHORT_SELL' | 'MIXED'
   isGain: boolean
 }
 
@@ -161,8 +163,8 @@ export function buildTransactionTimeline(
     })
   })
 
-  // Filter to only BUY and SELL transactions
-  const buysAndSells = transactions.filter(t => t.type === 'BUY' || t.type === 'SELL')
+  // Filter to only acquisition and disposal transactions (includes options)
+  const buysAndSells = transactions.filter(t => isAcquisition(t) || isDisposal(t))
 
   // Sort by date
   const sorted = [...buysAndSells].sort((a, b) =>
@@ -187,7 +189,7 @@ export function buildTransactionTimeline(
     const quantity = tx.split_adjusted_quantity ?? tx.quantity ?? 0
     const price = tx.price_gbp ?? tx.price ?? 0
     const valueGbp = Math.abs(tx.value_gbp ?? (quantity * price))
-    const isBuy = tx.type === 'BUY'
+    const isBuy = isAcquisition(tx)
     const disposalInfo = !isBuy ? disposalGains.get(tx.id) : undefined
 
     const existing = dailyData.get(key)
@@ -206,7 +208,7 @@ export function buildTransactionTimeline(
     } else {
       dailyData.set(key, {
         date: tx.date,
-        type: tx.type as 'BUY' | 'SELL',
+        type: isBuy ? 'BUY' : 'SELL',
         totalValue: valueGbp,
         totalQuantity: quantity,
         gainLoss: disposalInfo?.gain ?? 0,
@@ -231,12 +233,20 @@ export function buildTransactionTimeline(
       : `${data.count} ${isBuy ? 'buys' : 'sells'} (${[...data.symbols].join(', ')})`
 
     // Calculate percentage gain/loss for SELLs
+    // Gain% = (Gain / CostBasis) × 100
+    // For short sells where option expires worthless (cost = 0), we can't divide by zero
+    // In this case, the entire proceeds are profit, so we show 100% (you kept all your money)
     let gainLossPercent: number | undefined
     if (!isBuy && data.gainLoss !== 0) {
       const costBasis = data.totalValue - data.gainLoss
       if (costBasis > 0) {
         gainLossPercent = (data.gainLoss / costBasis) * 100
+      } else if (costBasis === 0 && data.gainLoss > 0) {
+        // Zero cost basis with positive gain (e.g., sold option that expired worthless)
+        // Show as 100% return since you kept all proceeds with no cost
+        gainLossPercent = 100
       }
+      // Note: If costBasis is negative (shouldn't happen), leave as undefined
     }
 
     return {
@@ -510,6 +520,8 @@ export function getRuleColor(rule: string): string {
       return CHART_COLORS.thirtyDay
     case 'SECTION_104':
       return CHART_COLORS.section104
+    case 'SHORT_SELL':
+      return CHART_COLORS.shortSell
     default:
       return CHART_COLORS.neutral
   }

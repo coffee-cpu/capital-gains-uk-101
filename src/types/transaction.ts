@@ -10,7 +10,24 @@ export const GenericTransactionSchema = z.object({
   symbol: z.string().describe('Stock ticker or ISIN code'),
   name: z.string().nullable().describe('Full name of the asset'),
   date: z.string().date().describe('Transaction date in YYYY-MM-DD format'),
-  type: z.enum(['BUY', 'SELL', 'DIVIDEND', 'FEE', 'INTEREST', 'TRANSFER', 'TAX', 'STOCK_SPLIT']).describe('Transaction type'),
+  type: z.enum([
+    'BUY',
+    'SELL',
+    'DIVIDEND',
+    'FEE',
+    'INTEREST',
+    'TRANSFER',
+    'TAX',
+    'STOCK_SPLIT',
+    // Options trading types
+    'OPTIONS_BUY_TO_OPEN',
+    'OPTIONS_SELL_TO_OPEN',
+    'OPTIONS_BUY_TO_CLOSE',
+    'OPTIONS_SELL_TO_CLOSE',
+    'OPTIONS_ASSIGNED',
+    'OPTIONS_EXPIRED',
+    'OPTIONS_STOCK_SPLIT',
+  ]).describe('Transaction type'),
   quantity: z.number().nullable().describe('Quantity bought or sold'),
   price: z.number().nullable().describe('Price per unit in transaction currency'),
   currency: z.string().describe('Original transaction currency (e.g. USD, EUR, GBP)'),
@@ -22,6 +39,13 @@ export const GenericTransactionSchema = z.object({
   ignored: z.boolean().optional().describe('True if transaction should be excluded from calculations (e.g., Stock Plan Activity which is always incomplete)'),
   is_short_sell: z.boolean().optional().describe('True if this is an explicit short sell as reported by the broker (e.g., Schwab "Sell Short" action)'),
   imported_at: z.string().optional().describe('ISO timestamp when transaction was imported (e.g., 2024-01-15T10:30:00.000Z)'),
+
+  // Options-specific fields
+  underlying_symbol: z.string().nullable().optional().describe('For options: the underlying stock symbol (e.g., GOOGL)'),
+  option_type: z.enum(['CALL', 'PUT']).nullable().optional().describe('For options: CALL or PUT'),
+  strike_price: z.number().nullable().optional().describe('For options: strike price'),
+  expiration_date: z.string().nullable().optional().describe('For options: expiration date in YYYY-MM-DD format'),
+  contract_size: z.number().nullable().optional().describe('For options: shares per contract (typically 100)'),
 })
 
 export type GenericTransaction = z.infer<typeof GenericTransactionSchema>
@@ -65,6 +89,14 @@ export const TransactionType = {
   TRANSFER: 'TRANSFER',
   TAX: 'TAX',
   STOCK_SPLIT: 'STOCK_SPLIT',
+  // Options trading types
+  OPTIONS_BUY_TO_OPEN: 'OPTIONS_BUY_TO_OPEN',
+  OPTIONS_SELL_TO_OPEN: 'OPTIONS_SELL_TO_OPEN',
+  OPTIONS_BUY_TO_CLOSE: 'OPTIONS_BUY_TO_CLOSE',
+  OPTIONS_SELL_TO_CLOSE: 'OPTIONS_SELL_TO_CLOSE',
+  OPTIONS_ASSIGNED: 'OPTIONS_ASSIGNED',
+  OPTIONS_EXPIRED: 'OPTIONS_EXPIRED',
+  OPTIONS_STOCK_SPLIT: 'OPTIONS_STOCK_SPLIT',
 } as const
 
 /**
