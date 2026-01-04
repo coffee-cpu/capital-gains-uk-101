@@ -19,6 +19,19 @@ function getCurrencySymbol(currency: string): string {
   return symbols[currency] || currency + ' '
 }
 
+// Helper to format date for FX tooltip based on source type
+function formatFxDate(date: string, fxSource: string): string {
+  if (fxSource.includes('Annual')) {
+    // Yearly average - show just the year
+    return date.substring(0, 4)
+  } else if (fxSource.includes('European Central Bank') || fxSource.includes('Daily')) {
+    // Daily spot rates - show full date
+    return date
+  }
+  // Monthly rates - show year-month
+  return date.substring(0, 7)
+}
+
 export function TransactionList() {
   const transactions = useTransactionStore((state) => state.transactions)
   const isLoading = useTransactionStore((state) => state.isLoading)
@@ -677,7 +690,7 @@ export function TransactionList() {
                     ) : tx.price_gbp !== null ? (
                       <div className="flex items-center gap-2">
                         {tx.currency !== 'GBP' ? (
-                          <Tooltip content={`FX Rate: ${tx.fx_rate.toFixed(4)} ${tx.currency}/GBP (${tx.fx_source} - ${tx.date.substring(0, 7)})`}>
+                          <Tooltip content={`FX Rate: ${tx.fx_rate.toFixed(4)} ${tx.currency}/GBP (${tx.fx_source} - ${formatFxDate(tx.date, tx.fx_source)})`}>
                             <span className="cursor-help border-b border-dotted border-gray-400">
                               £{tx.price_gbp.toFixed(2)}
                             </span>
@@ -709,7 +722,7 @@ export function TransactionList() {
                     {hasFxError ? (
                       <span className="text-red-600 font-medium">Error</span>
                     ) : tx.value_gbp !== null && tx.currency !== 'GBP' ? (
-                      <Tooltip content={`FX Rate: ${tx.fx_rate.toFixed(4)} ${tx.currency}/GBP (${tx.fx_source} - ${tx.date.substring(0, 7)})`}>
+                      <Tooltip content={`FX Rate: ${tx.fx_rate.toFixed(4)} ${tx.currency}/GBP (${tx.fx_source} - ${formatFxDate(tx.date, tx.fx_source)})`}>
                         <span className="cursor-help border-b border-dotted border-gray-400">
                           £{tx.value_gbp.toFixed(2)}
                         </span>
@@ -729,7 +742,7 @@ export function TransactionList() {
                     {hasFxError ? (
                       <span className="text-red-600 font-medium">Error</span>
                     ) : tx.fee_gbp !== null && tx.fee_gbp !== 0 && tx.currency !== 'GBP' ? (
-                      <Tooltip content={`FX Rate: ${tx.fx_rate.toFixed(4)} ${tx.currency}/GBP (${tx.fx_source} - ${tx.date.substring(0, 7)})`}>
+                      <Tooltip content={`FX Rate: ${tx.fx_rate.toFixed(4)} ${tx.currency}/GBP (${tx.fx_source} - ${formatFxDate(tx.date, tx.fx_source)})`}>
                         <span className="cursor-help border-b border-dotted border-gray-400">
                           £{tx.fee_gbp.toFixed(2)}
                         </span>
