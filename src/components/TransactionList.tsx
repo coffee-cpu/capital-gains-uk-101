@@ -103,7 +103,7 @@ export function TransactionList() {
   }
 
   return (
-    <div className="bg-white shadow rounded-lg overflow-hidden">
+    <div className="bg-white shadow rounded-lg">
       <div className="px-6 py-4 border-b border-gray-200">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -190,8 +190,8 @@ export function TransactionList() {
         </div>
       </div>
 
-      {/* FX Rate Information */}
-      {transactions.some(tx => tx.fx_source !== 'Native GBP' && tx.fx_source !== 'Failed') && (
+      {/* FX Rate Information - show if any non-GBP transactions (even if FX failed) */}
+      {transactions.some(tx => tx.currency !== 'GBP') && (
         <div className="px-6 py-4 bg-blue-50 border-b border-blue-200">
           <div className="flex items-start justify-between gap-4">
             <div className="flex flex-1">

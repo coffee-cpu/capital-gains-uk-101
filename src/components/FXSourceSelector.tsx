@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   FXSource,
   FXSourceDisplayNames,
@@ -24,8 +24,36 @@ export function FXSourceSelector() {
   const { setTransactions, setCGTResults, setIsLoading } = useTransactionStore()
   const [isChanging, setIsChanging] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
+  const [openUpward, setOpenUpward] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
 
   const sources: FXSource[] = ['HMRC_MONTHLY', 'HMRC_YEARLY_AVG', 'DAILY_SPOT']
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    if (!isOpen) return
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [isOpen])
+
+  // Determine if dropdown should open upward based on available space
+  const handleToggle = () => {
+    if (!isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect()
+      const spaceBelow = window.innerHeight - rect.bottom
+      const dropdownHeight = 380 // approximate height of dropdown + margin
+      setOpenUpward(spaceBelow < dropdownHeight)
+    }
+    setIsOpen(!isOpen)
+  }
 
   const handleSourceChange = async (newSource: FXSource) => {
     if (newSource === fxSource || isChanging) return
@@ -55,10 +83,11 @@ export function FXSourceSelector() {
   }
 
   return (
-    <div className="relative inline-block text-left">
+    <div ref={dropdownRef} className={`relative inline-block text-left ${isOpen ? 'z-50' : ''}`}>
       <button
+        ref={buttonRef}
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={handleToggle}
         disabled={isChanging}
         className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md border transition-colors ${
           isChanging
@@ -97,11 +126,9 @@ export function FXSourceSelector() {
       </button>
 
       {isOpen && !isChanging && (
-        <>
-          {/* Backdrop to close dropdown when clicking outside */}
-          <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
-
-          <div className="absolute right-0 z-20 mt-2 w-80 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+        <div className={`absolute right-0 z-50 w-80 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none ${
+          openUpward ? 'bottom-full mb-2 origin-bottom-right' : 'mt-2 origin-top-right'
+        }`}>
             <div className="py-1">
               <div className="px-4 py-2 border-b border-gray-100">
                 <p className="text-xs text-gray-500">
@@ -165,7 +192,6 @@ export function FXSourceSelector() {
               ))}
             </div>
           </div>
-        </>
       )}
     </div>
   )

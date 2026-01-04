@@ -79,14 +79,22 @@ export class HMRCYearlyProvider extends BaseFXProvider {
    * Fetch yearly average rates from HMRC
    * Uses the CSV endpoint from trade-tariff.service.gov.uk
    *
-   * Average rates are published semi-annually:
-   * - December file: Full year average (published Dec 31)
-   * - March file: Previous year average (published Mar 31)
+   * HMRC publishes average rates semi-annually:
+   * - December file: Calendar year average (Jan 1 - Dec 31), published Dec 31
+   * - March file: Tax year period average (Apr 1 - Mar 31), published Mar 31
+   *
+   * Fallback order:
+   * 1. December file (calendar year) - preferred for full year data
+   * 2. March file (tax year period) - useful for Jan-Mar transactions when Dec not yet available
+   * 3. Monthly rates - calculate average from available monthly data
+   *
+   * Note: CSV format changed in 2023 - older files lack the Currency Code column.
+   * The parser handles both formats by detecting the header.
    *
    * URL format: /exchange_rates/view/files/average_csv_YYYY-M.csv
    */
   private async fetchYearlyRates(year: string): Promise<Record<string, number>> {
-    // Try December file first (end of year average)
+    // Try December file first (calendar year average: Jan 1 - Dec 31)
     const decUrl = `https://www.trade-tariff.service.gov.uk/exchange_rates/view/files/average_csv_${year}-12.csv`
 
     try {
@@ -95,7 +103,6 @@ export class HMRCYearlyProvider extends BaseFXProvider {
         const csvText = await response.text()
         const rates = this.parseYearlyRatesCSV(csvText)
 
-        // Cache all rates for this year in IndexedDB
         await this.cacheYearlyRates(year, rates)
         return rates
       }
@@ -103,9 +110,9 @@ export class HMRCYearlyProvider extends BaseFXProvider {
       console.warn(`December average rates not available for ${year}:`, error)
     }
 
-    // Try March file (published in following year with previous year's average)
-    const nextYear = String(parseInt(year) + 1)
-    const marUrl = `https://www.trade-tariff.service.gov.uk/exchange_rates/view/files/average_csv_${nextYear}-3.csv`
+    // Try March file (tax year period: Apr 1 prev year - Mar 31 this year)
+    // Useful for Jan-Mar transactions when December file not yet published
+    const marUrl = `https://www.trade-tariff.service.gov.uk/exchange_rates/view/files/average_csv_${year}-3.csv`
 
     try {
       const response = await fetch(marUrl)
@@ -120,19 +127,49 @@ export class HMRCYearlyProvider extends BaseFXProvider {
       console.warn(`March average rates not available for ${year}:`, error)
     }
 
-    // Fall back to calculating from monthly rates
-    console.log(`Falling back to calculating yearly average from monthly rates for ${year}`)
-    return await this.calculateFromMonthlyRates(year)
+    // No fallback - if yearly data isn't available, throw a clear error
+    const currentYear = new Date().getFullYear()
+    const yearNum = parseInt(year)
+
+    if (yearNum >= currentYear) {
+      throw new Error(
+        `HMRC Yearly Average rates for ${year} are not yet available. ` +
+        `Yearly averages are published on Dec 31. ` +
+        `Please use "HMRC Monthly Rates" or "Daily Spot Rates" for current year transactions.`
+      )
+    }
+    if (yearNum < 2020) {
+      throw new Error(
+        `HMRC Yearly Average rates are not available for years before 2020. ` +
+        `Please use "HMRC Monthly Rates" or "Daily Spot Rates" for transactions in ${year}.`
+      )
+    }
+    throw new Error(
+      `HMRC Yearly Average rates for ${year} could not be loaded. ` +
+      `Please try again or use a different FX source.`
+    )
   }
 
   /**
    * Parse the HMRC yearly average rates CSV
-   * Format: Country, Unit Of Currency, Currency Code, Sterling value of Currency Unit £, Currency Units per £1
-   * Example: USA, Dollar, USD, 0.7821, 1.2787
+   *
+   * Two formats exist:
+   * - 2023+: Country, Currency, Currency Code, Sterling value, Units per £1 (5 columns)
+   * - 2022-: Country, Currency, Sterling value, Units per pound (4 columns, no code)
+   *
+   * We detect the format by checking if header contains "Currency Code"
    */
   private parseYearlyRatesCSV(csvText: string): Record<string, number> {
     const lines = csvText.split('\n')
     const rates: Record<string, number> = {}
+
+    if (lines.length === 0) {
+      throw new Error('Empty CSV file')
+    }
+
+    // Detect format from header
+    const header = lines[0].toLowerCase()
+    const hasCurrencyCodeColumn = header.includes('currency code')
 
     // Skip header line
     for (let i = 1; i < lines.length; i++) {
@@ -141,11 +178,22 @@ export class HMRCYearlyProvider extends BaseFXProvider {
 
       // Parse CSV - handle quoted values
       const parts = this.parseCSVLine(line)
-      if (parts.length < 5) continue
 
-      // Column 2 is Currency Code, Column 4 is "Currency Units per £1"
-      const currencyCode = parts[2]?.trim()
-      const rateStr = parts[4]?.trim()
+      let currencyCode: string
+      let rateStr: string
+
+      if (hasCurrencyCodeColumn) {
+        // New format (2023+): Country, Currency, Code, Sterling value, Units per £1
+        if (parts.length < 5) continue
+        currencyCode = parts[2]?.trim()
+        rateStr = parts[4]?.trim()
+      } else {
+        // Old format (2022-): Country, Currency, Sterling value, Units per pound
+        if (parts.length < 4) continue
+        const country = parts[0]?.trim()
+        currencyCode = this.countryToCurrencyCode(country)
+        rateStr = parts[3]?.trim()
+      }
 
       if (!currencyCode || !rateStr) continue
 
@@ -160,6 +208,63 @@ export class HMRCYearlyProvider extends BaseFXProvider {
     }
 
     return rates
+  }
+
+  /**
+   * Map country name to ISO 4217 currency code (for pre-2023 CSV format)
+   */
+  private countryToCurrencyCode(country: string): string {
+    const name = country?.toLowerCase().trim() || ''
+
+    // Map country names to their primary currency codes
+    const mappings: Record<string, string> = {
+      'usa': 'USD',
+      'euro zone': 'EUR',
+      'eurozone': 'EUR',
+      'japan': 'JPY',
+      'switzerland': 'CHF',
+      'china': 'CNY',
+      'india': 'INR',
+      'brazil': 'BRL',
+      'mexico': 'MXN',
+      'south korea': 'KRW',
+      'korea': 'KRW',
+      'south africa': 'ZAR',
+      'sweden': 'SEK',
+      'norway': 'NOK',
+      'denmark': 'DKK',
+      'abu dhabi': 'AED',
+      'uae': 'AED',
+      'malaysia': 'MYR',
+      'thailand': 'THB',
+      'turkey': 'TRY',
+      'poland': 'PLN',
+      'hungary': 'HUF',
+      'czech republic': 'CZK',
+      'czechia': 'CZK',
+      'israel': 'ILS',
+      'kuwait': 'KWD',
+      'saudi arabia': 'SAR',
+      'vietnam': 'VND',
+      'indonesia': 'IDR',
+      'taiwan': 'TWD',
+      'singapore': 'SGD',
+      'hong kong': 'HKD',
+      'canada': 'CAD',
+      'australia': 'AUD',
+      'new zealand': 'NZD',
+      'russia': 'RUB',
+      'philippines': 'PHP',
+      'pakistan': 'PKR',
+      'egypt': 'EGP',
+      'nigeria': 'NGN',
+      'colombia': 'COP',
+      'chile': 'CLP',
+      'argentina': 'ARS',
+      'peru': 'PEN',
+    }
+
+    return mappings[name] || ''
   }
 
   /**
@@ -185,40 +290,6 @@ export class HMRCYearlyProvider extends BaseFXProvider {
 
     result.push(current.trim())
     return result
-  }
-
-  /**
-   * Calculate yearly average from monthly rates if direct yearly data unavailable
-   */
-  private async calculateFromMonthlyRates(year: string): Promise<Record<string, number>> {
-    // Try to get cached monthly rates and calculate average
-    const monthlyRates = await db.fx_rates
-      .where('date')
-      .startsWith(`${year}-`)
-      .and((rate) => rate.fxSource === 'HMRC_MONTHLY' || !rate.fxSource)
-      .toArray()
-
-    if (monthlyRates.length === 0) {
-      throw new Error(`No monthly rates available to calculate yearly average for ${year}`)
-    }
-
-    // Group by currency and calculate average
-    const currencyRates: Record<string, number[]> = {}
-
-    for (const rate of monthlyRates) {
-      if (!currencyRates[rate.currency]) {
-        currencyRates[rate.currency] = []
-      }
-      currencyRates[rate.currency].push(rate.rate)
-    }
-
-    const averageRates: Record<string, number> = {}
-    for (const [currency, rates] of Object.entries(currencyRates)) {
-      const sum = rates.reduce((a, b) => a + b, 0)
-      averageRates[currency] = sum / rates.length
-    }
-
-    return averageRates
   }
 
   /**
