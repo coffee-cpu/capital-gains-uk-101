@@ -1,0 +1,3 @@
+date,type,symbol,currency,name,quantity,price,total,fee,notes
+2019-06-15,BUY,AAPL,USD,Apple Inc.,10,200.00,2000.00,0.00,Pre-2020 transaction
+2019-12-10,SELL,AAPL,USD,Apple Inc.,5,220.00,1100.00,0.00,Pre-2020 sale

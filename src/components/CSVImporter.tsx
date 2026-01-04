@@ -13,10 +13,9 @@ import { normalizeCoinbaseTransactions } from '../lib/parsers/coinbase'
 import { BrokerType } from '../types/broker'
 import { GenericTransaction } from '../types/transaction'
 import { useTransactionStore } from '../stores/transactionStore'
+import { useSettingsStore } from '../stores/settingsStore'
 import { db } from '../lib/db'
-import { deduplicateTransactions } from '../utils/deduplication'
-import { enrichTransactions } from '../lib/enrichment'
-import { calculateCGT } from '../lib/cgt/engine'
+import { processTransactionsFromDB } from '../lib/transactionProcessor'
 import { normalizeTransactionSymbols } from '../utils/symbolNormalization'
 
 export function CSVImporter() {
@@ -30,6 +29,7 @@ export function CSVImporter() {
   const [processingStatus, setProcessingStatus] = useState<string>('')
   const setTransactions = useTransactionStore((state) => state.setTransactions)
   const setCGTResults = useTransactionStore((state) => state.setCGTResults)
+  const fxSource = useSettingsStore((state) => state.fxSource)
 
   const processFile = async (file: File): Promise<{ success: boolean; message: string; count?: number }> => {
     try {
@@ -162,19 +162,12 @@ export function CSVImporter() {
       }
     }
 
-    // Reload all transactions from DB and apply deduplication
-    const allStored = await db.transactions.toArray()
-    const deduplicated = deduplicateTransactions(allStored)
-
-    // Enrich with FX rates and GBP conversions
-    const enriched = await enrichTransactions(deduplicated)
-
-    // Calculate CGT with HMRC matching rules
-    const cgtResults = calculateCGT(enriched)
-
-    // Update store with enriched transactions (with gain_group populated) and CGT results
-    setTransactions(cgtResults.transactions)
-    setCGTResults(cgtResults)
+    // Process all transactions from DB (deduplicate, enrich, calculate CGT)
+    const cgtResults = await processTransactionsFromDB(fxSource)
+    if (cgtResults) {
+      setTransactions(cgtResults.transactions)
+      setCGTResults(cgtResults)
+    }
 
     setIsProcessing(false)
     setProcessingStatus('')

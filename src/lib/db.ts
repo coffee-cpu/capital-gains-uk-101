@@ -1,15 +1,17 @@
 import Dexie, { Table } from 'dexie'
 import { GenericTransaction } from '../types/transaction'
+import { FXSource } from '../types/fxSource'
 
 /**
  * FX Rate cache entry
  */
 export interface FXRate {
-  id: string // Composite key: date-currency (e.g., '2025-05-15-USD')
-  date: string // YYYY-MM-DD
+  id: string // Composite key: source-date-currency (e.g., 'HMRC_MONTHLY-2025-05-USD')
+  date: string // Date key (format varies by source: YYYY-MM, YYYY, or YYYY-MM-DD)
   currency: string // e.g. 'USD'
   rate: number // GBP conversion rate
-  source: string // e.g. 'Bank of England'
+  source: string // e.g. 'HMRC Monthly Exchange Rates'
+  fxSource?: FXSource // Which FX source this rate belongs to (optional for backward compat)
 }
 
 /**
@@ -24,12 +26,22 @@ export interface ImportedFile {
 }
 
 /**
+ * User settings
+ */
+export interface UserSetting {
+  key: string // Setting key (e.g., 'fxStrategy')
+  value: string // JSON-encoded value
+  updatedAt: string // ISO timestamp
+}
+
+/**
  * IndexedDB database for local storage
  */
 export class CGTDatabase extends Dexie {
   transactions!: Table<GenericTransaction, string>
   fx_rates!: Table<FXRate, string>
   imported_files!: Table<ImportedFile, string>
+  settings!: Table<UserSetting, string>
 
   constructor() {
     super('cgt-visualizer')
@@ -44,6 +56,16 @@ export class CGTDatabase extends Dexie {
       transactions: 'id, source, symbol, date, type',
       fx_rates: '[date+currency], date, currency',
       imported_files: 'fileId, filename, importedAt',
+    })
+
+    // Version 3: Add settings table and update fx_rates with fxSource field
+    // fx_rates now uses 'id' as primary key (format: SOURCE-date-currency)
+    // This allows storing rates from multiple sources
+    this.version(3).stores({
+      transactions: 'id, source, symbol, date, type',
+      fx_rates: 'id, date, currency, fxSource',
+      imported_files: 'fileId, filename, importedAt',
+      settings: 'key',
     })
   }
 }

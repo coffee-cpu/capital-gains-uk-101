@@ -10,10 +10,9 @@ import { FlowGuide } from './components/FlowGuide'
 import { HelpPanel } from './components/HelpPanel'
 import { SessionResumeDialog } from './components/SessionResumeDialog'
 import { useTransactionStore } from './stores/transactionStore'
+import { useSettingsStore, useInitializeSettings } from './stores/settingsStore'
 import { db } from './lib/db'
-import { deduplicateTransactions } from './utils/deduplication'
-import { enrichTransactions } from './lib/enrichment'
-import { calculateCGT } from './lib/cgt/engine'
+import { processTransactionsFromDB } from './lib/transactionProcessor'
 
 function App() {
   const [currentPage, setCurrentPage] = useState<'calculator' | 'about'>('calculator')
@@ -25,6 +24,10 @@ function App() {
   const setTransactions = useTransactionStore((state) => state.setTransactions)
   const setCGTResults = useTransactionStore((state) => state.setCGTResults)
   const setIsLoading = useTransactionStore((state) => state.setIsLoading)
+  const fxSource = useSettingsStore((state) => state.fxSource)
+
+  // Initialize settings from IndexedDB
+  useInitializeSettings()
 
   // Handle hash-based routing
   useEffect(() => {
@@ -67,18 +70,8 @@ function App() {
   const loadTransactions = async () => {
     setIsLoading(true)
     try {
-      const stored = await db.transactions.toArray()
-      if (stored.length > 0) {
-        // Deduplicate incomplete Stock Plan Activity when Equity Awards data exists
-        const deduplicated = deduplicateTransactions(stored)
-
-        // Enrich with FX rates and GBP conversions
-        const enriched = await enrichTransactions(deduplicated)
-
-        // Calculate CGT with HMRC matching rules
-        const cgtResults = calculateCGT(enriched)
-
-        // Update store with enriched transactions and CGT results
+      const cgtResults = await processTransactionsFromDB(fxSource)
+      if (cgtResults) {
         setTransactions(cgtResults.transactions)
         setCGTResults(cgtResults)
       }
