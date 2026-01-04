@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { parseCSV } from '../lib/csvParser'
+import { parseCSV, isCoinbaseCSV, stripCoinbaseMetadataRows } from '../lib/csvParser'
 import { detectBroker } from '../lib/brokerDetector'
 import { normalizeSchwabTransactions } from '../lib/parsers/schwab'
 import { normalizeSchwabEquityAwardsTransactions } from '../lib/parsers/schwabEquityAwards'
@@ -9,6 +9,7 @@ import { normalizeTrading212Transactions } from '../lib/parsers/trading212'
 import { normalizeFreetradeTransactions } from '../lib/parsers/freetrade'
 import { normalizeEquatePlusTransactions } from '../lib/parsers/equatePlus'
 import { normalizeRevolutTransactions } from '../lib/parsers/revolut'
+import { normalizeCoinbaseTransactions } from '../lib/parsers/coinbase'
 import { BrokerType } from '../types/broker'
 import { GenericTransaction } from '../types/transaction'
 import { useTransactionStore } from '../stores/transactionStore'
@@ -32,8 +33,14 @@ export function CSVImporter() {
 
   const processFile = async (file: File): Promise<{ success: boolean; message: string; count?: number }> => {
     try {
-      // Parse CSV first
-      const rawRows = await parseCSV(file)
+      // Check if this is a Coinbase file (needs special handling for metadata rows)
+      const isCoinbase = await isCoinbaseCSV(file)
+
+      // For Coinbase files, strip the first 2 metadata rows before parsing
+      const fileToProcess = isCoinbase ? await stripCoinbaseMetadataRows(file) : file
+
+      // Parse CSV using the standard parser
+      const rawRows = await parseCSV(fileToProcess)
 
       // Generate unique file identifier
       const fileId = `${file.name.replace(/[^a-z0-9]/gi, '_')}-${file.size}`
@@ -79,6 +86,9 @@ export function CSVImporter() {
           break
         case BrokerType.REVOLUT:
           transactions = normalizeRevolutTransactions(rawRows, fileId)
+          break
+        case BrokerType.COINBASE:
+          transactions = normalizeCoinbaseTransactions(rawRows, fileId)
           break
         case BrokerType.GENERIC:
           transactions = normalizeGenericTransactions(rawRows, fileId)
@@ -311,7 +321,7 @@ export function CSVImporter() {
               Drop your CSV files here, or click to browse
             </p>
             <p className="text-xs text-gray-500">
-              Supports multiple files • Charles Schwab, Schwab Equity Awards, Interactive Brokers, Freetrade, Trading 212, EquatePlus, Revolut, and Generic CSV
+              Supports multiple files • Charles Schwab, Schwab Equity Awards, Interactive Brokers, Freetrade, Trading 212, EquatePlus, Revolut, Coinbase, and Generic CSV
             </p>
           </div>
         </div>
@@ -390,7 +400,7 @@ export function CSVImporter() {
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
-            <span>Supported formats (8)</span>
+            <span>Supported formats (9)</span>
           </button>
           {showFormats && <ul className="space-y-2 ml-6">
             {/* Charles Schwab */}
@@ -607,6 +617,39 @@ export function CSVImporter() {
                     href="/examples/revolut-example.csv"
                     target="_blank"
                     rel="noopener noreferrer"
+                    className="inline-block text-blue-600 hover:text-blue-800 underline"
+                  >
+                    📥 Download example file
+                  </a>
+                </div>
+              )}
+            </li>
+
+            {/* Coinbase */}
+            <li>
+              <div className="flex justify-between items-center md:justify-start md:gap-4">
+                <span>Coinbase</span>
+                <button
+                  onClick={() => setExpandedFormat(expandedFormat === 'coinbase' ? null : 'coinbase')}
+                  className="text-blue-600 hover:text-blue-800 text-xs underline whitespace-nowrap"
+                >
+                  {expandedFormat === 'coinbase' ? 'hide' : 'instructions & example'}
+                </button>
+              </div>
+              {expandedFormat === 'coinbase' && (
+                <div className="mt-2 ml-4 p-3 bg-gray-50 rounded text-xs space-y-2">
+                  <p className="font-medium">How to download:</p>
+                  <ol className="list-decimal list-inside space-y-1 text-gray-600">
+                    <li>Log into coinbase.com</li>
+                    <li>Go to Profile → Manage Account → Statements</li>
+                    <li>Select date range "Custom" and set Start date as early as possible</li>
+                    <li>Click "Generate"</li>
+                  </ol>
+                  <p className="text-gray-600 italic">
+                    Note: Crypto transactions are treated like stock transactions for CGT purposes. The same HMRC matching rules apply.
+                  </p>
+                  <a
+                    href="/examples/coinbase-example.csv"
                     className="inline-block text-blue-600 hover:text-blue-800 underline"
                   >
                     📥 Download example file

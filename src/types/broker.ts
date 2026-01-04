@@ -10,6 +10,7 @@ export enum BrokerType {
   FREETRADE = 'Freetrade',
   EQUATE_PLUS = 'EquatePlus',
   REVOLUT = 'Revolut',
+  COINBASE = 'Coinbase',
   GENERIC = 'Generic CSV',
   UNKNOWN = 'Unknown',
 }
