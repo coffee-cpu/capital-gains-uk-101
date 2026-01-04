@@ -14,9 +14,7 @@ import { GenericTransaction } from '../types/transaction'
 import { useTransactionStore } from '../stores/transactionStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { db } from '../lib/db'
-import { deduplicateTransactions } from '../utils/deduplication'
-import { enrichTransactions } from '../lib/enrichment'
-import { calculateCGT } from '../lib/cgt/engine'
+import { processTransactionsFromDB } from '../lib/transactionProcessor'
 import { normalizeTransactionSymbols } from '../utils/symbolNormalization'
 
 export function CSVImporter() {
@@ -154,19 +152,12 @@ export function CSVImporter() {
       }
     }
 
-    // Reload all transactions from DB and apply deduplication
-    const allStored = await db.transactions.toArray()
-    const deduplicated = deduplicateTransactions(allStored)
-
-    // Enrich with FX rates and GBP conversions using selected source
-    const enriched = await enrichTransactions(deduplicated, fxSource)
-
-    // Calculate CGT with HMRC matching rules
-    const cgtResults = calculateCGT(enriched)
-
-    // Update store with enriched transactions (with gain_group populated) and CGT results
-    setTransactions(cgtResults.transactions)
-    setCGTResults(cgtResults)
+    // Process all transactions from DB (deduplicate, enrich, calculate CGT)
+    const cgtResults = await processTransactionsFromDB(fxSource)
+    if (cgtResults) {
+      setTransactions(cgtResults.transactions)
+      setCGTResults(cgtResults)
+    }
 
     setIsProcessing(false)
     setProcessingStatus('')

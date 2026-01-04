@@ -7,10 +7,7 @@ import {
 } from '../types/fxSource'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useTransactionStore } from '../stores/transactionStore'
-import { db } from '../lib/db'
-import { deduplicateTransactions } from '../utils/deduplication'
-import { enrichTransactions } from '../lib/enrichment'
-import { calculateCGT } from '../lib/cgt/engine'
+import { processTransactionsFromDB } from '../lib/transactionProcessor'
 
 /**
  * FX Source Selector Component
@@ -41,20 +38,9 @@ export function FXSourceSelector() {
       // Update the setting
       await setFXSource(newSource)
 
-      // Get raw transactions from DB
-      const rawTransactions = await db.transactions.toArray()
-
-      if (rawTransactions.length > 0) {
-        // Deduplicate incomplete Stock Plan Activity when Equity Awards data exists
-        const deduplicated = deduplicateTransactions(rawTransactions)
-
-        // Re-enrich with new source
-        const enriched = await enrichTransactions(deduplicated, newSource)
-
-        // Re-calculate CGT
-        const cgtResults = calculateCGT(enriched)
-
-        // Update stores
+      // Re-process all transactions with the new FX source
+      const cgtResults = await processTransactionsFromDB(newSource)
+      if (cgtResults) {
         setTransactions(cgtResults.transactions)
         setCGTResults(cgtResults)
       }
