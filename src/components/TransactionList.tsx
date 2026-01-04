@@ -206,7 +206,7 @@ export function TransactionList() {
       {/* FX Rate Information - show if any non-GBP transactions (even if FX failed) */}
       {transactions.some(tx => tx.currency !== 'GBP') && (
         <div className="px-6 py-4 bg-blue-50 border-b border-blue-200">
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
             <div className="flex flex-1">
               <div className="flex-shrink-0">
                 <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
@@ -216,7 +216,7 @@ export function TransactionList() {
               <div className="ml-3">
                 <div className="text-sm text-blue-700">
                   <p>
-                    Foreign currency values converted to GBP. Hover over any GBP value to see the specific rate applied.
+                    Foreign currency values converted to GBP. Hover over any GBP value to see the rate applied.
                   </p>
                   {!showFxInfo && (
                     <button
@@ -256,7 +256,7 @@ export function TransactionList() {
                 </div>
               </div>
             </div>
-            <div className="flex-shrink-0">
+            <div className="flex-shrink-0 self-end sm:self-auto">
               <FXSourceSelector />
             </div>
           </div>
