@@ -8,6 +8,7 @@ import {
 import { useSettingsStore } from '../stores/settingsStore'
 import { useTransactionStore } from '../stores/transactionStore'
 import { db } from '../lib/db'
+import { deduplicateTransactions } from '../utils/deduplication'
 import { enrichTransactions } from '../lib/enrichment'
 import { calculateCGT } from '../lib/cgt/engine'
 
@@ -44,8 +45,11 @@ export function FXSourceSelector() {
       const rawTransactions = await db.transactions.toArray()
 
       if (rawTransactions.length > 0) {
+        // Deduplicate incomplete Stock Plan Activity when Equity Awards data exists
+        const deduplicated = deduplicateTransactions(rawTransactions)
+
         // Re-enrich with new source
-        const enriched = await enrichTransactions(rawTransactions, newSource)
+        const enriched = await enrichTransactions(deduplicated, newSource)
 
         // Re-calculate CGT
         const cgtResults = calculateCGT(enriched)
