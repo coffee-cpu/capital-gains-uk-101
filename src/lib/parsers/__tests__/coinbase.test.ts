@@ -494,5 +494,193 @@ describe('Coinbase Parser', () => {
       expect(result).toHaveLength(1)
       expect(result[0].type).toBe('TRANSFER')
     })
+
+    describe('Convert transactions (crypto-to-crypto)', () => {
+      it('should generate both SELL and BUY transactions for Convert', () => {
+        const rows: RawCSVRow[] = [
+          {
+            'ID': 'zab234wxy567890r',
+            'Timestamp': '2022-08-15 09:50:06 UTC',
+            'Transaction Type': 'Convert',
+            'Asset': 'ETH',
+            'Quantity Transacted': '-3.1495564',
+            'Price Currency': 'GBP',
+            'Price at Transaction': '£1576.58',
+            'Subtotal': '£4948.25',
+            'Total (inclusive of fees and/or spread)': '£4948.25',
+            'Fees and/or Spread': '£0.00',
+            'Notes': 'Converted 3.1495564 ETH to 3.1495564 ETH2',
+          },
+        ]
+
+        const result = normalizeCoinbaseTransactions(rows, 'test-file')
+
+        // Should generate 2 transactions: SELL of ETH, BUY of ETH2
+        expect(result).toHaveLength(2)
+
+        // First transaction: SELL of disposed asset (ETH)
+        expect(result[0]).toMatchObject({
+          id: 'test-file-1',
+          source: 'Coinbase',
+          date: '2022-08-15',
+          type: 'SELL',
+          symbol: 'ETH',
+          quantity: 3.1495564,
+          price: 1576.58,
+          currency: 'GBP',
+          total: 4948.25,
+          fee: 0,
+        })
+        expect(result[0].notes).toContain('[Convert - Disposal]')
+
+        // Second transaction: BUY of acquired asset (ETH2)
+        expect(result[1]).toMatchObject({
+          id: 'test-file-2',
+          source: 'Coinbase',
+          date: '2022-08-15',
+          type: 'BUY',
+          symbol: 'ETH2',
+          quantity: 3.1495564,
+          currency: 'GBP',
+          total: 4948.25, // Same GBP value as SELL
+          fee: 0, // Fee already accounted for in SELL
+        })
+        expect(result[1].notes).toContain('[Convert - Acquisition]')
+        // Price should be calculated: total / quantity
+        expect(result[1].price).toBeCloseTo(4948.25 / 3.1495564, 2)
+      })
+
+      it('should handle Convert with different acquired quantity', () => {
+        const rows: RawCSVRow[] = [
+          {
+            'ID': '1',
+            'Timestamp': '2023-05-10 14:30:00 UTC',
+            'Transaction Type': 'Convert',
+            'Asset': 'BTC',
+            'Quantity Transacted': '-0.5',
+            'Price Currency': 'GBP',
+            'Price at Transaction': '£25000.00',
+            'Subtotal': '£12500.00',
+            'Total (inclusive of fees and/or spread)': '£12500.00',
+            'Fees and/or Spread': '£0.00',
+            'Notes': 'Converted 0.5 BTC to 7.5 ETH',
+          },
+        ]
+
+        const result = normalizeCoinbaseTransactions(rows, 'test-file')
+
+        expect(result).toHaveLength(2)
+
+        // SELL of BTC
+        expect(result[0]).toMatchObject({
+          type: 'SELL',
+          symbol: 'BTC',
+          quantity: 0.5,
+          total: 12500.00,
+        })
+
+        // BUY of ETH with different quantity
+        expect(result[1]).toMatchObject({
+          type: 'BUY',
+          symbol: 'ETH',
+          quantity: 7.5,
+          total: 12500.00,
+        })
+        // Price per ETH should be 12500 / 7.5
+        expect(result[1].price).toBeCloseTo(12500 / 7.5, 2)
+      })
+
+      it('should still create SELL when Notes cannot be parsed', () => {
+        const rows: RawCSVRow[] = [
+          {
+            'ID': '1',
+            'Timestamp': '2023-05-10 14:30:00 UTC',
+            'Transaction Type': 'Convert',
+            'Asset': 'BTC',
+            'Quantity Transacted': '-0.5',
+            'Price Currency': 'GBP',
+            'Price at Transaction': '£25000.00',
+            'Subtotal': '£12500.00',
+            'Total (inclusive of fees and/or spread)': '£12500.00',
+            'Fees and/or Spread': '£0.00',
+            'Notes': 'Some unexpected format',
+          },
+        ]
+
+        const result = normalizeCoinbaseTransactions(rows, 'test-file')
+
+        // Should create only SELL transaction when Notes parsing fails
+        expect(result).toHaveLength(1)
+        expect(result[0]).toMatchObject({
+          type: 'SELL',
+          symbol: 'BTC',
+          quantity: 0.5,
+        })
+        expect(result[0].notes).toContain('[Convert - Disposal]')
+      })
+
+      it('should handle Convert with empty Notes', () => {
+        const rows: RawCSVRow[] = [
+          {
+            'ID': '1',
+            'Timestamp': '2023-05-10 14:30:00 UTC',
+            'Transaction Type': 'Convert',
+            'Asset': 'BTC',
+            'Quantity Transacted': '-0.5',
+            'Price Currency': 'GBP',
+            'Price at Transaction': '£25000.00',
+            'Subtotal': '£12500.00',
+            'Total (inclusive of fees and/or spread)': '£12500.00',
+            'Fees and/or Spread': '£0.00',
+            'Notes': '',
+          },
+        ]
+
+        const result = normalizeCoinbaseTransactions(rows, 'test-file')
+
+        // Should create only SELL transaction when Notes is empty
+        expect(result).toHaveLength(1)
+        expect(result[0]).toMatchObject({
+          type: 'SELL',
+          symbol: 'BTC',
+        })
+      })
+
+      it('should handle Convert with fees', () => {
+        const rows: RawCSVRow[] = [
+          {
+            'ID': '1',
+            'Timestamp': '2023-05-10 14:30:00 UTC',
+            'Transaction Type': 'Convert',
+            'Asset': 'ETH',
+            'Quantity Transacted': '-1.0',
+            'Price Currency': 'GBP',
+            'Price at Transaction': '£2000.00',
+            'Subtotal': '£2000.00',
+            'Total (inclusive of fees and/or spread)': '£1990.00',
+            'Fees and/or Spread': '£10.00',
+            'Notes': 'Converted 1.0 ETH to 100 USDC',
+          },
+        ]
+
+        const result = normalizeCoinbaseTransactions(rows, 'test-file')
+
+        expect(result).toHaveLength(2)
+
+        // Fee should be on SELL transaction only
+        expect(result[0]).toMatchObject({
+          type: 'SELL',
+          symbol: 'ETH',
+          fee: 10.00,
+        })
+
+        // BUY should have fee of 0 to avoid double-counting
+        expect(result[1]).toMatchObject({
+          type: 'BUY',
+          symbol: 'USDC',
+          fee: 0,
+        })
+      })
+    })
   })
 })
