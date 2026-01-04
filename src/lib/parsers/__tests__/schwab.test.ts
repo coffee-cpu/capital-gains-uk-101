@@ -58,6 +58,53 @@ describe('Schwab Parser', () => {
       expect(result[0].price).toBe(175.50)
     })
 
+    it('should normalize a Sell Short transaction with is_short_sell flag', () => {
+      const rows = [
+        {
+          'Date': '07/25/2023',
+          'Action': 'Sell Short',
+          'Symbol': 'SNAP',
+          'Description': 'SNAP INC CLASS A',
+          'Quantity': '100',
+          'Price': '$12.50',
+          'Fees & Comm': '$0.02',
+          'Amount': '$1249.98',
+        },
+      ]
+
+      const result = normalizeSchwabTransactions(rows, 'test-file')
+
+      expect(result).toHaveLength(1)
+      expect(result[0].type).toBe(TransactionType.SELL)
+      expect(result[0].symbol).toBe('SNAP')
+      expect(result[0].quantity).toBe(100)
+      expect(result[0].price).toBe(12.50)
+      expect(result[0].fee).toBe(0.02)
+      expect(result[0].total).toBe(1249.98)
+      expect(result[0].is_short_sell).toBe(true)
+    })
+
+    it('should not set is_short_sell for regular Sell transactions', () => {
+      const rows = [
+        {
+          'Date': '08/15/2024',
+          'Action': 'Sell',
+          'Symbol': 'AAPL',
+          'Description': 'APPLE INC',
+          'Quantity': '50',
+          'Price': '175.50',
+          'Fees & Comm': '$0.02',
+          'Amount': '$8774.98',
+        },
+      ]
+
+      const result = normalizeSchwabTransactions(rows, 'test-file')
+
+      expect(result).toHaveLength(1)
+      expect(result[0].type).toBe(TransactionType.SELL)
+      expect(result[0].is_short_sell).toBeUndefined()
+    })
+
     it('should normalize dividend transactions', () => {
       const rows = [
         {

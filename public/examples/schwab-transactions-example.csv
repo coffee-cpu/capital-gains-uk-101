@@ -1,6 +1,8 @@
-"Date","Action","Symbol","Description","Quantity","Price","Fees & Comm","Amount"
-"01/15/2024","Buy","AAPL","APPLE INC","10","$150.00","$0.00","-$1,500.00"
-"02/20/2024","Sell","AAPL","APPLE INC","5","$160.00","$0.00","$800.00"
-"03/10/2024","Buy","MSFT","MICROSOFT CORP","15","$350.00","$0.00","-$5,250.00"
-"04/05/2024","Dividend","AAPL","APPLE INC DIVIDEND","","","","$12.50"
-"05/12/2024","Sell","MSFT","MICROSOFT CORP","10","$370.00","$1.00","$3,699.00"
+Date,Action,Symbol,Description,Quantity,Price,Fees & Comm,Amount
+01/15/2024,Buy,AAPL,APPLE INC,10,$150.00,$0.00,"-$1,500.00"
+02/20/2024,Sell,AAPL,APPLE INC,5,$160.00,$0.00,$800.00
+03/10/2024,Buy,MSFT,MICROSOFT CORP,15,$350.00,$0.00,"-$5,250.00"
+04/05/2024,Dividend,AAPL,APPLE INC DIVIDEND,,,,$12.50
+05/12/2024,Sell,MSFT,MICROSOFT CORP,10,$370.00,$1.00,"$3,699.00"
+07/26/2023,Buy,SNAP,SNAP INC CLASS A,100,$10.075,,-$1007.50
+07/25/2023,Sell Short,SNAP,SNAP INC CLASS A,100,$12.50,$0.02,$1249.98

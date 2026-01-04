@@ -34,7 +34,7 @@ function normalizeSchwabRow(row: RawCSVRow, fileId: string, rowIndex: number): G
   }
 
   // Map Schwab action to transaction type
-  const type = mapSchwabAction(action)
+  const { type, isShortSell } = mapSchwabAction(action)
   if (!type) {
     return null // Skip unknown actions for now
   }
@@ -73,42 +73,46 @@ function normalizeSchwabRow(row: RawCSVRow, fileId: string, rowIndex: number): G
     notes: isStockPlanActivity ? 'Stock Plan Activity - ignored in favor of Equity Awards data. Upload Charles Schwab Equity Awards file for complete information.' : null,
     incomplete: isStockPlanActivity,
     ignored: isStockPlanActivity, // Always ignore Stock Plan Activity transactions
+    is_short_sell: isShortSell || undefined,
   }
 }
 
+interface SchwabActionResult {
+  type: typeof TransactionType[keyof typeof TransactionType] | null
+  isShortSell: boolean
+}
+
 /**
- * Map Schwab action to GenericTransaction type
+ * Map Schwab action to GenericTransaction type and short sell flag
  */
-function mapSchwabAction(action: string): typeof TransactionType[keyof typeof TransactionType] | null {
+function mapSchwabAction(action: string): SchwabActionResult {
   const actionLower = action?.toLowerCase() || ''
+  const isShortSell = actionLower === 'sell short'
+
+  let type: typeof TransactionType[keyof typeof TransactionType]
 
   if (actionLower === 'buy' || actionLower === 'stock plan activity') {
-    return TransactionType.BUY
-  }
-  if (actionLower === 'sell') {
-    return TransactionType.SELL
-  }
-  if (actionLower === 'stock split') {
-    return TransactionType.STOCK_SPLIT
-  }
-  if (actionLower.includes('dividend')) {
-    return TransactionType.DIVIDEND
-  }
-  if (actionLower.includes('interest')) {
-    return TransactionType.INTEREST
-  }
-  if (actionLower.includes('tax')) {
-    return TransactionType.TAX
-  }
-  if (actionLower.includes('wire') || actionLower.includes('transfer')) {
-    return TransactionType.TRANSFER
-  }
-  if (actionLower.includes('fee')) {
-    return TransactionType.FEE
+    type = TransactionType.BUY
+  } else if (actionLower === 'sell' || actionLower === 'sell short') {
+    type = TransactionType.SELL
+  } else if (actionLower === 'stock split') {
+    type = TransactionType.STOCK_SPLIT
+  } else if (actionLower.includes('dividend')) {
+    type = TransactionType.DIVIDEND
+  } else if (actionLower.includes('interest')) {
+    type = TransactionType.INTEREST
+  } else if (actionLower.includes('tax')) {
+    type = TransactionType.TAX
+  } else if (actionLower.includes('wire') || actionLower.includes('transfer')) {
+    type = TransactionType.TRANSFER
+  } else if (actionLower.includes('fee')) {
+    type = TransactionType.FEE
+  } else {
+    // Return TRANSFER as a fallback for unknown actions so we don't filter them out
+    type = TransactionType.TRANSFER
   }
 
-  // Return TRANSFER as a fallback for unknown actions so we don't filter them out
-  return TransactionType.TRANSFER
+  return { type, isShortSell }
 }
 
 /**

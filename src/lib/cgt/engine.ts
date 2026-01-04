@@ -1,5 +1,6 @@
 import { EnrichedTransaction } from '../../types/transaction'
 import { CGTCalculationResult, DisposalRecord, TaxYearSummary, MatchingResult } from '../../types/cgt'
+import { applyShortSellRule, markShortSellMatches } from './shortSellMatcher'
 import { applySameDayRule, markSameDayMatches } from './sameDayMatcher'
 import { applyThirtyDayRule, markThirtyDayMatches } from './thirtyDayMatcher'
 import { applySection104Pooling, markSection104Matches } from './section104Pool'
@@ -10,6 +11,7 @@ import { getEffectiveQuantity } from './utils'
  * CGT Calculation Engine
  *
  * Orchestrates the application of HMRC matching rules in the correct order:
+ * 0. Short sell rule - Match uncovered SELLs with subsequent BUYs
  * 1. Same-day rule (TCGA92/S105(1)) - CG51560
  * 2. 30-day rule (TCGA92/S106A(5) and (5A)) - CG51560
  * 3. Section 104 pooling (TCGA92/S104) - CG51620
@@ -29,16 +31,21 @@ export function calculateCGT(
   // Filter out ignored transactions (incomplete Stock Plan Activity superseded by Equity Awards)
   const activeTransactions = transactions.filter(tx => !tx.ignored)
 
-  // Step 1: Apply same-day matching rule
-  const sameDayMatchings = applySameDayRule(activeTransactions)
-  let updatedTransactions = markSameDayMatches(activeTransactions, sameDayMatchings)
+  // Step 0: Apply short sell rule (match uncovered SELLs with subsequent BUYs)
+  const shortSellMatchings = applyShortSellRule(activeTransactions)
+  let updatedTransactions = markShortSellMatches(activeTransactions, shortSellMatchings)
+
+  // Step 1: Apply same-day matching rule (to remaining unmatched quantities)
+  const sameDayMatchings = applySameDayRule(updatedTransactions, shortSellMatchings)
+  updatedTransactions = markSameDayMatches(updatedTransactions, sameDayMatchings)
 
   // Step 2: Apply 30-day rule (to remaining unmatched quantities)
-  const thirtyDayMatchings = applyThirtyDayRule(updatedTransactions, sameDayMatchings)
+  const priorMatchings = [...shortSellMatchings, ...sameDayMatchings]
+  const thirtyDayMatchings = applyThirtyDayRule(updatedTransactions, priorMatchings)
   updatedTransactions = markThirtyDayMatches(updatedTransactions, thirtyDayMatchings)
 
   // Step 3: Apply Section 104 pooling (to remaining unmatched quantities)
-  const allMatchings = [...sameDayMatchings, ...thirtyDayMatchings]
+  const allMatchings = [...shortSellMatchings, ...sameDayMatchings, ...thirtyDayMatchings]
   const [section104Matchings, section104Pools] = applySection104Pooling(
     updatedTransactions,
     allMatchings
@@ -46,7 +53,7 @@ export function calculateCGT(
   updatedTransactions = markSection104Matches(updatedTransactions, section104Matchings, section104Pools)
 
   // Combine all matchings
-  const allMatchingsComplete = [...sameDayMatchings, ...thirtyDayMatchings, ...section104Matchings]
+  const allMatchingsComplete = [...shortSellMatchings, ...sameDayMatchings, ...thirtyDayMatchings, ...section104Matchings]
 
   // Step 4: Assign match group IDs to link related transactions
   updatedTransactions = assignMatchGroupIds(updatedTransactions, allMatchingsComplete)

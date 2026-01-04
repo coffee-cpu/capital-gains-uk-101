@@ -19,10 +19,12 @@ import { getEffectiveQuantity, getEffectivePrice } from './utils'
  * Apply same-day matching rule to a set of transactions
  *
  * @param transactions All enriched transactions (must include BUY and SELL types)
+ * @param priorMatchings Previously applied matchings (e.g., from short sell rule)
  * @returns Array of matching results for same-day matches
  */
 export function applySameDayRule(
-  transactions: EnrichedTransaction[]
+  transactions: EnrichedTransaction[],
+  priorMatchings: MatchingResult[] = []
 ): MatchingResult[] {
   const matchings: MatchingResult[] = []
 
@@ -43,8 +45,8 @@ export function applySameDayRule(
         continue // No same-day matches possible
       }
 
-      // Match sells against buys on the same day
-      const dayMatchings = matchSameDayTransactions(sells, buys)
+      // Match sells against buys on the same day, respecting prior matchings
+      const dayMatchings = matchSameDayTransactions(sells, buys, priorMatchings)
       matchings.push(...dayMatchings)
     }
   }
@@ -57,32 +59,38 @@ export function applySameDayRule(
  */
 function matchSameDayTransactions(
   sells: EnrichedTransaction[],
-  buys: EnrichedTransaction[]
+  buys: EnrichedTransaction[],
+  priorMatchings: MatchingResult[] = []
 ): MatchingResult[] {
   const matchings: MatchingResult[] = []
 
-  // Track remaining quantities for each buy
+  // Track remaining quantities for each buy, accounting for prior matchings
   const buyQuantities = new Map<string, number>()
   buys.forEach(buy => {
     const effectiveQuantity = getEffectiveQuantity(buy)
-    if (effectiveQuantity > 0) {
-      buyQuantities.set(buy.id, effectiveQuantity)
+    const alreadyMatched = getAlreadyMatchedQuantity(buy, priorMatchings)
+    const remaining = effectiveQuantity - alreadyMatched
+    if (remaining > 0) {
+      buyQuantities.set(buy.id, remaining)
     }
   })
 
-  // Process each sell
+  // Process each sell, accounting for prior matchings
   for (const sell of sells) {
     const effectiveSellQuantity = getEffectiveQuantity(sell)
-    if (effectiveSellQuantity <= 0) {
-      continue
+    const alreadyMatchedSell = getAlreadyMatchedQuantity(sell, priorMatchings)
+    const remainingSellQuantity = effectiveSellQuantity - alreadyMatchedSell
+    
+    if (remainingSellQuantity <= 0) {
+      continue // Already fully matched by prior rules
     }
 
-    let remainingSellQuantity = effectiveSellQuantity
+    let currentRemaining = remainingSellQuantity
     const acquisitions: MatchingResult['acquisitions'] = []
 
     // Match against available buys (FIFO order within the day)
     for (const buy of buys) {
-      if (remainingSellQuantity <= 0) {
+      if (currentRemaining <= 0) {
         break
       }
 
@@ -92,7 +100,7 @@ function matchSameDayTransactions(
       }
 
       // Match as much as possible from this buy
-      const quantityToMatch = Math.min(remainingSellQuantity, availableBuyQuantity)
+      const quantityToMatch = Math.min(currentRemaining, availableBuyQuantity)
 
       // Calculate cost basis for the matched portion (use split-adjusted price if available)
       const pricePerShare = getEffectivePrice(buy)
@@ -108,7 +116,7 @@ function matchSameDayTransactions(
       })
 
       // Update remaining quantities
-      remainingSellQuantity -= quantityToMatch
+      currentRemaining -= quantityToMatch
       buyQuantities.set(buy.id, availableBuyQuantity - quantityToMatch)
     }
 
@@ -128,6 +136,32 @@ function matchSameDayTransactions(
   }
 
   return matchings
+}
+
+/**
+ * Get the quantity of a transaction that has already been matched by prior rules
+ */
+function getAlreadyMatchedQuantity(
+  transaction: EnrichedTransaction,
+  priorMatchings: MatchingResult[]
+): number {
+  let matchedQuantity = 0
+
+  for (const matching of priorMatchings) {
+    // Check if this transaction is the disposal
+    if (matching.disposal.id === transaction.id) {
+      matchedQuantity += matching.quantityMatched
+    }
+
+    // Check if this transaction is an acquisition
+    for (const acq of matching.acquisitions) {
+      if (acq.transaction.id === transaction.id) {
+        matchedQuantity += acq.quantityMatched
+      }
+    }
+  }
+
+  return matchedQuantity
 }
 
 /**
