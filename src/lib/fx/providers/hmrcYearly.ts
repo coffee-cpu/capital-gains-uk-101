@@ -128,22 +128,50 @@ export class HMRCYearlyProvider extends BaseFXProvider {
     }
 
     // No fallback - if yearly data isn't available, throw a clear error
-    const currentYear = new Date().getFullYear()
+    const now = new Date()
+    const currentYear = now.getFullYear()
+    const currentMonth = now.getMonth() + 1 // 1-12
+    const currentDay = now.getDate()
     const yearNum = parseInt(year)
 
-    if (yearNum >= currentYear) {
+    // Check if March file should be available (published on March 31)
+    const marchFileAvailable = currentMonth > 3 || (currentMonth === 3 && currentDay >= 31)
+
+    // Future year
+    if (yearNum > currentYear) {
       throw new Error(
         `HMRC Yearly Average rates for ${year} are not yet available. ` +
-        `Yearly averages are published on Dec 31. ` +
-        `Please use "HMRC Monthly Rates" or "Daily Spot Rates" for current year transactions.`
+        `Yearly averages are published on March 31 and December 31. ` +
+        `Please use "HMRC Monthly Rates" or "Daily Spot Rates" for future year transactions.`
       )
     }
+
+    // Current year - check if March file should be available
+    if (yearNum === currentYear) {
+      if (!marchFileAvailable) {
+        throw new Error(
+          `HMRC Yearly Average rates for ${year} are not yet available. ` +
+          `The March ${year} file will be published on March 31. ` +
+          `Please use "HMRC Monthly Rates" or "Daily Spot Rates" for current year transactions.`
+        )
+      }
+      // After March 31, the March file should exist but both files failed
+      throw new Error(
+        `HMRC Yearly Average rates for ${year} could not be loaded. ` +
+        `The March ${year} file should be available but the request failed. ` +
+        `Please try again or use a different FX source.`
+      )
+    }
+
+    // Years before 2020
     if (yearNum < 2020) {
       throw new Error(
         `HMRC Yearly Average rates are not available for years before 2020. ` +
         `Please use "HMRC Monthly Rates" or "Daily Spot Rates" for transactions in ${year}.`
       )
     }
+
+    // General error for years 2020-2025 (or older current years)
     throw new Error(
       `HMRC Yearly Average rates for ${year} could not be loaded. ` +
       `Please try again or use a different FX source.`
