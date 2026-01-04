@@ -142,7 +142,7 @@ export function TransactionList() {
                   Failed to fetch exchange rates for {fxErrorCount} transaction{fxErrorCount !== 1 ? 's' : ''}. GBP values cannot be calculated.
                 </p>
                 <p className="mt-1">
-                  <strong>Possible causes:</strong> Network error, API unavailable, or invalid date/currency. Check the browser console for details.
+                  <strong>Try a different FX source</strong> using the dropdown on the right. Some sources have limited historical data availability.
                 </p>
               </div>
             </div>

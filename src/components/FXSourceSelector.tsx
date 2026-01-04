@@ -21,7 +21,7 @@ import { processTransactionsFromDB } from '../lib/transactionProcessor'
  */
 export function FXSourceSelector() {
   const { fxSource, setFXSource } = useSettingsStore()
-  const { setTransactions, setCGTResults, setIsLoading } = useTransactionStore()
+  const { setTransactions, setCGTResults, setIsLoading, transactions } = useTransactionStore()
   const [isChanging, setIsChanging] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
   const [openUpward, setOpenUpward] = useState(false)
@@ -29,6 +29,9 @@ export function FXSourceSelector() {
   const buttonRef = useRef<HTMLButtonElement>(null)
 
   const sources: FXSource[] = ['HMRC_MONTHLY', 'HMRC_YEARLY_AVG', 'DAILY_SPOT']
+
+  // Check if any transactions have FX errors
+  const hasFxErrors = transactions.some(tx => tx.fx_error)
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -92,7 +95,9 @@ export function FXSourceSelector() {
         className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md border transition-colors ${
           isChanging
             ? 'bg-gray-100 text-gray-400 cursor-wait'
-            : 'bg-white text-blue-700 border-blue-300 hover:bg-blue-50 hover:border-blue-400'
+            : hasFxErrors
+              ? 'bg-red-50 text-red-700 border-red-300 hover:bg-red-100 hover:border-red-400'
+              : 'bg-white text-blue-700 border-blue-300 hover:bg-blue-50 hover:border-blue-400'
         }`}
       >
         {isChanging ? (
@@ -117,6 +122,11 @@ export function FXSourceSelector() {
           </>
         ) : (
           <>
+            {hasFxErrors && (
+              <svg className="h-4 w-4 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+            )}
             {FXSourceDisplayNames[fxSource]}
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
