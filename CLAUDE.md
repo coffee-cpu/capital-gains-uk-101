@@ -99,21 +99,6 @@ All processing is client-side. The app uses IndexedDB to persist:
 - ❌ **DON'T**: Put computed fields in GenericTransaction
 - ❌ **DON'T**: Call split adjustments "normalization" - that term is for converting broker formats to GenericTransaction
 
-**Example Flow**:
-```typescript
-// Parsing: Schwab CSV → GenericTransaction
-{ id: '1', symbol: 'AAPL', date: '2020-06-15', quantity: 25, price: 360.00 }
-
-// Enrichment Pass 1: Stock splits (4:1 split on 2020-08-31)
-{ ...above, split_adjusted_quantity: 100, split_adjusted_price: 90.00, split_multiplier: 4.0 }
-
-// Enrichment Pass 2: FX conversion
-{ ...above, fx_rate: 1.25, price_gbp: 288.00, value_gbp: 7200.00 }
-
-// Enrichment Pass 3: Tax year & CGT matching
-{ ...above, tax_year: '2020/21', gain_group: 'SECTION_104' }
-```
-
 #### 2. Broker Detection & Parsing (`src/lib/brokerDetector.ts`, `src/lib/parsers/`)
 The `detectBroker()` function inspects CSV headers to identify the source format. Each broker has a parser in `src/lib/parsers/` that converts raw CSV rows to GenericTransaction format.
 
@@ -135,29 +120,9 @@ Each parser must:
 #### 3. Enrichment Pipeline (`src/lib/enrichment.ts`)
 
 The `enrichTransactions()` function performs three sequential passes:
-
-```typescript
-export async function enrichTransactions(
-  transactions: GenericTransaction[]  // Raw CSV data
-): Promise<EnrichedTransaction[]> {   // Fully computed
-  // Pass 1: Stock split adjustments (sync)
-  const normalized = applySplitNormalization(transactions)
-
-  // Pass 2: FX conversion (async - API calls)
-  for (const tx of normalized) {
-    const fxRate = await getFXRate(tx.date, tx.currency)
-    // ... convert to GBP
-  }
-
-  // Pass 3: Tax year calculation (sync)
-  // ... assign UK tax years
-}
-```
-
-**Why this order?**
-1. Stock splits must be applied first (quantities must be in comparable units)
-2. FX conversion happens on normalized quantities
-3. Tax year is independent of other fields
+1. **Stock splits** (sync) - quantities must be in comparable units first
+2. **FX conversion** (async) - API calls to Bank of England for GBP rates
+3. **Tax year calculation** (sync) - assigns UK tax years
 
 #### 4. State Management
 - **Runtime state**: Zustand store (`src/stores/transactionStore.ts`) holds currently loaded transactions and selected tax year
