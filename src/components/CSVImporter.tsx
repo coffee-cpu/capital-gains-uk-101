@@ -393,7 +393,7 @@ export function CSVImporter() {
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
-            <span>Supported formats (9)</span>
+            <span>Supported formats & export guides (9)</span>
           </button>
           {showFormats && <ul className="space-y-2 ml-6">
             {/* Charles Schwab */}

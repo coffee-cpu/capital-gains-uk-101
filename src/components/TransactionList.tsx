@@ -179,7 +179,7 @@ export function TransactionList() {
                   {incompleteTransactions.length} Stock Plan Activity transaction{incompleteTransactions.length !== 1 ? 's' : ''} for {incompleteSymbols.join(', ')} {incompleteSymbols.length !== 1 ? 'are' : 'is'} missing price data.
                 </p>
                 <p className="mt-1">
-                  <strong>Action required:</strong> Please upload your Charles Schwab Equity Awards transaction history to get complete pricing information.
+                  <strong>Action required:</strong> Upload your Charles Schwab Equity Awards transaction history to get complete pricing information. See "Supported formats & export guides" in the Import section for instructions.
                 </p>
               </div>
             </div>
@@ -588,7 +588,7 @@ export function TransactionList() {
                         </Tooltip>
                       )}
                       {isIgnored && !hasFxError && (
-                        <Tooltip content="Ignored: Stock Plan Activity is incomplete. Use Charles Schwab Equity Awards file for complete transaction data. Not included in CGT calculations.">
+                        <Tooltip content="Ignored: Stock Plan Activity is incomplete. Upload Charles Schwab Equity Awards file for complete transaction data (see 'Supported formats & export guides' in the Import section).">
                           <span className="inline-flex items-center cursor-help">
                             <svg className="h-4 w-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
                               <path fillRule="evenodd" d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z" clipRule="evenodd" />
