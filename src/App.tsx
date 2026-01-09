@@ -86,11 +86,19 @@ function App() {
   }
 
   const handleStartFresh = async () => {
-    await db.transactions.clear()
-    await db.fx_rates.clear()
-    await db.imported_files.clear()
+    // Delete entire IndexedDB database (handles schema migration issues)
+    await db.delete()
+
+    // Clear Zustand store
     setTransactions([])
+
+    // Clear localStorage (Zustand persist)
+    localStorage.removeItem('cgt-settings')
+
     setShowSessionDialog(false)
+
+    // Reload page to ensure clean state
+    window.location.reload()
   }
 
   // Render About page
