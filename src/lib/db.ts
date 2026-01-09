@@ -71,3 +71,18 @@ export class CGTDatabase extends Dexie {
 }
 
 export const db = new CGTDatabase()
+
+/**
+ * Clears all application data (database + localStorage) and reloads the page.
+ * Use this for "Start Fresh" or "Clear All Data" functionality.
+ */
+export async function clearAllData(): Promise<void> {
+  // Delete entire IndexedDB database (handles schema migration issues)
+  await db.delete()
+
+  // Clear localStorage (Zustand persist)
+  localStorage.removeItem('cgt-settings')
+
+  // Reload page to ensure clean state
+  window.location.reload()
+}

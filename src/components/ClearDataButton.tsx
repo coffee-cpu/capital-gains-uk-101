@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { db } from '../lib/db'
-import { useTransactionStore } from '../stores/transactionStore'
+import { clearAllData } from '../lib/db'
 
 interface ClearDataButtonProps {
   variant?: 'default' | 'compact'
@@ -9,24 +8,11 @@ interface ClearDataButtonProps {
 export function ClearDataButton({ variant = 'default' }: ClearDataButtonProps) {
   const [showConfirm, setShowConfirm] = useState(false)
   const [isClearing, setIsClearing] = useState(false)
-  const setTransactions = useTransactionStore((state) => state.setTransactions)
 
   const handleClear = async () => {
     setIsClearing(true)
     try {
-      // Delete entire IndexedDB database (handles schema migration issues)
-      await db.delete()
-
-      // Clear Zustand store
-      setTransactions([])
-
-      // Clear localStorage (Zustand persist)
-      localStorage.removeItem('cgt-settings')
-
-      setShowConfirm(false)
-
-      // Reload page to ensure clean state
-      window.location.reload()
+      await clearAllData()
     } catch (err) {
       console.error('Failed to clear data:', err)
       setIsClearing(false)

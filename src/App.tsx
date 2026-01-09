@@ -11,7 +11,7 @@ import { HelpPanel } from './components/HelpPanel'
 import { SessionResumeDialog } from './components/SessionResumeDialog'
 import { useTransactionStore } from './stores/transactionStore'
 import { useSettingsStore, useInitializeSettings } from './stores/settingsStore'
-import { db } from './lib/db'
+import { db, clearAllData } from './lib/db'
 import { processTransactionsFromDB } from './lib/transactionProcessor'
 
 function App() {
@@ -86,19 +86,8 @@ function App() {
   }
 
   const handleStartFresh = async () => {
-    // Delete entire IndexedDB database (handles schema migration issues)
-    await db.delete()
-
-    // Clear Zustand store
-    setTransactions([])
-
-    // Clear localStorage (Zustand persist)
-    localStorage.removeItem('cgt-settings')
-
     setShowSessionDialog(false)
-
-    // Reload page to ensure clean state
-    window.location.reload()
+    await clearAllData()
   }
 
   // Render About page
