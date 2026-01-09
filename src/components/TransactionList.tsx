@@ -415,6 +415,21 @@ export function TransactionList() {
                           label: '30-Day',
                           title: tooltip
                         })
+                      } else if (matching.rule === 'SHORT_SELL') {
+                        const quantityMatched = matching.quantityMatched
+                        const hasSplit = tx.split_multiplier && tx.split_multiplier !== 1.0
+                        let tooltip: string
+                        if (hasSplit && tx.split_multiplier) {
+                          const originalMatched = quantityMatched / tx.split_multiplier
+                          tooltip = `Short Sell: ${originalMatched.toFixed(2)} shares (${quantityMatched.toFixed(2)} split-adjusted) sold short and covered by subsequent purchase`
+                        } else {
+                          tooltip = `Short Sell: ${quantityMatched.toFixed(2)} shares sold short and covered by subsequent purchase`
+                        }
+                        badges.push({
+                          className: 'bg-pink-100 text-pink-800 border-pink-300',
+                          label: 'Short Sell',
+                          title: tooltip
+                        })
                       } else if (matching.rule === 'SECTION_104' && matching.quantityMatched > 0) {
                         // Only show Section 104 badge if some quantity was actually matched
                         const quantityMatched = matching.quantityMatched
@@ -486,6 +501,19 @@ export function TransactionList() {
                       badges.push({
                         className: 'bg-orange-100 text-orange-800 border-orange-300',
                         label: '30-Day',
+                        title: tooltip
+                      })
+                    } else if (rule === 'SHORT_SELL') {
+                      let tooltip: string
+                      if (hasSplit && tx.split_multiplier) {
+                        const originalQty = qty / tx.split_multiplier
+                        tooltip = `Short Sell: ${originalQty.toFixed(2)} shares (${qty.toFixed(2)} split-adjusted) used to cover a short sell`
+                      } else {
+                        tooltip = `Short Sell: ${qty.toFixed(2)} shares used to cover a short sell`
+                      }
+                      badges.push({
+                        className: 'bg-pink-100 text-pink-800 border-pink-300',
+                        label: 'Short Sell',
                         title: tooltip
                       })
                     }

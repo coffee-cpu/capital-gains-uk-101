@@ -20,6 +20,7 @@ export const GenericTransactionSchema = z.object({
   ratio: z.string().nullable().optional().describe('Stock split ratio (e.g., "10:1", "2:1", "1:10"). Only used for STOCK_SPLIT transactions.'),
   incomplete: z.boolean().optional().describe('True if transaction is missing required data (e.g., Stock Plan Activity without price)'),
   ignored: z.boolean().optional().describe('True if transaction should be excluded from calculations (e.g., Stock Plan Activity which is always incomplete)'),
+  is_short_sell: z.boolean().optional().describe('True if this is an explicit short sell as reported by the broker (e.g., Schwab "Sell Short" action)'),
   imported_at: z.string().optional().describe('ISO timestamp when transaction was imported (e.g., 2024-01-15T10:30:00.000Z)'),
 })
 
@@ -46,7 +47,7 @@ export const EnrichedTransactionSchema = GenericTransactionSchema.extend({
 
   // Tax year and CGT matching (computed during enrichment, Step 3)
   tax_year: z.string().describe('UK tax year (e.g. 2023/24)'),
-  gain_group: z.enum(['SAME_DAY', '30_DAY', 'SECTION_104', 'NONE']).describe('HMRC matching rule applied'),
+  gain_group: z.enum(['SAME_DAY', '30_DAY', 'SECTION_104', 'SHORT_SELL', 'NONE']).describe('HMRC matching rule applied'),
   match_groups: z.array(z.string()).optional().describe('Array of match group IDs this transaction belongs to. A single acquisition can match multiple disposals, so this is an array.'),
 })
 
@@ -73,6 +74,7 @@ export const GainGroup = {
   SAME_DAY: 'SAME_DAY',
   THIRTY_DAY: '30_DAY',
   SECTION_104: 'SECTION_104',
+  SHORT_SELL: 'SHORT_SELL',
   NONE: 'NONE',
 } as const
 

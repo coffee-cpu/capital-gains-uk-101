@@ -61,7 +61,34 @@ describe('CGT Engine', () => {
     })
 
     it('should apply 30-day rule after same-day', () => {
+      // To test 30-day rule, we need a scenario where:
+      // 1. Shares are owned (via prior BUY)
+      // 2. SELL happens (normal disposal, not short sell)
+      // 3. BUY happens within 30 days after the SELL
+      // The 30-day rule should match the SELL with the subsequent BUY
       const transactions: EnrichedTransaction[] = [
+        {
+          id: 'tx-0',
+          source: 'test',
+          symbol: 'AAPL',
+          name: 'Apple Inc.',
+          date: '2023-05-01',
+          type: 'BUY',
+          quantity: 10,
+          price: 170,
+          currency: 'USD',
+          total: 1700,
+          fee: 5,
+          notes: null,
+          fx_rate: 1.27,
+          price_gbp: 133.86,
+          value_gbp: 1338.58,
+          fee_gbp: 3.94,
+          fx_source: 'HMRC',
+          fx_error: null,
+          tax_year: '2023/24',
+          gain_group: 'NONE',
+        },
         {
           id: 'tx-1',
           source: 'test',
@@ -110,8 +137,9 @@ describe('CGT Engine', () => {
 
       const result = calculateCGT(transactions)
 
-      expect(result.transactions[0].gain_group).toBe('30_DAY')
+      // tx-1 (SELL) should be matched with tx-2 (BUY) under 30-day rule
       expect(result.transactions[1].gain_group).toBe('30_DAY')
+      expect(result.transactions[2].gain_group).toBe('30_DAY')
       expect(result.disposals).toHaveLength(1)
       expect(result.disposals[0].matchings[0].rule).toBe('30_DAY')
     })
