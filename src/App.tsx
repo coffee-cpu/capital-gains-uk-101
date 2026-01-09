@@ -11,7 +11,7 @@ import { HelpPanel } from './components/HelpPanel'
 import { SessionResumeDialog } from './components/SessionResumeDialog'
 import { useTransactionStore } from './stores/transactionStore'
 import { useSettingsStore, useInitializeSettings } from './stores/settingsStore'
-import { db } from './lib/db'
+import { db, clearAllData } from './lib/db'
 import { processTransactionsFromDB } from './lib/transactionProcessor'
 
 function App() {
@@ -86,11 +86,8 @@ function App() {
   }
 
   const handleStartFresh = async () => {
-    await db.transactions.clear()
-    await db.fx_rates.clear()
-    await db.imported_files.clear()
-    setTransactions([])
     setShowSessionDialog(false)
+    await clearAllData()
   }
 
   // Render About page
