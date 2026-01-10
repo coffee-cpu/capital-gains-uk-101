@@ -4,6 +4,7 @@ import { ClearDataButton } from './ClearDataButton'
 import { Tooltip } from './Tooltip'
 import { FXSourceSelector } from './FXSourceSelector'
 import { exportTransactionsToCSV } from '../utils/csvExport'
+import { isAcquisition, isDisposal, getUnitLabel } from '../lib/cgt/utils'
 
 // Helper to get currency symbol
 function getCurrencySymbol(currency: string): string {
@@ -327,8 +328,8 @@ export function TransactionList() {
           <tbody className="bg-white divide-y divide-gray-200">
             {sortedTransactions.map((tx) => {
               // Determine if this transaction is relevant to CGT calculations
-              // Only BUY/SELL transactions directly affect capital gains
-              const isRelevant = tx.type === 'BUY' || tx.type === 'SELL'
+              // BUY/SELL and options transactions directly affect capital gains
+              const isRelevant = isAcquisition(tx) || isDisposal(tx)
               const isIncomplete = tx.incomplete && !tx.ignored
               const isIgnored = tx.ignored
               const hasFxError = !!tx.fx_error
@@ -358,12 +359,12 @@ export function TransactionList() {
 
               const nonRelevantTooltip = getNonRelevantTooltip()
 
-              // Get CGT badges - Both SELL and BUY transactions can have multiple rules
+              // Get CGT badges - Both disposal and acquisition transactions can have multiple rules
               const getCGTBadges = () => {
                 const badges: Array<{ className: string; label: string; title: string }> = []
 
-                if (tx.type === 'SELL') {
-                  // For SELL transactions, show all matching rules from DisposalRecord
+                if (isDisposal(tx)) {
+                  // For disposal transactions, show all matching rules from DisposalRecord
                   const disposal = getDisposalForTransaction(tx.id)
 
                   // Add warning badge if disposal is incomplete (insufficient acquisition data)
@@ -372,9 +373,9 @@ export function TransactionList() {
                     let tooltip: string
                     if (hasSplit && tx.split_multiplier) {
                       const originalUnmatched = disposal.unmatchedQuantity / tx.split_multiplier
-                      tooltip = `Warning: ${originalUnmatched.toFixed(2)} shares (${disposal.unmatchedQuantity.toFixed(2)} split-adjusted) could not be matched to any acquisitions. Missing acquisition data - did you buy shares before you started importing transactions?`
+                      tooltip = `Warning: ${originalUnmatched.toFixed(2)} ${getUnitLabel(tx)} (${disposal.unmatchedQuantity.toFixed(2)} split-adjusted) could not be matched to any acquisitions. Missing acquisition data - did you buy ${getUnitLabel(tx)} before you started importing transactions?`
                     } else {
-                      tooltip = `Warning: ${disposal.unmatchedQuantity.toFixed(2)} shares could not be matched to any acquisitions. Missing acquisition data - did you buy shares before you started importing transactions?`
+                      tooltip = `Warning: ${disposal.unmatchedQuantity.toFixed(2)} ${getUnitLabel(tx)} could not be matched to any acquisitions. Missing acquisition data - did you buy ${getUnitLabel(tx)} before you started importing transactions?`
                     }
                     badges.push({
                       className: 'bg-red-100 text-red-800 border-red-300',
@@ -391,9 +392,9 @@ export function TransactionList() {
                         let tooltip: string
                         if (hasSplit && tx.split_multiplier) {
                           const originalMatched = quantityMatched / tx.split_multiplier
-                          tooltip = `Same Day: Matched ${originalMatched.toFixed(2)} shares (${quantityMatched.toFixed(2)} split-adjusted) bought on same day (TCGA92/S105(1))`
+                          tooltip = `Same Day: Matched ${originalMatched.toFixed(2)} ${getUnitLabel(tx)} (${quantityMatched.toFixed(2)} split-adjusted) bought on same day (TCGA92/S105(1))`
                         } else {
-                          tooltip = `Same Day: Matched ${quantityMatched.toFixed(2)} shares bought on same day (TCGA92/S105(1))`
+                          tooltip = `Same Day: Matched ${quantityMatched.toFixed(2)} ${getUnitLabel(tx)} bought on same day (TCGA92/S105(1))`
                         }
                         badges.push({
                           className: 'bg-blue-100 text-blue-800 border-blue-300',
@@ -406,9 +407,9 @@ export function TransactionList() {
                         let tooltip: string
                         if (hasSplit && tx.split_multiplier) {
                           const originalMatched = quantityMatched / tx.split_multiplier
-                          tooltip = `30-Day: Matched ${originalMatched.toFixed(2)} shares (${quantityMatched.toFixed(2)} split-adjusted) repurchased within 30 days (TCGA92/S106A(5))`
+                          tooltip = `30-Day: Matched ${originalMatched.toFixed(2)} ${getUnitLabel(tx)} (${quantityMatched.toFixed(2)} split-adjusted) repurchased within 30 days (TCGA92/S106A(5))`
                         } else {
-                          tooltip = `30-Day: Matched ${quantityMatched.toFixed(2)} shares repurchased within 30 days (TCGA92/S106A(5))`
+                          tooltip = `30-Day: Matched ${quantityMatched.toFixed(2)} ${getUnitLabel(tx)} repurchased within 30 days (TCGA92/S106A(5))`
                         }
                         badges.push({
                           className: 'bg-orange-100 text-orange-800 border-orange-300',
@@ -421,9 +422,9 @@ export function TransactionList() {
                         let tooltip: string
                         if (hasSplit && tx.split_multiplier) {
                           const originalMatched = quantityMatched / tx.split_multiplier
-                          tooltip = `Short Sell: ${originalMatched.toFixed(2)} shares (${quantityMatched.toFixed(2)} split-adjusted) sold short and covered by subsequent purchase`
+                          tooltip = `Short Sell: ${originalMatched.toFixed(2)} ${getUnitLabel(tx)} (${quantityMatched.toFixed(2)} split-adjusted) sold short and covered by subsequent purchase`
                         } else {
-                          tooltip = `Short Sell: ${quantityMatched.toFixed(2)} shares sold short and covered by subsequent purchase`
+                          tooltip = `Short Sell: ${quantityMatched.toFixed(2)} ${getUnitLabel(tx)} sold short and covered by subsequent purchase`
                         }
                         badges.push({
                           className: 'bg-pink-100 text-pink-800 border-pink-300',
@@ -442,9 +443,9 @@ export function TransactionList() {
                         if (hasSplit && tx.split_multiplier) {
                           // quantityMatched is split-adjusted, calculate original
                           const originalMatched = quantityMatched / tx.split_multiplier
-                          tooltip = `Section 104: Matched ${originalMatched.toFixed(2)} shares (${quantityMatched.toFixed(2)} split-adjusted) at average cost £${avgCost.toFixed(2)}/share from pooled holdings`
+                          tooltip = `Section 104: Matched ${originalMatched.toFixed(2)} ${getUnitLabel(tx)} (${quantityMatched.toFixed(2)} split-adjusted) at average cost £${avgCost.toFixed(2)}/${getUnitLabel(tx, false)} from pooled holdings`
                         } else {
-                          tooltip = `Section 104: Matched ${quantityMatched.toFixed(2)} shares at average cost £${avgCost.toFixed(2)}/share from pooled holdings`
+                          tooltip = `Section 104: Matched ${quantityMatched.toFixed(2)} ${getUnitLabel(tx)} at average cost £${avgCost.toFixed(2)}/${getUnitLabel(tx, false)} from pooled holdings`
                         }
 
                         badges.push({
@@ -455,8 +456,8 @@ export function TransactionList() {
                       }
                     }
                   }
-                } else if (tx.type === 'BUY') {
-                  // For BUY transactions, find all matchings where this BUY is an acquisition
+                } else if (isAcquisition(tx)) {
+                  // For acquisition transactions, find all matchings where this is an acquisition
                   const allDisposals = disposals // Use cached disposals instead of calling getDisposals() again
                   let totalMatched = 0
                   const ruleQuantities: Map<string, number> = new Map()
@@ -481,9 +482,9 @@ export function TransactionList() {
                       let tooltip: string
                       if (hasSplit && tx.split_multiplier) {
                         const originalQty = qty / tx.split_multiplier
-                        tooltip = `Same Day: ${originalQty.toFixed(2)} shares (${qty.toFixed(2)} split-adjusted) matched to same-day disposal (TCGA92/S105(1))`
+                        tooltip = `Same Day: ${originalQty.toFixed(2)} ${getUnitLabel(tx)} (${qty.toFixed(2)} split-adjusted) matched to same-day disposal (TCGA92/S105(1))`
                       } else {
-                        tooltip = `Same Day: ${qty.toFixed(2)} shares matched to same-day disposal (TCGA92/S105(1))`
+                        tooltip = `Same Day: ${qty.toFixed(2)} ${getUnitLabel(tx)} matched to same-day disposal (TCGA92/S105(1))`
                       }
                       badges.push({
                         className: 'bg-blue-100 text-blue-800 border-blue-300',
@@ -494,9 +495,9 @@ export function TransactionList() {
                       let tooltip: string
                       if (hasSplit && tx.split_multiplier) {
                         const originalQty = qty / tx.split_multiplier
-                        tooltip = `30-Day: ${originalQty.toFixed(2)} shares (${qty.toFixed(2)} split-adjusted) matched to disposal (bed & breakfast rule TCGA92/S106A(5))`
+                        tooltip = `30-Day: ${originalQty.toFixed(2)} ${getUnitLabel(tx)} (${qty.toFixed(2)} split-adjusted) matched to disposal (bed & breakfast rule TCGA92/S106A(5))`
                       } else {
-                        tooltip = `30-Day: ${qty.toFixed(2)} shares matched to disposal (bed & breakfast rule TCGA92/S106A(5))`
+                        tooltip = `30-Day: ${qty.toFixed(2)} ${getUnitLabel(tx)} matched to disposal (bed & breakfast rule TCGA92/S106A(5))`
                       }
                       badges.push({
                         className: 'bg-orange-100 text-orange-800 border-orange-300',
@@ -507,9 +508,9 @@ export function TransactionList() {
                       let tooltip: string
                       if (hasSplit && tx.split_multiplier) {
                         const originalQty = qty / tx.split_multiplier
-                        tooltip = `Short Sell: ${originalQty.toFixed(2)} shares (${qty.toFixed(2)} split-adjusted) used to cover a short sell`
+                        tooltip = `Short Sell: ${originalQty.toFixed(2)} ${getUnitLabel(tx)} (${qty.toFixed(2)} split-adjusted) used to cover a short sell`
                       } else {
-                        tooltip = `Short Sell: ${qty.toFixed(2)} shares used to cover a short sell`
+                        tooltip = `Short Sell: ${qty.toFixed(2)} ${getUnitLabel(tx)} used to cover a short sell`
                       }
                       badges.push({
                         className: 'bg-pink-100 text-pink-800 border-pink-300',
@@ -529,9 +530,9 @@ export function TransactionList() {
                     if (poolDetails) {
                       if (hasSplit && tx.split_multiplier) {
                         const originalRemaining = remainingQty / tx.split_multiplier
-                        tooltip = `Section 104: ${originalRemaining.toFixed(2)} shares (${remainingQty.toFixed(2)} split-adjusted) added to pool (new balance: ${poolDetails.quantity.toFixed(2)} split-adjusted shares at £${poolDetails.averageCost.toFixed(2)}/share average cost)`
+                        tooltip = `Section 104: ${originalRemaining.toFixed(2)} ${getUnitLabel(tx)} (${remainingQty.toFixed(2)} split-adjusted) added to pool (new balance: ${poolDetails.quantity.toFixed(2)} split-adjusted ${getUnitLabel(tx)} at £${poolDetails.averageCost.toFixed(2)}/${getUnitLabel(tx, false)} average cost)`
                       } else {
-                        tooltip = `Section 104: ${remainingQty.toFixed(2)} shares added to pool (new balance: ${poolDetails.quantity.toFixed(2)} shares at £${poolDetails.averageCost.toFixed(2)}/share average cost)`
+                        tooltip = `Section 104: ${remainingQty.toFixed(2)} ${getUnitLabel(tx)} added to pool (new balance: ${poolDetails.quantity.toFixed(2)} ${getUnitLabel(tx)} at £${poolDetails.averageCost.toFixed(2)}/${getUnitLabel(tx, false)} average cost)`
                       }
                       badges.push({
                         className: 'bg-green-100 text-green-800 border-green-300',
@@ -541,9 +542,9 @@ export function TransactionList() {
                     } else {
                       if (hasSplit && tx.split_multiplier) {
                         const originalRemaining = remainingQty / tx.split_multiplier
-                        tooltip = `Section 104: ${originalRemaining.toFixed(2)} shares (${remainingQty.toFixed(2)} split-adjusted) added to pooled holdings (TCGA92/S104)`
+                        tooltip = `Section 104: ${originalRemaining.toFixed(2)} ${getUnitLabel(tx)} (${remainingQty.toFixed(2)} split-adjusted) added to pooled holdings (TCGA92/S104)`
                       } else {
-                        tooltip = `Section 104: ${remainingQty.toFixed(2)} shares added to pooled holdings (TCGA92/S104)`
+                        tooltip = `Section 104: ${remainingQty.toFixed(2)} ${getUnitLabel(tx)} added to pooled holdings (TCGA92/S104)`
                       }
                       badges.push({
                         className: 'bg-green-100 text-green-800 border-green-300',
@@ -639,6 +640,13 @@ export function TransactionList() {
                         className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                           tx.type === 'BUY' ? 'bg-green-100 text-green-800' :
                           tx.type === 'SELL' ? 'bg-red-100 text-red-800' :
+                          tx.type === 'OPTIONS_BUY_TO_OPEN' ? 'bg-green-100 text-green-800' :
+                          tx.type === 'OPTIONS_BUY_TO_CLOSE' ? 'bg-green-100 text-green-800' :
+                          tx.type === 'OPTIONS_SELL_TO_OPEN' ? 'bg-red-100 text-red-800' :
+                          tx.type === 'OPTIONS_SELL_TO_CLOSE' ? 'bg-red-100 text-red-800' :
+                          tx.type === 'OPTIONS_ASSIGNED' ? 'bg-red-100 text-red-800' :
+                          tx.type === 'OPTIONS_EXPIRED' ? 'bg-gray-100 text-gray-800' :
+                          tx.type === 'OPTIONS_STOCK_SPLIT' ? 'bg-indigo-100 text-indigo-800' :
                           tx.type === 'DIVIDEND' ? 'bg-blue-100 text-blue-800' :
                           tx.type === 'INTEREST' ? 'bg-purple-100 text-purple-800' :
                           tx.type === 'TAX' ? 'bg-yellow-100 text-yellow-800' :
@@ -682,7 +690,7 @@ export function TransactionList() {
                           const dateText = splitDates ? ` on ${splitDates}` : ''
 
                           return (
-                            <Tooltip content={`Split-adjusted quantity: ${tx.split_adjusted_quantity.toFixed(2)} shares (${tx.split_multiplier}x multiplier from ${splitCount} ${splitText}${dateText})`}>
+                            <Tooltip content={`Split-adjusted quantity: ${tx.split_adjusted_quantity.toFixed(2)} ${getUnitLabel(tx)} (${tx.split_multiplier}x multiplier from ${splitCount} ${splitText}${dateText})`}>
                               <div className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 bg-purple-50 text-purple-700 rounded border border-purple-200 cursor-help">
                                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
@@ -700,7 +708,7 @@ export function TransactionList() {
                       <div className="flex items-center gap-2">
                         <span>{getCurrencySymbol(tx.currency)}{tx.price.toFixed(2)}</span>
                         {tx.split_multiplier && tx.split_multiplier !== 1.0 && tx.split_adjusted_price != null && (
-                          <Tooltip content={`Split-adjusted price: ${getCurrencySymbol(tx.currency)}${tx.split_adjusted_price.toFixed(2)}/share (original price ÷ ${tx.split_multiplier})`}>
+                          <Tooltip content={`Split-adjusted price: ${getCurrencySymbol(tx.currency)}${tx.split_adjusted_price.toFixed(2)}/${getUnitLabel(tx, false)} (original price ÷ ${tx.split_multiplier})`}>
                             <div className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 bg-purple-50 text-purple-700 rounded border border-purple-200 cursor-help">
                               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17l-5-5m0 0l5-5m-5 5h12" />
@@ -727,7 +735,7 @@ export function TransactionList() {
                           <span>£{tx.price_gbp.toFixed(2)}</span>
                         )}
                         {tx.split_multiplier && tx.split_multiplier !== 1.0 && tx.split_adjusted_price_gbp !== null && tx.split_adjusted_price_gbp !== undefined && (
-                          <Tooltip content={`Split-adjusted price: £${tx.split_adjusted_price_gbp.toFixed(2)}/share (original price ÷ ${tx.split_multiplier})`}>
+                          <Tooltip content={`Split-adjusted price: £${tx.split_adjusted_price_gbp.toFixed(2)}/${getUnitLabel(tx, false)} (original price ÷ ${tx.split_multiplier})`}>
                             <div className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 bg-purple-50 text-purple-700 rounded border border-purple-200 cursor-help">
                               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17l-5-5m0 0l5-5m-5 5h12" />

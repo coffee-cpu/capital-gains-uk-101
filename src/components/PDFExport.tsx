@@ -137,6 +137,10 @@ function createStyles(StyleSheet: any) {
     backgroundColor: '#d1fae5',
     color: '#065f46',
   },
+  shortSellGroup: {
+    backgroundColor: '#fce7f3',
+    color: '#9d174d',
+  },
   disposalCard: {
     marginBottom: 12,
     padding: 10,
@@ -286,15 +290,17 @@ function createCGTReportDocument(Document: any, Page: any, Text: any, View: any,
                             .map((matching, mIdx) => (
                               <View key={mIdx} style={{ backgroundColor: '#f9fafb', borderRadius: 3, padding: 6, marginBottom: 4 }}>
                                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 3 }}>
-                                  <View style={[
+                                <View style={[
                                     styles.gainGroup,
                                     matching.rule === 'SAME_DAY' ? styles.sameDayGroup :
                                     matching.rule === '30_DAY' ? styles.thirtyDayGroup :
+                                    matching.rule === 'SHORT_SELL' ? styles.shortSellGroup :
                                     styles.section104Group
                                   ]}>
                                     <Text style={{ fontSize: 7 }}>
                                       {matching.rule === 'SAME_DAY' ? 'Same Day' :
                                        matching.rule === '30_DAY' ? '30-Day Rule' :
+                                       matching.rule === 'SHORT_SELL' ? 'Short Sell' :
                                        'Section 104 Pool'}
                                     </Text>
                                   </View>

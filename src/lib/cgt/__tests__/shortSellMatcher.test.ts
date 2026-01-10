@@ -234,6 +234,40 @@ describe('Short Sell Matcher', () => {
       expect(matchings[0].disposal.id).toBe('sell-1')
     })
 
+    it('should match same-day short sell with same-day covering buy (options scenario)', () => {
+      // Simulates options trading: Sell to Open and Buy to Close on the same day
+      // e.g., SMCI 03/22/2024 1200.00 C - Sell to Open then Buy to Close on 03/18/2024
+      const transactions: EnrichedTransaction[] = [
+        // Note: Input order has BUY first - sort should still process short sell first
+        createTransaction({
+          id: 'buy-to-close',
+          date: '2024-03-18',
+          type: 'BUY',
+          quantity: 1,
+          price: 9.50,
+          symbol: 'SMCI 03/22/2024 1200.00 C',
+        }),
+        createTransaction({
+          id: 'sell-to-open',
+          date: '2024-03-18',
+          type: 'SELL',
+          quantity: 1,
+          price: 41.50,
+          symbol: 'SMCI 03/22/2024 1200.00 C',
+          is_short_sell: true,
+        }),
+      ]
+
+      const matchings = applyShortSellRule(transactions)
+
+      // Should match as SHORT_SELL, not fall through to SAME_DAY rule
+      expect(matchings).toHaveLength(1)
+      expect(matchings[0].rule).toBe('SHORT_SELL')
+      expect(matchings[0].disposal.id).toBe('sell-to-open')
+      expect(matchings[0].acquisitions[0].transaction.id).toBe('buy-to-close')
+      expect(matchings[0].quantityMatched).toBe(1)
+    })
+
     it('should handle empty transactions', () => {
       const matchings = applyShortSellRule([])
       expect(matchings).toHaveLength(0)

@@ -5,7 +5,7 @@ import { applySameDayRule, markSameDayMatches } from './sameDayMatcher'
 import { applyThirtyDayRule, markThirtyDayMatches } from './thirtyDayMatcher'
 import { applySection104Pooling, markSection104Matches } from './section104Pool'
 import { getTaxYearBounds } from '../../utils/taxYear'
-import { getEffectiveQuantity } from './utils'
+import { getEffectiveQuantity, isAcquisition, isDisposal } from './utils'
 
 /**
  * CGT Calculation Engine
@@ -68,8 +68,8 @@ export function calculateCGT(
   const metadata = {
     calculatedAt: new Date().toISOString(),
     totalTransactions: activeTransactions.length,
-    totalBuys: activeTransactions.filter(tx => tx.type === 'BUY').length,
-    totalSells: activeTransactions.filter(tx => tx.type === 'SELL').length,
+    totalBuys: activeTransactions.filter(tx => isAcquisition(tx)).length,
+    totalSells: activeTransactions.filter(tx => isDisposal(tx)).length,
   }
 
   // Return all transactions (including ignored ones) so they can be displayed in UI
@@ -126,11 +126,17 @@ function createDisposalRecords(matchings: MatchingResult[]): DisposalRecord[] {
     const isIncomplete = unmatchedQuantity > 0
 
     // Calculate proceeds - ONLY for matched portion to ensure accurate CGT calculation
+    //
+    // For options transactions, the price is quoted per-share but quantity is in contracts.
+    // Each contract typically represents 100 shares (contract_size), so we need to multiply
+    // quantity by contract_size to get the correct proceeds calculation.
     const pricePerShare = disposal.price_gbp || 0
-    const feePerShare = disposal.fee_gbp ? disposal.fee_gbp / disposalQuantity : 0
+    const contractMultiplier = disposal.contract_size || 1
+    const feePerShare = disposal.fee_gbp ? disposal.fee_gbp / (disposalQuantity * contractMultiplier) : 0
 
     // For incomplete disposals, only calculate proceeds for matched shares
-    const matchedProceeds = (pricePerShare - feePerShare) * totalMatchedQuantity
+    // Multiply by contract_size for options (e.g., 4 contracts * 100 shares * $1.10/share)
+    const matchedProceeds = (pricePerShare - feePerShare) * totalMatchedQuantity * contractMultiplier
 
     // For complete records, use all proceeds
     const netProceeds = matchedProceeds

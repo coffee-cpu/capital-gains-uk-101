@@ -1,6 +1,6 @@
-import { EnrichedTransaction, TransactionType } from '../../types/transaction'
+import { EnrichedTransaction } from '../../types/transaction'
 import { MatchingResult } from '../../types/cgt'
-import { getEffectiveQuantity, getEffectivePrice } from './utils'
+import { getEffectiveQuantity, getEffectivePrice, isAcquisition, isDisposal } from './utils'
 
 /**
  * Same-Day Matching Rule (TCGA92/S105(1))
@@ -38,8 +38,8 @@ export function applySameDayRule(
 
     // For each date, match buys and sells
     for (const dateTransactions of byDate.values()) {
-      const buys = dateTransactions.filter(tx => tx.type === TransactionType.BUY)
-      const sells = dateTransactions.filter(tx => tx.type === TransactionType.SELL)
+      const buys = dateTransactions.filter(tx => isAcquisition(tx))
+      const sells = dateTransactions.filter(tx => isDisposal(tx))
 
       if (buys.length === 0 || sells.length === 0) {
         continue // No same-day matches possible
@@ -80,7 +80,7 @@ function matchSameDayTransactions(
     const effectiveSellQuantity = getEffectiveQuantity(sell)
     const alreadyMatchedSell = getAlreadyMatchedQuantity(sell, priorMatchings)
     const remainingSellQuantity = effectiveSellQuantity - alreadyMatchedSell
-    
+
     if (remainingSellQuantity <= 0) {
       continue // Already fully matched by prior rules
     }
@@ -103,11 +103,13 @@ function matchSameDayTransactions(
       const quantityToMatch = Math.min(currentRemaining, availableBuyQuantity)
 
       // Calculate cost basis for the matched portion (use split-adjusted price if available)
+      // For options, multiply by contract_size (typically 100) since price is per-share
       const pricePerShare = getEffectivePrice(buy)
       const buyEffectiveQuantity = getEffectiveQuantity(buy)
-      const feePerShare = buy.fee_gbp ? buy.fee_gbp / Math.max(buyEffectiveQuantity, 1) : 0
+      const contractMultiplier = buy.contract_size || 1
+      const feePerShare = buy.fee_gbp ? buy.fee_gbp / Math.max(buyEffectiveQuantity * contractMultiplier, 1) : 0
       const costBasisPerShare = pricePerShare + feePerShare
-      const costBasisGbp = costBasisPerShare * quantityToMatch
+      const costBasisGbp = costBasisPerShare * quantityToMatch * contractMultiplier
 
       acquisitions.push({
         transaction: buy,
