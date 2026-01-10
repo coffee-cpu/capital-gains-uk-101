@@ -48,9 +48,12 @@ function normalizeSchwabRow(row: RawCSVRow, fileId: string, rowIndex: number): G
   // Calculate total (for buys, amount is negative, for sells positive)
   const total = amount !== null ? Math.abs(amount) : (quantity && price ? quantity * price : null)
 
-  // Check if this is Stock Plan Activity - these are always incomplete and should be ignored
-  // Users should use Charles Schwab Equity Awards data instead, which has complete information
+  // Check if this is Stock Plan Activity
   const isStockPlanActivity = action?.toLowerCase() === 'stock plan activity'
+  // Without price, it's incomplete and should be ignored
+  // Users should use Charles Schwab Equity Awards data instead, which has complete information
+  // However, if user manually added price to the CSV, treat it as complete
+  const isIncompleteStockPlanActivity = isStockPlanActivity && price === null
 
   // Extract split ratio for STOCK_SPLIT transactions
   const ratio = type === TransactionType.STOCK_SPLIT
@@ -70,9 +73,13 @@ function normalizeSchwabRow(row: RawCSVRow, fileId: string, rowIndex: number): G
     total,
     fee,
     ratio,
-    notes: isStockPlanActivity ? 'Stock Plan Activity - ignored in favor of Equity Awards data. Upload Charles Schwab Equity Awards file for complete information.' : null,
-    incomplete: isStockPlanActivity,
-    ignored: isStockPlanActivity, // Always ignore Stock Plan Activity transactions
+    notes: isIncompleteStockPlanActivity
+      ? 'Stock Plan Activity - ignored in favor of Equity Awards data. Upload Charles Schwab Equity Awards file for complete information.'
+      : isStockPlanActivity
+        ? 'Stock Plan Activity'
+        : null,
+    incomplete: isIncompleteStockPlanActivity,
+    ignored: isIncompleteStockPlanActivity, // Ignore Stock Plan Activity without price
     is_short_sell: isShortSell || undefined,
   }
 }

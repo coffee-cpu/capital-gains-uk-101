@@ -169,6 +169,52 @@ describe('Schwab Parser', () => {
       expect(result[0].type).toBe(TransactionType.BUY) // Stock Plan Activity = BUY
     })
 
+    it('should mark Stock Plan Activity without price as incomplete/ignored', () => {
+      const rows = [
+        {
+          'Date': '08/15/2024',
+          'Action': 'Stock Plan Activity',
+          'Symbol': 'AAPL',
+          'Description': 'APPLE INC',
+          'Quantity': '17',
+          'Price': '',
+          'Fees & Comm': '',
+          'Amount': '',
+        },
+      ]
+
+      const result = normalizeSchwabTransactions(rows, 'test-file')
+
+      expect(result).toHaveLength(1)
+      expect(result[0].incomplete).toBe(true)
+      expect(result[0].ignored).toBe(true)
+      expect(result[0].notes).toContain('Stock Plan Activity')
+    })
+
+    it('should NOT mark Stock Plan Activity as incomplete if it has price', () => {
+      const rows = [
+        {
+          'Date': '08/15/2024',
+          'Action': 'Stock Plan Activity',
+          'Symbol': 'AAPL',
+          'Description': 'APPLE INC',
+          'Quantity': '17',
+          'Price': '$150.00',
+          'Fees & Comm': '',
+          'Amount': '',
+        },
+      ]
+
+      const result = normalizeSchwabTransactions(rows, 'test-file')
+
+      expect(result).toHaveLength(1)
+      expect(result[0].type).toBe(TransactionType.BUY)
+      expect(result[0].price).toBe(150)
+      expect(result[0].incomplete).toBeFalsy()
+      expect(result[0].ignored).toBeFalsy()
+      expect(result[0].notes).toBe('Stock Plan Activity') // Marked for deduplication
+    })
+
     it('should handle negative amounts (tax adjustments)', () => {
       const rows = [
         {
