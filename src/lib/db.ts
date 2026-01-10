@@ -73,6 +73,42 @@ export class CGTDatabase extends Dexie {
 export const db = new CGTDatabase()
 
 /**
+ * Ensure the database can be opened and upgraded successfully.
+ * If the database has an incompatible schema, automatically clears it.
+ *
+ * This handles scenarios where:
+ * - Database exists with incompatible schema (e.g., changed primary key)
+ * - Upgrade errors that Dexie cannot handle automatically
+ */
+export async function ensureDatabaseCompatible(): Promise<void> {
+  try {
+    // Try to open the database - this triggers any pending upgrades
+    await db.open()
+
+    // Try a simple operation to verify it's working
+    await db.transactions.count()
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error)
+
+    // Check for upgrade errors that require a database reset
+    const needsReset = errorMessage.includes('UpgradeError') ||
+                       errorMessage.includes('changing primary key') ||
+                       errorMessage.includes('DatabaseClosedError')
+
+    if (needsReset) {
+      console.warn('Database schema incompatible, clearing and recreating:', errorMessage)
+      // Delete the incompatible database
+      await db.delete()
+      // Reopen with fresh schema
+      await db.open()
+    } else {
+      // Re-throw unexpected errors
+      throw error
+    }
+  }
+}
+
+/**
  * Clears all application data (database + localStorage) and reloads the page.
  * Use this for "Start Fresh" or "Clear All Data" functionality.
  */

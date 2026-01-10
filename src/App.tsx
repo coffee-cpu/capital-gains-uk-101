@@ -11,13 +11,14 @@ import { HelpPanel } from './components/HelpPanel'
 import { SessionResumeDialog } from './components/SessionResumeDialog'
 import { useTransactionStore } from './stores/transactionStore'
 import { useSettingsStore, useInitializeSettings } from './stores/settingsStore'
-import { db, clearAllData } from './lib/db'
+import { db, clearAllData, ensureDatabaseCompatible } from './lib/db'
 import { processTransactionsFromDB } from './lib/transactionProcessor'
 
 function App() {
   const [currentPage, setCurrentPage] = useState<'calculator' | 'about'>('calculator')
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [showSessionDialog, setShowSessionDialog] = useState(false)
+  const [dbReady, setDbReady] = useState(false)
   const [pendingTransactionCount, setPendingTransactionCount] = useState(0)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [fileSources, setFileSources] = useState<string[]>([])
@@ -26,7 +27,13 @@ function App() {
   const setIsLoading = useTransactionStore((state) => state.setIsLoading)
   const fxSource = useSettingsStore((state) => state.fxSource)
 
-  // Initialize settings from IndexedDB
+  // Ensure database is compatible before anything else
+  // (automatically clears incompatible schemas)
+  useEffect(() => {
+    ensureDatabaseCompatible().then(() => setDbReady(true))
+  }, [])
+
+  // Initialize settings from IndexedDB (only after DB is ready)
   useInitializeSettings()
 
   // Handle hash-based routing
@@ -44,8 +51,10 @@ function App() {
     return () => window.removeEventListener('hashchange', handleHashChange)
   }, [])
 
-  // Check for existing transactions on mount
+  // Check for existing transactions on mount (only after DB is ready)
   useEffect(() => {
+    if (!dbReady) return
+
     const checkExistingSession = async () => {
       const count = await db.transactions.count()
       if (count > 0) {
@@ -64,7 +73,7 @@ function App() {
       }
     }
     checkExistingSession()
-  }, [])
+  }, [dbReady])
 
   // Load and process transactions from IndexedDB
   const loadTransactions = async () => {
