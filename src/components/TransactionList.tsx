@@ -179,7 +179,7 @@ export function TransactionList() {
                   {incompleteTransactions.length} Stock Plan Activity transaction{incompleteTransactions.length !== 1 ? 's' : ''} for {incompleteSymbols.join(', ')} {incompleteSymbols.length !== 1 ? 'are' : 'is'} missing price data.
                 </p>
                 <p className="mt-1">
-                  <strong>Action required:</strong> Upload your Charles Schwab Equity Awards transaction history to get complete pricing information. See "Supported formats & export guides" in the Import section for instructions.
+                  <strong>Action required:</strong> Upload your Charles Schwab Equity Awards transaction history (a separate file from the regular Schwab transaction export) to get complete pricing information. See "Supported formats & export guides" in the Import section for instructions.
                 </p>
               </div>
             </div>
