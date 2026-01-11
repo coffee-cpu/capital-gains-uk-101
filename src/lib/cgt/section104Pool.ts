@@ -1,6 +1,14 @@
 import { EnrichedTransaction, TransactionType } from '../../types/transaction'
 import { Section104Pool, MatchingResult } from '../../types/cgt'
-import { getEffectiveQuantity, getEffectivePrice, isAcquisition, isDisposal } from './utils'
+import {
+  getEffectiveQuantity,
+  getEffectivePrice,
+  isAcquisition,
+  isDisposal,
+  groupBySymbol,
+  getRemainingQuantity,
+  calculateCostBasis,
+} from './utils'
 
 /**
  * Section 104 Pooled Holdings (HMRC CG51620)
@@ -82,14 +90,7 @@ function addToPool(
   transaction: EnrichedTransaction,
   quantity: number
 ): void {
-  // Calculate cost including fees (use split-adjusted price if available)
-  // For options, multiply by contract_size (typically 100) since price is per-share
-  const pricePerShare = getEffectivePrice(transaction)
-  const effectiveQuantity = getEffectiveQuantity(transaction)
-  const contractMultiplier = transaction.contract_size || 1
-  const feePerShare = transaction.fee_gbp ? transaction.fee_gbp / Math.max(effectiveQuantity * contractMultiplier, 1) : 0
-  const costPerShare = pricePerShare + feePerShare
-  const totalCost = costPerShare * quantity * contractMultiplier
+  const totalCost = calculateCostBasis(transaction, quantity)
 
   // Update pool
   pool.quantity += quantity
@@ -214,49 +215,3 @@ export function markSection104Matches(
   })
 }
 
-/**
- * Get remaining unmatched quantity for a transaction
- */
-function getRemainingQuantity(
-  transaction: EnrichedTransaction,
-  matchings: MatchingResult[]
-): number {
-  const originalQuantity = getEffectiveQuantity(transaction)
-
-  // Sum up all matched quantities for this transaction
-  let matchedQuantity = 0
-
-  for (const matching of matchings) {
-    // Check if this transaction is the disposal
-    if (matching.disposal.id === transaction.id) {
-      matchedQuantity += matching.quantityMatched
-    }
-
-    // Check if this transaction is an acquisition
-    for (const acq of matching.acquisitions) {
-      if (acq.transaction.id === transaction.id) {
-        matchedQuantity += acq.quantityMatched
-      }
-    }
-  }
-
-  return Math.max(0, originalQuantity - matchedQuantity)
-}
-
-/**
- * Group transactions by symbol
- */
-function groupBySymbol(
-  transactions: EnrichedTransaction[]
-): Map<string, EnrichedTransaction[]> {
-  const groups = new Map<string, EnrichedTransaction[]>()
-
-  for (const tx of transactions) {
-    if (!groups.has(tx.symbol)) {
-      groups.set(tx.symbol, [])
-    }
-    groups.get(tx.symbol)!.push(tx)
-  }
-
-  return groups
-}

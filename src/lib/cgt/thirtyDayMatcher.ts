@@ -1,6 +1,12 @@
 import { EnrichedTransaction } from '../../types/transaction'
 import { MatchingResult } from '../../types/cgt'
-import { getEffectiveQuantity, getEffectivePrice, isAcquisition, isDisposal } from './utils'
+import {
+  isAcquisition,
+  isDisposal,
+  groupBySymbol,
+  getRemainingQuantity,
+  calculateCostBasis,
+} from './utils'
 
 /**
  * 30-Day "Bed and Breakfast" Rule (TCGA92/S106A(5) and (5A))
@@ -136,15 +142,7 @@ function matchSellAgainstBuys(
 
     // Match as much as possible from this buy
     const quantityToMatch = Math.min(remainingSellQuantity, availableBuyQuantity)
-
-    // Calculate cost basis for the matched portion (use split-adjusted price if available)
-    // For options, multiply by contract_size (typically 100) since price is per-share
-    const pricePerShare = getEffectivePrice(buy)
-    const buyEffectiveQuantity = getEffectiveQuantity(buy)
-    const contractMultiplier = buy.contract_size || 1
-    const feePerShare = buy.fee_gbp ? buy.fee_gbp / Math.max(buyEffectiveQuantity * contractMultiplier, 1) : 0
-    const costBasisPerShare = pricePerShare + feePerShare
-    const costBasisGbp = costBasisPerShare * quantityToMatch * contractMultiplier
+    const costBasisGbp = calculateCostBasis(buy, quantityToMatch)
 
     acquisitions.push({
       transaction: buy,
@@ -203,49 +201,3 @@ export function markThirtyDayMatches(
   })
 }
 
-/**
- * Get remaining unmatched quantity for a transaction
- */
-function getRemainingQuantity(
-  transaction: EnrichedTransaction,
-  matchings: MatchingResult[]
-): number {
-  const originalQuantity = getEffectiveQuantity(transaction)
-
-  // Sum up all matched quantities for this transaction
-  let matchedQuantity = 0
-
-  for (const matching of matchings) {
-    // Check if this transaction is the disposal
-    if (matching.disposal.id === transaction.id) {
-      matchedQuantity += matching.quantityMatched
-    }
-
-    // Check if this transaction is an acquisition
-    for (const acq of matching.acquisitions) {
-      if (acq.transaction.id === transaction.id) {
-        matchedQuantity += acq.quantityMatched
-      }
-    }
-  }
-
-  return Math.max(0, originalQuantity - matchedQuantity)
-}
-
-/**
- * Group transactions by symbol
- */
-function groupBySymbol(
-  transactions: EnrichedTransaction[]
-): Map<string, EnrichedTransaction[]> {
-  const groups = new Map<string, EnrichedTransaction[]>()
-
-  for (const tx of transactions) {
-    if (!groups.has(tx.symbol)) {
-      groups.set(tx.symbol, [])
-    }
-    groups.get(tx.symbol)!.push(tx)
-  }
-
-  return groups
-}
