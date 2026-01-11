@@ -1,4 +1,5 @@
 import { EnrichedTransaction, TransactionType } from '../../types/transaction'
+import { MatchingResult } from '../../types/cgt'
 
 /**
  * Get the unit label for shares vs options contracts
@@ -121,4 +122,83 @@ export function isDisposal(transaction: EnrichedTransaction): boolean {
   }
 
   return false
+}
+
+/**
+ * Group transactions by symbol
+ *
+ * Creates a map where each key is a stock symbol and the value
+ * is an array of all transactions for that symbol.
+ */
+export function groupBySymbol(
+  transactions: EnrichedTransaction[]
+): Map<string, EnrichedTransaction[]> {
+  const groups = new Map<string, EnrichedTransaction[]>()
+
+  for (const tx of transactions) {
+    if (!groups.has(tx.symbol)) {
+      groups.set(tx.symbol, [])
+    }
+    groups.get(tx.symbol)!.push(tx)
+  }
+
+  return groups
+}
+
+/**
+ * Get the remaining unmatched quantity for a transaction
+ *
+ * Calculates how much of a transaction's quantity hasn't been
+ * matched by previous rules (same-day, 30-day, Section 104).
+ *
+ * @param transaction The transaction to check
+ * @param matchings All existing matchings to consider
+ * @returns Remaining unmatched quantity (always >= 0)
+ */
+export function getRemainingQuantity(
+  transaction: EnrichedTransaction,
+  matchings: MatchingResult[]
+): number {
+  const originalQuantity = getEffectiveQuantity(transaction)
+
+  let matchedQuantity = 0
+
+  for (const matching of matchings) {
+    if (matching.disposal.id === transaction.id) {
+      matchedQuantity += matching.quantityMatched
+    }
+
+    for (const acq of matching.acquisitions) {
+      if (acq.transaction.id === transaction.id) {
+        matchedQuantity += acq.quantityMatched
+      }
+    }
+  }
+
+  return Math.max(0, originalQuantity - matchedQuantity)
+}
+
+/**
+ * Calculate cost basis for an acquisition
+ *
+ * Computes the total cost including purchase price and fees,
+ * handling options contracts (where price is per-share but
+ * quantity is in contracts).
+ *
+ * @param acquisition The buy transaction
+ * @param quantityToMatch Number of shares/contracts being matched
+ * @returns Cost basis in GBP for the matched quantity
+ */
+export function calculateCostBasis(
+  acquisition: EnrichedTransaction,
+  quantityToMatch: number
+): number {
+  const pricePerShare = getEffectivePrice(acquisition)
+  const effectiveQuantity = getEffectiveQuantity(acquisition)
+  const contractMultiplier = acquisition.contract_size || 1
+  const feePerShare = acquisition.fee_gbp
+    ? acquisition.fee_gbp / Math.max(effectiveQuantity * contractMultiplier, 1)
+    : 0
+  const costBasisPerShare = pricePerShare + feePerShare
+  return costBasisPerShare * quantityToMatch * contractMultiplier
 }

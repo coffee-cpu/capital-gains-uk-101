@@ -1,6 +1,12 @@
 import { EnrichedTransaction } from '../../types/transaction'
 import { MatchingResult } from '../../types/cgt'
-import { getEffectiveQuantity, getEffectivePrice, isAcquisition, isDisposal } from './utils'
+import {
+  isAcquisition,
+  isDisposal,
+  groupBySymbol,
+  getRemainingQuantity,
+  calculateCostBasis,
+} from './utils'
 
 /**
  * Same-Day Matching Rule (TCGA92/S105(1))
@@ -67,9 +73,7 @@ function matchSameDayTransactions(
   // Track remaining quantities for each buy, accounting for prior matchings
   const buyQuantities = new Map<string, number>()
   buys.forEach(buy => {
-    const effectiveQuantity = getEffectiveQuantity(buy)
-    const alreadyMatched = getAlreadyMatchedQuantity(buy, priorMatchings)
-    const remaining = effectiveQuantity - alreadyMatched
+    const remaining = getRemainingQuantity(buy, priorMatchings)
     if (remaining > 0) {
       buyQuantities.set(buy.id, remaining)
     }
@@ -77,9 +81,7 @@ function matchSameDayTransactions(
 
   // Process each sell, accounting for prior matchings
   for (const sell of sells) {
-    const effectiveSellQuantity = getEffectiveQuantity(sell)
-    const alreadyMatchedSell = getAlreadyMatchedQuantity(sell, priorMatchings)
-    const remainingSellQuantity = effectiveSellQuantity - alreadyMatchedSell
+    const remainingSellQuantity = getRemainingQuantity(sell, priorMatchings)
 
     if (remainingSellQuantity <= 0) {
       continue // Already fully matched by prior rules
@@ -101,15 +103,7 @@ function matchSameDayTransactions(
 
       // Match as much as possible from this buy
       const quantityToMatch = Math.min(currentRemaining, availableBuyQuantity)
-
-      // Calculate cost basis for the matched portion (use split-adjusted price if available)
-      // For options, multiply by contract_size (typically 100) since price is per-share
-      const pricePerShare = getEffectivePrice(buy)
-      const buyEffectiveQuantity = getEffectiveQuantity(buy)
-      const contractMultiplier = buy.contract_size || 1
-      const feePerShare = buy.fee_gbp ? buy.fee_gbp / Math.max(buyEffectiveQuantity * contractMultiplier, 1) : 0
-      const costBasisPerShare = pricePerShare + feePerShare
-      const costBasisGbp = costBasisPerShare * quantityToMatch * contractMultiplier
+      const costBasisGbp = calculateCostBasis(buy, quantityToMatch)
 
       acquisitions.push({
         transaction: buy,
@@ -138,50 +132,6 @@ function matchSameDayTransactions(
   }
 
   return matchings
-}
-
-/**
- * Get the quantity of a transaction that has already been matched by prior rules
- */
-function getAlreadyMatchedQuantity(
-  transaction: EnrichedTransaction,
-  priorMatchings: MatchingResult[]
-): number {
-  let matchedQuantity = 0
-
-  for (const matching of priorMatchings) {
-    // Check if this transaction is the disposal
-    if (matching.disposal.id === transaction.id) {
-      matchedQuantity += matching.quantityMatched
-    }
-
-    // Check if this transaction is an acquisition
-    for (const acq of matching.acquisitions) {
-      if (acq.transaction.id === transaction.id) {
-        matchedQuantity += acq.quantityMatched
-      }
-    }
-  }
-
-  return matchedQuantity
-}
-
-/**
- * Group transactions by symbol
- */
-function groupBySymbol(
-  transactions: EnrichedTransaction[]
-): Map<string, EnrichedTransaction[]> {
-  const groups = new Map<string, EnrichedTransaction[]>()
-
-  for (const tx of transactions) {
-    if (!groups.has(tx.symbol)) {
-      groups.set(tx.symbol, [])
-    }
-    groups.get(tx.symbol)!.push(tx)
-  }
-
-  return groups
 }
 
 /**
@@ -230,33 +180,5 @@ export function markSameDayMatches(
   })
 }
 
-/**
- * Get remaining unmatched quantity for a transaction after same-day matching
- *
- * This is used by subsequent matching rules (30-day, Section 104)
- */
-export function getRemainingQuantity(
-  transaction: EnrichedTransaction,
-  matchings: MatchingResult[]
-): number {
-  const originalQuantity = getEffectiveQuantity(transaction)
-
-  // Sum up all matched quantities for this transaction
-  let matchedQuantity = 0
-
-  for (const matching of matchings) {
-    // Check if this transaction is the disposal
-    if (matching.disposal.id === transaction.id) {
-      matchedQuantity += matching.quantityMatched
-    }
-
-    // Check if this transaction is an acquisition
-    for (const acq of matching.acquisitions) {
-      if (acq.transaction.id === transaction.id) {
-        matchedQuantity += acq.quantityMatched
-      }
-    }
-  }
-
-  return Math.max(0, originalQuantity - matchedQuantity)
-}
+// Re-export getRemainingQuantity for backward compatibility
+export { getRemainingQuantity } from './utils'

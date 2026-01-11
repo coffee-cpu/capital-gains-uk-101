@@ -1,6 +1,12 @@
 import { EnrichedTransaction } from '../../types/transaction'
 import { MatchingResult } from '../../types/cgt'
-import { getEffectiveQuantity, getEffectivePrice, isAcquisition, isDisposal } from './utils'
+import {
+  getEffectiveQuantity,
+  isAcquisition,
+  isDisposal,
+  groupBySymbol,
+  calculateCostBasis,
+} from './utils'
 
 /**
  * Short Sell Matching Rule
@@ -121,17 +127,7 @@ function createShortSellMatching(
   acquisition: EnrichedTransaction,
   quantity: number
 ): MatchingResult {
-  // Calculate cost basis for the covering BUY
-  // For options, prices are quoted per-share but quantities are in contracts,
-  // so we need to multiply by contract_size (typically 100)
-  const buyPricePerShare = getEffectivePrice(acquisition)
-  const buyEffectiveQuantity = getEffectiveQuantity(acquisition)
-  const contractMultiplier = acquisition.contract_size || 1
-  const buyFeePerShare = acquisition.fee_gbp
-    ? acquisition.fee_gbp / Math.max(buyEffectiveQuantity * contractMultiplier, 1)
-    : 0
-  const costBasisPerShare = buyPricePerShare + buyFeePerShare
-  const costBasisGbp = costBasisPerShare * quantity * contractMultiplier
+  const costBasisGbp = calculateCostBasis(acquisition, quantity)
 
   return {
     disposal,
@@ -174,49 +170,5 @@ export function markShortSellMatches(
   })
 }
 
-/**
- * Get remaining unmatched quantity for a transaction after short sell matching
- */
-export function getRemainingQuantity(
-  transaction: EnrichedTransaction,
-  matchings: MatchingResult[]
-): number {
-  const originalQuantity = getEffectiveQuantity(transaction)
-
-  // Sum up all matched quantities for this transaction
-  let matchedQuantity = 0
-
-  for (const matching of matchings) {
-    // Check if this transaction is the disposal
-    if (matching.disposal.id === transaction.id) {
-      matchedQuantity += matching.quantityMatched
-    }
-
-    // Check if this transaction is an acquisition
-    for (const acq of matching.acquisitions) {
-      if (acq.transaction.id === transaction.id) {
-        matchedQuantity += acq.quantityMatched
-      }
-    }
-  }
-
-  return Math.max(0, originalQuantity - matchedQuantity)
-}
-
-/**
- * Group transactions by symbol
- */
-function groupBySymbol(
-  transactions: EnrichedTransaction[]
-): Map<string, EnrichedTransaction[]> {
-  const groups = new Map<string, EnrichedTransaction[]>()
-
-  for (const tx of transactions) {
-    if (!groups.has(tx.symbol)) {
-      groups.set(tx.symbol, [])
-    }
-    groups.get(tx.symbol)!.push(tx)
-  }
-
-  return groups
-}
+// Re-export getRemainingQuantity for backward compatibility
+export { getRemainingQuantity } from './utils'
