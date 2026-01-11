@@ -1,5 +1,6 @@
 import { EnrichedTransaction, TransactionType } from '../../types/transaction'
 import { Section104Pool, MatchingResult } from '../../types/cgt'
+import { MatchingStage } from './pipeline'
 import {
   getEffectiveQuantity,
   getEffectivePrice,
@@ -176,42 +177,20 @@ function matchAgainstPool(
 }
 
 /**
- * Mark transactions as matched under Section 104 rule
+ * Section 104 Pool Pipeline Stage (TCGA92/S104)
  *
- * Marks both:
- * - SELL transactions that were matched against the pool
- * - BUY transactions that were added to the pool
+ * Matches remaining disposals against the pooled average cost basis.
+ * This stage runs last and handles all transactions not matched by prior rules.
  */
-export function markSection104Matches(
-  transactions: EnrichedTransaction[],
-  matchings: MatchingResult[],
-  pools: Map<string, Section104Pool>
-): EnrichedTransaction[] {
-  const matchedTxIds = new Set<string>()
-
-  // Collect all SELL transaction IDs involved in Section 104 matches
-  for (const matching of matchings) {
-    // Only mark if not already marked by previous rules
-    if (matching.disposal.gain_group === 'NONE') {
-      matchedTxIds.add(matching.disposal.id)
+export const section104Stage: MatchingStage = {
+  name: 'section-104',
+  apply(context) {
+    const [matchings, pools] = applySection104Pooling(context.transactions, context.matchings)
+    return {
+      ...context,
+      matchings: [...context.matchings, ...matchings],
+      section104Pools: pools,
     }
-  }
-
-  // Collect all BUY transaction IDs that were added to Section 104 pools
-  for (const pool of pools.values()) {
-    for (const historyEntry of pool.history) {
-      if (historyEntry.type === 'BUY') {
-        matchedTxIds.add(historyEntry.transactionId)
-      }
-    }
-  }
-
-  // Update gain_group for matched transactions
-  return transactions.map(tx => {
-    if (matchedTxIds.has(tx.id) && tx.gain_group === 'NONE') {
-      return { ...tx, gain_group: 'SECTION_104' }
-    }
-    return tx
-  })
+  },
 }
 

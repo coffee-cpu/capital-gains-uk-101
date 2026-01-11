@@ -1,5 +1,6 @@
 import { EnrichedTransaction } from '../../types/transaction'
 import { MatchingResult } from '../../types/cgt'
+import { MatchingStage } from './pipeline'
 import {
   getEffectiveQuantity,
   isAcquisition,
@@ -144,31 +145,22 @@ function createShortSellMatching(
   }
 }
 
-/**
- * Mark transactions as matched under short sell rule
- */
-export function markShortSellMatches(
-  transactions: EnrichedTransaction[],
-  matchings: MatchingResult[]
-): EnrichedTransaction[] {
-  const matchedTxIds = new Set<string>()
-
-  // Collect all transaction IDs involved in short sell matches
-  for (const matching of matchings) {
-    matchedTxIds.add(matching.disposal.id)
-    for (const acq of matching.acquisitions) {
-      matchedTxIds.add(acq.transaction.id)
-    }
-  }
-
-  // Update gain_group for matched transactions
-  return transactions.map(tx => {
-    if (matchedTxIds.has(tx.id)) {
-      return { ...tx, gain_group: 'SHORT_SELL' }
-    }
-    return tx
-  })
-}
-
 // Re-export getRemainingQuantity for backward compatibility
 export { getRemainingQuantity } from './utils'
+
+/**
+ * Short Sell Rule Pipeline Stage
+ *
+ * Matches short sell disposals with subsequent covering acquisitions.
+ * This stage runs first as it handles explicit short sell transactions.
+ */
+export const shortSellStage: MatchingStage = {
+  name: 'short-sell',
+  apply(context) {
+    const matchings = applyShortSellRule(context.transactions)
+    return {
+      ...context,
+      matchings: [...context.matchings, ...matchings],
+    }
+  },
+}

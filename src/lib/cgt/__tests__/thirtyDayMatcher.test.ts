@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { applyThirtyDayRule, markThirtyDayMatches } from '../thirtyDayMatcher'
+import { applyThirtyDayRule } from '../thirtyDayMatcher'
 import { EnrichedTransaction } from '../../../types/transaction'
 
 describe('30-Day Matcher', () => {
@@ -609,104 +609,6 @@ describe('30-Day Matcher', () => {
       // Total matched should equal total BUY shares (120), not exceed it
       const totalMatched = matchings.reduce((sum, m) => sum + m.quantityMatched, 0)
       expect(totalMatched).toBe(120) // 30 + 90 = 120 total available from BUYs
-    })
-  })
-
-  describe('markThirtyDayMatches', () => {
-    it('should mark matched transactions with 30_DAY gain group', () => {
-      const transactions: EnrichedTransaction[] = [
-        {
-          id: 'tx-1',
-          source: 'test',
-          symbol: 'AAPL',
-          name: 'Apple Inc.',
-          date: '2023-06-01',
-          type: 'SELL',
-          quantity: 10,
-          price: 180,
-          currency: 'USD',
-          total: 1800,
-          fee: 5,
-          notes: null,
-          fx_rate: 1.27,
-          price_gbp: 141.73,
-          value_gbp: 1417.32,
-          fee_gbp: 3.94,
-          fx_source: 'HMRC',
-          fx_error: null,
-          tax_year: '2023/24',
-          gain_group: 'NONE',
-        },
-        {
-          id: 'tx-2',
-          source: 'test',
-          symbol: 'AAPL',
-          name: 'Apple Inc.',
-          date: '2023-06-10',
-          type: 'BUY',
-          quantity: 10,
-          price: 185,
-          currency: 'USD',
-          total: 1850,
-          fee: 5,
-          notes: null,
-          fx_rate: 1.27,
-          price_gbp: 145.67,
-          value_gbp: 1456.69,
-          fee_gbp: 3.94,
-          fx_source: 'HMRC',
-          fx_error: null,
-          tax_year: '2023/24',
-          gain_group: 'NONE',
-        },
-      ]
-
-      const matchings = applyThirtyDayRule(transactions, [])
-      const marked = markThirtyDayMatches(transactions, matchings)
-
-      expect(marked[0].gain_group).toBe('30_DAY')
-      expect(marked[1].gain_group).toBe('30_DAY')
-    })
-
-    it('should not overwrite SAME_DAY gain group', () => {
-      const transactions: EnrichedTransaction[] = [
-        {
-          id: 'tx-1',
-          source: 'test',
-          symbol: 'AAPL',
-          name: 'Apple Inc.',
-          date: '2023-06-01',
-          type: 'SELL',
-          quantity: 10,
-          price: 180,
-          currency: 'USD',
-          total: 1800,
-          fee: 5,
-          notes: null,
-          fx_rate: 1.27,
-          price_gbp: 141.73,
-          value_gbp: 1417.32,
-          fee_gbp: 3.94,
-          fx_source: 'HMRC',
-          fx_error: null,
-          tax_year: '2023/24',
-          gain_group: 'SAME_DAY',
-        },
-      ]
-
-      const matchings = [
-        {
-          disposal: transactions[0],
-          acquisitions: [],
-          rule: '30_DAY' as const,
-          quantityMatched: 10,
-          totalCostBasisGbp: 1417.32,
-        },
-      ]
-
-      const marked = markThirtyDayMatches(transactions, matchings)
-
-      expect(marked[0].gain_group).toBe('SAME_DAY') // Should remain SAME_DAY
     })
   })
 })

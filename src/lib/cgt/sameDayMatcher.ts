@@ -1,5 +1,6 @@
 import { EnrichedTransaction } from '../../types/transaction'
 import { MatchingResult } from '../../types/cgt'
+import { MatchingStage } from './pipeline'
 import {
   isAcquisition,
   isDisposal,
@@ -152,33 +153,21 @@ function groupByDate(
   return groups
 }
 
-/**
- * Mark transactions as matched under same-day rule
- *
- * Updates the gain_group field on transactions that were matched
- */
-export function markSameDayMatches(
-  transactions: EnrichedTransaction[],
-  matchings: MatchingResult[]
-): EnrichedTransaction[] {
-  const matchedTxIds = new Set<string>()
-
-  // Collect all transaction IDs involved in same-day matches
-  for (const matching of matchings) {
-    matchedTxIds.add(matching.disposal.id)
-    for (const acq of matching.acquisitions) {
-      matchedTxIds.add(acq.transaction.id)
-    }
-  }
-
-  // Update gain_group for matched transactions
-  return transactions.map(tx => {
-    if (matchedTxIds.has(tx.id)) {
-      return { ...tx, gain_group: 'SAME_DAY' }
-    }
-    return tx
-  })
-}
-
 // Re-export getRemainingQuantity for backward compatibility
 export { getRemainingQuantity } from './utils'
+
+/**
+ * Same-Day Rule Pipeline Stage (TCGA92/S105(1))
+ *
+ * Matches acquisitions and disposals on the same calendar day
+ */
+export const sameDayStage: MatchingStage = {
+  name: 'same-day',
+  apply(context) {
+    const matchings = applySameDayRule(context.transactions, context.matchings)
+    return {
+      ...context,
+      matchings: [...context.matchings, ...matchings],
+    }
+  },
+}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { applySection104Pooling, markSection104Matches } from '../section104Pool'
+import { applySection104Pooling } from '../section104Pool'
 import { EnrichedTransaction } from '../../../types/transaction'
 
 describe('Section 104 Pool', () => {
@@ -517,120 +517,6 @@ describe('Section 104 Pool', () => {
       // Total cost after buys: (20 + 1/200)*2*100 + (25 + 1.5/300)*3*100 = 4001 + 7501.5 = 11502.5
       // After selling 4: remaining cost = 11502.5 * (1/5) = 2300.5
       expect(pool.history).toHaveLength(3) // 2 buys + 1 sell
-    })
-  })
-
-  describe('markSection104Matches', () => {
-    it('should mark matched transactions with SECTION_104 gain group', () => {
-      const transactions: EnrichedTransaction[] = [
-        {
-          id: 'tx-1',
-          source: 'test',
-          symbol: 'AAPL',
-          name: 'Apple Inc.',
-          date: '2023-06-01',
-          type: 'SELL',
-          quantity: 10,
-          price: 180,
-          currency: 'USD',
-          total: 1800,
-          fee: 5,
-          notes: null,
-          fx_rate: 1.27,
-          price_gbp: 141.73,
-          value_gbp: 1417.32,
-          fee_gbp: 3.94,
-          fx_source: 'HMRC',
-          fx_error: null,
-          tax_year: '2023/24',
-          gain_group: 'NONE',
-        },
-      ]
-
-      const matchings = [
-        {
-          disposal: transactions[0],
-          acquisitions: [],
-          rule: 'SECTION_104' as const,
-          quantityMatched: 10,
-          totalCostBasisGbp: 1417.32,
-        },
-      ]
-
-      const marked = markSection104Matches(transactions, matchings, new Map())
-
-      expect(marked[0].gain_group).toBe('SECTION_104')
-    })
-
-    it('should not overwrite SAME_DAY or 30_DAY gain groups', () => {
-      const transactions: EnrichedTransaction[] = [
-        {
-          id: 'tx-1',
-          source: 'test',
-          symbol: 'AAPL',
-          name: 'Apple Inc.',
-          date: '2023-06-01',
-          type: 'SELL',
-          quantity: 10,
-          price: 180,
-          currency: 'USD',
-          total: 1800,
-          fee: 5,
-          notes: null,
-          fx_rate: 1.27,
-          price_gbp: 141.73,
-          value_gbp: 1417.32,
-          fee_gbp: 3.94,
-          fx_source: 'HMRC',
-          fx_error: null,
-          tax_year: '2023/24',
-          gain_group: 'SAME_DAY',
-        },
-        {
-          id: 'tx-2',
-          source: 'test',
-          symbol: 'AAPL',
-          name: 'Apple Inc.',
-          date: '2023-06-15',
-          type: 'SELL',
-          quantity: 10,
-          price: 185,
-          currency: 'USD',
-          total: 1850,
-          fee: 5,
-          notes: null,
-          fx_rate: 1.27,
-          price_gbp: 145.67,
-          value_gbp: 1456.69,
-          fee_gbp: 3.94,
-          fx_source: 'HMRC',
-          fx_error: null,
-          tax_year: '2023/24',
-          gain_group: '30_DAY',
-        },
-      ]
-
-      const matchings = [
-        {
-          disposal: transactions[0],
-          acquisitions: [],
-          rule: 'SECTION_104' as const,
-          quantityMatched: 10,
-          totalCostBasisGbp: 1417.32,
-        },
-        {
-          disposal: transactions[1],
-          acquisitions: [],
-          rule: 'SECTION_104' as const,
-          quantityMatched: 10,
-          totalCostBasisGbp: 1456.69,
-        },
-      ]
-
-      const marked = markSection104Matches(transactions, matchings, new Map())
-
-      expect(marked[0].gain_group).toBe('SAME_DAY') // Should remain
-      expect(marked[1].gain_group).toBe('30_DAY') // Should remain
     })
   })
 })

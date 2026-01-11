@@ -1,5 +1,6 @@
 import { EnrichedTransaction } from '../../types/transaction'
 import { MatchingResult } from '../../types/cgt'
+import { MatchingStage } from './pipeline'
 import {
   isAcquisition,
   isDisposal,
@@ -171,33 +172,18 @@ function matchSellAgainstBuys(
 }
 
 /**
- * Mark transactions as matched under 30-day rule
+ * 30-Day Rule Pipeline Stage (TCGA92/S106A(5))
+ *
+ * Matches disposals with acquisitions within 30 days (bed and breakfast)
  */
-export function markThirtyDayMatches(
-  transactions: EnrichedTransaction[],
-  matchings: MatchingResult[]
-): EnrichedTransaction[] {
-  const matchedTxIds = new Set<string>()
-
-  // Collect all transaction IDs involved in 30-day matches
-  for (const matching of matchings) {
-    // Only mark if not already marked as SAME_DAY
-    if (matching.disposal.gain_group !== 'SAME_DAY') {
-      matchedTxIds.add(matching.disposal.id)
+export const thirtyDayStage: MatchingStage = {
+  name: 'thirty-day',
+  apply(context) {
+    const matchings = applyThirtyDayRule(context.transactions, context.matchings)
+    return {
+      ...context,
+      matchings: [...context.matchings, ...matchings],
     }
-    for (const acq of matching.acquisitions) {
-      if (acq.transaction.gain_group !== 'SAME_DAY') {
-        matchedTxIds.add(acq.transaction.id)
-      }
-    }
-  }
-
-  // Update gain_group for matched transactions
-  return transactions.map(tx => {
-    if (matchedTxIds.has(tx.id) && tx.gain_group !== 'SAME_DAY') {
-      return { ...tx, gain_group: '30_DAY' }
-    }
-    return tx
-  })
+  },
 }
 

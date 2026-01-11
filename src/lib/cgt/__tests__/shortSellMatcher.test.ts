@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { applyShortSellRule, markShortSellMatches, getRemainingQuantity } from '../shortSellMatcher'
+import { applyShortSellRule, getRemainingQuantity } from '../shortSellMatcher'
 import { EnrichedTransaction } from '../../../types/transaction'
 
 /**
@@ -324,36 +324,6 @@ describe('Short Sell Matcher', () => {
       expect(matchings[0].disposal.id).toBe('sell-1')
       expect(matchings[0].acquisitions[0].transaction.id).toBe('buy-2')
       expect(matchings[0].quantityMatched).toBe(100)
-    })
-  })
-
-  describe('markShortSellMatches', () => {
-    it('should mark matched transactions with SHORT_SELL gain group', () => {
-      const transactions: EnrichedTransaction[] = [
-        createTransaction({ id: 'sell-1', date: '2023-06-01', type: 'SELL', quantity: 100, price: 160, is_short_sell: true }),
-        createTransaction({ id: 'buy-1', date: '2023-06-15', type: 'BUY', quantity: 100, price: 140 }),
-      ]
-
-      const matchings = applyShortSellRule(transactions)
-      const marked = markShortSellMatches(transactions, matchings)
-
-      expect(marked[0].gain_group).toBe('SHORT_SELL')
-      expect(marked[1].gain_group).toBe('SHORT_SELL')
-    })
-
-    it('should not mark normal long trades (matched by other rules)', () => {
-      const transactions: EnrichedTransaction[] = [
-        // Normal long trade: BUY first, then SELL from existing position
-        createTransaction({ id: 'buy-1', date: '2023-06-01', type: 'BUY', quantity: 100, price: 140 }),
-        createTransaction({ id: 'sell-1', date: '2023-06-15', type: 'SELL', quantity: 100, price: 150 }),
-      ]
-
-      const matchings = applyShortSellRule(transactions)
-      const marked = markShortSellMatches(transactions, matchings)
-
-      // Normal trade - should remain NONE (will be matched by Section 104 pool rules)
-      expect(marked[0].gain_group).toBe('NONE')
-      expect(marked[1].gain_group).toBe('NONE')
     })
   })
 

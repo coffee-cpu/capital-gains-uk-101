@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { applySameDayRule, markSameDayMatches, getRemainingQuantity } from '../sameDayMatcher'
+import { applySameDayRule, getRemainingQuantity } from '../sameDayMatcher'
 import { EnrichedTransaction } from '../../../types/transaction'
 
 describe('Same-Day Matcher', () => {
@@ -556,63 +556,6 @@ describe('Same-Day Matcher', () => {
 
       // Cost basis = (35.00 + 1.50/300) * 3 * 100 = 10501.50
       expect(matchings[0].totalCostBasisGbp).toBeCloseTo(10501.50, 1)
-    })
-  })
-
-  describe('markSameDayMatches', () => {
-    it('should mark matched transactions with SAME_DAY gain group', () => {
-      const transactions: EnrichedTransaction[] = [
-        {
-          id: 'tx-1',
-          source: 'test',
-          symbol: 'AAPL',
-          name: 'Apple Inc.',
-          date: '2023-06-15',
-          type: 'BUY',
-          quantity: 10,
-          price: 180,
-          currency: 'USD',
-          total: 1800,
-          fee: 5,
-          notes: null,
-          fx_rate: 1.27,
-          price_gbp: 141.73,
-          value_gbp: 1417.32,
-          fee_gbp: 3.94,
-          fx_source: 'HMRC',
-          fx_error: null,
-          tax_year: '2023/24',
-          gain_group: 'NONE',
-        },
-        {
-          id: 'tx-2',
-          source: 'test',
-          symbol: 'AAPL',
-          name: 'Apple Inc.',
-          date: '2023-06-15',
-          type: 'SELL',
-          quantity: 10,
-          price: 185,
-          currency: 'USD',
-          total: 1850,
-          fee: 5,
-          notes: null,
-          fx_rate: 1.27,
-          price_gbp: 145.67,
-          value_gbp: 1456.69,
-          fee_gbp: 3.94,
-          fx_source: 'HMRC',
-          fx_error: null,
-          tax_year: '2023/24',
-          gain_group: 'NONE',
-        },
-      ]
-
-      const matchings = applySameDayRule(transactions)
-      const marked = markSameDayMatches(transactions, matchings)
-
-      expect(marked[0].gain_group).toBe('SAME_DAY')
-      expect(marked[1].gain_group).toBe('SAME_DAY')
     })
   })
 

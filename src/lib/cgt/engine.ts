@@ -1,23 +1,38 @@
 import { EnrichedTransaction } from '../../types/transaction'
 import { CGTCalculationResult, DisposalRecord, TaxYearSummary, MatchingResult } from '../../types/cgt'
-import { applyShortSellRule, markShortSellMatches } from './shortSellMatcher'
-import { applySameDayRule, markSameDayMatches } from './sameDayMatcher'
-import { applyThirtyDayRule, markThirtyDayMatches } from './thirtyDayMatcher'
-import { applySection104Pooling, markSection104Matches } from './section104Pool'
+import { MatchingStage, runMatchingPipeline } from './pipeline'
+import { shortSellStage } from './shortSellMatcher'
+import { sameDayStage } from './sameDayMatcher'
+import { thirtyDayStage } from './thirtyDayMatcher'
+import { section104Stage } from './section104Pool'
 import { getTaxYearBounds } from '../../utils/taxYear'
 import { getEffectiveQuantity, isAcquisition, isDisposal } from './utils'
 
 /**
  * CGT Calculation Engine
  *
- * Orchestrates the application of HMRC matching rules in the correct order:
+ * Uses the Pipeline pattern to apply HMRC matching rules in the correct order:
  * 0. Short sell rule - Match uncovered SELLs with subsequent BUYs
  * 1. Same-day rule (TCGA92/S105(1)) - CG51560
  * 2. 30-day rule (TCGA92/S106A(5) and (5A)) - CG51560
  * 3. Section 104 pooling (TCGA92/S104) - CG51620
  *
- * Produces disposal records with full gain/loss calculations and tax year summaries.
+ * Each stage is a self-contained unit that transforms the pipeline context,
+ * making the rule application composable, testable, and extensible.
  */
+
+/**
+ * Default pipeline stages in HMRC-mandated order
+ *
+ * Each stage is responsible for its own matching logic and is imported
+ * from its respective module, following the Single Responsibility Principle.
+ */
+const DEFAULT_MATCHING_STAGES: MatchingStage[] = [
+  shortSellStage,
+  sameDayStage,
+  thirtyDayStage,
+  section104Stage,
+]
 
 /**
  * Calculate capital gains tax for all transactions
@@ -31,40 +46,22 @@ export function calculateCGT(
   // Filter out ignored transactions (incomplete Stock Plan Activity superseded by Equity Awards)
   const activeTransactions = transactions.filter(tx => !tx.ignored)
 
-  // Step 0: Apply short sell rule (match uncovered SELLs with subsequent BUYs)
-  const shortSellMatchings = applyShortSellRule(activeTransactions)
-  let updatedTransactions = markShortSellMatches(activeTransactions, shortSellMatchings)
+  // Run the matching pipeline (applies all HMRC rules in order)
+  const pipelineResult = runMatchingPipeline(activeTransactions, DEFAULT_MATCHING_STAGES)
 
-  // Step 1: Apply same-day matching rule (to remaining unmatched quantities)
-  const sameDayMatchings = applySameDayRule(updatedTransactions, shortSellMatchings)
-  updatedTransactions = markSameDayMatches(updatedTransactions, sameDayMatchings)
-
-  // Step 2: Apply 30-day rule (to remaining unmatched quantities)
-  const priorMatchings = [...shortSellMatchings, ...sameDayMatchings]
-  const thirtyDayMatchings = applyThirtyDayRule(updatedTransactions, priorMatchings)
-  updatedTransactions = markThirtyDayMatches(updatedTransactions, thirtyDayMatchings)
-
-  // Step 3: Apply Section 104 pooling (to remaining unmatched quantities)
-  const allMatchings = [...shortSellMatchings, ...sameDayMatchings, ...thirtyDayMatchings]
-  const [section104Matchings, section104Pools] = applySection104Pooling(
-    updatedTransactions,
-    allMatchings
+  // Assign match group IDs to link related transactions
+  const updatedTransactions = assignMatchGroupIds(
+    pipelineResult.transactions,
+    pipelineResult.matchings
   )
-  updatedTransactions = markSection104Matches(updatedTransactions, section104Matchings, section104Pools)
 
-  // Combine all matchings
-  const allMatchingsComplete = [...shortSellMatchings, ...sameDayMatchings, ...thirtyDayMatchings, ...section104Matchings]
+  // Create disposal records
+  const disposals = createDisposalRecords(pipelineResult.matchings)
 
-  // Step 4: Assign match group IDs to link related transactions
-  updatedTransactions = assignMatchGroupIds(updatedTransactions, allMatchingsComplete)
-
-  // Step 5: Create disposal records
-  const disposals = createDisposalRecords(allMatchingsComplete)
-
-  // Step 5: Generate tax year summaries (pass all transactions for dividend calculations)
+  // Generate tax year summaries (pass all transactions for dividend calculations)
   const taxYearSummaries = generateTaxYearSummaries(disposals, updatedTransactions)
 
-  // Step 6: Compile metadata
+  // Compile metadata
   const metadata = {
     calculatedAt: new Date().toISOString(),
     totalTransactions: activeTransactions.length,
@@ -83,7 +80,7 @@ export function calculateCGT(
   return {
     transactions: allTransactionsWithGroups,
     disposals,
-    section104Pools,
+    section104Pools: pipelineResult.section104Pools,
     taxYearSummaries,
     metadata,
   }

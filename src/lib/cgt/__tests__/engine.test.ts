@@ -54,8 +54,6 @@ describe('CGT Engine', () => {
 
       const result = calculateCGT(transactions)
 
-      expect(result.transactions[0].gain_group).toBe('SAME_DAY')
-      expect(result.transactions[1].gain_group).toBe('SAME_DAY')
       expect(result.disposals).toHaveLength(1)
       expect(result.disposals[0].matchings[0].rule).toBe('SAME_DAY')
     })
@@ -138,8 +136,6 @@ describe('CGT Engine', () => {
       const result = calculateCGT(transactions)
 
       // tx-1 (SELL) should be matched with tx-2 (BUY) under 30-day rule
-      expect(result.transactions[1].gain_group).toBe('30_DAY')
-      expect(result.transactions[2].gain_group).toBe('30_DAY')
       expect(result.disposals).toHaveLength(1)
       expect(result.disposals[0].matchings[0].rule).toBe('30_DAY')
     })
@@ -194,9 +190,6 @@ describe('CGT Engine', () => {
 
       const result = calculateCGT(transactions)
 
-      // Buy should not be marked (goes into pool)
-      // Sell should be marked as SECTION_104
-      expect(result.transactions[1].gain_group).toBe('SECTION_104')
       expect(result.disposals).toHaveLength(1)
       expect(result.disposals[0].matchings[0].rule).toBe('SECTION_104')
       expect(result.section104Pools.size).toBe(1)
@@ -420,17 +413,10 @@ describe('CGT Engine', () => {
 
       const result = calculateCGT(transactions)
 
-      // Verify all three rules were applied
-      const sameDayMatches = result.transactions.filter(tx => tx.gain_group === 'SAME_DAY')
-      const thirtyDayMatches = result.transactions.filter(tx => tx.gain_group === '30_DAY')
-
-      expect(sameDayMatches.length).toBeGreaterThan(0) // tx-2 and part of tx-3
-      expect(thirtyDayMatches.length).toBeGreaterThan(0) // tx-4 and part of tx-3
-
       // Should have one disposal record with multiple matchings
       expect(result.disposals.length).toBe(1)
 
-      // Check that disposal has matchings from different rules
+      // Verify all three rules were applied by checking disposal matchings
       const disposal = result.disposals[0]
       const rules = disposal.matchings.map(m => m.rule)
       expect(rules).toContain('SAME_DAY')
