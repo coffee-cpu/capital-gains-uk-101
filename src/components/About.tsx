@@ -54,12 +54,19 @@ export function About() {
               <div>
                 <h3 className="text-lg font-medium text-gray-900 mb-2">Process Overview:</h3>
                 <ol className="list-decimal list-inside space-y-2 ml-4">
-                  <li><strong>Import transactions</strong> from your broker (Schwab, Schwab Equity Awards, or Generic format)</li>
+                  <li><strong>Import transactions</strong> from your broker — multiple formats are auto-detected</li>
                   <li><strong>Automatic format detection</strong> identifies your broker and normalizes the data</li>
                   <li><strong>Stock split adjustment</strong> adjusts quantities and prices for any stock splits to ensure all shares are in comparable units</li>
-                  <li><strong>FX rate enrichment</strong> converts foreign currency values to GBP using official HMRC monthly exchange rates</li>
+                  <li><strong>FX rate enrichment</strong> converts foreign currency values to GBP using official exchange rates</li>
                   <li><strong>CGT calculation</strong> applies HMRC matching rules to calculate gains/losses</li>
                 </ol>
+              </div>
+
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <h3 className="text-sm font-medium text-gray-900 mb-1">UK Tax Year</h3>
+                <p className="text-sm text-gray-700">
+                  UK tax years run from <strong>6 April to 5 April</strong>. For example, tax year 2023/24 covers 6 April 2023 to 5 April 2024.
+                </p>
               </div>
             </div>
           </section>
@@ -206,24 +213,90 @@ export function About() {
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">Exchange Rates</h2>
             <div className="space-y-4 text-gray-700">
               <p>
-                Foreign currency transactions are converted to GBP using{' '}
+                Foreign currency transactions are converted to GBP. HMRC does not prescribe a specific exchange rate source, but requires a{' '}
+                <strong>"reasonable and consistent method"</strong> be used.
+              </p>
+              <p className="text-sm text-gray-600">
+                Reference:{' '}
                 <a
-                  href="https://www.trade-tariff.service.gov.uk/exchange_rates"
+                  href="https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg78310"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline font-semibold"
+                  className="text-blue-600 hover:underline"
                 >
-                  official HMRC exchange rates
-                </a>.
+                  HMRC CG78310
+                </a>
               </p>
-              <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Monthly Rates</h3>
-                <p>
-                  HMRC publishes one exchange rate per currency per month. All transactions in a given month use the same official rate, as required for UK tax reporting.
+
+              <div className="mt-4">
+                <h3 className="text-lg font-medium text-gray-900 mb-3">Available Rate Sources</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  You can choose which exchange rate source to use in the calculator settings. All sources are acceptable for UK tax purposes.
                 </p>
-                <p className="mt-2">
-                  Rates are published on the <strong>penultimate Thursday</strong> of each month, represent values as of midday the day before publication, and apply to the <em>following</em> calendar month.
-                </p>
+
+                <div className="space-y-4">
+                  {/* HMRC Monthly */}
+                  <div className="border border-gray-200 rounded-lg p-4">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h4 className="font-medium text-gray-900">HMRC Monthly Rates</h4>
+                        <span className="inline-block mt-1 px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 rounded">Default</span>
+                      </div>
+                    </div>
+                    <p className="mt-2 text-sm text-gray-700">
+                      Official HMRC rates published monthly. One fixed rate per currency per month — all transactions in a given month use the same rate.
+                    </p>
+                    <p className="mt-1 text-xs text-gray-500">
+                      Source:{' '}
+                      <a
+                        href="https://www.trade-tariff.service.gov.uk/exchange_rates/monthly"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline"
+                      >
+                        HMRC Trade Tariff Service
+                      </a>
+                    </p>
+                  </div>
+
+                  {/* HMRC Yearly Average */}
+                  <div className="border border-gray-200 rounded-lg p-4">
+                    <h4 className="font-medium text-gray-900">HMRC Yearly Average</h4>
+                    <p className="mt-2 text-sm text-gray-700">
+                      HMRC annual average rates. Simpler calculation using one rate for the entire year — less precise during volatile currency periods.
+                    </p>
+                    <p className="mt-1 text-xs text-gray-500">
+                      Source:{' '}
+                      <a
+                        href="https://www.trade-tariff.service.gov.uk/exchange_rates/average"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline"
+                      >
+                        HMRC Trade Tariff Service
+                      </a>
+                    </p>
+                  </div>
+
+                  {/* Daily Spot Rates */}
+                  <div className="border border-gray-200 rounded-lg p-4">
+                    <h4 className="font-medium text-gray-900">Daily Spot Rates (ECB)</h4>
+                    <p className="mt-2 text-sm text-gray-700">
+                      European Central Bank daily reference rates. Most accurate for transaction-date conversions — uses the exact rate for each transaction date.
+                    </p>
+                    <p className="mt-1 text-xs text-gray-500">
+                      Source:{' '}
+                      <a
+                        href="https://frankfurter.dev/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline"
+                      >
+                        European Central Bank (via Frankfurter API)
+                      </a>
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </section>
