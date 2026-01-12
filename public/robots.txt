@@ -1,0 +1,21 @@
+# robots.txt for cgtvisualiser.co.uk
+# Capital Gains Tax Visualiser - UK CGT Calculator
+
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://cgtvisualiser.co.uk/sitemap.xml
+
+# Disallow example CSV files from indexing (not useful for search)
+Disallow: /examples/
+
+# Allow all major search engine crawlers
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: DuckDuckBot
+Allow: /

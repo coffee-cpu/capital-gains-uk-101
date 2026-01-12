@@ -10,6 +10,124 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Capital Gains Tax Visualiser - UK CGT Made Easy</title>
     <meta name="description" content="UK Capital Gains Tax made easy. Free, privacy-focused tool to calculate and visualise CGT on share transactions. All calculations happen in your browser." />
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://cgtvisualiser.co.uk/" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://cgtvisualiser.co.uk/" />
+    <meta property="og:title" content="Capital Gains Tax Visualiser - UK CGT Made Easy" />
+    <meta property="og:description" content="Free, privacy-focused UK Capital Gains Tax calculator. Import broker CSVs, apply HMRC matching rules (same-day, 30-day, Section 104), and visualise your CGT. All calculations in your browser." />
+    <meta property="og:image" content="https://cgtvisualiser.co.uk/favicon/web-app-manifest-512x512.png" />
+    <meta property="og:locale" content="en_GB" />
+    <meta property="og:site_name" content="Capital Gains Tax Visualiser" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://cgtvisualiser.co.uk/" />
+    <meta name="twitter:title" content="Capital Gains Tax Visualiser - UK CGT Made Easy" />
+    <meta name="twitter:description" content="Free, privacy-focused UK Capital Gains Tax calculator. Import broker CSVs, apply HMRC matching rules, and visualise your CGT." />
+    <meta name="twitter:image" content="https://cgtvisualiser.co.uk/favicon/web-app-manifest-512x512.png" />
+
+    <!-- Additional SEO meta tags -->
+    <meta name="keywords" content="capital gains tax, CGT calculator, UK tax, share transactions, HMRC, Section 104, bed and breakfast rule, same day rule, stock tax, investment tax, CGT visualiser" />
+    <meta name="author" content="Capital Gains Tax Visualiser" />
+    <meta name="robots" content="index, follow" />
+    <meta name="googlebot" content="index, follow" />
+
+    <!-- Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Capital Gains Tax Visualiser",
+      "alternateName": "CGT Visualiser",
+      "url": "https://cgtvisualiser.co.uk/",
+      "description": "Free, privacy-focused UK Capital Gains Tax calculator. Import broker CSV files, apply HMRC matching rules (same-day, 30-day bed and breakfast, Section 104 pooling), and visualise your capital gains tax liability.",
+      "applicationCategory": "FinanceApplication",
+      "operatingSystem": "Any",
+      "browserRequirements": "Requires JavaScript. Requires HTML5.",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "GBP"
+      },
+      "featureList": [
+        "Import CSV files from multiple brokers",
+        "HMRC-compliant CGT calculations",
+        "Same-day matching rule",
+        "30-day bed and breakfast rule",
+        "Section 104 pooling",
+        "Privacy-focused - all calculations in browser",
+        "No data uploads",
+        "Stock split handling",
+        "Multi-currency support with Bank of England FX rates",
+        "PDF export for tax returns"
+      ],
+      "screenshot": "https://cgtvisualiser.co.uk/favicon/web-app-manifest-512x512.png",
+      "softwareHelp": {
+        "@type": "WebPage",
+        "url": "https://cgtvisualiser.co.uk/#about"
+      },
+      "audience": {
+        "@type": "Audience",
+        "audienceType": "UK taxpayers with share transactions"
+      },
+      "isAccessibleForFree": true,
+      "inLanguage": "en-GB"
+    }
+    </script>
+
+    <!-- FAQ Structured Data for rich snippets -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What is the Capital Gains Tax annual exemption for 2024/25?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "The Capital Gains Tax annual exempt amount for the 2024/25 tax year is £3,000 for individuals. This means you can make up to £3,000 in capital gains before paying any CGT."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What is the same-day rule for CGT?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "The same-day rule (TCGA92/S105(1)) requires that shares sold on the same day as shares of the same class are purchased must be matched with those purchases first, before applying other matching rules."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What is the 30-day bed and breakfast rule?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "The 30-day rule (TCGA92/S106A(5)) prevents investors from selling shares and immediately repurchasing them to crystallise a loss. Any shares repurchased within 30 days of a sale are matched with that sale for CGT purposes."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What is Section 104 pooling?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Section 104 pooling (TCGA92/S104) is the default method for calculating CGT on shares. After applying same-day and 30-day rules, remaining shares are pooled together at an average cost basis."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is my data safe with this CGT calculator?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes, all calculations happen entirely in your browser. No data is uploaded to any server. Your transaction data is stored locally in your browser's IndexedDB and never leaves your device."
+          }
+        }
+      ]
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>
