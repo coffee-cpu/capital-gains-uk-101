@@ -42,7 +42,7 @@ describe('Pipeline', () => {
   const createMatching = (
     disposal: EnrichedTransaction,
     acquisition: EnrichedTransaction,
-    rule: 'SAME_DAY' | 'THIRTY_DAY' | 'SECTION_104',
+    rule: 'SAME_DAY' | '30_DAY' | 'SECTION_104' | 'SHORT_SELL',
     quantityMatched: number
   ): MatchingResult => ({
     disposal,
@@ -50,12 +50,12 @@ describe('Pipeline', () => {
       {
         transaction: acquisition,
         quantityMatched,
-        costBasisGbp: acquisition.value_gbp,
+        costBasisGbp: acquisition.value_gbp ?? 0,
       },
     ],
     rule,
     quantityMatched,
-    totalCostBasisGbp: acquisition.value_gbp,
+    totalCostBasisGbp: acquisition.value_gbp ?? 0,
   })
 
   describe('createPipelineContext', () => {
@@ -185,7 +185,7 @@ describe('Pipeline', () => {
           const matching = createMatching(
             transactions[1],
             transactions[2],
-            'THIRTY_DAY',
+            '30_DAY',
             5
           )
           return {
@@ -199,7 +199,7 @@ describe('Pipeline', () => {
 
       expect(result.matchings).toHaveLength(2)
       expect(result.matchings[0].rule).toBe('SAME_DAY')
-      expect(result.matchings[1].rule).toBe('THIRTY_DAY')
+      expect(result.matchings[1].rule).toBe('30_DAY')
     })
 
     it('should pass updated context between stages', () => {
@@ -231,7 +231,7 @@ describe('Pipeline', () => {
             ...context,
             matchings: [
               ...context.matchings,
-              createMatching(transactions[0], transactions[0], 'THIRTY_DAY', 5),
+              createMatching(transactions[0], transactions[0], '30_DAY', 5),
             ],
           }
         },
@@ -244,7 +244,7 @@ describe('Pipeline', () => {
           // Should see matchings from stage1 and stage2
           expect(context.matchings).toHaveLength(2)
           expect(context.matchings[0].rule).toBe('SAME_DAY')
-          expect(context.matchings[1].rule).toBe('THIRTY_DAY')
+          expect(context.matchings[1].rule).toBe('30_DAY')
           return context
         },
       }
@@ -374,7 +374,7 @@ describe('Pipeline', () => {
           ...context,
           matchings: [
             ...context.matchings,
-            createMatching(sell, buy2, 'THIRTY_DAY', 5),
+            createMatching(sell, buy2, '30_DAY', 5),
           ],
         }),
       }
@@ -387,7 +387,7 @@ describe('Pipeline', () => {
       expect(result.matchings).toHaveLength(2)
       expect(result.matchings[0].rule).toBe('SAME_DAY')
       expect(result.matchings[0].quantityMatched).toBe(10)
-      expect(result.matchings[1].rule).toBe('THIRTY_DAY')
+      expect(result.matchings[1].rule).toBe('30_DAY')
       expect(result.matchings[1].quantityMatched).toBe(5)
     })
 
