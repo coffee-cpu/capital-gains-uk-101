@@ -204,11 +204,19 @@ Always store dates as ISO 8601: `YYYY-MM-DD`. Parsers must convert from broker-s
 - Use the IDE diagnostics to catch issues: check for warnings in modified files
 
 ### Committing Changes
-- **IMPORTANT**: Always ask the user to validate changes before committing
+
+**Pre-commit Checklist** - Always run these before committing:
+1. ✅ **Build check**: Run `npm run build` - ensures TypeScript compilation succeeds and catches type errors
+2. ✅ **Unit tests**: Run `npm test` - verifies logic correctness
+3. ✅ **E2E tests** (when applicable): Run `npm run test:e2e` - catches integration issues when UI changes are involved
+4. ✅ **User approval**: Ask user to validate changes
+
+**Important Guidelines**:
+- **ALWAYS ask the user to validate changes before committing**
 - Never commit code without explicit user approval
 - Show a summary of changes and ask: "Should I commit and push these changes?"
 - Only proceed with `git commit` and `git push` after receiving confirmation
-- **Run E2E tests before committing**: Always run `npm run test:e2e` to ensure no regressions before committing changes
+- Running `npm run build` is **mandatory** - it catches TypeScript errors that unit tests alone won't detect
 
 ### Testing Strategy
 - **Unit tests**: All parsers, detector logic, utility functions
