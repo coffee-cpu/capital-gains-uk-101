@@ -1,16 +1,7 @@
 import { useState } from 'react'
 import { parseCSV, isCoinbaseCSV, stripCoinbaseMetadataRows } from '../lib/csvParser'
 import { detectBroker } from '../lib/brokerDetector'
-import { normalizeSchwabTransactions } from '../lib/parsers/schwab'
-import { normalizeSchwabEquityAwardsTransactions } from '../lib/parsers/schwabEquityAwards'
-import { normalizeInteractiveBrokersTransactions } from '../lib/parsers/interactiveBrokers'
-import { normalizeGenericTransactions } from '../lib/parsers/generic'
-import { normalizeTrading212Transactions } from '../lib/parsers/trading212'
-import { normalizeFreetradeTransactions } from '../lib/parsers/freetrade'
-import { normalizeEquatePlusTransactions } from '../lib/parsers/equatePlus'
-import { normalizeRevolutTransactions } from '../lib/parsers/revolut'
-import { normalizeCoinbaseTransactions } from '../lib/parsers/coinbase'
-import { BrokerType } from '../types/broker'
+import { getParser } from '../lib/parsers/parserRegistry'
 import { GenericTransaction } from '../types/transaction'
 import { useTransactionStore } from '../stores/transactionStore'
 import { useSettingsStore } from '../stores/settingsStore'
@@ -66,39 +57,13 @@ export function CSVImporter() {
         throw new Error(`Could not detect CSV format (confidence: ${(detection.confidence * 100).toFixed(0)}%). Please check your CSV file format.`)
       }
 
-      let transactions: GenericTransaction[] = []
-
-      switch (detection.broker) {
-        case BrokerType.SCHWAB:
-          transactions = normalizeSchwabTransactions(rawRows, fileId)
-          break
-        case BrokerType.SCHWAB_EQUITY_AWARDS:
-          transactions = normalizeSchwabEquityAwardsTransactions(rawRows, fileId)
-          break
-        case BrokerType.INTERACTIVE_BROKERS:
-          transactions = normalizeInteractiveBrokersTransactions(rawRows, fileId)
-          break
-        case BrokerType.FREETRADE:
-          transactions = normalizeFreetradeTransactions(rawRows, fileId)
-          break
-        case BrokerType.EQUATE_PLUS:
-          transactions = normalizeEquatePlusTransactions(rawRows, fileId)
-          break
-        case BrokerType.REVOLUT:
-          transactions = normalizeRevolutTransactions(rawRows, fileId)
-          break
-        case BrokerType.COINBASE:
-          transactions = normalizeCoinbaseTransactions(rawRows, fileId)
-          break
-        case BrokerType.GENERIC:
-          transactions = normalizeGenericTransactions(rawRows, fileId)
-          break
-        case BrokerType.TRADING212:
-          transactions = normalizeTrading212Transactions(rawRows, fileId)
-          break
-        default:
-          throw new Error(`Unsupported broker: ${detection.broker}`)
+      // Get parser for detected broker
+      const parser = getParser(detection.broker)
+      if (!parser) {
+        throw new Error(`Unsupported broker: ${detection.broker}`)
       }
+
+      let transactions: GenericTransaction[] = parser(rawRows, fileId)
 
       if (transactions.length === 0) {
         throw new Error('No valid transactions found in CSV')

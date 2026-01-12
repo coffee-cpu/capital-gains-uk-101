@@ -1,5 +1,6 @@
 import { GenericTransaction, TransactionType } from '../../types/transaction'
 import { RawCSVRow } from '../../types/broker'
+import { calculateTotal } from './parsingUtils'
 
 /**
  * Parsed options symbol data
@@ -72,7 +73,7 @@ function normalizeSchwabRow(row: RawCSVRow, fileId: string, rowIndex: number): G
   const amount = parseSchwabCurrency(row['Amount']) || null
 
   // Calculate total (for buys, amount is negative, for sells positive)
-  const total = amount !== null ? Math.abs(amount) : (quantity && price ? Math.abs(quantity) * price : null)
+  const total = calculateTotal(amount, quantity, price)
 
   // Check if this is Stock Plan Activity
   const isStockPlanActivity = action?.toLowerCase() === 'stock plan activity'
