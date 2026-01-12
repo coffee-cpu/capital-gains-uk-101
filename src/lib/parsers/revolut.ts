@@ -17,37 +17,37 @@ import type { RawCSVRow } from '../../types/broker'
  * - FX Rate: Exchange rate to GBP
  */
 
+type TransactionTypeString = 'BUY' | 'SELL' | 'DIVIDEND' | 'FEE' | 'INTEREST' | 'TRANSFER' | 'TAX' | 'STOCK_SPLIT'
+
+/**
+ * Keyword-based mappings for Revolut types (checked in order)
+ * Order matters: more specific patterns should come first
+ */
+const REVOLUT_TYPE_MAP: Array<{ keyword: string; type: TransactionTypeString }> = [
+  { keyword: 'buy', type: 'BUY' },
+  { keyword: 'sell', type: 'SELL' },
+  { keyword: 'dividend', type: 'DIVIDEND' },
+  { keyword: 'cash top-up', type: 'TRANSFER' },
+  { keyword: 'cash withdrawal', type: 'TRANSFER' },
+  { keyword: 'transfer from revolut', type: 'TRANSFER' },
+  { keyword: 'custody fee', type: 'FEE' },
+  { keyword: 'fee', type: 'FEE' },
+  { keyword: 'stock split', type: 'STOCK_SPLIT' },
+  { keyword: 'tax', type: 'TAX' },
+]
+
 /**
  * Map Revolut type to transaction type
  */
-function mapTypeToTransactionType(type: string): 'BUY' | 'SELL' | 'DIVIDEND' | 'FEE' | 'INTEREST' | 'TRANSFER' | 'TAX' | 'STOCK_SPLIT' {
+function mapTypeToTransactionType(type: string): TransactionTypeString {
   const typeLower = type.toLowerCase()
 
-  // Buy actions: BUY - MARKET, BUY - LIMIT
-  if (typeLower.includes('buy')) return 'BUY'
+  for (const { keyword, type: txType } of REVOLUT_TYPE_MAP) {
+    if (typeLower.includes(keyword)) {
+      return txType
+    }
+  }
 
-  // Sell actions: SELL - MARKET, SELL - LIMIT
-  if (typeLower.includes('sell')) return 'SELL'
-
-  // Dividend actions
-  if (typeLower.includes('dividend')) return 'DIVIDEND'
-
-  // Cash movements
-  if (typeLower.includes('cash top-up') || typeLower.includes('cash withdrawal')) return 'TRANSFER'
-
-  // Fees
-  if (typeLower.includes('custody fee') || typeLower.includes('fee')) return 'FEE'
-
-  // Transfers between Revolut entities
-  if (typeLower.includes('transfer from revolut')) return 'TRANSFER'
-
-  // Stock splits
-  if (typeLower.includes('stock split')) return 'STOCK_SPLIT'
-
-  // Tax-related
-  if (typeLower.includes('tax')) return 'TAX'
-
-  // Unknown types - default to FEE
   console.warn(`Unknown Revolut type: "${type}", treating as FEE`)
   return 'FEE'
 }

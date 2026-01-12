@@ -30,37 +30,48 @@ import type { RawCSVRow } from '../../types/broker'
  * - ID: Unique transaction ID
  */
 
+type TransactionTypeString = 'BUY' | 'SELL' | 'DIVIDEND' | 'FEE' | 'INTEREST' | 'TRANSFER' | 'TAX' | 'STOCK_SPLIT'
+
+/**
+ * Exact match mappings for Trading 212 actions
+ */
+const EXACT_ACTION_MAP: Record<string, TransactionTypeString> = {
+  'deposit': 'TRANSFER',
+  'withdrawal': 'TRANSFER',
+  'stock split': 'STOCK_SPLIT',
+  'result adjustment': 'FEE',
+}
+
+/**
+ * Keyword-based mappings for Trading 212 actions (checked in order)
+ */
+const KEYWORD_ACTION_MAP: Array<{ keyword: string; type: TransactionTypeString }> = [
+  { keyword: 'buy', type: 'BUY' },
+  { keyword: 'sell', type: 'SELL' },
+  { keyword: 'dividend', type: 'DIVIDEND' },
+  { keyword: 'interest', type: 'INTEREST' },
+  { keyword: 'tax', type: 'TAX' },
+  { keyword: 'withholding', type: 'TAX' },
+]
+
 /**
  * Map Trading 212 action to transaction type
  */
-function mapActionToType(action: string): 'BUY' | 'SELL' | 'DIVIDEND' | 'FEE' | 'INTEREST' | 'TRANSFER' | 'TAX' | 'STOCK_SPLIT' {
+function mapActionToType(action: string): TransactionTypeString {
   const actionLower = action.toLowerCase()
 
-  // Buy actions: Market buy, Limit buy, Stop buy
-  if (actionLower.includes('buy')) return 'BUY'
+  // Check exact matches first
+  if (actionLower in EXACT_ACTION_MAP) {
+    return EXACT_ACTION_MAP[actionLower]
+  }
 
-  // Sell actions: Market sell, Limit sell, Stop sell
-  if (actionLower.includes('sell')) return 'SELL'
+  // Check keyword matches
+  for (const { keyword, type } of KEYWORD_ACTION_MAP) {
+    if (actionLower.includes(keyword)) {
+      return type
+    }
+  }
 
-  // Dividend actions: Dividend (Ordinary), Dividend (Dividend), Dividend (Dividends paid by us corporations)
-  if (actionLower.includes('dividend')) return 'DIVIDEND'
-
-  // Interest actions: Interest on cash, Lending interest
-  if (actionLower.includes('interest')) return 'INTEREST'
-
-  // Transfer actions: Deposit, Withdrawal
-  if (actionLower === 'deposit' || actionLower === 'withdrawal') return 'TRANSFER'
-
-  // Stock splits - now properly supported as STOCK_SPLIT transaction type
-  if (actionLower === 'stock split') return 'STOCK_SPLIT'
-
-  // Result adjustment - Trading 212 specific
-  if (actionLower === 'result adjustment') return 'FEE'
-
-  // Tax-related
-  if (actionLower.includes('tax') || actionLower.includes('withholding')) return 'TAX'
-
-  // Unknown actions - default to FEE
   console.warn(`Unknown Trading 212 action: "${action}", treating as FEE`)
   return 'FEE'
 }

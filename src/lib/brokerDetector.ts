@@ -1,190 +1,101 @@
 import { BrokerType, BrokerDetectionResult, RawCSVRow } from '../types/broker'
 
 /**
+ * Configuration for header-based broker detection
+ * Each config defines required headers and the broker type
+ */
+interface BrokerConfig {
+  broker: BrokerType
+  headers: string[]
+}
+
+/**
+ * Standard broker configurations for header-based detection
+ * Order matters: more specific brokers should come first
+ */
+const BROKER_CONFIGS: BrokerConfig[] = [
+  // Schwab Equity Awards must come before regular Schwab (more specific headers)
+  {
+    broker: BrokerType.SCHWAB_EQUITY_AWARDS,
+    headers: ['Date', 'Action', 'Symbol', 'FairMarketValuePrice', 'NetSharesDeposited', 'AwardDate'],
+  },
+  {
+    broker: BrokerType.SCHWAB,
+    headers: ['Date', 'Action', 'Symbol', 'Description', 'Quantity', 'Price', 'Fees & Comm', 'Amount'],
+  },
+  {
+    broker: BrokerType.GENERIC,
+    headers: ['date', 'type', 'symbol', 'currency'],
+  },
+  {
+    broker: BrokerType.FREETRADE,
+    headers: ['Title', 'Type', 'Timestamp', 'Buy / Sell', 'Ticker', 'ISIN', 'Order Type'],
+  },
+  {
+    broker: BrokerType.TRADING212,
+    headers: ['Action', 'Time', 'ISIN', 'Ticker', 'No. of shares'],
+  },
+  {
+    broker: BrokerType.EQUATE_PLUS,
+    headers: ['Order reference', 'Date', 'Order type', 'Quantity', 'Execution price', 'Instrument', 'Product type'],
+  },
+  {
+    broker: BrokerType.REVOLUT,
+    headers: ['Date', 'Ticker', 'Type', 'Quantity', 'Price per share', 'Total Amount', 'Currency', 'FX Rate'],
+  },
+  {
+    broker: BrokerType.COINBASE,
+    headers: ['Timestamp', 'Transaction Type', 'Asset', 'Quantity Transacted', 'Price at Transaction', 'Fees and/or Spread'],
+  },
+]
+
+/**
+ * Detect broker using header matching
+ * Returns confidence based on percentage of headers matched
+ */
+function detectByHeaders(headers: string[], config: BrokerConfig): BrokerDetectionResult {
+  const matches = config.headers.filter(h => headers.includes(h))
+  return {
+    broker: config.broker,
+    confidence: matches.length / config.headers.length,
+    headerMatches: matches,
+  }
+}
+
+/**
  * Detect broker from CSV headers and data patterns
  */
 export function detectBroker(rows: RawCSVRow[]): BrokerDetectionResult {
   if (rows.length === 0) {
-    return {
-      broker: BrokerType.UNKNOWN,
-      confidence: 0,
-      headerMatches: [],
-    }
+    return { broker: BrokerType.UNKNOWN, confidence: 0, headerMatches: [] }
   }
 
   const headers = Object.keys(rows[0])
 
-  // Check for Interactive Brokers (check first - very distinctive multi-section format)
+  // Check Interactive Brokers first (requires special data pattern detection)
   const ibResult = detectInteractiveBrokers(headers, rows)
   if (ibResult.confidence > 0.8) {
     return ibResult
   }
 
-  // Check for Generic CSV (check second - most explicit format)
-  const genericResult = detectGeneric(headers, rows)
-  if (genericResult.confidence > 0.8) {
-    return genericResult
-  }
+  // Run all standard header-based detections
+  const results = BROKER_CONFIGS.map(config => detectByHeaders(headers, config))
 
-  // Check for Freetrade (check before others - distinctive format)
-  const freetradeResult = detectFreetrade(headers, rows)
-  if (freetradeResult.confidence > 0.8) {
-    return freetradeResult
-  }
-
-  // Check for Schwab Equity Awards (check before regular Schwab)
-  const schwabEquityResult = detectSchwabEquityAwards(headers, rows)
-  if (schwabEquityResult.confidence > 0.8) {
-    return schwabEquityResult
-  }
-
-  // Check for Schwab
-  const schwabResult = detectSchwab(headers, rows)
-  if (schwabResult.confidence > 0.8) {
-    return schwabResult
-  }
-
-  // Check for Trading 212
-  const trading212Result = detectTrading212(headers, rows)
-  if (trading212Result.confidence > 0.8) {
-    return trading212Result
-  }
-
-  // Check for EquatePlus
-  const equatePlusResult = detectEquatePlus(headers, rows)
-  if (equatePlusResult.confidence > 0.8) {
-    return equatePlusResult
-  }
-
-  // Check for Revolut
-  const revolutResult = detectRevolut(headers, rows)
-  if (revolutResult.confidence > 0.8) {
-    return revolutResult
-  }
-
-  // Check for Coinbase
-  const coinbaseResult = detectCoinbase(headers, rows)
-  if (coinbaseResult.confidence > 0.8) {
-    return coinbaseResult
+  // Find high-confidence match (>0.8)
+  const highConfidenceMatch = results.find(r => r.confidence > 0.8)
+  if (highConfidenceMatch) {
+    return highConfidenceMatch
   }
 
   // Return best match or unknown
-  const results = [ibResult, genericResult, freetradeResult, schwabEquityResult, schwabResult, trading212Result, equatePlusResult, revolutResult, coinbaseResult]
-  const bestMatch = results.reduce((best, current) =>
+  const allResults = [ibResult, ...results]
+  const bestMatch = allResults.reduce((best, current) =>
     current.confidence > best.confidence ? current : best
   )
 
-  if (bestMatch.confidence > 0) {
-    return bestMatch
-  }
-
-  return {
-    broker: BrokerType.UNKNOWN,
-    confidence: 0,
-    headerMatches: [],
-  }
-}
-
-/**
- * Detect Generic CSV format
- * Required headers: "date", "type", "symbol", "currency"
- */
-function detectGeneric(headers: string[], _rows: RawCSVRow[]): BrokerDetectionResult {
-  const requiredHeaders = ['date', 'type', 'symbol', 'currency']
-
-  const matches = requiredHeaders.filter(h => headers.includes(h))
-  const confidence = matches.length / requiredHeaders.length
-
-  return {
-    broker: BrokerType.GENERIC,
-    confidence,
-    headerMatches: matches,
-  }
-}
-
-/**
- * Detect Schwab Equity Awards format
- * Expected headers: "Date", "Action", "Symbol", "FairMarketValuePrice", "NetSharesDeposited", etc.
- */
-function detectSchwabEquityAwards(headers: string[], _rows: RawCSVRow[]): BrokerDetectionResult {
-  const equityHeaders = ['Date', 'Action', 'Symbol', 'FairMarketValuePrice', 'NetSharesDeposited', 'AwardDate']
-
-  const matches = equityHeaders.filter(h => headers.includes(h))
-  const confidence = matches.length / equityHeaders.length
-
-  return {
-    broker: BrokerType.SCHWAB_EQUITY_AWARDS,
-    confidence,
-    headerMatches: matches,
-  }
-}
-
-/**
- * Detect Charles Schwab format
- * Expected headers: "Date", "Action", "Symbol", "Description", "Quantity", "Price", "Fees & Comm", "Amount"
- */
-function detectSchwab(headers: string[], _rows: RawCSVRow[]): BrokerDetectionResult {
-  const schwabHeaders = ['Date', 'Action', 'Symbol', 'Description', 'Quantity', 'Price', 'Fees & Comm', 'Amount']
-
-  const matches = schwabHeaders.filter(h => headers.includes(h))
-  const confidence = matches.length / schwabHeaders.length
-
-  return {
-    broker: BrokerType.SCHWAB,
-    confidence,
-    headerMatches: matches,
-  }
-}
-
-/**
- * Detect Trading 212 format
- * Expected headers might include: "Action", "Time", "ISIN", "Ticker", "Name", "No. of shares", "Price / share", "Result", etc.
- */
-function detectTrading212(headers: string[], _rows: RawCSVRow[]): BrokerDetectionResult {
-  const trading212Headers = ['Action', 'Time', 'ISIN', 'Ticker', 'No. of shares']
-
-  const matches = trading212Headers.filter(h => headers.includes(h))
-  const confidence = matches.length / trading212Headers.length
-
-  return {
-    broker: BrokerType.TRADING212,
-    confidence,
-    headerMatches: matches,
-  }
-}
-
-/**
- * Detect Freetrade format
- * Expected headers: "Title", "Type", "Timestamp", "Buy / Sell", "Ticker", "ISIN", "Order Type"
- */
-function detectFreetrade(headers: string[], _rows: RawCSVRow[]): BrokerDetectionResult {
-  const freetradeHeaders = ['Title', 'Type', 'Timestamp', 'Buy / Sell', 'Ticker', 'ISIN', 'Order Type']
-
-  const matches = freetradeHeaders.filter(h => headers.includes(h))
-  const confidence = matches.length / freetradeHeaders.length
-
-  return {
-    broker: BrokerType.FREETRADE,
-    confidence,
-    headerMatches: matches,
-  }
-}
-
-/**
- * Detect EquatePlus format
- * Expected headers: "Order reference", "Date", "Order type", "Quantity", "Execution price", "Instrument", "Product type"
- */
-function detectEquatePlus(headers: string[], _rows: RawCSVRow[]): BrokerDetectionResult {
-  const equatePlusHeaders = ['Order reference', 'Date', 'Order type', 'Quantity', 'Execution price', 'Instrument', 'Product type']
-
-  const matches = equatePlusHeaders.filter(h => headers.includes(h))
-  const confidence = matches.length / equatePlusHeaders.length
-
-  return {
-    broker: BrokerType.EQUATE_PLUS,
-    confidence,
-    headerMatches: matches,
-  }
+  return bestMatch.confidence > 0
+    ? bestMatch
+    : { broker: BrokerType.UNKNOWN, confidence: 0, headerMatches: [] }
 }
 
 /**
@@ -231,42 +142,5 @@ function detectInteractiveBrokers(headers: string[], rows: RawCSVRow[]): BrokerD
     broker: BrokerType.INTERACTIVE_BROKERS,
     confidence,
     headerMatches: headerMatches.length > 0 ? headerMatches : (hasSectionFormat ? ['Trades/Cash Transactions section format'] : []),
-  }
-}
-
-/**
- * Detect Revolut format
- * Expected headers: "Date", "Ticker", "Type", "Quantity", "Price per share", "Total Amount", "Currency", "FX Rate"
- */
-function detectRevolut(headers: string[], _rows: RawCSVRow[]): BrokerDetectionResult {
-  const revolutHeaders = ['Date', 'Ticker', 'Type', 'Quantity', 'Price per share', 'Total Amount', 'Currency', 'FX Rate']
-
-  const matches = revolutHeaders.filter(h => headers.includes(h))
-  const confidence = matches.length / revolutHeaders.length
-
-  return {
-    broker: BrokerType.REVOLUT,
-    confidence,
-    headerMatches: matches,
-  }
-}
-
-/**
- * Detect Coinbase format
- * Expected headers: "Timestamp", "Transaction Type", "Asset", "Quantity Transacted", "Price at Transaction", "Fees and/or Spread"
- *
- * Note: Coinbase CSVs have metadata rows that are skipped by parseCoinbaseCSV() before detection,
- * so we detect based on the actual data headers.
- */
-function detectCoinbase(headers: string[], _rows: RawCSVRow[]): BrokerDetectionResult {
-  const coinbaseHeaders = ['Timestamp', 'Transaction Type', 'Asset', 'Quantity Transacted', 'Price at Transaction', 'Fees and/or Spread']
-
-  const matches = coinbaseHeaders.filter(h => headers.includes(h))
-  const confidence = matches.length / coinbaseHeaders.length
-
-  return {
-    broker: BrokerType.COINBASE,
-    confidence,
-    headerMatches: matches,
   }
 }
