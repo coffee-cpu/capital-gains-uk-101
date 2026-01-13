@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { parseCSV, isCoinbaseCSV, stripCoinbaseMetadataRows, isInteractiveBrokersCSV, preprocessInteractiveBrokersCSV } from '../lib/csvParser'
+import { parseCSV, preprocessCSVFile } from '../lib/csvParser'
 import { detectBroker } from '../lib/brokerDetector'
 import { getParser } from '../lib/parsers/parserRegistry'
 import { GenericTransaction } from '../types/transaction'
@@ -24,22 +24,11 @@ export function CSVImporter() {
 
   const processFile = async (file: File): Promise<{ success: boolean; message: string; count?: number }> => {
     try {
-      // Check if this is an Interactive Brokers file (needs special handling for multi-section format)
-      const isIB = await isInteractiveBrokersCSV(file)
-
-      // Check if this is a Coinbase file (needs special handling for metadata rows)
-      const isCoinbase = await isCoinbaseCSV(file)
-
-      // Preprocess the file based on broker type
-      let fileToProcess = file
-      if (isIB) {
-        fileToProcess = await preprocessInteractiveBrokersCSV(file)
-      } else if (isCoinbase) {
-        fileToProcess = await stripCoinbaseMetadataRows(file)
-      }
+      // Preprocess the file if needed (handles IB multi-section format, Coinbase metadata, etc.)
+      const preprocessedFile = await preprocessCSVFile(file)
 
       // Parse CSV using the standard parser
-      const rawRows = await parseCSV(fileToProcess)
+      const rawRows = await parseCSV(preprocessedFile)
 
       // Generate unique file identifier
       const fileId = `${file.name.replace(/[^a-z0-9]/gi, '_')}-${file.size}`

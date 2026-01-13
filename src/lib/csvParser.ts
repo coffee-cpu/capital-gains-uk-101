@@ -2,6 +2,11 @@ import Papa from 'papaparse'
 import { RawCSVRow } from '../types/broker'
 
 /**
+ * Broker type for preprocessing (subset that needs special handling)
+ */
+type PreprocessBroker = 'interactive-brokers' | 'coinbase' | 'standard'
+
+/**
  * Parse CSV file into raw rows
  */
 export async function parseCSV(file: File): Promise<RawCSVRow[]> {
@@ -24,28 +29,54 @@ export async function parseCSV(file: File): Promise<RawCSVRow[]> {
 }
 
 /**
- * Check if a file is an Interactive Brokers CSV
- * IB CSVs have a distinctive multi-section format with:
- * - "Statement" section at the start
- * - "Transaction History" section with the actual trades
+ * Detect which broker needs preprocessing and apply it
+ * Returns the preprocessed file ready for standard parsing
  */
-export async function isInteractiveBrokersCSV(file: File): Promise<boolean> {
+export async function preprocessCSVFile(file: File): Promise<File> {
+  const brokerType = await detectPreprocessBroker(file)
+
+  switch (brokerType) {
+    case 'interactive-brokers':
+      return preprocessInteractiveBrokersCSV(file)
+    case 'coinbase':
+      return stripCoinbaseMetadataRows(file)
+    default:
+      return file
+  }
+}
+
+/**
+ * Detect broker type for preprocessing by reading the first few KB of the file
+ */
+async function detectPreprocessBroker(file: File): Promise<PreprocessBroker> {
+  const text = await readFileHead(file, 2000)
+  if (!text) return 'standard'
+
+  // Check for Interactive Brokers multi-section format
+  const hasIBStatement = text.includes('Statement,Header,') || text.includes('Statement,Data,')
+  const hasIBTransactionHistory = text.includes('Transaction History,Header,') || text.includes('Transaction History,Data,')
+  if (hasIBStatement && hasIBTransactionHistory) {
+    return 'interactive-brokers'
+  }
+
+  // Check for Coinbase metadata rows
+  const lines = text.split('\n').filter(line => line.trim())
+  if (lines.length >= 2 && lines[0].startsWith('Transactions') && lines[1].startsWith('User')) {
+    return 'coinbase'
+  }
+
+  return 'standard'
+}
+
+/**
+ * Read the first N bytes of a file as text
+ */
+function readFileHead(file: File, bytes: number): Promise<string | null> {
   return new Promise((resolve) => {
     const reader = new FileReader()
-    reader.onload = (e) => {
-      const text = e.target?.result as string
-      if (!text) {
-        resolve(false)
-        return
-      }
-      // Check for IB-specific patterns
-      const hasStatement = text.includes('Statement,Header,') || text.includes('Statement,Data,')
-      const hasTransactionHistory = text.includes('Transaction History,Header,') || text.includes('Transaction History,Data,')
-
-      resolve(hasStatement && hasTransactionHistory)
-    }
-    reader.onerror = () => resolve(false)
-    reader.readAsText(file.slice(0, 2000)) // Read first 2KB to check the structure
+    reader.onload = (e) => resolve(e.target?.result as string || null)
+    reader.onerror = () => resolve(null)
+    reader.readAsText(file.slice(0, bytes))
   })
 }
 
@@ -138,51 +169,11 @@ export async function preprocessInteractiveBrokersCSV(file: File): Promise<File>
  * - "User,<name>,<uuid>,..." row
  */
 export async function isCoinbaseCSV(file: File): Promise<boolean> {
-  return new Promise((resolve) => {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const text = e.target?.result as string
-      if (!text) {
-        resolve(false)
-        return
-      }
-      // Split into lines and find the first non-empty lines
-      const lines = text.split('\n')
+  const text = await readFileHead(file, 500)
+  if (!text) return false
 
-      // Find "Transactions" line and "User" line (skipping empty lines)
-      let foundTransactions = false
-      let foundUser = false
-
-      for (const line of lines) {
-        const trimmedLine = line.trim()
-        if (!trimmedLine) continue // Skip empty lines
-
-        if (!foundTransactions) {
-          if (trimmedLine.startsWith('Transactions')) {
-            foundTransactions = true
-          } else {
-            // First non-empty line is not "Transactions"
-            resolve(false)
-            return
-          }
-        } else if (!foundUser) {
-          if (trimmedLine.startsWith('User')) {
-            foundUser = true
-            break
-          } else {
-            // Second non-empty line is not "User"
-            resolve(false)
-            return
-          }
-        }
-      }
-
-      resolve(foundTransactions && foundUser)
-    }
-    reader.onerror = () => resolve(false)
-    // Read first 500 bytes to check the headers (enough for metadata lines)
-    reader.readAsText(file.slice(0, 500))
-  })
+  const lines = text.split('\n').filter(line => line.trim())
+  return lines.length >= 2 && lines[0].startsWith('Transactions') && lines[1].startsWith('User')
 }
 
 /**

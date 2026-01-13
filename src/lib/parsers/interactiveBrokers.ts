@@ -4,13 +4,42 @@ import { RawCSVRow } from '../../types/broker'
 /**
  * Transaction types from IB that represent actual trades (capital gains relevant)
  */
-const TRADE_TRANSACTION_TYPES = ['Buy', 'Sell', 'Assignment']
+const TRADE_TYPES = new Set(['Buy', 'Sell', 'Assignment'])
 
 /**
- * Transaction types from IB for dividends and interest
+ * Transaction types from IB for interest (credit/debit)
  */
-const DIVIDEND_TRANSACTION_TYPES = ['Dividend']
-const INTEREST_TRANSACTION_TYPES = ['Credit Interest', 'Debit Interest', 'Investment Interest Paid', 'Investment Interest Received']
+const INTEREST_TYPES = new Set(['Credit Interest', 'Debit Interest', 'Investment Interest Paid', 'Investment Interest Received'])
+
+/**
+ * Parse gross amount from IB row (handles column name with trailing space)
+ */
+function parseGrossAmount(row: RawCSVRow): number | null {
+  const value = parseFloat(row['Gross Amount '] || row['Gross Amount'])
+  return isNaN(value) ? null : value
+}
+
+/**
+ * Create base transaction object with common fields
+ */
+function createBaseTransaction(
+  fileId: string,
+  rowIndex: number,
+  baseCurrency: string,
+  date: string,
+  description: string | undefined
+): Omit<GenericTransaction, 'type' | 'symbol' | 'quantity' | 'price' | 'total' | 'fee' | 'notes'> {
+  return {
+    id: `${fileId}-${rowIndex}`,
+    source: 'Interactive Brokers',
+    name: description || null,
+    date,
+    currency: baseCurrency,
+    ratio: null,
+    incomplete: false,
+    ignored: false,
+  }
+}
 
 /**
  * Normalize Interactive Brokers CSV rows to GenericTransaction format
@@ -101,17 +130,17 @@ function normalizeIBTransactionHistoryRow(
   }
 
   // Handle trade transactions (Buy, Sell, Assignment)
-  if (TRADE_TRANSACTION_TYPES.includes(transactionType)) {
+  if (TRADE_TYPES.has(transactionType)) {
     return normalizeTradeRow(row, fileId, rowIndex, baseCurrency, transactionType, date, description)
   }
 
   // Handle dividend transactions
-  if (DIVIDEND_TRANSACTION_TYPES.includes(transactionType)) {
+  if (transactionType === 'Dividend') {
     return normalizeDividendRow(row, fileId, rowIndex, baseCurrency, date, description)
   }
 
   // Handle interest transactions
-  if (INTEREST_TRANSACTION_TYPES.includes(transactionType)) {
+  if (INTEREST_TYPES.has(transactionType)) {
     return normalizeInterestRow(row, fileId, rowIndex, baseCurrency, transactionType, date, description)
   }
 
@@ -132,58 +161,29 @@ function normalizeTradeRow(
 ): GenericTransaction | null {
   const symbol = row['Symbol']?.trim()
 
-  if (!symbol || symbol === '-') {
-    return null // Skip invalid rows or rows with no symbol
-  }
-
-  // Skip bonds (symbols like "UKT 0 5/8 06/07/25" contain spaces and fractions)
-  if (isBondSymbol(symbol)) {
+  if (!symbol || symbol === '-' || isBondSymbol(symbol)) {
     return null
   }
 
-  // Parse numeric values
   // Quantity can be negative for sells
   const rawQuantity = parseFloat(row['Quantity']) || null
   const commission = Math.abs(parseFloat(row['Commission']) || 0)
 
-  // IMPORTANT: In IB exports, Price is in the original transaction currency,
-  // but Gross Amount and Net Amount are already converted to the base currency (e.g., GBP).
-  // We use Gross Amount directly as the total, and derive the price from it.
-  const grossAmount = parseFloat(row['Gross Amount '] || row['Gross Amount']) || null
-
-  // Calculate total from gross amount (make positive)
+  // In IB exports, Gross Amount is already in base currency. Derive price from it.
+  const grossAmount = parseGrossAmount(row)
   const total = grossAmount !== null ? Math.abs(grossAmount) : null
-
-  // Derive price in base currency from gross amount / quantity
-  let price: number | null = null
-  if (total !== null && rawQuantity !== null && Math.abs(rawQuantity) > 0) {
-    price = total / Math.abs(rawQuantity)
-  }
-
-  // Determine transaction type
-  let type: (typeof TransactionType)[keyof typeof TransactionType]
-  if (transactionType === 'Sell') {
-    type = TransactionType.SELL
-  } else {
-    type = TransactionType.BUY
-  }
+  const quantity = rawQuantity !== null ? Math.abs(rawQuantity) : null
+  const price = total !== null && quantity !== null && quantity > 0 ? total / quantity : null
 
   return {
-    id: `${fileId}-${rowIndex}`,
-    source: 'Interactive Brokers',
-    symbol: symbol,
-    name: description || null,
-    date,
-    type,
-    quantity: rawQuantity !== null ? Math.abs(rawQuantity) : null,
+    ...createBaseTransaction(fileId, rowIndex, baseCurrency, date, description),
+    symbol,
+    type: transactionType === 'Sell' ? TransactionType.SELL : TransactionType.BUY,
+    quantity,
     price,
-    currency: baseCurrency,
     total,
     fee: commission || null,
-    ratio: null,
     notes: transactionType === 'Assignment' ? 'Options Assignment' : null,
-    incomplete: false,
-    ignored: false,
   }
 }
 
@@ -199,30 +199,19 @@ function normalizeDividendRow(
   description: string | undefined
 ): GenericTransaction | null {
   const symbol = row['Symbol']?.trim()
+  if (!symbol || symbol === '-') return null
 
-  if (!symbol || symbol === '-') {
-    return null
-  }
-
-  const grossAmount = parseFloat(row['Gross Amount '] || row['Gross Amount']) || null
-  const total = grossAmount !== null ? Math.abs(grossAmount) : null
+  const grossAmount = parseGrossAmount(row)
 
   return {
-    id: `${fileId}-${rowIndex}`,
-    source: 'Interactive Brokers',
-    symbol: symbol,
-    name: description || null,
-    date,
+    ...createBaseTransaction(fileId, rowIndex, baseCurrency, date, description),
+    symbol,
     type: TransactionType.DIVIDEND,
     quantity: null,
     price: null,
-    currency: baseCurrency,
-    total,
+    total: grossAmount !== null ? Math.abs(grossAmount) : null,
     fee: null,
-    ratio: null,
     notes: null,
-    incomplete: false,
-    ignored: false,
   }
 }
 
@@ -238,53 +227,26 @@ function normalizeInterestRow(
   date: string,
   description: string | undefined
 ): GenericTransaction | null {
-  // Interest transactions typically don't have a symbol
-  // Use "CASH" as a placeholder symbol for interest transactions
-  const symbol = 'CASH'
-
-  const grossAmount = parseFloat(row['Gross Amount '] || row['Gross Amount']) || null
-
-  // Interest types:
-  // - Credit Interest: positive (income received)
-  // - Debit Interest: negative (paid to broker for margin)
-  // - Investment Interest Paid: negative (paid to seller for bonds)
-  // We preserve the value as-is since negative values indicate money paid out
-  const total = grossAmount
-
-  // Determine if it's credit or debit interest for notes
+  // Negative values indicate money paid out (debit interest)
   const isDebit = transactionType === 'Debit Interest' || transactionType === 'Investment Interest Paid'
-  const notes = isDebit ? 'Debit Interest' : 'Credit Interest'
 
   return {
-    id: `${fileId}-${rowIndex}`,
-    source: 'Interactive Brokers',
-    symbol: symbol,
-    name: description || null,
-    date,
+    ...createBaseTransaction(fileId, rowIndex, baseCurrency, date, description),
+    symbol: 'CASH', // Placeholder for interest transactions
     type: TransactionType.INTEREST,
     quantity: null,
     price: null,
-    currency: baseCurrency,
-    total,
+    total: parseGrossAmount(row),
     fee: null,
-    ratio: null,
-    notes,
-    incomplete: false,
-    ignored: false,
+    notes: isDebit ? 'Debit Interest' : 'Credit Interest',
   }
 }
 
 /**
- * Parse IB date format: "YYYY-MM-DD"
- * Returns ISO date string (YYYY-MM-DD) or null
+ * Validate IB date format (YYYY-MM-DD) and return if valid
  */
-function parseIBDate(dateStr: string): string | null {
-  if (!dateStr) return null
-
-  // Validate ISO date format
-  const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/)
-  if (!match) return null
-
+function parseIBDate(dateStr: string | undefined): string | null {
+  if (!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return null
   return dateStr
 }
 
