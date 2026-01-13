@@ -170,8 +170,29 @@ export function normalizeTrading212Transactions(
         notes: row['Notes'] || null,
       }
 
-      // Add withholding tax as a note if present
-      if (withholdingTax && withholdingTax > 0) {
+      // For dividend transactions, calculate gross dividend and store withholding tax
+      // Gross = Net (total) + Withholding Tax
+      if (type === 'DIVIDEND') {
+        const taxCurrency = row['Currency (Withholding tax)'] || currency
+          
+        // Calculate gross dividend: total (net) + withholding tax
+        const grossDividend = withholdingTax && total !== null
+          ? total + withholdingTax
+          : total
+
+        // Store in dedicated SA106 fields
+        transaction.grossDividend = grossDividend
+        transaction.withholdingTax = withholdingTax ?? null
+
+        // Add withholding tax to notes for visibility
+        if (withholdingTax && withholdingTax > 0) {
+          const taxNote = `Gross: ${grossDividend?.toFixed(2)} ${currency}, Tax withheld: ${withholdingTax} ${taxCurrency}`
+          transaction.notes = transaction.notes
+            ? `${transaction.notes}; ${taxNote}`
+            : taxNote
+        }
+      } else if (withholdingTax && withholdingTax > 0) {
+        // For non-dividend transactions with withholding tax, just add to notes
         const taxCurrency = row['Currency (Withholding tax)'] || currency
         const taxNote = `Withholding tax: ${withholdingTax} ${taxCurrency}`
         transaction.notes = transaction.notes

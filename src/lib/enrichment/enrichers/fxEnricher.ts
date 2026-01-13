@@ -93,6 +93,16 @@ export class FxEnricher implements Enricher {
         const valueGbp = tx.total !== null ? convertToGBP(tx.total, fxRate) : null
         const feeGbp = tx.fee !== null ? convertToGBP(tx.fee, fxRate) : null
 
+        // Convert SA106 dividend withholding fields to GBP
+        const grossDividendGbp =
+          tx.grossDividend !== null && tx.grossDividend !== undefined
+            ? convertToGBP(tx.grossDividend, fxRate)
+            : null
+        const withholdingTaxGbp =
+          tx.withholdingTax !== null && tx.withholdingTax !== undefined
+            ? convertToGBP(tx.withholdingTax, fxRate)
+            : null
+
         enriched.push({
           ...tx,
           fx_rate: fxRate,
@@ -100,6 +110,8 @@ export class FxEnricher implements Enricher {
           split_adjusted_price_gbp: splitAdjustedPriceGbp,
           value_gbp: valueGbp,
           fee_gbp: feeGbp,
+          grossDividend_gbp: grossDividendGbp,
+          withholdingTax_gbp: withholdingTaxGbp,
           fx_source: tx.currency === 'GBP' ? 'Native GBP' : FXSourceAttributions[fxSource],
           fx_error: null,
         })

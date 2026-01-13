@@ -188,7 +188,20 @@ function normalizeTradeRow(
 }
 
 /**
+ * Parse net amount from IB row (handles column name with trailing space)
+ */
+function parseNetAmount(row: RawCSVRow): number | null {
+  const value = parseFloat(row['Net Amount '] || row['Net Amount'])
+  return isNaN(value) ? null : value
+}
+
+/**
  * Normalize a dividend row
+ *
+ * IB provides:
+ * - Gross Amount: dividend before withholding tax
+ * - Net Amount: dividend after withholding tax
+ * - Withholding = Gross - Net
  */
 function normalizeDividendRow(
   row: RawCSVRow,
@@ -202,6 +215,25 @@ function normalizeDividendRow(
   if (!symbol || symbol === '-') return null
 
   const grossAmount = parseGrossAmount(row)
+  const netAmount = parseNetAmount(row)
+
+  // Calculate withholding tax as difference between gross and net
+  // If net is not available, withholding is null (no tax withheld or data unavailable)
+  let withholdingTax: number | null = null
+  if (grossAmount !== null && netAmount !== null) {
+    const diff = Math.abs(grossAmount) - Math.abs(netAmount)
+    // Only set withholding if there's a meaningful difference (> 0.001)
+    withholdingTax = diff > 0.001 ? diff : null
+  }
+
+  // Use net amount as total if available, otherwise gross
+  const total = netAmount !== null ? Math.abs(netAmount) : (grossAmount !== null ? Math.abs(grossAmount) : null)
+
+  // Build notes
+  const notes: string[] = []
+  if (grossAmount !== null && withholdingTax !== null) {
+    notes.push(`Gross: ${Math.abs(grossAmount).toFixed(2)} ${baseCurrency}, Tax withheld: ${withholdingTax.toFixed(2)} ${baseCurrency}`)
+  }
 
   return {
     ...createBaseTransaction(fileId, rowIndex, baseCurrency, date, description),
@@ -209,9 +241,12 @@ function normalizeDividendRow(
     type: TransactionType.DIVIDEND,
     quantity: null,
     price: null,
-    total: grossAmount !== null ? Math.abs(grossAmount) : null,
+    total,
     fee: null,
-    notes: null,
+    notes: notes.length > 0 ? notes.join(', ') : null,
+    // SA106 dividend withholding fields
+    grossDividend: grossAmount !== null ? Math.abs(grossAmount) : null,
+    withholdingTax,
   }
 }
 

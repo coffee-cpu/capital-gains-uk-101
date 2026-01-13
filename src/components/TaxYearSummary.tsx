@@ -442,6 +442,57 @@ export function TaxYearSummary() {
                     </div>
                   </div>
 
+                  {/* SA106 Foreign Dividend Details */}
+                  {currentSummary.grossDividendsGbp > 0 && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                      <div className="flex items-start">
+                        <svg className="h-5 w-5 text-amber-500 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 01-1.581.814L10 13.197l-4.419 3.617A1 1 0 014 16V4z" clipRule="evenodd" />
+                        </svg>
+                        <div className="ml-3 flex-1">
+                          <h4 className="text-sm font-semibold text-amber-900 mb-2">
+                            SA106 Foreign Income Summary
+                            <Tooltip content="View HMRC SA106 form guidance">
+                              <a
+                                href="https://www.gov.uk/government/publications/self-assessment-foreign-sa106"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="ml-1 text-amber-600 hover:text-amber-800 underline text-xs font-normal"
+                              >
+                                (form)
+                              </a>
+                            </Tooltip>
+                          </h4>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between items-center">
+                              <span className="text-amber-800">Gross Dividends (before tax withheld)</span>
+                              <span className="font-medium text-amber-900">
+                                £{currentSummary.grossDividendsGbp.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-amber-800">Tax Withheld at Source</span>
+                              <span className="font-medium text-amber-900">
+                                £{currentSummary.totalWithholdingTaxGbp.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </span>
+                            </div>
+                            <div className="border-t border-amber-300 pt-2 mt-2">
+                              <div className="flex justify-between items-center">
+                                <span className="text-amber-800 font-medium">Net Dividends Received</span>
+                                <span className="font-semibold text-amber-900">
+                                  £{(currentSummary.grossDividendsGbp - currentSummary.totalWithholdingTaxGbp).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          <p className="text-xs text-amber-700 mt-3">
+                            Use these figures when completing SA106 (Foreign). You may be able to claim Foreign Tax Credit Relief for tax withheld.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Dividend Reporting Guidance */}
                   {dividendsExceedAllowance ? (
                     <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">

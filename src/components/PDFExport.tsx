@@ -225,6 +225,32 @@ function createCGTReportDocument(Document: any, Page: any, Text: any, View: any,
             </View>
           </View>
 
+          {/* SA106 Foreign Dividend Summary */}
+          {taxYearSummary.grossDividendsGbp > 0 && (
+            <>
+              <Text style={styles.subtitle}>SA106 Foreign Income Summary</Text>
+              <View style={[styles.summaryBox, { backgroundColor: '#fffbeb', borderWidth: 1, borderColor: '#fde68a' }]}>
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Gross Dividends (before tax withheld):</Text>
+                  <Text style={styles.summaryValue}>{formatCurrency(taxYearSummary.grossDividendsGbp)}</Text>
+                </View>
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Tax Withheld at Source:</Text>
+                  <Text style={styles.summaryValue}>{formatCurrency(taxYearSummary.totalWithholdingTaxGbp)}</Text>
+                </View>
+                <View style={styles.totalRow}>
+                  <Text style={styles.totalLabel}>Net Dividends Received:</Text>
+                  <Text style={styles.totalValue}>
+                    {formatCurrency(taxYearSummary.grossDividendsGbp - taxYearSummary.totalWithholdingTaxGbp)}
+                  </Text>
+                </View>
+                <Text style={{ fontSize: 7, color: '#92400e', marginTop: 8 }}>
+                  Use these figures when completing SA106 (Foreign). You may be able to claim Foreign Tax Credit Relief for tax withheld.
+                </Text>
+              </View>
+            </>
+          )}
+
           {/* Disposal Records */}
           {disposals.length > 0 && (
             <>

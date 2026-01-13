@@ -215,8 +215,18 @@ describe('Schwab Parser', () => {
       expect(result[0].notes).toBe('Stock Plan Activity') // Marked for deduplication
     })
 
-    it('should handle negative amounts (tax adjustments)', () => {
+    it('should link NRA Tax Adj to dividend and calculate gross/net/withholding', () => {
       const rows = [
+        {
+          'Date': '09/29/2024',
+          'Action': 'Qualified Dividend',
+          'Symbol': 'AAPL',
+          'Description': 'APPLE INC',
+          'Quantity': '',
+          'Price': '',
+          'Fees & Comm': '',
+          'Amount': '$25.00',  // Gross dividend
+        },
         {
           'Date': '09/29/2024',
           'Action': 'NRA Tax Adj',
@@ -225,15 +235,106 @@ describe('Schwab Parser', () => {
           'Quantity': '',
           'Price': '',
           'Fees & Comm': '',
-          'Amount': '-$2.50',
+          'Amount': '-$3.75',  // Withholding tax
+        },
+      ]
+
+      const result = normalizeSchwabTransactions(rows, 'test-file')
+
+      // Should produce only ONE transaction (dividend with withholding merged)
+      expect(result).toHaveLength(1)
+      expect(result[0].type).toBe(TransactionType.DIVIDEND)
+      expect(result[0].symbol).toBe('AAPL')
+      expect(result[0].grossDividend).toBe(25.00)      // Gross amount
+      expect(result[0].withholdingTax).toBe(3.75)      // Tax withheld (absolute)
+      expect(result[0].total).toBe(21.25)              // Net = 25.00 - 3.75
+      expect(result[0].notes).toContain('Gross dividend: $25.00')
+      expect(result[0].notes).toContain('Tax withheld: $3.75')
+    })
+
+    it('should handle dividend without NRA Tax Adj (no withholding)', () => {
+      const rows = [
+        {
+          'Date': '09/29/2024',
+          'Action': 'Qualified Dividend',
+          'Symbol': 'AAPL',
+          'Description': 'APPLE INC',
+          'Quantity': '',
+          'Price': '',
+          'Fees & Comm': '',
+          'Amount': '$15.75',
         },
       ]
 
       const result = normalizeSchwabTransactions(rows, 'test-file')
 
       expect(result).toHaveLength(1)
-      expect(result[0].type).toBe(TransactionType.TAX)
-      expect(result[0].total).toBe(2.50) // Absolute value
+      expect(result[0].type).toBe(TransactionType.DIVIDEND)
+      expect(result[0].grossDividend).toBe(15.75)      // Gross = Net (no withholding)
+      expect(result[0].withholdingTax).toBeNull()      // No withholding
+      expect(result[0].total).toBe(15.75)              // Net = Gross
+    })
+
+    it('should handle multiple dividends with different NRA Tax Adj amounts', () => {
+      const rows = [
+        {
+          'Date': '09/29/2024',
+          'Action': 'Qualified Dividend',
+          'Symbol': 'AAPL',
+          'Description': 'APPLE INC',
+          'Quantity': '',
+          'Price': '',
+          'Fees & Comm': '',
+          'Amount': '$25.00',
+        },
+        {
+          'Date': '09/29/2024',
+          'Action': 'NRA Tax Adj',
+          'Symbol': 'AAPL',
+          'Description': 'APPLE INC',
+          'Quantity': '',
+          'Price': '',
+          'Fees & Comm': '',
+          'Amount': '-$3.75',
+        },
+        {
+          'Date': '09/30/2024',
+          'Action': 'Cash Dividend',
+          'Symbol': 'MSFT',
+          'Description': 'MICROSOFT CORP',
+          'Quantity': '',
+          'Price': '',
+          'Fees & Comm': '',
+          'Amount': '$50.00',
+        },
+        {
+          'Date': '09/30/2024',
+          'Action': 'NRA Tax Adj',
+          'Symbol': 'MSFT',
+          'Description': 'MICROSOFT CORP',
+          'Quantity': '',
+          'Price': '',
+          'Fees & Comm': '',
+          'Amount': '-$7.50',
+        },
+      ]
+
+      const result = normalizeSchwabTransactions(rows, 'test-file')
+
+      // Should produce 2 dividend transactions (NRA Tax Adj merged)
+      expect(result).toHaveLength(2)
+      
+      // AAPL dividend
+      expect(result[0].symbol).toBe('AAPL')
+      expect(result[0].grossDividend).toBe(25.00)
+      expect(result[0].withholdingTax).toBe(3.75)
+      expect(result[0].total).toBe(21.25)
+
+      // MSFT dividend
+      expect(result[1].symbol).toBe('MSFT')
+      expect(result[1].grossDividend).toBe(50.00)
+      expect(result[1].withholdingTax).toBe(7.50)
+      expect(result[1].total).toBe(42.50)
     })
 
     it('should skip rows with invalid dates', () => {
