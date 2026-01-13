@@ -2,46 +2,40 @@ import { describe, it, expect } from 'vitest'
 import { normalizeInteractiveBrokersTransactions } from '../interactiveBrokers'
 import { TransactionType } from '../../../types/transaction'
 
-// Helper to create IB CSV row format (PapaParse with header:true)
-const createIBRow = (data: Record<string, string>) => data
+// Helper to create IB CSV row format (after preprocessing by preprocessInteractiveBrokersCSV)
+// Preprocessed format has columns: Section, RowType, Date, Account, Description, Transaction Type, Symbol, Quantity, Price, Gross Amount, Commission, Net Amount
+const createIBRow = (data: {
+  Section?: string;
+  RowType?: string;
+  Date?: string;
+  Account?: string;
+  Description?: string;
+  'Transaction Type'?: string;
+  Symbol?: string;
+  Quantity?: string;
+  Price?: string;
+  'Gross Amount '?: string;
+  Commission?: string;
+  'Net Amount'?: string;
+}) => data
 
 describe('Interactive Brokers Parser', () => {
   describe('normalizeInteractiveBrokersTransactions', () => {
-    it('should normalize a Buy transaction from Trades section', () => {
+    it('should normalize a Buy transaction from Transaction History section', () => {
       const rows = [
         createIBRow({
-          'Trades': 'Trades',
-          'Header': 'Header',
-          'DataDiscriminator': 'DataDiscriminator',
-          'Asset Category': 'Asset Category',
-          'Currency': 'Currency',
-          'Symbol': 'Symbol',
-          'Date/Time': 'Date/Time',
-          'Exchange': 'Exchange',
-          'Quantity': 'Quantity',
-          'T. Price': 'T. Price',
-          'Proceeds': 'Proceeds',
-          'Comm/Fee': 'Comm/Fee',
-          'Basis': 'Basis',
-          'Realized P/L': 'Realized P/L',
-          'Code': 'Code',
-        }),
-        createIBRow({
-          'Trades': 'Trades',
-          'Header': 'Data',
-          'DataDiscriminator': 'Trade',
-          'Asset Category': 'Stocks',
-          'Currency': 'USD',
-          'Symbol': 'AAPL',
-          'Date/Time': '2024-03-15 10:30:42',
-          'Exchange': 'NASDAQ',
+          'Section': 'Transaction History',
+          'RowType': 'Data',
+          'Date': '2024-09-27',
+          'Account': 'U1234567',
+          'Description': 'VANG S&P500 USDD',
+          'Transaction Type': 'Buy',
+          'Symbol': 'VUSD',
           'Quantity': '100',
-          'T. Price': '170.50',
-          'Proceeds': '-17050.00',
-          'Comm/Fee': '-1.00',
-          'Basis': '',
-          'Realized P/L': '',
-          'Code': '',
+          'Price': '108.75',
+          'Gross Amount ': '-8132.00',
+          'Commission': '-4.49',
+          'Net Amount': '-8136.49',
         }),
       ]
 
@@ -51,52 +45,32 @@ describe('Interactive Brokers Parser', () => {
       expect(result[0]).toMatchObject({
         id: 'test-file-1',
         source: 'Interactive Brokers',
-        symbol: 'AAPL',
-        date: '2024-03-15',
+        symbol: 'VUSD',
+        date: '2024-09-27',
         type: TransactionType.BUY,
         quantity: 100,
-        price: 170.50,
-        currency: 'USD',
-        total: 17050.00,
-        fee: 1.00,
+        price: 81.32, // derived from gross amount / quantity (8132 / 100)
+        currency: 'USD', // base currency (default)
+        total: 8132.00,
+        fee: 4.49,
       })
     })
 
     it('should normalize a Sell transaction (negative quantity)', () => {
       const rows = [
         createIBRow({
-          'Trades': 'Trades',
-          'Header': 'Header',
-          'DataDiscriminator': 'DataDiscriminator',
-          'Asset Category': 'Asset Category',
-          'Currency': 'Currency',
-          'Symbol': 'Symbol',
-          'Date/Time': 'Date/Time',
-          'Exchange': 'Exchange',
-          'Quantity': 'Quantity',
-          'T. Price': 'T. Price',
-          'Proceeds': 'Proceeds',
-          'Comm/Fee': 'Comm/Fee',
-          'Basis': 'Basis',
-          'Realized P/L': 'Realized P/L',
-          'Code': 'Code',
-        }),
-        createIBRow({
-          'Trades': 'Trades',
-          'Header': 'Data',
-          'DataDiscriminator': 'Trade',
-          'Asset Category': 'Stocks',
-          'Currency': 'USD',
-          'Symbol': 'UPST',
-          'Date/Time': '2021-08-23 14:22:00',
-          'Exchange': 'NASDAQ',
-          'Quantity': '-50',
-          'T. Price': '199.64',
-          'Proceeds': '9982.00',
-          'Comm/Fee': '-1.00',
-          'Basis': '',
-          'Realized P/L': '6937.94',
-          'Code': '',
+          'Section': 'Transaction History',
+          'RowType': 'Data',
+          'Date': '2022-05-11',
+          'Account': 'U1234567',
+          'Description': 'AMD',
+          'Transaction Type': 'Sell',
+          'Symbol': 'AMD',
+          'Quantity': '-10.0',
+          'Price': '100.00',
+          'Gross Amount ': '1000.00',
+          'Commission': '-1.00',
+          'Net Amount': '999.00',
         }),
       ]
 
@@ -105,48 +79,96 @@ describe('Interactive Brokers Parser', () => {
       expect(result).toHaveLength(1)
       expect(result[0]).toMatchObject({
         type: TransactionType.SELL,
-        quantity: 50, // Stored as positive
-        price: 199.64,
-        total: 9982.00,
-        fee: 1.00,
+        symbol: 'AMD',
+        quantity: 10, // Stored as positive
+        price: 100, // derived from gross amount / quantity (1000 / 10)
+        total: 1000,
+        fee: 1,
       })
     })
 
-    it('should handle non-USD currency', () => {
+    it('should skip non-trade transaction types that are not dividend or interest', () => {
       const rows = [
         createIBRow({
-          'Trades': 'Trades',
-          'Header': 'Header',
-          'DataDiscriminator': 'DataDiscriminator',
-          'Asset Category': 'Asset Category',
-          'Currency': 'Currency',
-          'Symbol': 'Symbol',
-          'Date/Time': 'Date/Time',
-          'Exchange': 'Exchange',
-          'Quantity': 'Quantity',
-          'T. Price': 'T. Price',
-          'Proceeds': 'Proceeds',
-          'Comm/Fee': 'Comm/Fee',
-          'Basis': 'Basis',
-          'Realized P/L': 'Realized P/L',
-          'Code': 'Code',
+          'Section': 'Transaction History',
+          'RowType': 'Data',
+          'Date': '2025-06-02',
+          'Account': 'U1234567',
+          'Description': 'FX Translations P&L',
+          'Transaction Type': 'Adjustment',
+          'Symbol': '-',
+          'Quantity': '-',
+          'Price': '-',
+          'Gross Amount ': '-593.38',
+          'Commission': '-',
+          'Net Amount': '-593.38',
         }),
         createIBRow({
-          'Trades': 'Trades',
-          'Header': 'Data',
-          'DataDiscriminator': 'Trade',
-          'Asset Category': 'Stocks',
-          'Currency': 'SEK',
-          'Symbol': 'HMBs',
-          'Date/Time': '2024-06-15 09:15:30',
-          'Exchange': 'STOCKHOLM',
-          'Quantity': '-257',
-          'T. Price': '176.85',
-          'Proceeds': '45450.45',
-          'Comm/Fee': '-2.50',
-          'Basis': '',
-          'Realized P/L': '9254.23',
-          'Code': '',
+          'Section': 'Transaction History',
+          'RowType': 'Data',
+          'Date': '2025-03-22',
+          'Account': 'U1234567',
+          'Description': 'Electronic Fund Transfer',
+          'Transaction Type': 'Deposit',
+          'Symbol': '-',
+          'Quantity': '-',
+          'Price': '-',
+          'Gross Amount ': '1000.0',
+          'Commission': '-',
+          'Net Amount': '1000.0',
+        }),
+        createIBRow({
+          'Section': 'Transaction History',
+          'RowType': 'Data',
+          'Date': '2024-01-15',
+          'Account': 'U1234567',
+          'Description': 'Disbursement Initiated by John Smith',
+          'Transaction Type': 'Withdrawal',
+          'Symbol': '-',
+          'Quantity': '-',
+          'Price': '-',
+          'Gross Amount ': '-10000.0',
+          'Commission': '-',
+          'Net Amount': '-10000.0',
+        }),
+        createIBRow({
+          'Section': 'Transaction History',
+          'RowType': 'Data',
+          'Date': '2024-09-27',
+          'Account': 'U1234567',
+          'Description': 'VANG S&P500 USDD',
+          'Transaction Type': 'Buy',
+          'Symbol': 'VUSD',
+          'Quantity': '100.0',
+          'Price': '108.75',
+          'Gross Amount ': '-8132.00',
+          'Commission': '-4.49',
+          'Net Amount': '-8136.49',
+        }),
+      ]
+
+      const result = normalizeInteractiveBrokersTransactions(rows, 'test-file')
+
+      expect(result).toHaveLength(1) // Only the Buy row
+      expect(result[0].type).toBe(TransactionType.BUY)
+      expect(result[0].symbol).toBe('VUSD')
+    })
+
+    it('should parse dividend transactions', () => {
+      const rows = [
+        createIBRow({
+          'Section': 'Transaction History',
+          'RowType': 'Data',
+          'Date': '2025-04-02',
+          'Account': 'U1234567',
+          'Description': 'VUSD(IE00B3XXRP09) Cash Dividend USD 0.32063 per Share (Mixed Income)',
+          'Transaction Type': 'Dividend',
+          'Symbol': 'VUSD',
+          'Quantity': '-',
+          'Price': '-',
+          'Gross Amount ': '24.47',
+          'Commission': '-',
+          'Net Amount': '24.47',
         }),
       ]
 
@@ -154,306 +176,201 @@ describe('Interactive Brokers Parser', () => {
 
       expect(result).toHaveLength(1)
       expect(result[0]).toMatchObject({
-        currency: 'SEK',
-        symbol: 'HMBs',
+        type: TransactionType.DIVIDEND,
+        symbol: 'VUSD',
+        total: 24.47,
+        quantity: null,
+        price: null,
       })
     })
 
-    it('should skip Order rows (only process Trade rows)', () => {
+    it('should parse credit interest transactions', () => {
       const rows = [
         createIBRow({
-          'Trades': 'Trades',
-          'Header': 'Header',
-          'DataDiscriminator': 'DataDiscriminator',
-          'Asset Category': 'Asset Category',
-          'Currency': 'Currency',
-          'Symbol': 'Symbol',
-          'Date/Time': 'Date/Time',
-          'Exchange': 'Exchange',
-          'Quantity': 'Quantity',
-          'T. Price': 'T. Price',
-          'Proceeds': 'Proceeds',
-          'Comm/Fee': 'Comm/Fee',
-          'Basis': 'Basis',
-          'Realized P/L': 'Realized P/L',
-          'Code': 'Code',
-        }),
-        createIBRow({
-          'Trades': 'Trades',
-          'Header': 'Data',
-          'DataDiscriminator': 'Order',
-          'Asset Category': 'Stocks',
-          'Currency': 'USD',
-          'Symbol': 'AAPL',
-          'Date/Time': '2024-03-15 10:30:42',
-          'Exchange': 'NASDAQ',
-          'Quantity': '100',
-          'T. Price': '170.50',
-          'Proceeds': '-17050.00',
-          'Comm/Fee': '-1.00',
-          'Basis': '',
-          'Realized P/L': '',
-          'Code': '',
-        }),
-        createIBRow({
-          'Trades': 'Trades',
-          'Header': 'Data',
-          'DataDiscriminator': 'Trade',
-          'Asset Category': 'Stocks',
-          'Currency': 'USD',
-          'Symbol': 'AAPL',
-          'Date/Time': '2024-03-15 10:30:42',
-          'Exchange': 'NASDAQ',
-          'Quantity': '100',
-          'T. Price': '170.50',
-          'Proceeds': '-17050.00',
-          'Comm/Fee': '-1.00',
-          'Basis': '',
-          'Realized P/L': '',
-          'Code': '',
-        }),
-      ]
-
-      const result = normalizeInteractiveBrokersTransactions(rows, 'test-file')
-
-      expect(result).toHaveLength(1) // Only the "Trade" row, not "Order"
-      expect(result[0].type).toBe(TransactionType.BUY)
-    })
-
-    it('should skip ClosedLot and SubTotal rows', () => {
-      const rows = [
-        createIBRow({
-          'Trades': 'Trades',
-          'Header': 'Header',
-          'DataDiscriminator': 'DataDiscriminator',
-          'Asset Category': 'Asset Category',
-          'Currency': 'Currency',
-          'Symbol': 'Symbol',
-          'Date/Time': 'Date/Time',
-          'Exchange': 'Exchange',
-          'Quantity': 'Quantity',
-          'T. Price': 'T. Price',
-          'Proceeds': 'Proceeds',
-          'Comm/Fee': 'Comm/Fee',
-          'Basis': 'Basis',
-          'Realized P/L': 'Realized P/L',
-          'Code': 'Code',
-        }),
-        createIBRow({
-          'Trades': 'Trades',
-          'Header': 'Data',
-          'DataDiscriminator': 'Trade',
-          'Asset Category': 'Stocks',
-          'Currency': 'USD',
-          'Symbol': 'UPST',
-          'Date/Time': '2021-08-23 14:22:00',
-          'Exchange': 'NASDAQ',
-          'Quantity': '-50',
-          'T. Price': '199.64',
-          'Proceeds': '9982.00',
-          'Comm/Fee': '-1.00',
-          'Basis': '',
-          'Realized P/L': '6937.94',
-          'Code': '',
-        }),
-        createIBRow({
-          'Trades': 'Trades',
-          'Header': 'Data',
-          'DataDiscriminator': 'ClosedLot',
-          'Asset Category': 'Stocks',
-          'Currency': 'USD',
-          'Symbol': 'UPST',
-          'Date/Time': '2021-03-15 11:00:00',
-          'Exchange': 'NASDAQ',
-          'Quantity': '50',
-          'T. Price': '60.86',
-          'Proceeds': '-3043.00',
-          'Comm/Fee': '',
-          'Basis': '3043.00',
-          'Realized P/L': '',
-          'Code': '',
-        }),
-        createIBRow({
-          'Trades': 'Trades',
-          'Header': 'Data',
-          'DataDiscriminator': 'SubTotal',
-          'Asset Category': 'Stocks',
-          'Currency': 'USD',
-          'Symbol': 'UPST',
-          'Date/Time': '',
-          'Exchange': '',
-          'Quantity': '-50',
-          'T. Price': '',
-          'Proceeds': '9982.00',
-          'Comm/Fee': '',
-          'Basis': '',
-          'Realized P/L': '6937.94',
-          'Code': '',
-        }),
-      ]
-
-      const result = normalizeInteractiveBrokersTransactions(rows, 'test-file')
-
-      expect(result).toHaveLength(1) // Only the "Trade" row
-    })
-
-    it('should skip non-stock asset categories', () => {
-      const rows = [
-        createIBRow({
-          'Trades': 'Trades',
-          'Header': 'Header',
-          'DataDiscriminator': 'DataDiscriminator',
-          'Asset Category': 'Asset Category',
-          'Currency': 'Currency',
-          'Symbol': 'Symbol',
-          'Date/Time': 'Date/Time',
-          'Exchange': 'Exchange',
-          'Quantity': 'Quantity',
-          'T. Price': 'T. Price',
-          'Proceeds': 'Proceeds',
-          'Comm/Fee': 'Comm/Fee',
-          'Basis': 'Basis',
-          'Realized P/L': 'Realized P/L',
-          'Code': 'Code',
-        }),
-        createIBRow({
-          'Trades': 'Trades',
-          'Header': 'Data',
-          'DataDiscriminator': 'Trade',
-          'Asset Category': 'Equity and Index Options',
-          'Currency': 'USD',
-          'Symbol': 'CLOV 16JUL21 20.0 C',
-          'Date/Time': '2021-06-21 09:30:00',
-          'Exchange': 'CBOE',
-          'Quantity': '1',
-          'T. Price': '1.46',
-          'Proceeds': '146.00',
-          'Comm/Fee': '-0.65',
-          'Basis': '',
-          'Realized P/L': '',
-          'Code': '',
-        }),
-        createIBRow({
-          'Trades': 'Trades',
-          'Header': 'Data',
-          'DataDiscriminator': 'Trade',
-          'Asset Category': 'Stocks',
-          'Currency': 'USD',
-          'Symbol': 'AAPL',
-          'Date/Time': '2024-03-15 10:30:42',
-          'Exchange': 'NASDAQ',
-          'Quantity': '100',
-          'T. Price': '170.50',
-          'Proceeds': '-17050.00',
-          'Comm/Fee': '-1.00',
-          'Basis': '',
-          'Realized P/L': '',
-          'Code': '',
-        }),
-      ]
-
-      const result = normalizeInteractiveBrokersTransactions(rows, 'test-file')
-
-      expect(result).toHaveLength(1) // Only the Stocks row, not Options
-      expect(result[0].symbol).toBe('AAPL')
-    })
-
-    it('should handle semicolon date/time separator', () => {
-      const rows = [
-        createIBRow({
-          'Trades': 'Trades',
-          'Header': 'Header',
-          'DataDiscriminator': 'DataDiscriminator',
-          'Asset Category': 'Asset Category',
-          'Currency': 'Currency',
-          'Symbol': 'Symbol',
-          'Date/Time': 'Date/Time',
-          'Exchange': 'Exchange',
-          'Quantity': 'Quantity',
-          'T. Price': 'T. Price',
-          'Proceeds': 'Proceeds',
-          'Comm/Fee': 'Comm/Fee',
-          'Basis': 'Basis',
-          'Realized P/L': 'Realized P/L',
-          'Code': 'Code',
-        }),
-        createIBRow({
-          'Trades': 'Trades',
-          'Header': 'Data',
-          'DataDiscriminator': 'Trade',
-          'Asset Category': 'Stocks',
-          'Currency': 'USD',
-          'Symbol': 'AAPL',
-          'Date/Time': '2024-03-15;10:30:42',
-          'Exchange': 'NASDAQ',
-          'Quantity': '100',
-          'T. Price': '170.50',
-          'Proceeds': '-17050.00',
-          'Comm/Fee': '-1.00',
-          'Basis': '',
-          'Realized P/L': '',
-          'Code': '',
+          'Section': 'Transaction History',
+          'RowType': 'Data',
+          'Date': '2024-10-03',
+          'Account': 'U1234567',
+          'Description': 'USD Credit Interest for Sep-2024',
+          'Transaction Type': 'Credit Interest',
+          'Symbol': '-',
+          'Quantity': '-',
+          'Price': '-',
+          'Gross Amount ': '0.91',
+          'Commission': '-',
+          'Net Amount': '0.91',
         }),
       ]
 
       const result = normalizeInteractiveBrokersTransactions(rows, 'test-file')
 
       expect(result).toHaveLength(1)
-      expect(result[0].date).toBe('2024-03-15')
+      expect(result[0]).toMatchObject({
+        type: TransactionType.INTEREST,
+        symbol: 'CASH',
+        total: 0.91,
+        notes: 'Credit Interest',
+      })
     })
 
-    it('should process multiple stock trades with sequential IDs', () => {
+    it('should parse debit interest transactions with negative values', () => {
       const rows = [
         createIBRow({
-          'Trades': 'Trades',
-          'Header': 'Header',
-          'DataDiscriminator': 'DataDiscriminator',
-          'Asset Category': 'Asset Category',
-          'Currency': 'Currency',
-          'Symbol': 'Symbol',
-          'Date/Time': 'Date/Time',
-          'Exchange': 'Exchange',
-          'Quantity': 'Quantity',
-          'T. Price': 'T. Price',
-          'Proceeds': 'Proceeds',
-          'Comm/Fee': 'Comm/Fee',
-          'Basis': 'Basis',
-          'Realized P/L': 'Realized P/L',
-          'Code': 'Code',
+          'Section': 'Transaction History',
+          'RowType': 'Data',
+          'Date': '2022-02-03',
+          'Account': 'U1234567',
+          'Description': 'USD Debit Interest for Jan-2022',
+          'Transaction Type': 'Debit Interest',
+          'Symbol': '-',
+          'Quantity': '-',
+          'Price': '-',
+          'Gross Amount ': '-14.63',
+          'Commission': '-',
+          'Net Amount': '-14.63',
+        }),
+      ]
+
+      const result = normalizeInteractiveBrokersTransactions(rows, 'test-file')
+
+      expect(result).toHaveLength(1)
+      expect(result[0]).toMatchObject({
+        type: TransactionType.INTEREST,
+        symbol: 'CASH',
+        total: -14.63, // Preserved as negative (money paid out)
+        notes: 'Debit Interest',
+      })
+    })
+
+    it('should skip bonds (symbols with fractions)', () => {
+      const rows = [
+        createIBRow({
+          'Section': 'Transaction History',
+          'RowType': 'Data',
+          'Date': '2025-03-25',
+          'Account': 'U1234567',
+          'Description': 'UKT 0 5/8 06/07/25',
+          'Transaction Type': 'Buy',
+          'Symbol': 'UKT 0 5/8 06/07/25',
+          'Quantity': '1000.0',
+          'Price': '99.312',
+          'Gross Amount ': '-993.12',
+          'Commission': '-1.0',
+          'Net Amount': '-994.12',
         }),
         createIBRow({
-          'Trades': 'Trades',
-          'Header': 'Data',
-          'DataDiscriminator': 'Trade',
-          'Asset Category': 'Stocks',
-          'Currency': 'USD',
+          'Section': 'Transaction History',
+          'RowType': 'Data',
+          'Date': '2024-09-27',
+          'Account': 'U1234567',
+          'Description': 'VANG S&P500 USDD',
+          'Transaction Type': 'Buy',
+          'Symbol': 'VUSD',
+          'Quantity': '100.0',
+          'Price': '108.75',
+          'Gross Amount ': '-8132.00',
+          'Commission': '-4.49',
+          'Net Amount': '-8136.49',
+        }),
+      ]
+
+      const result = normalizeInteractiveBrokersTransactions(rows, 'test-file')
+
+      expect(result).toHaveLength(1) // Only the stock, not the bond
+      expect(result[0].symbol).toBe('VUSD')
+    })
+
+
+    it('should extract base currency from Summary section', () => {
+      const rows = [
+        createIBRow({
+          'Section': 'Summary',
+          'RowType': 'Data',
+          'Date': 'Base Currency', // Field Name is in Date column
+          'Account': 'GBP', // Field Value is in Account column
+        }),
+        createIBRow({
+          'Section': 'Transaction History',
+          'RowType': 'Data',
+          'Date': '2024-09-27',
+          'Account': 'U1234567',
+          'Description': 'VANG S&P500 USDD',
+          'Transaction Type': 'Buy',
+          'Symbol': 'VUSD',
+          'Quantity': '100.0',
+          'Price': '108.75',
+          'Gross Amount ': '-8132.00',
+          'Commission': '-4.49',
+          'Net Amount': '-8136.49',
+        }),
+      ]
+
+      const result = normalizeInteractiveBrokersTransactions(rows, 'test-file')
+
+      expect(result).toHaveLength(1)
+      expect(result[0].currency).toBe('GBP')
+    })
+
+    it('should always use base currency since Gross/Net are in base currency', () => {
+      const rows = [
+        createIBRow({
+          'Section': 'Summary',
+          'RowType': 'Data',
+          'Date': 'Base Currency',
+          'Account': 'GBP',
+        }),
+        createIBRow({
+          'Section': 'Transaction History',
+          'RowType': 'Data',
+          'Date': '2024-09-10',
+          'Account': 'U1234567',
+          'Description': 'Buy 100 shares of AAPL in USD',
+          'Transaction Type': 'Buy',
           'Symbol': 'AAPL',
-          'Date/Time': '2024-03-15 10:30:42',
-          'Exchange': 'NASDAQ',
-          'Quantity': '100',
-          'T. Price': '170.50',
-          'Proceeds': '-17050.00',
-          'Comm/Fee': '-1.00',
-          'Basis': '',
-          'Realized P/L': '',
-          'Code': '',
+          'Quantity': '100.0',
+          'Price': '150.00',
+          'Gross Amount ': '-15000.00',
+          'Commission': '-1.00',
+          'Net Amount': '-15001.00',
+        }),
+      ]
+
+      const result = normalizeInteractiveBrokersTransactions(rows, 'test-file')
+
+      expect(result).toHaveLength(1)
+      expect(result[0].currency).toBe('GBP') // Always uses base currency since Gross/Net are in base currency
+      expect(result[0].price).toBe(150) // derived from gross amount / quantity (15000 / 100)
+    })
+
+    it('should process multiple transactions with sequential IDs', () => {
+      const rows = [
+        createIBRow({
+          'Section': 'Transaction History',
+          'RowType': 'Data',
+          'Date': '2024-09-27',
+          'Account': 'U1234567',
+          'Description': 'VANG S&P500 USDD',
+          'Transaction Type': 'Buy',
+          'Symbol': 'VUSD',
+          'Quantity': '100.0',
+          'Price': '81.32',
+          'Gross Amount ': '-8132.00',
+          'Commission': '-4.49',
+          'Net Amount': '-8136.49',
         }),
         createIBRow({
-          'Trades': 'Trades',
-          'Header': 'Data',
-          'DataDiscriminator': 'Trade',
-          'Asset Category': 'Stocks',
-          'Currency': 'USD',
-          'Symbol': 'MSFT',
-          'Date/Time': '2024-03-16 14:20:30',
-          'Exchange': 'NASDAQ',
-          'Quantity': '-50',
-          'T. Price': '400.00',
-          'Proceeds': '20000.00',
-          'Comm/Fee': '-2.00',
-          'Basis': '',
-          'Realized P/L': '5000.00',
-          'Code': '',
+          'Section': 'Transaction History',
+          'RowType': 'Data',
+          'Date': '2022-05-11',
+          'Account': 'U1234567',
+          'Description': 'AMD',
+          'Transaction Type': 'Sell',
+          'Symbol': 'AMD',
+          'Quantity': '-10.0',
+          'Price': '100.00',
+          'Gross Amount ': '1000.00',
+          'Commission': '-1.00',
+          'Net Amount': '999.00',
         }),
       ]
 
@@ -469,38 +386,32 @@ describe('Interactive Brokers Parser', () => {
     it('should skip rows with missing date or symbol', () => {
       const rows = [
         createIBRow({
-          'Trades': 'Trades',
-          'Header': 'Header',
-          'DataDiscriminator': 'DataDiscriminator',
-          'Asset Category': 'Asset Category',
-          'Currency': 'Currency',
-          'Symbol': 'Symbol',
-          'Date/Time': 'Date/Time',
-          'Exchange': 'Exchange',
-          'Quantity': 'Quantity',
-          'T. Price': 'T. Price',
-          'Proceeds': 'Proceeds',
-          'Comm/Fee': 'Comm/Fee',
-          'Basis': 'Basis',
-          'Realized P/L': 'Realized P/L',
-          'Code': 'Code',
+          'Section': 'Transaction History',
+          'RowType': 'Data',
+          'Date': '',
+          'Account': 'U1234567',
+          'Description': 'Missing date',
+          'Transaction Type': 'Buy',
+          'Symbol': 'AAPL',
+          'Quantity': '100',
+          'Price': '170.50',
+          'Gross Amount ': '-17050.00',
+          'Commission': '-1.00',
+          'Net Amount': '-17051.00',
         }),
         createIBRow({
-          'Trades': 'Trades',
-          'Header': 'Data',
-          'DataDiscriminator': 'Trade',
-          'Asset Category': 'Stocks',
-          'Currency': 'USD',
+          'Section': 'Transaction History',
+          'RowType': 'Data',
+          'Date': '2024-03-15',
+          'Account': 'U1234567',
+          'Description': 'Missing symbol',
+          'Transaction Type': 'Buy',
           'Symbol': '',
-          'Date/Time': '2024-03-15 10:30:42',
-          'Exchange': 'NASDAQ',
           'Quantity': '100',
-          'T. Price': '170.50',
-          'Proceeds': '-17050.00',
-          'Comm/Fee': '-1.00',
-          'Basis': '',
-          'Realized P/L': '',
-          'Code': '',
+          'Price': '170.50',
+          'Gross Amount ': '-17050.00',
+          'Commission': '-1.00',
+          'Net Amount': '-17051.00',
         }),
       ]
 
@@ -512,71 +423,61 @@ describe('Interactive Brokers Parser', () => {
     it('should handle other sections in CSV without processing them', () => {
       const rows = [
         createIBRow({
-          'Statement': 'Statement',
-          'Header': 'Header',
-          'Field Name': 'Field Name',
-          'Field Value': 'Field Value',
+          'Section': 'Statement',
+          'RowType': 'Data',
+          'Date': 'Period',
+          'Account': 'January 2024',
         }),
         createIBRow({
-          'Statement': 'Statement',
-          'Header': 'Data',
-          'Field Name': 'Period',
-          'Field Value': 'January 2024',
+          'Section': 'Summary',
+          'RowType': 'Data',
+          'Date': 'Base Currency',
+          'Account': 'GBP',
         }),
         createIBRow({
-          'Trades': 'Trades',
-          'Header': 'Header',
-          'DataDiscriminator': 'DataDiscriminator',
-          'Asset Category': 'Asset Category',
-          'Currency': 'Currency',
-          'Symbol': 'Symbol',
-          'Date/Time': 'Date/Time',
-          'Exchange': 'Exchange',
-          'Quantity': 'Quantity',
-          'T. Price': 'T. Price',
-          'Proceeds': 'Proceeds',
-          'Comm/Fee': 'Comm/Fee',
-          'Basis': 'Basis',
-          'Realized P/L': 'Realized P/L',
-          'Code': 'Code',
-        }),
-        createIBRow({
-          'Trades': 'Trades',
-          'Header': 'Data',
-          'DataDiscriminator': 'Trade',
-          'Asset Category': 'Stocks',
-          'Currency': 'USD',
-          'Symbol': 'AAPL',
-          'Date/Time': '2024-03-15 10:30:42',
-          'Exchange': 'NASDAQ',
-          'Quantity': '100',
-          'T. Price': '170.50',
-          'Proceeds': '-17050.00',
-          'Comm/Fee': '-1.00',
-          'Basis': '',
-          'Realized P/L': '',
-          'Code': '',
-        }),
-        createIBRow({
-          'Cash Transactions': 'Cash Transactions',
-          'Header': 'Header',
-          'Currency': 'Currency',
-          'Symbol': 'Symbol',
-          'Date/Time': 'Date/Time',
-        }),
-        createIBRow({
-          'Cash Transactions': 'Cash Transactions',
-          'Header': 'Data',
-          'Currency': 'USD',
-          'Symbol': 'AAPL',
-          'Date/Time': '2024-03-20 00:00:00',
+          'Section': 'Transaction History',
+          'RowType': 'Data',
+          'Date': '2024-09-27',
+          'Account': 'U1234567',
+          'Description': 'VANG S&P500 USDD',
+          'Transaction Type': 'Buy',
+          'Symbol': 'VUSD',
+          'Quantity': '100.0',
+          'Price': '108.75',
+          'Gross Amount ': '-8132.00',
+          'Commission': '-4.49',
+          'Net Amount': '-8136.49',
         }),
       ]
 
       const result = normalizeInteractiveBrokersTransactions(rows, 'test-file')
 
-      expect(result).toHaveLength(1) // Only the Trades section trade
-      expect(result[0].symbol).toBe('AAPL')
+      expect(result).toHaveLength(1) // Only the Transaction History row
+      expect(result[0].symbol).toBe('VUSD')
+      expect(result[0].currency).toBe('GBP') // Currency from Summary section
+    })
+
+    it('should skip symbols that are just dashes', () => {
+      const rows = [
+        createIBRow({
+          'Section': 'Transaction History',
+          'RowType': 'Data',
+          'Date': '2025-03-22',
+          'Account': 'U1234567',
+          'Description': 'Electronic Fund Transfer',
+          'Transaction Type': 'Buy', // Fake buy with no symbol
+          'Symbol': '-',
+          'Quantity': '100',
+          'Price': '100',
+          'Gross Amount ': '10000',
+          'Commission': '-',
+          'Net Amount': '10000',
+        }),
+      ]
+
+      const result = normalizeInteractiveBrokersTransactions(rows, 'test-file')
+
+      expect(result).toHaveLength(0) // "-" is not a valid symbol
     })
   })
 })

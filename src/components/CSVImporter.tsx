@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { parseCSV, isCoinbaseCSV, stripCoinbaseMetadataRows } from '../lib/csvParser'
+import { parseCSV, isCoinbaseCSV, stripCoinbaseMetadataRows, isInteractiveBrokersCSV, preprocessInteractiveBrokersCSV } from '../lib/csvParser'
 import { detectBroker } from '../lib/brokerDetector'
 import { getParser } from '../lib/parsers/parserRegistry'
 import { GenericTransaction } from '../types/transaction'
@@ -24,11 +24,19 @@ export function CSVImporter() {
 
   const processFile = async (file: File): Promise<{ success: boolean; message: string; count?: number }> => {
     try {
+      // Check if this is an Interactive Brokers file (needs special handling for multi-section format)
+      const isIB = await isInteractiveBrokersCSV(file)
+
       // Check if this is a Coinbase file (needs special handling for metadata rows)
       const isCoinbase = await isCoinbaseCSV(file)
 
-      // For Coinbase files, strip the first 2 metadata rows before parsing
-      const fileToProcess = isCoinbase ? await stripCoinbaseMetadataRows(file) : file
+      // Preprocess the file based on broker type
+      let fileToProcess = file
+      if (isIB) {
+        fileToProcess = await preprocessInteractiveBrokersCSV(file)
+      } else if (isCoinbase) {
+        fileToProcess = await stripCoinbaseMetadataRows(file)
+      }
 
       // Parse CSV using the standard parser
       const rawRows = await parseCSV(fileToProcess)
@@ -448,23 +456,10 @@ export function CSVImporter() {
                 <div className="mt-2 ml-4 p-3 bg-gray-50 rounded text-xs space-y-2">
                   <p className="font-medium">How to download:</p>
                   <ol className="list-decimal list-inside space-y-1 text-gray-600">
-                    <li>Log into Client Portal → Performance & Reports → Flex Queries</li>
-                    <li>Click + to create new Activity Flex Query</li>
-                    <li>Enable sections: Trades, Cash Transactions (optional: Corporate Actions)</li>
-                    <li>Set format to CSV, date format to "yyyyMMdd", separator to semicolon</li>
-                    <li>Run query and download CSV (max 1 year per export)</li>
+                    <li>Log into Client Portal → Performance & Reports → Transaction History</li>
+                    <li>Select custom time period</li>
+                    <li>Download CSV</li>
                   </ol>
-                  <p className="text-gray-600 italic">
-                    Note: Interactive Brokers allows 1 year per export. For longer history, run the query for each year and upload multiple files.
-                  </p>
-                  <a
-                    href="https://www.ibkrguides.com/clientportal/performanceandstatements/activityflex.htm"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-block text-blue-600 hover:text-blue-800 underline mr-4"
-                  >
-                    📖 Official instructions
-                  </a>
                   <a
                     href="/examples/interactive-brokers-example.csv"
                     className="inline-block text-blue-600 hover:text-blue-800 underline"
