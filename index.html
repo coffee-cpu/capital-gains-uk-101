@@ -8,8 +8,8 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png" />
     <link rel="manifest" href="/favicon/site.webmanifest" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Capital Gains Tax Visualiser - UK CGT Made Easy</title>
-    <meta name="description" content="UK Capital Gains Tax made easy. Free, privacy-focused tool to calculate and visualise CGT on share transactions. All calculations happen in your browser." />
+    <title>Capital Gains Tax Visualiser | UK CGT Calculation Made Easy</title>
+    <meta name="description" content="Free UK capital gains tax calculator. Calculate capital gains tax on shares with HMRC-compliant rules (same-day, 30-day, Section 104). Privacy-focused - all CGT calculations happen in your browser." />
 
     <!-- Canonical URL -->
     <link rel="canonical" href="https://cgtvisualiser.co.uk/" />
@@ -17,8 +17,8 @@
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://cgtvisualiser.co.uk/" />
-    <meta property="og:title" content="Capital Gains Tax Visualiser - UK CGT Made Easy" />
-    <meta property="og:description" content="Free, privacy-focused UK Capital Gains Tax calculator. Import broker CSVs, apply HMRC matching rules (same-day, 30-day, Section 104), and visualise your CGT. All calculations in your browser." />
+    <meta property="og:title" content="Capital Gains Tax Visualiser | UK CGT Calculation Made Easy" />
+    <meta property="og:description" content="Free UK capital gains tax calculator. Calculate CGT on shares with HMRC-compliant rules. Import broker CSVs, apply same-day, 30-day, and Section 104 matching. All calculations in your browser." />
     <meta property="og:image" content="https://cgtvisualiser.co.uk/favicon/web-app-manifest-512x512.png" />
     <meta property="og:locale" content="en_GB" />
     <meta property="og:site_name" content="Capital Gains Tax Visualiser" />
@@ -26,12 +26,12 @@
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:url" content="https://cgtvisualiser.co.uk/" />
-    <meta name="twitter:title" content="Capital Gains Tax Visualiser - UK CGT Made Easy" />
-    <meta name="twitter:description" content="Free, privacy-focused UK Capital Gains Tax calculator. Import broker CSVs, apply HMRC matching rules, and visualise your CGT." />
+    <meta name="twitter:title" content="Capital Gains Tax Visualiser | UK CGT Calculation Made Easy" />
+    <meta name="twitter:description" content="Free UK capital gains tax calculator. Calculate CGT on shares with HMRC-compliant rules. All calculations happen in your browser - no data uploads." />
     <meta name="twitter:image" content="https://cgtvisualiser.co.uk/favicon/web-app-manifest-512x512.png" />
 
     <!-- Additional SEO meta tags -->
-    <meta name="keywords" content="capital gains tax, CGT calculator, UK tax, share transactions, HMRC, Section 104, bed and breakfast rule, same day rule, stock tax, investment tax, CGT visualiser" />
+    <meta name="keywords" content="capital gains tax uk, capital gains tax calculation, CGT calculator UK, UK capital gains tax, calculate capital gains tax, share CGT calculator, HMRC CGT rules, Section 104, bed and breakfast rule, same day rule, CGT on shares" />
     <meta name="author" content="Capital Gains Tax Visualiser" />
     <meta name="robots" content="index, follow" />
     <meta name="googlebot" content="index, follow" />
@@ -79,6 +79,53 @@
     }
     </script>
 
+    <!-- HowTo Structured Data for calculation searches -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "HowTo",
+      "name": "How to Calculate Capital Gains Tax on Shares in the UK",
+      "description": "Step-by-step guide to calculating UK capital gains tax on share transactions using HMRC-compliant matching rules.",
+      "totalTime": "PT10M",
+      "tool": {
+        "@type": "HowToTool",
+        "name": "CGT Visualiser - Free UK Capital Gains Tax Calculator"
+      },
+      "step": [
+        {
+          "@type": "HowToStep",
+          "name": "Import your transactions",
+          "text": "Upload CSV files from your broker (Trading 212, Freetrade, Schwab, Interactive Brokers, etc.) containing your buy and sell transactions."
+        },
+        {
+          "@type": "HowToStep",
+          "name": "Apply same-day matching rule",
+          "text": "Match any shares sold on the same day as shares purchased. This is required by HMRC under TCGA92/S105(1)."
+        },
+        {
+          "@type": "HowToStep",
+          "name": "Apply 30-day bed and breakfast rule",
+          "text": "Match any remaining sold shares with purchases made within the following 30 days, as per TCGA92/S106A(5)."
+        },
+        {
+          "@type": "HowToStep",
+          "name": "Apply Section 104 pooling",
+          "text": "Pool remaining shares at average cost basis under TCGA92/S104 to calculate gains on disposals."
+        },
+        {
+          "@type": "HowToStep",
+          "name": "Calculate total gains and apply allowance",
+          "text": "Sum all gains and losses, then deduct your annual exempt amount (£3,000 for 2024/25) to determine taxable gains."
+        },
+        {
+          "@type": "HowToStep",
+          "name": "Apply CGT rates",
+          "text": "Apply the appropriate CGT rate: 18% for basic rate taxpayers or 24% for higher/additional rate taxpayers (2024/25 rates for shares)."
+        }
+      ]
+    }
+    </script>
+
     <!-- FAQ Structured Data for rich snippets -->
     <script type="application/ld+json">
     {
@@ -87,10 +134,34 @@
       "mainEntity": [
         {
           "@type": "Question",
-          "name": "What is the Capital Gains Tax annual exemption for 2024/25?",
+          "name": "What is Capital Gains Tax in the UK?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "The Capital Gains Tax annual exempt amount for the 2024/25 tax year is £3,000 for individuals. This means you can make up to £3,000 in capital gains before paying any CGT."
+            "text": "Capital Gains Tax (CGT) is a UK tax on the profit you make when you sell or dispose of an asset that has increased in value. For shares and investments, you pay CGT on the gain (the difference between what you paid and what you sold for), not the total sale amount. CGT only applies when your total gains exceed the annual exempt amount."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How do I calculate Capital Gains Tax on shares UK?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "To calculate CGT on shares in the UK: 1) Match shares using HMRC rules (same-day rule, 30-day bed and breakfast rule, then Section 104 pooling), 2) Calculate the gain for each disposal (sale proceeds minus allowable costs), 3) Sum all gains and losses for the tax year, 4) Deduct the annual exempt amount (£3,000 for 2024/25), 5) Apply the appropriate CGT rate (18% for basic rate taxpayers, 24% for higher rate) to the remaining taxable gain."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What are the UK Capital Gains Tax rates for 2024/25?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "For the 2024/25 tax year (6 April 2024 to 5 April 2025), UK CGT rates on shares and investments are: 18% for basic rate taxpayers (those in the 20% income tax band) and 24% for higher and additional rate taxpayers. The annual exempt amount is £3,000. Note: From 30 October 2024, rates increased to 18%/24% from the previous 10%/20%."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What is the Capital Gains Tax annual exemption for 2024/25 and 2025/26?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "The Capital Gains Tax annual exempt amount for 2024/25 is £3,000 for individuals (£1,500 for trusts). This allowance continues at £3,000 for the 2025/26 tax year. Any gains within this amount are tax-free. The allowance cannot be carried forward to future years if unused."
           }
         },
         {
@@ -98,7 +169,7 @@
           "name": "What is the same-day rule for CGT?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "The same-day rule (TCGA92/S105(1)) requires that shares sold on the same day as shares of the same class are purchased must be matched with those purchases first, before applying other matching rules."
+            "text": "The same-day rule (TCGA92/S105(1)) requires that shares sold on the same day as shares of the same class are purchased must be matched with those purchases first, before applying other matching rules. This prevents artificial loss creation through same-day trades."
           }
         },
         {
@@ -106,7 +177,7 @@
           "name": "What is the 30-day bed and breakfast rule?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "The 30-day rule (TCGA92/S106A(5)) prevents investors from selling shares and immediately repurchasing them to crystallise a loss. Any shares repurchased within 30 days of a sale are matched with that sale for CGT purposes."
+            "text": "The 30-day rule (TCGA92/S106A(5)) prevents investors from selling shares and immediately repurchasing them to crystallise a loss. Any shares repurchased within 30 days of a sale are matched with that sale for CGT purposes, using the repurchase cost as the base cost."
           }
         },
         {
@@ -114,7 +185,7 @@
           "name": "What is Section 104 pooling?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Section 104 pooling (TCGA92/S104) is the default method for calculating CGT on shares. After applying same-day and 30-day rules, remaining shares are pooled together at an average cost basis."
+            "text": "Section 104 pooling (TCGA92/S104) is the default method for calculating CGT on shares after applying same-day and 30-day rules. All remaining shares of the same class in the same company are pooled together at an average cost basis, simplifying calculations for multiple purchases over time."
           }
         },
         {
@@ -122,7 +193,7 @@
           "name": "Is my data safe with this CGT calculator?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Yes, all calculations happen entirely in your browser. No data is uploaded to any server. Your transaction data is stored locally in your browser's IndexedDB and never leaves your device."
+            "text": "Yes, all calculations happen entirely in your browser. No data is uploaded to any server. Your transaction data is stored locally in your browser's IndexedDB and never leaves your device. This privacy-focused approach means you maintain complete control of your financial data."
           }
         }
       ]
