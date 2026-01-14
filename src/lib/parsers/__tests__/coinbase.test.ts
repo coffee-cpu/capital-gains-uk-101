@@ -70,7 +70,7 @@ describe('Coinbase Parser', () => {
       })
     })
 
-    it('should parse Staking Income as INTEREST', () => {
+    it('should parse Staking Income as both INTEREST and BUY for tax and CGT purposes', () => {
       const rows: RawCSVRow[] = [
         {
           'ID': '6952c3c9654e3e136887d23d',
@@ -89,17 +89,33 @@ describe('Coinbase Parser', () => {
 
       const result = normalizeCoinbaseTransactions(rows, 'test-file')
 
-      expect(result).toHaveLength(1)
+      // Should generate 2 transactions: INTEREST for income tax, BUY for CGT cost basis
+      expect(result).toHaveLength(2)
+
+      // First transaction: INTEREST for income tax purposes
       expect(result[0]).toMatchObject({
+        id: 'test-file-1',
         type: 'INTEREST',
         symbol: 'ETH',
         quantity: 0.001490027,
         total: 3.23983,
         fee: 0,
       })
+      expect(result[0].notes).toContain('[Staking Income - Taxable]')
+
+      // Second transaction: BUY for CGT cost basis
+      expect(result[1]).toMatchObject({
+        id: 'test-file-2',
+        type: 'BUY',
+        symbol: 'ETH',
+        quantity: 0.001490027,
+        total: 3.23983,
+        fee: 0, // Fee already on INTEREST transaction
+      })
+      expect(result[1].notes).toContain('[Staking Income - Cost Basis]')
     })
 
-    it('should parse Reward Income as INTEREST', () => {
+    it('should parse Reward Income as both INTEREST and BUY for tax and CGT purposes', () => {
       const rows: RawCSVRow[] = [
         {
           'ID': '69441821655b42abd196f00b',
@@ -118,12 +134,32 @@ describe('Coinbase Parser', () => {
 
       const result = normalizeCoinbaseTransactions(rows, 'test-file')
 
-      expect(result).toHaveLength(1)
+      // Should generate 2 transactions: INTEREST for income tax, BUY for CGT cost basis
+      expect(result).toHaveLength(2)
+
+      // First transaction: INTEREST for income tax purposes
       expect(result[0]).toMatchObject({
+        id: 'test-file-1',
         type: 'INTEREST',
         symbol: 'USDC',
-        notes: 'Received 0.270984 USDC from Coinbase Rewards',
+        quantity: 0.270984,
+        price: 0.7455543304135473,
+        total: 0.20203,
+        fee: 0,
       })
+      expect(result[0].notes).toContain('[Reward Income - Taxable]')
+
+      // Second transaction: BUY for CGT cost basis
+      expect(result[1]).toMatchObject({
+        id: 'test-file-2',
+        type: 'BUY',
+        symbol: 'USDC',
+        quantity: 0.270984,
+        price: 0.7455543304135473,
+        total: 0.20203,
+        fee: 0, // Fee already on INTEREST transaction
+      })
+      expect(result[1].notes).toContain('[Reward Income - Cost Basis]')
     })
 
     it('should parse Send as TRANSFER', () => {
@@ -255,8 +291,10 @@ describe('Coinbase Parser', () => {
 
       const result = normalizeCoinbaseTransactions(rows, 'test-file')
 
-      expect(result).toHaveLength(1)
+      // Staking Income generates 2 transactions (INTEREST + BUY)
+      expect(result).toHaveLength(2)
       expect(result[0].quantity).toBeCloseTo(0.0000263622, 10)
+      expect(result[1].quantity).toBeCloseTo(0.0000263622, 10)
     })
 
     it('should skip rows without essential data', () => {

@@ -25,8 +25,8 @@ import type { RawCSVRow } from '../../types/broker'
 
 /**
  * Map Coinbase transaction type to GenericTransaction type
- * Note: 'convert' transactions are handled specially in normalizeCoinbaseTransactions
- * to generate both SELL and BUY transactions.
+ * Note: 'convert' and 'reward income' transactions are handled specially in normalizeCoinbaseTransactions
+ * to generate multiple transactions.
  */
 function mapTransactionType(
   transactionType: string
@@ -39,8 +39,9 @@ function mapTransactionType(
   // Sell transactions (including Advanced Trade Sell)
   if (typeLower === 'sell' || typeLower === 'advanced trade sell') return 'SELL'
 
-  // Staking and reward income - treat as INTEREST for CGT purposes
-  if (typeLower === 'staking income' || typeLower === 'reward income') return 'INTEREST'
+  // Reward Income and Staking Income - return null to signal special handling
+  // Both generate two transactions: INTEREST (taxable income) + BUY (cost basis for CGT)
+  if (typeLower === 'reward income' || typeLower === 'staking income') return null
 
   // Transfers - Send, Receive, Deposit, Withdrawal, Pro Deposit, Pro Withdrawal
   if (
@@ -176,6 +177,52 @@ export function normalizeCoinbaseTransactions(
 
     // Handle quantity - Coinbase uses negative for Send transactions
     const finalQuantity = quantity !== null ? Math.abs(quantity) : null
+
+    // Handle Reward Income and Staking Income specially - generates both INTEREST and BUY transactions
+    // Per HMRC:
+    // 1. INTEREST: The value received is taxable as miscellaneous income
+    // 2. BUY: Establishes cost basis for CGT when the crypto is later sold
+    const typeLower = transactionType.toLowerCase()
+    if (type === null && (typeLower === 'reward income' || typeLower === 'staking income')) {
+      const notes = row['Notes'] || ''
+      const incomeType = typeLower === 'staking income' ? 'Staking Income' : 'Reward Income'
+
+      // Create INTEREST transaction for income tax purposes
+      const interestTransaction: GenericTransaction = {
+        id: `${fileId}-${transactionIndex++}`,
+        source: 'Coinbase',
+        date: parseDate(timestamp),
+        type: 'INTEREST',
+        symbol: asset,
+        name: null,
+        quantity: finalQuantity,
+        price: price !== null ? Math.abs(price) : null,
+        currency,
+        total: finalTotal,
+        fee: fee !== null ? Math.abs(fee) : null,
+        notes: notes ? `[${incomeType} - Taxable] ${notes}` : `[${incomeType} - Taxable]`,
+      }
+      transactions.push(interestTransaction)
+
+      // Create BUY transaction for CGT cost basis
+      const buyTransaction: GenericTransaction = {
+        id: `${fileId}-${transactionIndex++}`,
+        source: 'Coinbase',
+        date: parseDate(timestamp),
+        type: 'BUY',
+        symbol: asset,
+        name: null,
+        quantity: finalQuantity,
+        price: price !== null ? Math.abs(price) : null,
+        currency,
+        total: finalTotal,
+        fee: 0, // Fee already accounted for in INTEREST transaction
+        notes: notes ? `[${incomeType} - Cost Basis] ${notes}` : `[${incomeType} - Cost Basis]`,
+      }
+      transactions.push(buyTransaction)
+
+      continue
+    }
 
     // Handle Convert transactions specially - they generate two transactions
     // Per HMRC CRYPTO22100: exchanging crypto for crypto is a disposal
