@@ -11,6 +11,7 @@ export enum BrokerType {
   EQUATE_PLUS = 'EquatePlus',
   REVOLUT = 'Revolut',
   COINBASE = 'Coinbase',
+  COINBASE_PRO = 'Coinbase Pro',
   GENERIC = 'Generic CSV',
   UNKNOWN = 'Unknown',
 }

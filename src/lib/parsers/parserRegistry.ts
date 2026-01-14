@@ -16,6 +16,7 @@ import { normalizeFreetradeTransactions } from './freetrade'
 import { normalizeEquatePlusTransactions } from './equatePlus'
 import { normalizeRevolutTransactions } from './revolut'
 import { normalizeCoinbaseTransactions } from './coinbase'
+import { normalizeCoinbaseProTransactions } from './coinbasePro'
 
 /**
  * Parser function signature
@@ -33,6 +34,7 @@ export const PARSER_REGISTRY: Record<BrokerType, ParserFunction | null> = {
   [BrokerType.EQUATE_PLUS]: normalizeEquatePlusTransactions,
   [BrokerType.REVOLUT]: normalizeRevolutTransactions,
   [BrokerType.COINBASE]: normalizeCoinbaseTransactions,
+  [BrokerType.COINBASE_PRO]: normalizeCoinbaseProTransactions,
   [BrokerType.GENERIC]: normalizeGenericTransactions,
   [BrokerType.TRADING212]: normalizeTrading212Transactions,
   [BrokerType.UNKNOWN]: null,

@@ -276,7 +276,7 @@ export function CSVImporter() {
               Drop your CSV files here, or click to browse
             </p>
             <p className="text-xs text-gray-500">
-              Supports multiple files • Charles Schwab, Schwab Equity Awards, Interactive Brokers, Freetrade, Trading 212, EquatePlus, Revolut, Coinbase, and Generic CSV
+              Supports multiple files • Charles Schwab, Schwab Equity Awards, Interactive Brokers, Freetrade, Trading 212, EquatePlus, Revolut, Coinbase, Coinbase Pro, and Generic CSV
             </p>
           </div>
         </div>
@@ -355,7 +355,7 @@ export function CSVImporter() {
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
-            <span>Supported formats & export guides (9)</span>
+            <span>Supported formats & export guides (10)</span>
           </button>
           {showFormats && <ul className="space-y-2 ml-6">
             {/* Charles Schwab */}
@@ -592,6 +592,43 @@ export function CSVImporter() {
                   </p>
                   <a
                     href="/examples/coinbase-example.csv"
+                    className="inline-block text-blue-600 hover:text-blue-800 underline"
+                  >
+                    📥 Download example file
+                  </a>
+                </div>
+              )}
+            </li>
+
+            {/* Coinbase Pro */}
+            <li>
+              <div className="flex justify-between items-center md:justify-start md:gap-4">
+                <span>Coinbase Pro</span>
+                <button
+                  onClick={() => setExpandedFormat(expandedFormat === 'coinbasepro' ? null : 'coinbasepro')}
+                  className="text-blue-600 hover:text-blue-800 text-xs underline whitespace-nowrap"
+                >
+                  {expandedFormat === 'coinbasepro' ? 'hide' : 'instructions & example'}
+                </button>
+              </div>
+              {expandedFormat === 'coinbasepro' && (
+                <div className="mt-2 ml-4 p-3 bg-gray-50 rounded text-xs space-y-2">
+                  <p className="font-medium">How to download:</p>
+                  <ol className="list-decimal list-inside space-y-1 text-gray-600">
+                    <li>Log into coinbase.com</li>
+                    <li>Go to Profile → Manage Account → Statements</li>
+                    <li>Select "Other" portfolio</li>
+                    <li>Select "Fills" in custom report type</li>
+                    <li>Download the CSV file (1 for each year)</li>
+                  </ol>
+                  <p className="text-gray-600 italic">
+                    Note: Coinbase Pro is now part of Coinbase Advanced Trade. This is for historical coinbase pro transactions.
+                  </p>
+                  <p className="text-amber-700 font-medium bg-amber-50 border border-amber-200 rounded p-2">
+                    ⚠️ For crypto-to-crypto trades (e.g., LINK-ETH), add a <code className="bg-amber-100 px-1 rounded">gbp_value</code> column with the GBP spot price of the quote currency (e.g., ETH price in GBP) for accurate CGT calculation.
+                  </p>
+                  <a
+                    href="/examples/coinbasepro-example.csv"
                     className="inline-block text-blue-600 hover:text-blue-800 underline"
                   >
                     📥 Download example file
