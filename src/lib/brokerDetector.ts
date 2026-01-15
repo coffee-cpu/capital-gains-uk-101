@@ -44,6 +44,10 @@ const BROKER_CONFIGS: BrokerConfig[] = [
     headers: ['Date', 'Ticker', 'Type', 'Quantity', 'Price per share', 'Total Amount', 'Currency', 'FX Rate'],
   },
   {
+    broker: BrokerType.COINBASE_PRO,
+    headers: ['portfolio', 'trade id', 'product', 'side', 'created at', 'size', 'size unit', 'price', 'fee', 'total', 'price/fee/total unit'],
+  },
+  {
     broker: BrokerType.COINBASE,
     headers: ['Timestamp', 'Transaction Type', 'Asset', 'Quantity Transacted', 'Price at Transaction', 'Fees and/or Spread'],
   },

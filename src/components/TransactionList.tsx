@@ -155,9 +155,21 @@ export function TransactionList() {
                 <p>
                   Failed to fetch exchange rates for {fxErrorCount} transaction{fxErrorCount !== 1 ? 's' : ''}. GBP values cannot be calculated.
                 </p>
-                <p className="mt-1">
-                  <strong>Try a different FX source</strong> using the dropdown on the right. Some sources have limited historical data availability.
-                </p>
+                {/* Check if any errors are crypto-related */}
+                {fxErrorTransactions.some(tx => tx.fx_error?.includes('Crypto currency')) ? (
+                  <div className="mt-2 p-2 bg-red-100 rounded">
+                    <p className="font-medium">Crypto currency detected:</p>
+                    <p className="mt-1">
+                      Automatic FX conversion is not supported for crypto currencies. For Coinbase Pro crypto-to-crypto trades,
+                      add a <code className="bg-red-200 px-1 rounded">gbp_value</code> column to your CSV with the GBP spot price
+                      of the quote currency at the time of the trade, then re-import.
+                    </p>
+                  </div>
+                ) : (
+                  <p className="mt-1">
+                    <strong>Try a different FX source</strong> using the dropdown on the right. Some sources have limited historical data availability.
+                  </p>
+                )}
               </div>
             </div>
           </div>

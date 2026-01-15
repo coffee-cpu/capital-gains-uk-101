@@ -2,6 +2,7 @@ import { EnrichedTransaction } from '../../../types/transaction'
 import { FXSource, FXSourceAttributions, DEFAULT_FX_SOURCE } from '../../../types/fxSource'
 import { FXManager, convertToGBP } from '../../fx'
 import { Enricher } from '../types'
+import { isFiatCurrency } from '../../currencies'
 
 /**
  * FX Enricher
@@ -23,6 +24,7 @@ import { Enricher } from '../types'
  *
  * @see https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg78310
  */
+
 export class FxEnricher implements Enricher {
   name = 'FxEnricher'
 
@@ -59,6 +61,25 @@ export class FxEnricher implements Enricher {
 
     for (const tx of transactions) {
       try {
+        // Check if currency is a supported fiat currency
+        if (!isFiatCurrency(tx.currency)) {
+          // Crypto currency detected - cannot fetch FX rates for crypto
+          const cryptoErrorMessage = `Crypto currency "${tx.currency}" is not supported for automatic FX conversion. ` +
+            `For Coinbase Pro crypto-to-crypto trades, add a "gbp_value" column to your CSV with the GBP spot price of ${tx.currency} at the time of the trade.`
+
+          enriched.push({
+            ...tx,
+            fx_rate: 0,
+            price_gbp: null,
+            split_adjusted_price_gbp: null,
+            value_gbp: null,
+            fee_gbp: null,
+            fx_source: 'Not supported',
+            fx_error: cryptoErrorMessage,
+          })
+          continue
+        }
+
         // Fetch FX rate for this transaction's date and currency
         const fxResult = await this.fxManager.getRate(tx.date, tx.currency)
         const fxRate = fxResult.rate
