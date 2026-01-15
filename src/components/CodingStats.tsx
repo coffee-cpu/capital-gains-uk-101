@@ -21,6 +21,7 @@ export function CodingStats() {
           { repo: 'coffee-cpu/capital-gains-uk-101' },
           {
             excludeBots: true,
+            excludeMergeCommits: true,
             sessionTimeoutMin: 45
           }
         )
