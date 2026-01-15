@@ -1,5 +1,6 @@
 import type { GenericTransaction } from '../../types/transaction'
 import type { RawCSVRow } from '../../types/broker'
+import { isFiatCurrency } from '../currencies'
 
 /**
  * Coinbase Pro CSV Parser
@@ -23,15 +24,6 @@ import type { RawCSVRow } from '../../types/broker'
  *   Total and fee are then calculated by multiplying with this price.
  */
 
-const FIAT_CURRENCIES = ['GBP', 'USD', 'EUR', 'CAD', 'AUD', 'CHF', 'JPY']
-
-/**
- * Check if a currency is fiat
- */
-function isFiatCurrency(currency: string): boolean {
-  return FIAT_CURRENCIES.includes(currency.toUpperCase())
-}
-
 /**
  * Parse product trading pair into base and quote currencies
  * e.g., "XRP-GBP" -> { base: "XRP", quote: "GBP" }
@@ -52,9 +44,33 @@ function parseProduct(product: string): { base: string; quote: string } | null {
 /**
  * Parse ISO 8601 timestamp to date string
  * e.g., "2020-10-14T10:42:20.072Z" -> "2020-10-14"
+ *
+ * @param timestamp - ISO 8601 formatted timestamp string
+ * @returns Date in YYYY-MM-DD format
+ * @throws Error if timestamp is invalid or malformed
  */
 function parseISO8601Date(timestamp: string): string {
-  return timestamp.split('T')[0]
+  // Validate input exists and is a string
+  if (!timestamp || typeof timestamp !== 'string') {
+    throw new Error('Invalid timestamp: empty or non-string value')
+  }
+
+  // Split on 'T' to extract date part
+  const parts = timestamp.split('T')
+  if (parts.length === 0 || !parts[0]) {
+    throw new Error(`Invalid ISO 8601 timestamp format: "${timestamp}"`)
+  }
+
+  const datePart = parts[0]
+
+  // Validate basic YYYY-MM-DD format
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
+    throw new Error(
+      `Invalid date format in timestamp: "${timestamp}". Expected YYYY-MM-DD`
+    )
+  }
+
+  return datePart
 }
 
 /**

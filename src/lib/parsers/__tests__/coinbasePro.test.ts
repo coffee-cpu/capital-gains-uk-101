@@ -322,6 +322,112 @@ describe('Coinbase Pro Parser', () => {
 
         expect(result[0].date).toBe('2023-12-31')
       })
+
+      it('should skip rows with empty timestamp', () => {
+        const rows: RawCSVRow[] = [
+          {
+            'portfolio': 'default',
+            'trade id': '123',
+            'product': 'BTC-GBP',
+            'side': 'BUY',
+            'created at': '',
+            'size': '0.1',
+            'size unit': 'BTC',
+            'price': '10000',
+            'fee': '10',
+            'total': '-1010',
+            'price/fee/total unit': 'GBP',
+          },
+          {
+            'portfolio': 'default',
+            'trade id': '456',
+            'product': 'ETH-GBP',
+            'side': 'BUY',
+            'created at': '2020-10-15T10:00:00.000Z',
+            'size': '1',
+            'size unit': 'ETH',
+            'price': '300',
+            'fee': '5',
+            'total': '-305',
+            'price/fee/total unit': 'GBP',
+          },
+        ]
+
+        const result = normalizeCoinbaseProTransactions(rows, 'test-file')
+
+        // Should skip the first row with empty timestamp and only process the second
+        expect(result).toHaveLength(1)
+        expect(result[0].symbol).toBe('ETH')
+      })
+
+      it('should throw error for malformed timestamp (no T separator)', () => {
+        const rows: RawCSVRow[] = [
+          {
+            'portfolio': 'default',
+            'trade id': '123',
+            'product': 'BTC-GBP',
+            'side': 'BUY',
+            'created at': '2020-10-14 10:42:20',
+            'size': '0.1',
+            'size unit': 'BTC',
+            'price': '10000',
+            'fee': '10',
+            'total': '-1010',
+            'price/fee/total unit': 'GBP',
+          },
+        ]
+
+        expect(() => {
+          normalizeCoinbaseProTransactions(rows, 'test-file')
+        }).toThrow('Invalid date format in timestamp')
+      })
+
+      it('should throw error for invalid date format', () => {
+        const rows: RawCSVRow[] = [
+          {
+            'portfolio': 'default',
+            'trade id': '123',
+            'product': 'BTC-GBP',
+            'side': 'BUY',
+            'created at': '14/10/2020T10:42:20.072Z',
+            'size': '0.1',
+            'size unit': 'BTC',
+            'price': '10000',
+            'fee': '10',
+            'total': '-1010',
+            'price/fee/total unit': 'GBP',
+          },
+        ]
+
+        expect(() => {
+          normalizeCoinbaseProTransactions(rows, 'test-file')
+        }).toThrow('Invalid date format in timestamp')
+        expect(() => {
+          normalizeCoinbaseProTransactions(rows, 'test-file')
+        }).toThrow('Expected YYYY-MM-DD')
+      })
+
+      it('should throw error for timestamp without date part', () => {
+        const rows: RawCSVRow[] = [
+          {
+            'portfolio': 'default',
+            'trade id': '123',
+            'product': 'BTC-GBP',
+            'side': 'BUY',
+            'created at': 'T10:42:20.072Z',
+            'size': '0.1',
+            'size unit': 'BTC',
+            'price': '10000',
+            'fee': '10',
+            'total': '-1010',
+            'price/fee/total unit': 'GBP',
+          },
+        ]
+
+        expect(() => {
+          normalizeCoinbaseProTransactions(rows, 'test-file')
+        }).toThrow('Invalid ISO 8601 timestamp format')
+      })
     })
 
     describe('Fee handling', () => {

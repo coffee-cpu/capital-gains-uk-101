@@ -2,6 +2,7 @@ import { EnrichedTransaction } from '../../../types/transaction'
 import { FXSource, FXSourceAttributions, DEFAULT_FX_SOURCE } from '../../../types/fxSource'
 import { FXManager, convertToGBP } from '../../fx'
 import { Enricher } from '../types'
+import { isFiatCurrency } from '../../currencies'
 
 /**
  * FX Enricher
@@ -24,24 +25,6 @@ import { Enricher } from '../types'
  * @see https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg78310
  */
 
-/**
- * List of supported fiat currencies for FX conversion.
- * Crypto currencies are NOT supported - users must provide GBP values manually.
- */
-const SUPPORTED_FIAT_CURRENCIES = [
-  'GBP', 'USD', 'EUR', 'CAD', 'AUD', 'CHF', 'JPY', 'CNY', 'HKD', 'SGD',
-  'NZD', 'SEK', 'NOK', 'DKK', 'INR', 'ZAR', 'MXN', 'BRL', 'KRW', 'TWD',
-  'THB', 'MYR', 'IDR', 'PHP', 'PLN', 'CZK', 'HUF', 'TRY', 'ILS', 'AED',
-  'SAR', 'RUB', 'BGN', 'HRK', 'ISK', 'RON'
-]
-
-/**
- * Check if a currency is a supported fiat currency.
- * Returns false for crypto currencies (BTC, ETH, etc.)
- */
-function isSupportedFiatCurrency(currency: string): boolean {
-  return SUPPORTED_FIAT_CURRENCIES.includes(currency.toUpperCase())
-}
 export class FxEnricher implements Enricher {
   name = 'FxEnricher'
 
@@ -79,7 +62,7 @@ export class FxEnricher implements Enricher {
     for (const tx of transactions) {
       try {
         // Check if currency is a supported fiat currency
-        if (!isSupportedFiatCurrency(tx.currency)) {
+        if (!isFiatCurrency(tx.currency)) {
           // Crypto currency detected - cannot fetch FX rates for crypto
           const cryptoErrorMessage = `Crypto currency "${tx.currency}" is not supported for automatic FX conversion. ` +
             `For Coinbase Pro crypto-to-crypto trades, add a "gbp_value" column to your CSV with the GBP spot price of ${tx.currency} at the time of the trade.`
