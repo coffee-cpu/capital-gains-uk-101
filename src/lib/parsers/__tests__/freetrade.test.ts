@@ -131,8 +131,10 @@ describe('Freetrade Parser', () => {
         date: '2025-09-20',
         quantity: 10.0,
         total: 4.68, // Net distribution
-        fee: 0.83, // Withheld tax
+        fee: null, // Withheld tax is now in dedicated field, not fee
         currency: 'GBP',
+        grossDividend: 5.50, // Gross before withholding
+        withholdingTax: 0.83, // Tax withheld
       })
       expect(result[0].notes).toContain('Gross: 5.5')
       expect(result[0].notes).toContain('Tax withheld: 0.83')

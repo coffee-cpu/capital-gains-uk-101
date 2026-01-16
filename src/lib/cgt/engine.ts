@@ -224,6 +224,16 @@ function generateTaxYearSummaries(
       0
     )
 
+    // Calculate gross dividends and withholding tax for SA106
+    const grossDividendsGbp = yearDividends.reduce(
+      (sum, tx) => sum + (tx.grossDividend_gbp ?? tx.value_gbp ?? 0),
+      0
+    )
+    const totalWithholdingTaxGbp = yearDividends.reduce(
+      (sum, tx) => sum + (tx.withholdingTax_gbp ?? 0),
+      0
+    )
+
     // Get dividend allowance for this tax year
     const dividendAllowance = getDividendAllowance(taxYear)
 
@@ -255,6 +265,8 @@ function generateTaxYearSummaries(
       taxableGainGbp: taxableGain,
       totalDividends,
       totalDividendsGbp,
+      grossDividendsGbp,
+      totalWithholdingTaxGbp,
       dividendAllowance,
       totalInterest,
       totalInterestGbp,

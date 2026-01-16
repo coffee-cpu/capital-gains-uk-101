@@ -46,6 +46,10 @@ export const GenericTransactionSchema = z.object({
   strike_price: z.number().nullable().optional().describe('For options: strike price'),
   expiration_date: z.string().nullable().optional().describe('For options: expiration date in YYYY-MM-DD format'),
   contract_size: z.number().nullable().optional().describe('For options: shares per contract (typically 100)'),
+
+  // Dividend withholding tax fields (for SA106 reporting)
+  grossDividend: z.number().nullable().optional().describe('Gross dividend amount before withholding tax (in original currency)'),
+  withholdingTax: z.number().nullable().optional().describe('Tax withheld at source on dividends (in original currency)'),
 })
 
 export type GenericTransaction = z.infer<typeof GenericTransactionSchema>
@@ -68,6 +72,10 @@ export const EnrichedTransactionSchema = GenericTransactionSchema.extend({
   fee_gbp: z.number().nullable().describe('Fee amount in GBP'),
   fx_source: z.string().describe('Source of FX rate (e.g. Bank of England)'),
   fx_error: z.string().nullable().optional().describe('Error message if FX rate fetch failed'),
+
+  // Dividend withholding tax in GBP (for SA106 reporting)
+  grossDividend_gbp: z.number().nullable().optional().describe('Gross dividend amount in GBP'),
+  withholdingTax_gbp: z.number().nullable().optional().describe('Tax withheld at source in GBP'),
 
   // Tax year and CGT matching (computed during enrichment, Step 3)
   tax_year: z.string().describe('UK tax year (e.g. 2023/24)'),

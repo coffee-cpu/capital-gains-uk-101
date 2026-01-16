@@ -113,8 +113,12 @@ export interface TaxYearSummary {
   taxableGainGbp: number
   /** Total number of dividend transactions */
   totalDividends: number
-  /** Total dividend income in GBP */
+  /** Total dividend income in GBP (net, after withholding) */
   totalDividendsGbp: number
+  /** Total gross dividends in GBP (before withholding tax) - for SA106 */
+  grossDividendsGbp: number
+  /** Total withholding tax on dividends in GBP - for SA106 */
+  totalWithholdingTaxGbp: number
   /** Dividend allowance for this tax year (from HMRC) */
   dividendAllowance: number
   /** Total number of interest transactions */
@@ -193,6 +197,8 @@ export const TaxYearSummarySchema = z.object({
   taxableGainGbp: z.number().nonnegative(),
   totalDividends: z.number().int().nonnegative(),
   totalDividendsGbp: z.number().nonnegative(),
+  grossDividendsGbp: z.number().nonnegative(),
+  totalWithholdingTaxGbp: z.number().nonnegative(),
   dividendAllowance: z.number().nonnegative(),
   totalInterest: z.number().int().nonnegative(),
   totalInterestGbp: z.number().nonnegative(),

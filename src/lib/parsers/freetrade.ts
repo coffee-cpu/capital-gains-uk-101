@@ -134,6 +134,11 @@ function parseOrderTransaction(
 
 /**
  * Parse DIVIDEND transaction
+ *
+ * Freetrade provides:
+ * - Dividend Gross Distribution Amount: gross dividend before withholding
+ * - Dividend Withheld Tax Amount: tax withheld at source
+ * - Dividend Net Distribution Amount: net dividend (gross - withholding)
  */
 function parseDividendTransaction(
   row: RawCSVRow,
@@ -152,7 +157,7 @@ function parseDividendTransaction(
 
   const notes = []
   if (isin) notes.push(`ISIN: ${isin}`)
-  if (grossAmount && netAmount && withheldTax) {
+  if (grossAmount && withheldTax) {
     notes.push(`Gross: ${grossAmount} ${accountCurrency}, Tax withheld: ${withheldTax} ${accountCurrency}`)
   }
 
@@ -166,12 +171,15 @@ function parseDividendTransaction(
     quantity, // Number of shares eligible for dividend
     price: null,
     currency: accountCurrency,
-    total: netAmount,
-    fee: withheldTax, // Withheld tax treated as fee
+    total: netAmount, // Net amount (after withholding)
+    fee: null, // Don't store withholding as fee - use dedicated field
     ratio: null,
     notes: notes.length > 0 ? notes.join(', ') : null,
     incomplete: false,
     ignored: false,
+    // SA106 dividend withholding fields
+    grossDividend: grossAmount,
+    withholdingTax: withheldTax,
   }
 }
 

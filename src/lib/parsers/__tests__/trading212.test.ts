@@ -116,8 +116,12 @@ describe('Trading 212 Parser', () => {
       expect(result[0].type).toBe(TransactionType.DIVIDEND)
       expect(result[0].quantity).toBeNull()
       expect(result[0].price).toBeNull()
-      expect(result[0].total).toBe(15.75) // Uses CSV total for dividends
-      expect(result[0].notes).toContain('Withholding tax: 2.36 GBP')
+      expect(result[0].total).toBe(15.75) // Uses CSV total for dividends (net amount)
+      // SA106 fields: grossDividend = net + withholding, withholdingTax = tax withheld
+      expect(result[0].grossDividend).toBe(18.11) // 15.75 + 2.36
+      expect(result[0].withholdingTax).toBe(2.36)
+      expect(result[0].notes).toContain('Gross: 18.11 GBP')
+      expect(result[0].notes).toContain('Tax withheld: 2.36 GBP')
     })
 
     it('should normalize deposit transactions', () => {
