@@ -39,7 +39,15 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           plugin_marketplaces: 'https://github.com/anthropics/claude-code.git'
           plugins: 'code-review@claude-code-plugins'
-          prompt: '/code-review:code-review ${{ github.repository }}/pull/${{ github.event.pull_request.number }}'
+          prompt: |
+            /code-review:code-review ${{ github.repository }}/pull/${{ github.event.pull_request.number }}
+
+            IMPORTANT: Follow the project-specific code review instructions in .claude/review-instructions.md
+
+            Key HMRC compliance requirements:
+            1. Validate any calculation logic against official HMRC guidelines (research HMRC manuals CG51560, CG51620, CG51127 and relevant TCGA92 sections)
+            2. For new tax rules or calculation logic: REQUIRE tooltips/help sections with HMRC references (e.g., "Per HMRC CG51560 (TCGA92/S105)")
+            3. Ensure user-facing explanations cite official documentation to maintain transparency for UK taxpayers
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           # or https://code.claude.com/docs/en/cli-reference for available options
 
