@@ -273,6 +273,82 @@ export function TaxYearSummary() {
           </div>
         </div>
 
+        {/* CGT Rate Change Notice (for 2024/25) */}
+        {currentSummary.hasRateChange && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <div className="flex items-start">
+              <svg className="h-5 w-5 text-amber-500 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              <div className="ml-3 flex-1">
+                <h4 className="text-sm font-semibold text-amber-900 mb-2">
+                  CGT Rate Change — 30 October 2024
+                  <Tooltip content="View HMRC guidance on CGT rate changes">
+                    <a
+                      href="https://www.gov.uk/government/publications/changes-to-the-rates-of-capital-gains-tax"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="ml-1 text-amber-600 hover:text-amber-800 underline text-xs font-normal"
+                    >
+                      (HMRC guidance)
+                    </a>
+                  </Tooltip>
+                </h4>
+                <p className="text-xs text-amber-700 mb-3">
+                  From 30 October 2024, CGT rates increased from 10%/20% to 18%/24%. Report these periods separately on your Self Assessment.
+                </p>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between items-center py-1 border-b border-amber-200">
+                    <span className="text-amber-800 font-medium">Before 30 Oct 2024 (10%/20% rates)</span>
+                    <span></span>
+                  </div>
+                  <div className="flex justify-between items-center pl-3">
+                    <span className="text-amber-700">Gains</span>
+                    <span className="font-medium text-green-700">
+                      £{(currentSummary.gainsBeforeRateChange ?? 0).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center pl-3">
+                    <span className="text-amber-700">Losses</span>
+                    <span className="font-medium text-red-700">
+                      (£{Math.abs(currentSummary.lossesBeforeRateChange ?? 0).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center pl-3 pb-2">
+                    <span className="text-amber-800 font-medium">Net</span>
+                    <span className={`font-semibold ${(currentSummary.netGainOrLossBeforeRateChange ?? 0) >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                      £{(currentSummary.netGainOrLossBeforeRateChange ?? 0).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center py-1 border-b border-amber-200 border-t pt-3">
+                    <span className="text-amber-800 font-medium">From 30 Oct 2024 (18%/24% rates)</span>
+                    <span></span>
+                  </div>
+                  <div className="flex justify-between items-center pl-3">
+                    <span className="text-amber-700">Gains</span>
+                    <span className="font-medium text-green-700">
+                      £{(currentSummary.gainsAfterRateChange ?? 0).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center pl-3">
+                    <span className="text-amber-700">Losses</span>
+                    <span className="font-medium text-red-700">
+                      (£{Math.abs(currentSummary.lossesAfterRateChange ?? 0).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center pl-3">
+                    <span className="text-amber-800 font-medium">Net</span>
+                    <span className={`font-semibold ${(currentSummary.netGainOrLossAfterRateChange ?? 0) >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                      £{(currentSummary.netGainOrLossAfterRateChange ?? 0).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Tax Status Message */}
         {hasTaxableGain ? (
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">

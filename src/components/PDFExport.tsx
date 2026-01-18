@@ -251,6 +251,66 @@ function createCGTReportDocument(Document: any, Page: any, Text: any, View: any,
             </>
           )}
 
+          {/* CGT Rate Change Notice (for 2024/25) */}
+          {taxYearSummary.hasRateChange && (
+            <>
+              <Text style={styles.subtitle}>CGT Rate Change — 30 October 2024</Text>
+              <View style={[styles.summaryBox, { backgroundColor: '#fffbeb', borderWidth: 1, borderColor: '#fde68a' }]}>
+                <Text style={{ fontSize: 8, color: '#92400e', marginBottom: 8 }}>
+                  From 30 October 2024, CGT rates increased from 10%/20% to 18%/24%. Report these periods separately on your Self Assessment.
+                </Text>
+
+                <Text style={{ fontSize: 9, fontFamily: 'Helvetica-Bold', color: '#92400e', marginBottom: 4 }}>
+                  Before 30 Oct 2024 (10%/20% rates)
+                </Text>
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Gains:</Text>
+                  <Text style={[styles.summaryValue, { color: '#059669' }]}>
+                    {formatCurrency(taxYearSummary.gainsBeforeRateChange ?? 0)}
+                  </Text>
+                </View>
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Losses:</Text>
+                  <Text style={[styles.summaryValue, { color: '#dc2626' }]}>
+                    ({formatCurrency(Math.abs(taxYearSummary.lossesBeforeRateChange ?? 0))})
+                  </Text>
+                </View>
+                <View style={[styles.summaryRow, { marginBottom: 12 }]}>
+                  <Text style={[styles.summaryLabel, { fontFamily: 'Helvetica-Bold' }]}>Net:</Text>
+                  <Text style={[styles.summaryValue, { color: (taxYearSummary.netGainOrLossBeforeRateChange ?? 0) >= 0 ? '#059669' : '#dc2626' }]}>
+                    {formatCurrency(taxYearSummary.netGainOrLossBeforeRateChange ?? 0)}
+                  </Text>
+                </View>
+
+                <Text style={{ fontSize: 9, fontFamily: 'Helvetica-Bold', color: '#92400e', marginBottom: 4 }}>
+                  From 30 Oct 2024 (18%/24% rates)
+                </Text>
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Gains:</Text>
+                  <Text style={[styles.summaryValue, { color: '#059669' }]}>
+                    {formatCurrency(taxYearSummary.gainsAfterRateChange ?? 0)}
+                  </Text>
+                </View>
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Losses:</Text>
+                  <Text style={[styles.summaryValue, { color: '#dc2626' }]}>
+                    ({formatCurrency(Math.abs(taxYearSummary.lossesAfterRateChange ?? 0))})
+                  </Text>
+                </View>
+                <View style={styles.summaryRow}>
+                  <Text style={[styles.summaryLabel, { fontFamily: 'Helvetica-Bold' }]}>Net:</Text>
+                  <Text style={[styles.summaryValue, { color: (taxYearSummary.netGainOrLossAfterRateChange ?? 0) >= 0 ? '#059669' : '#dc2626' }]}>
+                    {formatCurrency(taxYearSummary.netGainOrLossAfterRateChange ?? 0)}
+                  </Text>
+                </View>
+
+                <Text style={{ fontSize: 7, color: '#92400e', marginTop: 8 }}>
+                  Source: https://www.gov.uk/government/publications/changes-to-the-rates-of-capital-gains-tax
+                </Text>
+              </View>
+            </>
+          )}
+
           {/* Disposal Records */}
           {disposals.length > 0 && (
             <>

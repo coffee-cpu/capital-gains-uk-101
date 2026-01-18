@@ -127,6 +127,30 @@ export interface TaxYearSummary {
   totalInterestGbp: number
   /** Number of disposals with incomplete/missing acquisition data */
   incompleteDisposals: number
+  /**
+   * CGT Rate Change Split (for 2024/25 tax year)
+   *
+   * From 30 October 2024, CGT rates changed:
+   * - Basic rate: 10% → 18%
+   * - Higher rate: 20% → 24%
+   *
+   * These fields split gains/losses for accurate Self Assessment reporting.
+   * @see https://www.gov.uk/government/publications/changes-to-the-rates-of-capital-gains-tax
+   */
+  /** Gains from disposals before 30 Oct 2024 (old rates: 10%/20%) */
+  gainsBeforeRateChange?: number
+  /** Losses from disposals before 30 Oct 2024 */
+  lossesBeforeRateChange?: number
+  /** Net gain/loss before rate change */
+  netGainOrLossBeforeRateChange?: number
+  /** Gains from disposals on/after 30 Oct 2024 (new rates: 18%/24%) */
+  gainsAfterRateChange?: number
+  /** Losses from disposals on/after 30 Oct 2024 */
+  lossesAfterRateChange?: number
+  /** Net gain/loss after rate change */
+  netGainOrLossAfterRateChange?: number
+  /** Whether this tax year has a mid-year rate change */
+  hasRateChange?: boolean
 }
 
 /**

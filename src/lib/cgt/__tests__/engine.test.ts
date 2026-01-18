@@ -2,7 +2,331 @@ import { describe, it, expect } from 'vitest'
 import { calculateCGT } from '../engine'
 import { EnrichedTransaction } from '../../../types/transaction'
 
+/**
+ * Helper to create a test transaction with minimal required fields
+ */
+function createTransaction(overrides: Partial<EnrichedTransaction>): EnrichedTransaction {
+  return {
+    id: 'tx-1',
+    source: 'test',
+    symbol: 'META',
+    name: 'Meta Platforms Inc.',
+    date: '2024-10-01',
+    type: 'BUY',
+    quantity: 10,
+    price: 500,
+    currency: 'USD',
+    total: 5000,
+    fee: 5,
+    notes: null,
+    fx_rate: 1.25,
+    price_gbp: 400,
+    value_gbp: 4000,
+    fee_gbp: 4,
+    fx_source: 'HMRC',
+    fx_error: null,
+    tax_year: '2024/25',
+    gain_group: 'NONE',
+    ...overrides,
+  }
+}
+
 describe('CGT Engine', () => {
+  describe('CGT Rate Change Split (30 Oct 2024)', () => {
+    it('should split gains before and after rate change for tax year 2024/25', () => {
+      const transactions: EnrichedTransaction[] = [
+        // Acquisition before rate change
+        createTransaction({
+          id: 'buy-1',
+          date: '2024-09-01',
+          type: 'BUY',
+          quantity: 20,
+          price_gbp: 400,
+          value_gbp: 8000,
+          fee_gbp: 10,
+        }),
+        // Disposal BEFORE rate change (10%/20% rates)
+        createTransaction({
+          id: 'sell-1',
+          date: '2024-10-15',
+          type: 'SELL',
+          quantity: 10,
+          price_gbp: 450,
+          value_gbp: 4500,
+          fee_gbp: 5,
+        }),
+        // Disposal AFTER rate change (18%/24% rates)
+        createTransaction({
+          id: 'sell-2',
+          date: '2024-11-15',
+          type: 'SELL',
+          quantity: 10,
+          price_gbp: 480,
+          value_gbp: 4800,
+          fee_gbp: 5,
+        }),
+      ]
+
+      const result = calculateCGT(transactions)
+      const summary = result.taxYearSummaries.find(s => s.taxYear === '2024/25')
+
+      expect(summary).toBeDefined()
+      expect(summary!.hasRateChange).toBe(true)
+
+      // Before rate change: gain from selling at 450 vs cost of ~405 (including fees)
+      expect(summary!.gainsBeforeRateChange).toBeGreaterThan(0)
+      expect(summary!.lossesBeforeRateChange).toBe(0)
+
+      // After rate change: gain from selling at 480 vs cost of ~405 (including fees)
+      expect(summary!.gainsAfterRateChange).toBeGreaterThan(0)
+      expect(summary!.lossesAfterRateChange).toBe(0)
+    })
+
+    it('should handle disposal exactly on 30 Oct 2024 as "after" rate change', () => {
+      const transactions: EnrichedTransaction[] = [
+        createTransaction({
+          id: 'buy-1',
+          date: '2024-09-01',
+          type: 'BUY',
+          quantity: 10,
+          price_gbp: 400,
+          value_gbp: 4000,
+          fee_gbp: 10,
+        }),
+        // Disposal ON the rate change date (should be "after")
+        createTransaction({
+          id: 'sell-1',
+          date: '2024-10-30',
+          type: 'SELL',
+          quantity: 10,
+          price_gbp: 450,
+          value_gbp: 4500,
+          fee_gbp: 5,
+        }),
+      ]
+
+      const result = calculateCGT(transactions)
+      const summary = result.taxYearSummaries.find(s => s.taxYear === '2024/25')
+
+      expect(summary).toBeDefined()
+      expect(summary!.hasRateChange).toBe(true)
+      expect(summary!.gainsBeforeRateChange).toBe(0)
+      expect(summary!.gainsAfterRateChange).toBeGreaterThan(0)
+    })
+
+    it('should handle losses split between periods', () => {
+      const transactions: EnrichedTransaction[] = [
+        createTransaction({
+          id: 'buy-1',
+          date: '2024-09-01',
+          type: 'BUY',
+          quantity: 20,
+          price_gbp: 500,
+          value_gbp: 10000,
+          fee_gbp: 10,
+        }),
+        // Loss BEFORE rate change
+        createTransaction({
+          id: 'sell-1',
+          date: '2024-10-15',
+          type: 'SELL',
+          quantity: 10,
+          price_gbp: 400,
+          value_gbp: 4000,
+          fee_gbp: 5,
+        }),
+        // Loss AFTER rate change
+        createTransaction({
+          id: 'sell-2',
+          date: '2024-11-15',
+          type: 'SELL',
+          quantity: 10,
+          price_gbp: 350,
+          value_gbp: 3500,
+          fee_gbp: 5,
+        }),
+      ]
+
+      const result = calculateCGT(transactions)
+      const summary = result.taxYearSummaries.find(s => s.taxYear === '2024/25')
+
+      expect(summary).toBeDefined()
+      expect(summary!.hasRateChange).toBe(true)
+
+      // Both should be losses
+      expect(summary!.gainsBeforeRateChange).toBe(0)
+      expect(summary!.lossesBeforeRateChange).toBeLessThan(0)
+      expect(summary!.gainsAfterRateChange).toBe(0)
+      expect(summary!.lossesAfterRateChange).toBeLessThan(0)
+
+      // Net should equal sum
+      expect(summary!.netGainOrLossBeforeRateChange).toBe(
+        summary!.gainsBeforeRateChange! + summary!.lossesBeforeRateChange!
+      )
+      expect(summary!.netGainOrLossAfterRateChange).toBe(
+        summary!.gainsAfterRateChange! + summary!.lossesAfterRateChange!
+      )
+    })
+
+    it('should NOT have rate change fields for tax years other than 2024/25', () => {
+      const transactions: EnrichedTransaction[] = [
+        createTransaction({
+          id: 'buy-1',
+          date: '2023-06-01',
+          type: 'BUY',
+          quantity: 10,
+          price_gbp: 400,
+          value_gbp: 4000,
+          fee_gbp: 10,
+          tax_year: '2023/24',
+        }),
+        createTransaction({
+          id: 'sell-1',
+          date: '2023-08-15',
+          type: 'SELL',
+          quantity: 10,
+          price_gbp: 450,
+          value_gbp: 4500,
+          fee_gbp: 5,
+          tax_year: '2023/24',
+        }),
+      ]
+
+      const result = calculateCGT(transactions)
+      const summary = result.taxYearSummaries.find(s => s.taxYear === '2023/24')
+
+      expect(summary).toBeDefined()
+      expect(summary!.hasRateChange).toBeUndefined()
+      expect(summary!.gainsBeforeRateChange).toBeUndefined()
+      expect(summary!.gainsAfterRateChange).toBeUndefined()
+    })
+
+    it('should handle all disposals before rate change', () => {
+      const transactions: EnrichedTransaction[] = [
+        createTransaction({
+          id: 'buy-1',
+          date: '2024-05-01',
+          type: 'BUY',
+          quantity: 10,
+          price_gbp: 400,
+          value_gbp: 4000,
+          fee_gbp: 10,
+        }),
+        createTransaction({
+          id: 'sell-1',
+          date: '2024-06-15',
+          type: 'SELL',
+          quantity: 10,
+          price_gbp: 450,
+          value_gbp: 4500,
+          fee_gbp: 5,
+        }),
+      ]
+
+      const result = calculateCGT(transactions)
+      const summary = result.taxYearSummaries.find(s => s.taxYear === '2024/25')
+
+      expect(summary).toBeDefined()
+      expect(summary!.hasRateChange).toBe(true)
+      expect(summary!.gainsBeforeRateChange).toBeGreaterThan(0)
+      expect(summary!.gainsAfterRateChange).toBe(0)
+      expect(summary!.lossesAfterRateChange).toBe(0)
+    })
+
+    it('should handle all disposals after rate change', () => {
+      const transactions: EnrichedTransaction[] = [
+        createTransaction({
+          id: 'buy-1',
+          date: '2024-09-01',
+          type: 'BUY',
+          quantity: 10,
+          price_gbp: 400,
+          value_gbp: 4000,
+          fee_gbp: 10,
+        }),
+        createTransaction({
+          id: 'sell-1',
+          date: '2024-12-15',
+          type: 'SELL',
+          quantity: 10,
+          price_gbp: 450,
+          value_gbp: 4500,
+          fee_gbp: 5,
+        }),
+      ]
+
+      const result = calculateCGT(transactions)
+      const summary = result.taxYearSummaries.find(s => s.taxYear === '2024/25')
+
+      expect(summary).toBeDefined()
+      expect(summary!.hasRateChange).toBe(true)
+      expect(summary!.gainsBeforeRateChange).toBe(0)
+      expect(summary!.lossesBeforeRateChange).toBe(0)
+      expect(summary!.gainsAfterRateChange).toBeGreaterThan(0)
+    })
+
+    it('should correctly calculate net gain/loss for each period', () => {
+      const transactions: EnrichedTransaction[] = [
+        createTransaction({
+          id: 'buy-1',
+          date: '2024-04-10',
+          type: 'BUY',
+          quantity: 30,
+          price_gbp: 400,
+          value_gbp: 12000,
+          fee_gbp: 15,
+        }),
+        // Gain before rate change
+        createTransaction({
+          id: 'sell-1',
+          date: '2024-08-01',
+          type: 'SELL',
+          quantity: 10,
+          price_gbp: 450,
+          value_gbp: 4500,
+          fee_gbp: 5,
+        }),
+        // Loss before rate change
+        createTransaction({
+          id: 'sell-2',
+          date: '2024-10-20',
+          type: 'SELL',
+          quantity: 10,
+          price_gbp: 350,
+          value_gbp: 3500,
+          fee_gbp: 5,
+        }),
+        // Gain after rate change
+        createTransaction({
+          id: 'sell-3',
+          date: '2024-11-01',
+          type: 'SELL',
+          quantity: 10,
+          price_gbp: 500,
+          value_gbp: 5000,
+          fee_gbp: 5,
+        }),
+      ]
+
+      const result = calculateCGT(transactions)
+      const summary = result.taxYearSummaries.find(s => s.taxYear === '2024/25')
+
+      expect(summary).toBeDefined()
+      expect(summary!.hasRateChange).toBe(true)
+
+      // Net before = gains + losses (losses are negative)
+      expect(summary!.netGainOrLossBeforeRateChange).toBe(
+        summary!.gainsBeforeRateChange! + summary!.lossesBeforeRateChange!
+      )
+
+      // Total net should match the overall tax year net
+      const totalNetFromSplit =
+        (summary!.netGainOrLossBeforeRateChange ?? 0) +
+        (summary!.netGainOrLossAfterRateChange ?? 0)
+      expect(totalNetFromSplit).toBeCloseTo(summary!.netGainOrLossGbp, 2)
+    })
+  })
+
   describe('calculateCGT', () => {
     it('should apply same-day rule first', () => {
       const transactions: EnrichedTransaction[] = [

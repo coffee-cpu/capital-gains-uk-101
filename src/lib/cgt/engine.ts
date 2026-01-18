@@ -250,6 +250,11 @@ function generateTaxYearSummaries(
     // Count incomplete disposals (those with missing acquisition data)
     const incompleteDisposals = yearDisposals.filter(d => d.isIncomplete).length
 
+    // Calculate CGT rate change split for 2024/25 tax year
+    // From 30 October 2024, rates changed from 10%/20% to 18%/24%
+    // https://www.gov.uk/government/publications/changes-to-the-rates-of-capital-gains-tax
+    const rateChangeFields = calculateRateChangeSplit(taxYear, yearDisposals)
+
     summaries.push({
       taxYear,
       startDate,
@@ -271,6 +276,7 @@ function generateTaxYearSummaries(
       totalInterest,
       totalInterestGbp,
       incompleteDisposals,
+      ...rateChangeFields,
     })
   }
 
@@ -323,6 +329,78 @@ function getDividendAllowance(taxYear: string): number {
 
   // Default for older years (pre-dividend allowance era)
   return 0
+}
+
+/**
+ * CGT Rate Change Date (30 October 2024)
+ *
+ * From this date, CGT rates changed:
+ * - Basic rate: 10% → 18%
+ * - Higher rate: 20% → 24%
+ *
+ * @see https://www.gov.uk/government/publications/changes-to-the-rates-of-capital-gains-tax
+ */
+const CGT_RATE_CHANGE_DATE = '2024-10-30'
+
+/**
+ * Calculate rate change split for tax year 2024/25
+ *
+ * For tax year 2024/25, disposals must be split into two periods:
+ * - Before 30 Oct 2024: Old rates (10%/20%)
+ * - On/after 30 Oct 2024: New rates (18%/24%)
+ *
+ * @param taxYear The tax year string (e.g., "2024/25")
+ * @param disposals All disposals for this tax year
+ * @returns Rate change fields to spread into TaxYearSummary, or empty object
+ */
+function calculateRateChangeSplit(
+  taxYear: string,
+  disposals: DisposalRecord[]
+): Partial<TaxYearSummary> {
+  // Only apply to 2024/25 tax year
+  if (taxYear !== '2024/25') {
+    return {}
+  }
+
+  // Split disposals by rate change date
+  const disposalsBeforeChange = disposals.filter(
+    d => d.disposal.date < CGT_RATE_CHANGE_DATE
+  )
+  const disposalsAfterChange = disposals.filter(
+    d => d.disposal.date >= CGT_RATE_CHANGE_DATE
+  )
+
+  // Calculate gains/losses before rate change (10%/20%)
+  const gainsBeforeRateChange = disposalsBeforeChange
+    .filter(d => d.gainOrLossGbp > 0)
+    .reduce((sum, d) => sum + d.gainOrLossGbp, 0)
+
+  const lossesBeforeRateChange = disposalsBeforeChange
+    .filter(d => d.gainOrLossGbp < 0)
+    .reduce((sum, d) => sum + d.gainOrLossGbp, 0)
+
+  const netGainOrLossBeforeRateChange = gainsBeforeRateChange + lossesBeforeRateChange
+
+  // Calculate gains/losses after rate change (18%/24%)
+  const gainsAfterRateChange = disposalsAfterChange
+    .filter(d => d.gainOrLossGbp > 0)
+    .reduce((sum, d) => sum + d.gainOrLossGbp, 0)
+
+  const lossesAfterRateChange = disposalsAfterChange
+    .filter(d => d.gainOrLossGbp < 0)
+    .reduce((sum, d) => sum + d.gainOrLossGbp, 0)
+
+  const netGainOrLossAfterRateChange = gainsAfterRateChange + lossesAfterRateChange
+
+  return {
+    hasRateChange: true,
+    gainsBeforeRateChange,
+    lossesBeforeRateChange,
+    netGainOrLossBeforeRateChange,
+    gainsAfterRateChange,
+    lossesAfterRateChange,
+    netGainOrLossAfterRateChange,
+  }
 }
 
 /**
