@@ -4,6 +4,7 @@ import { DisposalRecords } from './DisposalRecords'
 import { Tooltip } from './Tooltip'
 import { ExportPDFButton } from './ExportPDFButton'
 import { BuyMeACoffee } from './BuyMeACoffee'
+import { TaxYearFeaturesRenderer } from './taxYearFeatures'
 
 function BuyOnlyInfoBanner({ transactions }: { transactions: any[] }) {
   // Check if any transactions are from Schwab Equity Awards
@@ -272,6 +273,9 @@ export function TaxYearSummary() {
             </div>
           </div>
         </div>
+
+        {/* Tax Year-Specific Features (e.g., CGT Rate Change 2024) */}
+        <TaxYearFeaturesRenderer summary={currentSummary} />
 
         {/* Tax Status Message */}
         {hasTaxableGain ? (

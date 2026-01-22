@@ -7,6 +7,7 @@ import { thirtyDayStage } from './thirtyDayMatcher'
 import { section104Stage } from './section104Pool'
 import { getTaxYearBounds } from '../../utils/taxYear'
 import { getEffectiveQuantity, isAcquisition, isDisposal } from './utils'
+import { calculateTaxYearFeatures } from './taxYearFeatures'
 
 /**
  * CGT Calculation Engine
@@ -250,7 +251,8 @@ function generateTaxYearSummaries(
     // Count incomplete disposals (those with missing acquisition data)
     const incompleteDisposals = yearDisposals.filter(d => d.isIncomplete).length
 
-    summaries.push({
+    // Create the summary (without features first)
+    const summary: TaxYearSummary = {
       taxYear,
       startDate,
       endDate,
@@ -271,7 +273,15 @@ function generateTaxYearSummaries(
       totalInterest,
       totalInterestGbp,
       incompleteDisposals,
-    })
+    }
+
+    // Calculate tax year-specific features
+    const features = calculateTaxYearFeatures(summary, yearDisposals)
+    if (Object.keys(features).length > 0) {
+      summary.features = features
+    }
+
+    summaries.push(summary)
   }
 
   // Sort by tax year (most recent first)
