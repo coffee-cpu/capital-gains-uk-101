@@ -2,6 +2,7 @@
  * UK tax year utilities
  * Tax years run from 6 April to 5 April
  * @see https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg10250
+ * @module taxYear
  */
 
 /**
