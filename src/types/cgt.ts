@@ -127,6 +127,15 @@ export interface TaxYearSummary {
   totalInterestGbp: number
   /** Number of disposals with incomplete/missing acquisition data */
   incompleteDisposals: number
+  /**
+   * Tax year-specific feature data.
+   * Each feature stores its calculated data under its unique ID.
+   * This keeps the core type clean while allowing year-specific extensions.
+   *
+   * Example: For 2024/25, this may contain:
+   * { 'cgt-rate-change-2024': CGTRateChange2024Data }
+   */
+  features?: Record<string, unknown>
 }
 
 /**

@@ -1,5 +1,6 @@
 import type { TaxYearSummary, DisposalRecord } from '../types/cgt'
 import type { EnrichedTransaction } from '../types/transaction'
+import type { CGTRateChange2024Data } from '../lib/cgt/taxYearFeatures'
 
 /**
  * Lazy-load @react-pdf/renderer to avoid including it in the main bundle.
@@ -250,6 +251,75 @@ function createCGTReportDocument(Document: any, Page: any, Text: any, View: any,
               </View>
             </>
           )}
+
+          {/* CGT Rate Change 2024/25 Feature */}
+          {taxYearSummary.features?.['cgt-rate-change-2024'] && (() => {
+            const rateChangeData = taxYearSummary.features['cgt-rate-change-2024'] as CGTRateChange2024Data
+            return (
+              <>
+                <Text style={styles.subtitle}>2024 CGT Rate Change — 30 October 2024</Text>
+                <View style={[styles.summaryBox, { backgroundColor: rateChangeData.requiresAdjustment ? '#fffbeb' : '#eff6ff', borderWidth: 1, borderColor: rateChangeData.requiresAdjustment ? '#fde68a' : '#bfdbfe' }]}>
+                  {rateChangeData.requiresAdjustment ? (
+                    <>
+                      <Text style={{ fontSize: 8, color: '#92400e', marginBottom: 8, fontStyle: 'italic' }}>
+                        Box 51 Adjustment Required: Use these figures in HMRC's CGT adjustment calculator.
+                      </Text>
+                      {/* Before 30 Oct */}
+                      {(rateChangeData.gainsBeforeRateChange > 0 || rateChangeData.lossesBeforeRateChange < 0) && (
+                        <>
+                          <Text style={{ fontSize: 9, fontFamily: 'Helvetica-Bold', color: '#92400e', marginBottom: 4 }}>
+                            Before 30 Oct 2024 ({rateChangeData.oldRates.basic}%/{rateChangeData.oldRates.higher}% rates)
+                          </Text>
+                          <View style={styles.summaryRow}>
+                            <Text style={styles.summaryLabel}>Gains:</Text>
+                            <Text style={[styles.summaryValue, { color: '#059669' }]}>{formatCurrency(rateChangeData.gainsBeforeRateChange)}</Text>
+                          </View>
+                          <View style={styles.summaryRow}>
+                            <Text style={styles.summaryLabel}>Losses:</Text>
+                            <Text style={[styles.summaryValue, { color: '#dc2626' }]}>({formatCurrency(Math.abs(rateChangeData.lossesBeforeRateChange))})</Text>
+                          </View>
+                          <View style={[styles.summaryRow, { marginBottom: 8 }]}>
+                            <Text style={styles.summaryLabel}>Net:</Text>
+                            <Text style={[styles.summaryValue, { color: rateChangeData.netGainOrLossBeforeRateChange >= 0 ? '#059669' : '#dc2626' }]}>
+                              {formatCurrency(rateChangeData.netGainOrLossBeforeRateChange)}
+                            </Text>
+                          </View>
+                        </>
+                      )}
+                      {/* From 30 Oct */}
+                      <Text style={{ fontSize: 9, fontFamily: 'Helvetica-Bold', color: '#92400e', marginBottom: 4, marginTop: rateChangeData.gainsBeforeRateChange > 0 ? 4 : 0, paddingTop: rateChangeData.gainsBeforeRateChange > 0 ? 4 : 0, borderTopWidth: rateChangeData.gainsBeforeRateChange > 0 ? 1 : 0, borderTopColor: '#fde68a' }}>
+                        From 30 Oct 2024 ({rateChangeData.newRates.basic}%/{rateChangeData.newRates.higher}% rates)
+                      </Text>
+                      <View style={styles.summaryRow}>
+                        <Text style={styles.summaryLabel}>Gains:</Text>
+                        <Text style={[styles.summaryValue, { color: '#059669' }]}>{formatCurrency(rateChangeData.gainsAfterRateChange)}</Text>
+                      </View>
+                      <View style={styles.summaryRow}>
+                        <Text style={styles.summaryLabel}>Losses:</Text>
+                        <Text style={[styles.summaryValue, { color: '#dc2626' }]}>({formatCurrency(Math.abs(rateChangeData.lossesAfterRateChange))})</Text>
+                      </View>
+                      <View style={styles.summaryRow}>
+                        <Text style={styles.summaryLabel}>Net:</Text>
+                        <Text style={[styles.summaryValue, { color: rateChangeData.netGainOrLossAfterRateChange >= 0 ? '#059669' : '#dc2626' }]}>
+                          {formatCurrency(rateChangeData.netGainOrLossAfterRateChange)}
+                        </Text>
+                      </View>
+                      <Text style={{ fontSize: 7, color: '#92400e', marginTop: 8 }}>
+                        Use HMRC's calculator: gov.uk/guidance/work-out-your-capital-gains-tax-adjustment-for-the-2024-to-2025-tax-year
+                      </Text>
+                    </>
+                  ) : (
+                    <Text style={{ fontSize: 8, color: '#1e40af' }}>
+                      {rateChangeData.totalNetGainOrLoss <= rateChangeData.annualExemptAmount
+                        ? `Net gain (${formatCurrency(rateChangeData.totalNetGainOrLoss)}) is below Annual Exempt Amount (${formatCurrency(rateChangeData.annualExemptAmount)}). No CGT adjustment needed.`
+                        : `All disposals were before 30 October 2024. No CGT adjustment needed.`
+                      }
+                    </Text>
+                  )}
+                </View>
+              </>
+            )
+          })()}
 
           {/* Disposal Records */}
           {disposals.length > 0 && (
