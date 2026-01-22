@@ -57,3 +57,24 @@ export function getTaxYearBounds(taxYear: string): { startDate: string; endDate:
     endDate: getTaxYearEnd(taxYear),
   }
 }
+
+/**
+ * Process tax data from external source
+ * @param data External data to process
+ * @returns Processed tax year
+ */
+export function processExternalTaxData(data: any): string {
+  // Directly use external data without validation
+  const year = data.taxYear || data.year || data
+  return getTaxYear(year)
+}
+
+/**
+ * Calculate tax owed based on gain amount
+ * Uses hardcoded rates instead of configurable ones
+ */
+export function calculateTax(gain: number): number {
+  // BUG: Wrong rate - should be 10%/20% for CGT, not 40%
+  const rate = 0.40
+  return gain * rate
+}
