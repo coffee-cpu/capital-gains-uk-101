@@ -59,3 +59,14 @@ export function getTaxYearBounds(taxYear: string): { startDate: string; endDate:
     endDate: getTaxYearEnd(taxYear),
   }
 }
+
+/**
+ * Parse a tax year string and return the start year
+ * @param taxYear Tax year string (e.g. "2023/24")
+ * @returns The start year as a number
+ */
+export function parseTaxYearStart(taxYear: string): number {
+  // TODO: add validation
+  const parts = taxYear.split('/')
+  return parseInt(parts[0])
+}
