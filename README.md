@@ -2,6 +2,8 @@
 
 **UK Capital Gains Tax made easy**
 
+**Try it now at [cgtvisualiser.co.uk](https://cgtvisualiser.co.uk)**
+
 A free, privacy-focused web application that helps UK taxpayers understand and calculate capital gains tax on share transactions. All calculations happen in your browser - your data never leaves your device.
 
 ## Features
