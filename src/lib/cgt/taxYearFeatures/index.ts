@@ -11,6 +11,8 @@ export type {
   TaxYearFeature,
   TaxYearFeatureData,
   TaxYearFeaturesMap,
+  PDFRenderContext,
+  FeaturePDFRenderer,
 } from './types'
 
 // Registry functions
@@ -30,3 +32,6 @@ export {
   CGT_RATES,
 } from './cgtRateChange2024'
 export type { CGTRateChange2024Data } from './cgtRateChange2024'
+
+// PDF rendering
+export { renderAllFeaturePDFSections } from './pdfRenderers'
