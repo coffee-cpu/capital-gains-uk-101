@@ -1,46 +1,55 @@
 name: Claude Code Review
 
 on:
-  pull_request_target:
+  pull_request:
     types: [opened, synchronize, ready_for_review, reopened]
-    # Optional: Only run on specific file changes
-    # paths:
-    #   - "src/**/*.ts"
-    #   - "src/**/*.tsx"
-    #   - "src/**/*.js"
-    #   - "src/**/*.jsx"
 
 jobs:
   claude-review:
-    # Optional: Filter by PR author
-    # if: |
-    #   github.event.pull_request.user.login == 'external-contributor' ||
-    #   github.event.pull_request.user.login == 'new-developer' ||
-    #   github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR'
-
     runs-on: ubuntu-latest
     permissions:
       contents: read
       pull-requests: write
-      issues: read
       id-token: write
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.base.ref }}
           fetch-depth: 1
 
       - name: Run Claude Code Review
-        id: claude-review
         uses: anthropics/claude-code-action@v1
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          plugin_marketplaces: 'https://github.com/anthropics/claude-code.git'
-          plugins: 'code-review@claude-code-plugins'
-          prompt: /code-review --comment
-          # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
-          # or https://code.claude.com/docs/en/cli-reference for available options
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          track_progress: true
+          prompt: |
+            Review this PR with the following focus areas specific to this Capital Gains Tax Visualiser project:
+
+            ## HMRC Compliance (Critical for tax-related changes)
+
+            For changes in `src/lib/cgt/`, `src/lib/enrichment.ts`, `src/utils/taxYear.ts`, or tax calculation components:
+            - Verify calculation logic aligns with HMRC guidance
+            - Cross-reference with: TCGA92/S105(1) (same-day), TCGA92/S106A(5) (30-day), TCGA92/S104 (Section 104), TCGA92/S127 (share reorganisations)
+            - Check UK tax year boundaries (April 6 - April 5) are handled correctly
+            - Ensure user-facing explanations include HMRC references (CG51560, CG51620, CG51127)
+
+            ## Code Quality
+
+            - TypeScript strict mode compliance
+            - No unused variables or imports
+            - Clean separation between `GenericTransaction` (raw data) and `EnrichedTransaction` (computed fields)
+            - Test coverage for new logic
+
+            ## Privacy & Security
+
+            - No external data transmission (all processing must be client-side)
+            - Original transaction data must remain unmodified
+            - Users should see both original and calculated values for transparency
+
+            Provide detailed feedback using inline comments for specific issues.
+            Use top-level comments for general observations.
+
+          claude_args: |
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"
 
