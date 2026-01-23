@@ -22,6 +22,30 @@ export interface TaxYearFeatureData {
 }
 
 /**
+ * PDF rendering context passed to feature PDF renderers.
+ * Contains react-pdf components and shared styles needed to render PDF sections.
+ */
+export interface PDFRenderContext {
+  /** react-pdf Text component */
+  Text: any
+  /** react-pdf View component */
+  View: any
+  /** Shared styles for the PDF document */
+  styles: any
+  /** Currency formatter */
+  formatCurrency: (value: number) => string
+}
+
+/**
+ * Function type for rendering a feature's PDF section.
+ * Returns null if the feature has nothing to render.
+ */
+export type FeaturePDFRenderer<TData extends TaxYearFeatureData> = (
+  data: TData,
+  context: PDFRenderContext
+) => React.ReactElement | null
+
+/**
  * A tax year feature that can calculate data and be rendered in UI/PDF.
  *
  * @template TData - The shape of data this feature produces

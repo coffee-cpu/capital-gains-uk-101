@@ -86,9 +86,3 @@ export function hasApplicableFeatures(taxYear: string): boolean {
 export function getAllFeatureIds(): string[] {
   return TAX_YEAR_FEATURES.map((feature) => feature.id)
 }
-
-// Re-export types for convenience
-export type { TaxYearFeature, TaxYearFeatureData, TaxYearFeaturesMap } from './types'
-
-// Re-export specific feature data types
-export type { CGTRateChange2024Data } from './cgtRateChange2024'

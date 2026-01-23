@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { EnrichedTransaction, GainGroup } from './transaction'
+import type { TaxYearFeaturesMap } from '../lib/cgt/taxYearFeatures/types'
 
 /**
  * CGT Calculation Types
@@ -135,7 +136,7 @@ export interface TaxYearSummary {
    * Example: For 2024/25, this may contain:
    * { 'cgt-rate-change-2024': CGTRateChange2024Data }
    */
-  features?: Record<string, unknown>
+  features?: TaxYearFeaturesMap
 }
 
 /**
