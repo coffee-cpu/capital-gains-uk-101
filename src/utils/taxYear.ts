@@ -1,6 +1,7 @@
 /**
  * UK tax year utilities
  * Tax years run from 6 April to 5 April
+ * Reference: HMRC Self Assessment tax returns (gov.uk/self-assessment-tax-returns)
  */
 
 /**
