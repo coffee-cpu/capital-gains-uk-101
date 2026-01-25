@@ -194,7 +194,7 @@ splits = stock.splits
 ### Option A: Manual Upload (Current Approach)
 The current workaround of using Generic CSV upload works but requires users to manually research and enter split data.
 
-### Option B: Client-Side API Integration (Recommended)
+### Option B: Client-Side API Integration
 For a browser-only application, integrate a free API on the client side:
 
 1. **Primary Choice: Finnhub**
@@ -206,23 +206,104 @@ For a browser-only application, integrate a free API on the client side:
    - Unlimited calls on free tier
    - Clean API response format matching our needs
 
-### Suggested Implementation Flow
+### Option C: GitHub-Hosted Catalog ⭐ Recommended
 
+A community-maintained JSON catalog hosted on GitHub, fetched client-side via CDN.
+
+**Why this approach:**
+- **Privacy-first**: No API keys, no third-party dependencies
+- **Offline-capable**: Cache in IndexedDB after first fetch
+- **Community-driven**: Users can contribute missing splits via PRs
+- **Manageable volume**: ~400-500 splits/year globally, <100 relevant to UK retail investors
+
+**Implementation created:**
+- Catalog: [`data/stock-splits.json`](../data/stock-splits.json)
+- Schema: [`data/stock-splits.schema.json`](../data/stock-splits.schema.json)
+
+**Fetch via jsDelivr CDN (recommended):**
 ```
-1. User imports transactions (e.g., Freetrade CSV)
-2. App detects unique symbols in transactions
-3. For each symbol, query Finnhub/Polygon for splits in the transaction date range
-4. Auto-generate STOCK_SPLIT transactions from API data
-5. Merge with imported transactions before enrichment
+https://cdn.jsdelivr.net/gh/coffee-cpu/capital-gains-uk-101@main/data/stock-splits.json
 ```
+
+**Data structure:**
+```json
+{
+  "version": "1.0.0",
+  "updated": "2025-01-25",
+  "splits": {
+    "TSLA": {
+      "name": "Tesla, Inc.",
+      "isin": "US88160R1014",
+      "exchange": "NASDAQ",
+      "history": [
+        { "date": "2022-08-25", "ratio": "3:1" },
+        { "date": "2020-08-31", "ratio": "5:1" }
+      ]
+    }
+  }
+}
+```
+
+**Client-side implementation flow:**
+```
+1. Check IndexedDB cache (valid for 24hr)
+2. If stale, fetch from jsDelivr CDN
+3. Extract unique symbols from user's transactions
+4. Lookup splits by symbol (or ISIN for accuracy)
+5. Auto-generate STOCK_SPLIT transactions
+6. Merge with imported transactions before enrichment
+```
+
+**Symbol matching strategy:**
+1. Primary: Match by ticker symbol (e.g., `TSLA`)
+2. Fallback: Match by ISIN if available (Freetrade exports include ISIN)
+3. Support aliases for ADRs/different exchanges
 
 ### Privacy Considerations
 
-All suggested APIs:
+**Option B (APIs):**
 - Only require symbol and date range (no personal data sent)
 - Return publicly available corporate action data
 - Can be called directly from browser (client-side only)
 - API keys can be user-provided or embedded (public data)
+
+**Option C (GitHub Catalog):**
+- Zero external API calls to third parties
+- Data fetched from same origin (GitHub) as the app
+- No tracking, no API keys required
+- Full transparency - catalog is open source
+
+---
+
+## Global Stock Split Volume Statistics
+
+Understanding the volume of stock splits helps assess feasibility of maintaining our own catalog.
+
+### 2024 Statistics (Wall Street Horizon data - 11k global equities universe)
+
+| Period | Split Count | Notes |
+|--------|-------------|-------|
+| H1 2024 | ~168 | Highest H1 in 10+ years |
+| H2 2024 | ~229 | Highest H2 in 5 years (North America) |
+| Q2 2024 | 100 | Highest since Q2 2023 |
+| July 2024 | 30 | 9-year high (18 reverse, 10 forward) |
+
+### Historical Trends (US Markets)
+
+| Era | Splits/Year | Reason |
+|-----|-------------|--------|
+| Pre-2010 | 100+/year | Retail investors preferred lower-priced stocks |
+| 2010-2020 | <50/year | Commission-free trading reduced need |
+| 2024 | ~400 total | AI boom drove high-profile splits |
+
+### Relevance for UK CGT Users
+
+For this application's target users (UK retail investors), the relevant universe is:
+- **FTSE All-Share**: ~600 companies (splits rare in UK market)
+- **Popular US stocks**: ~500-1000 commonly held tickers
+- **Estimated relevant splits**: <100 per year
+
+**Conclusion**: A curated catalog of ~200-500 entries covers the vast majority of UK retail investor needs. This is easily maintainable via community contributions.
 
 ---
 
@@ -234,8 +315,23 @@ The Freetrade parser's `STOCK_SPLIT` handling (`parseStockSplitTransaction`) has
 
 ## References
 
+### Issue & Implementation
 - [GitHub Issue #37](https://github.com/coffee-cpu/capital-gains-uk-101/issues/37) - Original user report
-- [Finnhub Pricing](https://finnhub.io/pricing-stock-api-market-data)
-- [Polygon.io Documentation](https://polygon.io/docs/rest/stocks/corporate-actions/splits)
-- [Alpha Vantage Guide](https://alphalog.ai/blog/alphavantage-api-complete-guide)
-- [yfinance Alternatives](https://medium.com/@trading.dude/why-yfinance-keeps-getting-blocked-and-what-to-use-instead-92d84bb2cc01)
+- [`data/stock-splits.json`](../data/stock-splits.json) - Stock splits catalog
+- [`data/stock-splits.schema.json`](../data/stock-splits.schema.json) - JSON schema for validation
+
+### API Documentation
+- [Finnhub Stock Splits](https://finnhub.io/docs/api/stock-splits)
+- [Polygon.io Stock Splits](https://polygon.io/docs/rest/stocks/corporate-actions/splits)
+- [Alpha Vantage Documentation](https://www.alphavantage.co/documentation/)
+- [FMP Stock Splits API](https://site.financialmodelingprep.com/developer/docs/stable/splits-company)
+
+### Statistics & Research
+- [Wall Street Horizon - Stock Splits 2024 Comeback](https://www.wallstreethorizon.com/blog/Stock-Splits-Continue-Their-2024-Comeback)
+- [NYSE Data Insights - Stock Splits](https://www.nyse.com/data-insights/stock-price-trading-dynamics-and-splits)
+- [Companies Market Cap - Split History](https://companiesmarketcap.com)
+
+### Stock Split History Sources
+- [MacroTrends Stock Splits](https://www.macrotrends.net/stocks/charts/NVDA/nvidia/stock-splits)
+- [Investing.com Split History](https://www.investing.com/equities/tesla-motors-historical-data-splits)
+- [Stock Split History](https://www.stocksplithistory.com/)

@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/coffee-cpu/capital-gains-uk-101/data/stock-splits.schema.json",
+  "title": "Stock Splits Catalog",
+  "description": "Schema for the community-maintained stock splits catalog used for CGT calculations",
+  "type": "object",
+  "required": ["version", "updated", "splits"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Reference to this schema file"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Semantic version of the catalog format"
+    },
+    "updated": {
+      "type": "string",
+      "format": "date",
+      "description": "ISO date when the catalog was last updated (YYYY-MM-DD)"
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable description of the catalog"
+    },
+    "sources": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "URLs of data sources used to compile the catalog"
+    },
+    "splits": {
+      "type": "object",
+      "description": "Map of ticker symbols to their split history",
+      "additionalProperties": {
+        "$ref": "#/$defs/stockEntry"
+      }
+    }
+  },
+  "$defs": {
+    "stockEntry": {
+      "type": "object",
+      "required": ["name", "history"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Full company name"
+        },
+        "isin": {
+          "type": "string",
+          "pattern": "^[A-Z]{2}[A-Z0-9]{10}$",
+          "description": "International Securities Identification Number (12 characters)"
+        },
+        "exchange": {
+          "type": "string",
+          "description": "Primary exchange (e.g., NASDAQ, NYSE, LSE)"
+        },
+        "aliases": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Alternative ticker symbols (e.g., ADR tickers on other exchanges)"
+        },
+        "history": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/splitEvent" },
+          "description": "List of split events, ordered newest first"
+        }
+      }
+    },
+    "splitEvent": {
+      "type": "object",
+      "required": ["date", "ratio"],
+      "properties": {
+        "date": {
+          "type": "string",
+          "format": "date",
+          "description": "Effective date of the split (YYYY-MM-DD)"
+        },
+        "ratio": {
+          "type": "string",
+          "pattern": "^\\d+:\\d+$",
+          "description": "Split ratio as 'new:old' (e.g., '10:1' means 10 new shares for each 1 old share)"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Optional notes about the split (e.g., special circumstances)"
+        }
+      }
+    }
+  }
+}

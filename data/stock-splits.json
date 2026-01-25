@@ -1,0 +1,174 @@
+{
+  "$schema": "./stock-splits.schema.json",
+  "version": "1.0.0",
+  "updated": "2025-01-25",
+  "description": "Community-maintained stock splits catalog for CGT calculations. Contributions welcome via PR.",
+  "sources": [
+    "https://companiesmarketcap.com",
+    "https://www.macrotrends.net",
+    "https://www.investing.com"
+  ],
+  "splits": {
+    "AAPL": {
+      "name": "Apple Inc.",
+      "isin": "US0378331005",
+      "exchange": "NASDAQ",
+      "history": [
+        { "date": "2020-08-31", "ratio": "4:1" },
+        { "date": "2014-06-09", "ratio": "7:1" },
+        { "date": "2005-02-28", "ratio": "2:1" },
+        { "date": "2000-06-21", "ratio": "2:1" },
+        { "date": "1987-06-16", "ratio": "2:1" }
+      ]
+    },
+    "TSLA": {
+      "name": "Tesla, Inc.",
+      "isin": "US88160R1014",
+      "exchange": "NASDAQ",
+      "history": [
+        { "date": "2022-08-25", "ratio": "3:1" },
+        { "date": "2020-08-31", "ratio": "5:1" }
+      ]
+    },
+    "NVDA": {
+      "name": "NVIDIA Corporation",
+      "isin": "US67066G1040",
+      "exchange": "NASDAQ",
+      "history": [
+        { "date": "2024-06-10", "ratio": "10:1" },
+        { "date": "2021-07-20", "ratio": "4:1" },
+        { "date": "2007-09-11", "ratio": "3:2" },
+        { "date": "2006-04-07", "ratio": "2:1" },
+        { "date": "2001-09-17", "ratio": "2:1" },
+        { "date": "2000-06-27", "ratio": "2:1" }
+      ]
+    },
+    "AMZN": {
+      "name": "Amazon.com, Inc.",
+      "isin": "US0231351067",
+      "exchange": "NASDAQ",
+      "history": [
+        { "date": "2022-06-06", "ratio": "20:1" },
+        { "date": "1999-09-02", "ratio": "2:1" },
+        { "date": "1999-01-05", "ratio": "3:1" },
+        { "date": "1998-06-02", "ratio": "2:1" }
+      ]
+    },
+    "GOOG": {
+      "name": "Alphabet Inc. (Class C)",
+      "isin": "US02079K1079",
+      "exchange": "NASDAQ",
+      "history": [
+        { "date": "2022-07-18", "ratio": "20:1" },
+        { "date": "2014-04-03", "ratio": "2:1", "notes": "Stock split created Class C shares" }
+      ]
+    },
+    "GOOGL": {
+      "name": "Alphabet Inc. (Class A)",
+      "isin": "US02079K3059",
+      "exchange": "NASDAQ",
+      "history": [
+        { "date": "2022-07-18", "ratio": "20:1" },
+        { "date": "2014-04-03", "ratio": "2:1", "notes": "Stock split created Class C shares" }
+      ]
+    },
+    "AVGO": {
+      "name": "Broadcom Inc.",
+      "isin": "US11135F1012",
+      "exchange": "NASDAQ",
+      "history": [
+        { "date": "2024-07-15", "ratio": "10:1" }
+      ]
+    },
+    "SMCI": {
+      "name": "Super Micro Computer, Inc.",
+      "isin": "US86800U1043",
+      "exchange": "NASDAQ",
+      "history": [
+        { "date": "2024-10-01", "ratio": "10:1" }
+      ]
+    },
+    "WMT": {
+      "name": "Walmart Inc.",
+      "isin": "US9311421039",
+      "exchange": "NYSE",
+      "history": [
+        { "date": "2024-02-26", "ratio": "3:1" },
+        { "date": "1999-03-19", "ratio": "2:1" },
+        { "date": "1993-02-25", "ratio": "2:1" },
+        { "date": "1990-06-15", "ratio": "2:1" },
+        { "date": "1987-06-19", "ratio": "2:1" },
+        { "date": "1985-09-03", "ratio": "2:1" },
+        { "date": "1983-06-20", "ratio": "2:1" },
+        { "date": "1982-06-21", "ratio": "2:1" },
+        { "date": "1980-11-25", "ratio": "2:1" },
+        { "date": "1975-08-22", "ratio": "2:1" },
+        { "date": "1971-05-19", "ratio": "2:1" }
+      ]
+    },
+    "CMG": {
+      "name": "Chipotle Mexican Grill, Inc.",
+      "isin": "US1696561059",
+      "exchange": "NYSE",
+      "history": [
+        { "date": "2024-06-26", "ratio": "50:1" }
+      ]
+    },
+    "NFLX": {
+      "name": "Netflix, Inc.",
+      "isin": "US64110L1061",
+      "exchange": "NASDAQ",
+      "history": [
+        { "date": "2025-11-14", "ratio": "10:1" },
+        { "date": "2015-07-15", "ratio": "7:1" },
+        { "date": "2004-02-12", "ratio": "2:1" }
+      ]
+    },
+    "META": {
+      "name": "Meta Platforms, Inc.",
+      "isin": "US30303M1027",
+      "exchange": "NASDAQ",
+      "history": []
+    },
+    "MSFT": {
+      "name": "Microsoft Corporation",
+      "isin": "US5949181045",
+      "exchange": "NASDAQ",
+      "history": [
+        { "date": "2003-02-18", "ratio": "2:1" },
+        { "date": "1999-03-29", "ratio": "2:1" },
+        { "date": "1998-02-23", "ratio": "2:1" },
+        { "date": "1996-12-09", "ratio": "2:1" },
+        { "date": "1994-05-23", "ratio": "2:1" },
+        { "date": "1992-06-15", "ratio": "3:2" },
+        { "date": "1991-06-27", "ratio": "3:2" },
+        { "date": "1990-04-16", "ratio": "2:1" },
+        { "date": "1987-09-21", "ratio": "2:1" }
+      ]
+    },
+    "COST": {
+      "name": "Costco Wholesale Corporation",
+      "isin": "US22160K1051",
+      "exchange": "NASDAQ",
+      "history": [
+        { "date": "2024-01-12", "ratio": "1:1", "notes": "Special dividend, not a split" }
+      ]
+    },
+    "NOW": {
+      "name": "ServiceNow, Inc.",
+      "isin": "US81762P1021",
+      "exchange": "NYSE",
+      "history": [
+        { "date": "2025-12-16", "ratio": "5:1" }
+      ]
+    },
+    "PANW": {
+      "name": "Palo Alto Networks, Inc.",
+      "isin": "US6974351057",
+      "exchange": "NASDAQ",
+      "history": [
+        { "date": "2024-12-16", "ratio": "2:1" }
+      ]
+    }
+  }
+}
