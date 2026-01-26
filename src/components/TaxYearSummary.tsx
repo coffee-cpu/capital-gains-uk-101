@@ -102,7 +102,9 @@ export function TaxYearSummary() {
   }
 
   const hasTaxableGain = currentSummary.taxableGainGbp > 0
-  const dividendsExceedAllowance = currentSummary.totalDividendsGbp > currentSummary.dividendAllowance
+  // HMRC requires comparing GROSS dividends against the allowance (not net after withholding)
+  // See: https://www.gov.uk/government/publications/self-assessment-foreign-sa106
+  const dividendsExceedAllowance = currentSummary.grossDividendsGbp > currentSummary.dividendAllowance
 
   return (
     <div className="bg-white shadow rounded-lg overflow-hidden">
@@ -411,9 +413,9 @@ export function TaxYearSummary() {
                 <div className="p-6 space-y-4">
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
-                      <span className="text-purple-800">Total Dividends Received</span>
+                      <span className="text-purple-800">Gross Dividends (taxable amount)</span>
                       <span className="font-medium text-purple-900">
-                        £{currentSummary.totalDividendsGbp.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        £{currentSummary.grossDividendsGbp.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                     </div>
 
@@ -440,7 +442,7 @@ export function TaxYearSummary() {
                       <div className="flex justify-between items-center">
                         <span className="text-lg font-bold text-purple-900">Taxable Dividends</span>
                         <span className={`text-2xl font-bold ${dividendsExceedAllowance ? 'text-red-700' : 'text-green-700'}`}>
-                          £{Math.max(0, currentSummary.totalDividendsGbp - currentSummary.dividendAllowance).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          £{Math.max(0, currentSummary.grossDividendsGbp - currentSummary.dividendAllowance).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </span>
                       </div>
                     </div>
@@ -507,8 +509,8 @@ export function TaxYearSummary() {
                         <div className="ml-3">
                           <h4 className="text-sm font-medium text-yellow-800">Dividend Reporting Required</h4>
                           <p className="mt-1 text-sm text-yellow-700">
-                            Your dividends exceed the £{currentSummary.dividendAllowance.toLocaleString('en-GB')} allowance.
-                            {currentSummary.totalDividendsGbp > 10000
+                            Your gross dividends exceed the £{currentSummary.dividendAllowance.toLocaleString('en-GB')} allowance.
+                            {currentSummary.grossDividendsGbp > 10000
                               ? ' You must complete a Self Assessment tax return.'
                               : ' You must inform HMRC (via Self Assessment if dividends exceed £10,000).'
                             }
@@ -525,7 +527,7 @@ export function TaxYearSummary() {
                         <div className="ml-3">
                           <h4 className="text-sm font-medium text-green-800">Within Dividend Allowance</h4>
                           <p className="mt-1 text-sm text-green-700">
-                            Your dividends are within the £{currentSummary.dividendAllowance.toLocaleString('en-GB')} allowance. No dividend tax is due.
+                            Your gross dividends are within the £{currentSummary.dividendAllowance.toLocaleString('en-GB')} allowance. No dividend tax is due.
                           </p>
                         </div>
                       </div>
