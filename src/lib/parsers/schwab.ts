@@ -270,7 +270,7 @@ function mapSchwabAction(action: string): SchwabActionResult {
     type = TransactionType.DIVIDEND
   } else if (actionLower.includes('interest')) {
     type = TransactionType.INTEREST
-  } else if (actionLower.includes('tax')) {
+  } else if (actionLower.includes('tax') || actionLower.includes('withholding')) {
     type = TransactionType.TAX
   } else if (actionLower.includes('wire') || actionLower.includes('transfer') || actionLower === 'journal' || actionLower === 'moneylink transfer') {
     type = TransactionType.TRANSFER

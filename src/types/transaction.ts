@@ -50,6 +50,10 @@ export const GenericTransactionSchema = z.object({
   // Dividend withholding tax fields (for SA106 reporting)
   grossDividend: z.number().nullable().optional().describe('Gross dividend amount before withholding tax (in original currency)'),
   withholdingTax: z.number().nullable().optional().describe('Tax withheld at source on dividends (in original currency)'),
+
+  // Interest withholding tax fields (for tax reporting)
+  grossInterest: z.number().nullable().optional().describe('Gross interest amount before withholding tax (in original currency)'),
+  interestWithholdingTax: z.number().nullable().optional().describe('Tax withheld at source on interest (in original currency)'),
 })
 
 export type GenericTransaction = z.infer<typeof GenericTransactionSchema>
@@ -76,6 +80,10 @@ export const EnrichedTransactionSchema = GenericTransactionSchema.extend({
   // Dividend withholding tax in GBP (for SA106 reporting)
   grossDividend_gbp: z.number().nullable().optional().describe('Gross dividend amount in GBP'),
   withholdingTax_gbp: z.number().nullable().optional().describe('Tax withheld at source in GBP'),
+
+  // Interest withholding tax in GBP (for tax reporting)
+  grossInterest_gbp: z.number().nullable().optional().describe('Gross interest amount in GBP'),
+  interestWithholdingTax_gbp: z.number().nullable().optional().describe('Tax withheld at source on interest in GBP'),
 
   // Tax year and CGT matching (computed during enrichment, Step 3)
   tax_year: z.string().describe('UK tax year (e.g. 2023/24)'),

@@ -103,6 +103,16 @@ export class FxEnricher implements Enricher {
             ? convertToGBP(tx.withholdingTax, fxRate)
             : null
 
+        // Convert interest withholding fields to GBP
+        const grossInterestGbp =
+          tx.grossInterest !== null && tx.grossInterest !== undefined
+            ? convertToGBP(tx.grossInterest, fxRate)
+            : null
+        const interestWithholdingTaxGbp =
+          tx.interestWithholdingTax !== null && tx.interestWithholdingTax !== undefined
+            ? convertToGBP(tx.interestWithholdingTax, fxRate)
+            : null
+
         enriched.push({
           ...tx,
           fx_rate: fxRate,
@@ -112,6 +122,8 @@ export class FxEnricher implements Enricher {
           fee_gbp: feeGbp,
           grossDividend_gbp: grossDividendGbp,
           withholdingTax_gbp: withholdingTaxGbp,
+          grossInterest_gbp: grossInterestGbp,
+          interestWithholdingTax_gbp: interestWithholdingTaxGbp,
           fx_source: tx.currency === 'GBP' ? 'Native GBP' : FXSourceAttributions[fxSource],
           fx_error: null,
         })

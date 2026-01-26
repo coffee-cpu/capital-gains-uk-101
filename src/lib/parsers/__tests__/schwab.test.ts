@@ -376,6 +376,39 @@ describe('Schwab Parser', () => {
       expect(result[0].type).toBe(TransactionType.TRANSFER)
     })
 
+    it('should map withholding actions to TAX type', () => {
+      const rows = [
+        {
+          'Date': '03/15/2024',
+          'Action': 'Backup Withholding',
+          'Symbol': '',
+          'Description': 'BACKUP WITHHOLDING',
+          'Quantity': '',
+          'Price': '',
+          'Fees & Comm': '',
+          'Amount': '-$50.00',
+        },
+        {
+          'Date': '03/16/2024',
+          'Action': 'W-8 Withholding',
+          'Symbol': '',
+          'Description': 'W-8 TAX WITHHOLDING',
+          'Quantity': '',
+          'Price': '',
+          'Fees & Comm': '',
+          'Amount': '-$25.00',
+        },
+      ]
+
+      const result = normalizeSchwabTransactions(rows, 'test-file')
+
+      expect(result).toHaveLength(2)
+      expect(result[0].type).toBe(TransactionType.TAX)
+      expect(result[0].total).toBe(50.00) // Negative amounts are stored as positive (the type indicates it's a tax/expense)
+      expect(result[1].type).toBe(TransactionType.TAX)
+      expect(result[1].total).toBe(25.00)
+    })
+
     it('should handle empty values correctly', () => {
       const rows = [
         {

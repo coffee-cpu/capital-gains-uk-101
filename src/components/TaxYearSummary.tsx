@@ -565,12 +565,38 @@ export function TaxYearSummary() {
 
                 <div className="p-6 space-y-4">
                   <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-purple-800">Total Interest Received</span>
-                      <span className="font-medium text-purple-900">
-                        £{currentSummary.totalInterestGbp.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </span>
-                    </div>
+                    {/* Show gross/net breakdown if withholding tax exists */}
+                    {currentSummary.totalInterestWithholdingTaxGbp > 0 ? (
+                      <>
+                        <div className="flex justify-between items-center">
+                          <span className="text-purple-800">Gross Interest (before tax withheld)</span>
+                          <span className="font-medium text-purple-900">
+                            £{currentSummary.grossInterestGbp.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-purple-800">Tax Withheld at Source</span>
+                          <span className="font-medium text-purple-900">
+                            (£{currentSummary.totalInterestWithholdingTaxGbp.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
+                          </span>
+                        </div>
+                        <div className="border-t border-purple-300 pt-2">
+                          <div className="flex justify-between items-center font-semibold">
+                            <span className="text-purple-800">Net Interest Received</span>
+                            <span className="text-purple-900">
+                              £{currentSummary.totalInterestGbp.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex justify-between items-center">
+                        <span className="text-purple-800">Total Interest Received</span>
+                        <span className="font-medium text-purple-900">
+                          £{currentSummary.totalInterestGbp.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    )}
 
                     <div className="py-2">
                       <p className="text-sm text-purple-800">
@@ -592,6 +618,25 @@ export function TaxYearSummary() {
                       </p>
                     </div>
                   </div>
+
+                  {/* Foreign Interest Tax Information (when withholding exists) */}
+                  {currentSummary.totalInterestWithholdingTaxGbp > 0 && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                      <div className="flex items-start">
+                        <svg className="h-5 w-5 text-amber-500 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 01-1.581.814L10 13.197l-4.419 3.617A1 1 0 014 16V4z" clipRule="evenodd" />
+                        </svg>
+                        <div className="ml-3 flex-1">
+                          <h4 className="text-sm font-semibold text-amber-900 mb-2">
+                            Foreign Interest Income Summary
+                          </h4>
+                          <p className="text-xs text-amber-700">
+                            Tax was withheld at source on your interest income. You may be able to claim Foreign Tax Credit Relief when completing your Self Assessment tax return.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
