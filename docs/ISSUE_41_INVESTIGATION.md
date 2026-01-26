@@ -4,6 +4,8 @@
 
 GitHub Issue #41 reports that the Schwab Equity Awards parser uses the RSU lapse date from CSV files as the acquisition date. However, shares typically deposit the following business day, creating a date mismatch that can incorrectly prevent the Same-Day Rule (TCGA92/S105(1)) from applying.
 
+**Key Finding: The current implementation using the lapse/vesting date is CORRECT per HMRC guidance.** The vesting date is the acquisition date for CGT purposes. See HMRC Research section below.
+
 ## Problem Analysis
 
 ### Example Scenario
@@ -19,6 +21,8 @@ When a user imports both files:
 2. The sale is recorded as 2025-05-16 (from regular Schwab CSV)
 3. The CGT engine doesn't match them as "same-day" since dates differ by 1 day
 4. Section 104 Pool matching is used instead of Same-Day Rule
+
+**However:** If the dates genuinely differ, the Same-Day Rule correctly does NOT apply. These are different days.
 
 ### Current Implementation
 
@@ -45,135 +49,83 @@ The Date on the transaction row is the lapse date. There is **no deposit date** 
 
 ### Acquisition Date for RSUs
 
-Under UK tax rules:
-- **TCGA92/S17**: Acquisition occurs when there's an "acquisition" of the asset
-- **TCGA92/S127**: Share reorganisations and vesting events
-- For RSUs, the acquisition date is typically when the restriction "lapses" and the employee has unconditional ownership (the lapse date)
+Based on HMRC guidance and UK tax law:
 
-However, for Same-Day Rule matching (TCGA92/S105(1)), the practical issue is that employees often sell shares on the deposit date (when they first appear in their account), not the lapse date.
+1. **Acquisition Date = Vesting Date**: For CGT purposes, the acquisition date is when RSUs vest (restrictions lapse) and the employee gains unconditional ownership. This is the **lapse date**, not the deposit date.
+
+2. **Cost Basis = Market Value at Vesting**: Per TCGA92/S119A, the acquisition cost is the market value at vesting, which is also the amount taxed as employment income via PAYE.
+
+3. **Disposal Date = Trade Date**: For share sales, HMRC uses the trade date (when you place the order), not the settlement date (T+2).
+
+References:
+- [HMRC CG56328](https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg56328) - Employment-related securities and income tax interaction
+- [HMRC CG56339](https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg56339) - Restricted securities
+- [HMRC ERSM20192](https://www.gov.uk/hmrc-internal-manuals/employment-related-securities/ersm20192) - LTIPs and RSUs
+- TCGA92/S119A - Prevents double taxation by adding employment income to CGT cost basis
 
 ### Same-Day Rule Application
 
-The Same-Day Rule matches acquisitions and disposals on the **same calendar day**. If an employee:
-1. Has RSUs lapse on May 15
-2. Sells immediately when shares appear on May 16
-3. The CGT calculation should arguably use Same-Day matching
+The Same-Day Rule (TCGA92/S105(1)) matches acquisitions and disposals on the **same calendar day**.
 
-The discrepancy creates a tax reporting inconsistency.
+**Key insight from research:**
+- If an employee does a "sell-to-cover" or immediate sale, the **trade date** is the vesting date
+- Both acquisition and disposal would be on the same day → Same-Day Rule applies
+- The deposit/settlement happening T+1 or T+2 is irrelevant for CGT date matching
 
-## Proposed Solutions
+**When Same-Day Rule correctly does NOT apply:**
+- If the employee waits until shares deposit (Day+1) before selling
+- Acquisition = Day 0 (vesting), Disposal = Day 1 (sale) → Different days
+- Section 104 Pool matching is the correct treatment
 
-### Solution 1: Automatic +1 Business Day Offset
+### Can Employees Actually Sell on Vesting Day?
 
-Automatically adjust RSU lapse dates forward by 1 business day.
+Yes. "Sell-to-cover" transactions are placed on the vesting date:
+- The sale order executes on the vesting date
+- Settlement happens T+2 later
+- For CGT purposes, the trade date (vesting date) is what matters
 
-**Pros:**
-- Automatic, no user intervention
-- Fixes the common T+1 deposit scenario
+If someone sells on the vesting date, both the Schwab Equity Awards CSV and regular Schwab CSV should show the **same date**:
+- Equity Awards: Lapse date (e.g., May 15)
+- Regular Schwab: Trade date (e.g., May 15)
+- Same-Day Rule would apply correctly
 
-**Cons:**
-- Not always accurate (T+1 is typical but not guaranteed)
-- Weekends/holidays may push settlement further
-- Different countries have different banking holidays
-- Makes assumptions that may not hold in edge cases
+### The Real Issue
 
-**Implementation complexity:** Medium (requires business day calendar)
+The scenario described in issue #41 (acquisition May 15, sale May 16) represents a case where:
+1. The employee did NOT sell on the vesting day
+2. They waited until shares deposited (Day+1)
+3. The trade genuinely occurred on a different day
 
-### Solution 2: UI Warning
+**This is NOT a bug** - the Same-Day Rule correctly doesn't apply because these are genuinely different days.
 
-Display a warning when RSU transactions are detected explaining the date discrepancy.
+## Alternative Approach Considered
 
-**Pros:**
-- Transparent, educational
-- No changes to data processing
-- Users can make informed decisions
+### Using Transaction Date from Charles Schwab Import
 
-**Cons:**
-- Doesn't solve the matching problem by itself
-- Requires user to manually adjust if needed
+The user suggested using the transaction date from the regular "Charles Schwab" CSV import instead of the Equity Awards lapse date.
 
-**Implementation complexity:** Low
+**Current behavior:**
+- Deduplication prefers Equity Awards data over Stock Plan Activity
+- Stock Plan Activity shows format like `"08/10/2024 as of 08/09/2024"` where "as of" date is used
+- Equity Awards shows just the lapse date
 
-### Solution 3: Manual Date Editing Post-Import
+**Analysis:**
+This wouldn't help because:
+1. The "as of" date in Stock Plan Activity is still the vesting/lapse date
+2. The discrepancy isn't between the two CSVs - it's between vesting date and when the user sold
+3. If the user sold on vesting day, both CSVs should show the same date anyway
 
-Allow users to edit transaction dates after import.
+## Previously Proposed Solutions (Now Considered Unnecessary)
 
-**Pros:**
-- Most flexible - user has full control
-- Works for any edge case
-- No assumptions about settlement timing
+The following solutions were initially proposed but are **not recommended** after HMRC research confirmed the current implementation is correct:
 
-**Cons:**
-- Requires user effort
-- User needs to know about the issue
-- May require additional UI work
+1. **Automatic +1 business day offset** - Would be incorrect per HMRC rules
+2. **Parser option for auto-adjustment** - Would produce incorrect acquisition dates
+3. **Store both dates** - Unnecessary complexity
 
-**Implementation complexity:** Medium-High
-
-### Solution 4: Parser Option for Auto-Adjustment
-
-Add a parser option (e.g., checkbox during import) to auto-adjust RSU dates.
-
-**Pros:**
-- User opts in explicitly
-- Clear about what's happening
-- Combines automation with user control
-
-**Cons:**
-- Still relies on T+1 assumption
-- Additional UI complexity
-
-**Implementation complexity:** Medium
-
-### Solution 5: Store Both Dates
-
-Add a `vest_date` field to preserve the original lapse date, while using a configurable `date` for matching.
-
-**Pros:**
-- Preserves audit trail
-- Supports flexibility in date selection
-- Could show both dates in UI
-
-**Cons:**
-- Schema change required
-- May complicate UI
-
-**Implementation complexity:** Medium
-
-## Recommended Approach
-
-A phased approach combining multiple solutions:
-
-### Phase 1 (Low effort, immediate value)
-1. **Add UI warning** when Schwab Equity Awards transactions are imported
-2. **Explain in notes** that the date is the lapse date, not deposit date
-3. **Document** the issue in help content
-
-### Phase 2 (Medium effort)
-1. **Add parser option** during import: "Use deposit date (+1 business day) for RSU matching"
-2. **Implement business day calculation** using a simple UK/US calendar
-3. **Preserve original vest date** in transaction notes or a new field
-
-### Phase 3 (Higher effort, longer term)
-1. **Manual date editing** capability in the transaction list
-2. **Bulk edit** functionality for adjusting multiple RSU transactions
-
-## Technical Notes
-
-### Files to Modify
-
-1. `src/lib/parsers/schwabEquityAwards.ts` - Add date adjustment logic
-2. `src/types/transaction.ts` - Consider adding `vest_date` field
-3. `src/components/CSVImporter.tsx` - Add parser options UI
-4. `src/utils/businessDays.ts` (new) - Business day calculations
-5. `src/components/TransactionList.tsx` - Display warnings/notes
-
-### Testing Considerations
-
-1. Add test cases for date adjustments
-2. Test weekend/holiday handling
-3. Test Same-Day Rule matching with adjusted dates
-4. E2E test for full import-to-CGT workflow with RSUs
+**What might still be useful:**
+- **Documentation/help text** explaining RSU date handling per HMRC rules
+- **UI tooltips** clarifying that acquisition date = vesting date, not deposit date
 
 ## References
 
@@ -184,6 +136,32 @@ A phased approach combining multiple solutions:
 
 ## Conclusion
 
-Issue #41 identifies a real problem where RSU lapse dates don't align with deposit dates, affecting Same-Day Rule matching. The recommended approach is to start with informative warnings (Phase 1), add optional date adjustment during import (Phase 2), and consider manual editing capabilities long-term (Phase 3).
+**The current implementation is CORRECT.**
 
-The most important immediate action is making users aware of this discrepancy so they can verify their CGT calculations are correct for their specific situation.
+After researching HMRC guidance:
+
+1. **Acquisition date = Vesting/lapse date** - This is when the employee gains unconditional ownership of the shares. The current parser correctly uses this date.
+
+2. **Deposit date is irrelevant** - The deposit/settlement is an administrative detail, not a tax event. HMRC uses trade dates for CGT, not settlement dates.
+
+3. **Same-Day Rule behavior is correct** - If someone sells on Day+1 (after deposit), these are genuinely different days and the Same-Day Rule correctly doesn't apply.
+
+4. **True same-day sales work correctly** - If an employee does a "sell-to-cover" on the vesting day, both the Equity Awards and regular Schwab CSV should show the same date, and the Same-Day Rule will apply.
+
+### Recommendation
+
+**No code changes required.** The issue #41 scenario represents correct behavior, not a bug.
+
+However, we could consider adding:
+- **Documentation/help text** explaining that RSU acquisition date = vesting date per HMRC rules
+- **UI note** on RSU transactions clarifying the date is the vesting date (not deposit date)
+
+This would help users understand why dates might differ from what they expect based on when shares appeared in their account.
+
+### Sources
+
+- [Paying tax on Restricted Stock Units | GoSimpleTax](https://www.gosimpletax.com/blog/paying-tax-on-restricted-stock-units/)
+- [RSU Tax UK Guide | ESDG Accountancy](https://esdgaccountancy.com/post/rsu-tax-self-assessment-in-the-uk-a-guide-for-tech-employees/)
+- [HMRC ERSM20192 - LTIPs and RSUs](https://www.gov.uk/hmrc-internal-manuals/employment-related-securities/ersm20192)
+- [HMRC CG56328 - Employment-related securities](https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg56328)
+- [RSU Tax & Self-Assessment | Taxd](https://www.taxd.co.uk/blog/rsu-tax-uk-and-self-assessment-a-tech-employee-s-guide)
