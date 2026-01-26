@@ -98,16 +98,52 @@ export function TransactionList() {
       // Source filter
       if (filters.source && tx.source !== filters.source) return false
 
-      // CGT Rule filter
+      // CGT Rule filter - check actual matching rules from disposal records
       if (filters.cgtRule) {
         const isBuyOrSell = isAcquisition(tx) || isDisposal(tx)
-        if (!isBuyOrSell && filters.cgtRule !== 'non-cgt') return false
 
-        if (filters.cgtRule === 'same-day' && tx.gain_group !== 'SAME_DAY') return false
-        if (filters.cgtRule === '30-day' && tx.gain_group !== '30_DAY') return false
-        if (filters.cgtRule === 'section-104' && tx.gain_group !== 'SECTION_104') return false
-        if (filters.cgtRule === 'short-sell' && tx.gain_group !== 'SHORT_SELL') return false
-        if (filters.cgtRule === 'non-cgt' && isBuyOrSell) return false
+        if (filters.cgtRule === 'non-cgt') {
+          // Non-CGT means not a buy/sell transaction
+          if (isBuyOrSell) return false
+        } else if (!isBuyOrSell) {
+          // CGT rule filters only apply to buy/sell transactions
+          return false
+        } else {
+          // Check actual matching rules from disposal records
+          const matchingRules = new Set<string>()
+
+          if (isDisposal(tx)) {
+            // For disposals, get rules from their matchings
+            const disposal = disposals.find(d => d.disposal.id === tx.id)
+            if (disposal) {
+              for (const matching of disposal.matchings) {
+                matchingRules.add(matching.rule)
+              }
+            }
+          } else if (isAcquisition(tx)) {
+            // For acquisitions, find all disposals that used this acquisition
+            for (const disposal of disposals) {
+              for (const matching of disposal.matchings) {
+                for (const acq of matching.acquisitions) {
+                  if (acq.transaction.id === tx.id) {
+                    matchingRules.add(matching.rule)
+                  }
+                }
+              }
+            }
+            // Check if remaining shares went to Section 104 pool
+            const pool = tx.symbol ? section104Pools.get(tx.symbol) : null
+            if (pool?.history?.some(h => h.transactionId === tx.id && h.type === 'BUY')) {
+              matchingRules.add('SECTION_104')
+            }
+          }
+
+          // Check if the selected filter matches any of the transaction's rules
+          if (filters.cgtRule === 'same-day' && !matchingRules.has('SAME_DAY')) return false
+          if (filters.cgtRule === '30-day' && !matchingRules.has('30_DAY')) return false
+          if (filters.cgtRule === 'section-104' && !matchingRules.has('SECTION_104')) return false
+          if (filters.cgtRule === 'short-sell' && !matchingRules.has('SHORT_SELL')) return false
+        }
       }
 
       // Status filter
@@ -120,7 +156,7 @@ export function TransactionList() {
 
       return true
     })
-  }, [transactions, filters])
+  }, [transactions, filters, disposals, section104Pools])
 
   // Check if any filters are active
   const hasActiveFilters = Object.values(filters).some(v => v !== '')
@@ -255,7 +291,7 @@ export function TransactionList() {
 
       {/* Filter Controls */}
       {showFilters && (
-        <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
+        <div className="px-6 py-4 bg-gray-50 border-b border-gray-200" role="region" aria-label="Transaction filters">
           <div className="flex flex-wrap gap-3 items-end">
             {/* Type Filter */}
             <div className="flex flex-col min-w-[140px]">
@@ -266,6 +302,7 @@ export function TransactionList() {
                 id="filter-type"
                 value={filters.type}
                 onChange={(e) => updateFilter('type', e.target.value)}
+                aria-describedby="filter-type-desc"
                 className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="">All types</option>
@@ -273,6 +310,7 @@ export function TransactionList() {
                   <option key={type} value={type}>{type}</option>
                 ))}
               </select>
+              <span id="filter-type-desc" className="sr-only">Filter transactions by type such as BUY, SELL, or DIVIDEND</span>
             </div>
 
             {/* Symbol Filter */}
@@ -284,6 +322,7 @@ export function TransactionList() {
                 id="filter-symbol"
                 value={filters.symbol}
                 onChange={(e) => updateFilter('symbol', e.target.value)}
+                aria-describedby="filter-symbol-desc"
                 className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="">All symbols</option>
@@ -291,6 +330,7 @@ export function TransactionList() {
                   <option key={symbol} value={symbol}>{symbol}</option>
                 ))}
               </select>
+              <span id="filter-symbol-desc" className="sr-only">Filter transactions by stock symbol</span>
             </div>
 
             {/* Source Filter */}
@@ -302,6 +342,7 @@ export function TransactionList() {
                 id="filter-source"
                 value={filters.source}
                 onChange={(e) => updateFilter('source', e.target.value)}
+                aria-describedby="filter-source-desc"
                 className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="">All sources</option>
@@ -309,6 +350,7 @@ export function TransactionList() {
                   <option key={source} value={source}>{source}</option>
                 ))}
               </select>
+              <span id="filter-source-desc" className="sr-only">Filter transactions by broker or import source</span>
             </div>
 
             {/* CGT Rule Filter */}
@@ -320,6 +362,7 @@ export function TransactionList() {
                 id="filter-cgt"
                 value={filters.cgtRule}
                 onChange={(e) => updateFilter('cgtRule', e.target.value)}
+                aria-describedby="filter-cgt-desc"
                 className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="">All rules</option>
@@ -329,6 +372,7 @@ export function TransactionList() {
                 <option value="short-sell">Short Sell</option>
                 <option value="non-cgt">Non-CGT</option>
               </select>
+              <span id="filter-cgt-desc" className="sr-only">Filter by Capital Gains Tax matching rule applied to the transaction</span>
             </div>
 
             {/* Status Filter */}
@@ -340,6 +384,7 @@ export function TransactionList() {
                 id="filter-status"
                 value={filters.status}
                 onChange={(e) => updateFilter('status', e.target.value)}
+                aria-describedby="filter-status-desc"
                 className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="">All statuses</option>
@@ -348,15 +393,17 @@ export function TransactionList() {
                 <option value="fx-error">FX Error</option>
                 <option value="ignored">Ignored</option>
               </select>
+              <span id="filter-status-desc" className="sr-only">Filter by transaction status such as incomplete or FX errors</span>
             </div>
 
             {/* Reset Button */}
             {hasActiveFilters && (
               <button
                 onClick={resetFilters}
+                aria-label="Clear all filters"
                 className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors"
               >
-                <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
                 Clear filters
