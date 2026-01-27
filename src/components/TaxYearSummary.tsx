@@ -311,6 +311,18 @@ export function TaxYearSummary() {
           </div>
         )}
 
+        {/* Hint to view transaction details */}
+        <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <svg className="h-5 w-5 text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <div className="text-sm text-gray-600">
+            <span className="font-medium text-gray-700">Want more details?</span>
+            {' '}Scroll down to the <span className="font-medium">Transactions</span> table to see FX rates used for each transaction,
+            which HMRC matching rules were applied (Same Day, 30-Day, Section 104), and how gains were calculated.
+          </div>
+        </div>
+
         {/* Other Income Section */}
         {(currentSummary.totalDividends > 0 || currentSummary.totalInterest > 0) && (
           <>
