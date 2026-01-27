@@ -409,6 +409,99 @@ describe('Schwab Parser', () => {
       expect(result[1].total).toBe(25.00)
     })
 
+    it('should link Backup Withholding to interest and calculate gross/net/withholding', () => {
+      const rows = [
+        {
+          'Date': '03/15/2024',
+          'Action': 'Credit Interest',
+          'Symbol': '',
+          'Description': 'SCHWAB1 INT 02/28-03/15',
+          'Quantity': '',
+          'Price': '',
+          'Fees & Comm': '',
+          'Amount': '$50.25',  // Net interest received
+        },
+        {
+          'Date': '03/15/2024',
+          'Action': 'Backup Withholding',
+          'Symbol': '',
+          'Description': 'BACKUP WITHHOLDING',
+          'Quantity': '',
+          'Price': '',
+          'Fees & Comm': '',
+          'Amount': '-$12.56',  // Withholding tax
+        },
+      ]
+
+      const result = normalizeSchwabTransactions(rows, 'test-file')
+
+      // Should produce only ONE transaction (interest with withholding merged)
+      expect(result).toHaveLength(1)
+      expect(result[0].type).toBe(TransactionType.INTEREST)
+      expect(result[0].grossInterest).toBe(62.81)           // Gross = 50.25 + 12.56
+      expect(result[0].interestWithholdingTax).toBe(12.56)  // Tax withheld (absolute)
+      expect(result[0].total).toBe(50.25)                   // Net = what you received
+      expect(result[0].notes).toContain('Gross interest: $62.81')
+      expect(result[0].notes).toContain('Tax withheld: $12.56')
+    })
+
+    it('should link W-8 Withholding to interest', () => {
+      const rows = [
+        {
+          'Date': '04/20/2024',
+          'Action': 'Credit Interest',
+          'Symbol': '',
+          'Description': 'SCHWAB1 INT 03/16-04/20',
+          'Quantity': '',
+          'Price': '',
+          'Fees & Comm': '',
+          'Amount': '$75.80',  // Net interest received
+        },
+        {
+          'Date': '04/20/2024',
+          'Action': 'W-8 Withholding',
+          'Symbol': '',
+          'Description': 'W-8 TAX WITHHOLDING',
+          'Quantity': '',
+          'Price': '',
+          'Fees & Comm': '',
+          'Amount': '-$18.95',  // Withholding tax
+        },
+      ]
+
+      const result = normalizeSchwabTransactions(rows, 'test-file')
+
+      // Should produce only ONE transaction (interest with withholding merged)
+      expect(result).toHaveLength(1)
+      expect(result[0].type).toBe(TransactionType.INTEREST)
+      expect(result[0].grossInterest).toBe(94.75)           // Gross = 75.80 + 18.95
+      expect(result[0].interestWithholdingTax).toBe(18.95)  // Tax withheld (absolute)
+      expect(result[0].total).toBe(75.80)                   // Net = what you received
+    })
+
+    it('should handle interest without withholding (no tax withheld)', () => {
+      const rows = [
+        {
+          'Date': '09/29/2024',
+          'Action': 'Credit Interest',
+          'Symbol': '',
+          'Description': 'SCHWAB1 INT 08/28-09/28',
+          'Quantity': '',
+          'Price': '',
+          'Fees & Comm': '',
+          'Amount': '$1.25',
+        },
+      ]
+
+      const result = normalizeSchwabTransactions(rows, 'test-file')
+
+      expect(result).toHaveLength(1)
+      expect(result[0].type).toBe(TransactionType.INTEREST)
+      expect(result[0].grossInterest).toBe(1.25)           // Gross = Net (no withholding)
+      expect(result[0].interestWithholdingTax).toBeNull()  // No withholding
+      expect(result[0].total).toBe(1.25)                   // Net = Gross
+    })
+
     it('should handle empty values correctly', () => {
       const rows = [
         {

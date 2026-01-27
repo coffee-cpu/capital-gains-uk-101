@@ -26,3 +26,7 @@ Date,Action,Symbol,Description,Quantity,Price,Fees & Comm,Amount
 10/31/2025,NRA Tax Adj,SPY,SPDR S&P ...500 ETF,,,,-$109.87
 10/31/2025,Cash Dividend,SPY,SPDR S&P ...500 ETF,,,,$732.45
 10/30/2025,Credit Interest,,SCHWAB1 INT 09/29-10/29,,,,$10.13
+09/30/2025,Credit Interest,,SCHWAB1 INT 08/28-09/29,,,,$45.80
+09/30/2025,Backup Withholding,,BACKUP WITHHOLDING,,,,-$11.45
+08/31/2025,Credit Interest,,SCHWAB1 INT 07/29-08/28,,,,$38.25
+08/31/2025,W-8 Withholding,,W-8 TAX WITHHOLDING,,,,-$9.56

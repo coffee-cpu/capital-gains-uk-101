@@ -25,33 +25,66 @@ interface ParsedOptionsSymbol {
  */
 export function normalizeSchwabTransactions(rows: RawCSVRow[], fileId: string): GenericTransaction[] {
   // First pass: collect NRA Tax Adj rows by symbol|date for linking to dividends
+  // and withholding tax rows by date for linking to interest
   const nraTaxAdjByKey = new Map<string, RawCSVRow>()
-  
+  const interestWithholdingByDate = new Map<string, RawCSVRow>()
+
   for (const row of rows) {
     const action = row['Action']?.trim()?.toLowerCase()
+    const date = parseSchwabDate(row['Date'])
+
     if (action === 'nra tax adj') {
       const symbol = row['Symbol']?.trim() || ''
-      const date = parseSchwabDate(row['Date'])
       if (date) {
         const key = `${symbol}|${date}`
         nraTaxAdjByKey.set(key, row)
       }
+    } else if (date && (action?.includes('withholding') || action?.includes('tax'))) {
+      // Collect withholding/tax transactions that might relate to interest
+      // Interest typically has no symbol, so we match by date only
+      const symbol = row['Symbol']?.trim()
+
+      // Only collect if it's a withholding/tax transaction with no symbol (likely interest-related)
+      // Exclude NRA Tax Adj (already handled above)
+      if (!symbol && action !== 'nra tax adj') {
+        interestWithholdingByDate.set(date, row)
+      }
     }
   }
 
-  // Second pass: normalize all rows, linking NRA Tax Adj to dividends
+  // Second pass: normalize all rows, linking NRA Tax Adj to dividends and withholding to interest
   const transactions: GenericTransaction[] = []
+  const linkedWithholdingDates = new Set<string>() // Track which withholding dates were linked to interest
   let rowIndex = 1
 
+  // First, identify which interest transactions will consume withholding
   for (const row of rows) {
     const action = row['Action']?.trim()?.toLowerCase()
-    
+    const date = parseSchwabDate(row['Date'])
+
+    if (action?.includes('interest') && date && interestWithholdingByDate.has(date)) {
+      linkedWithholdingDates.add(date)
+    }
+  }
+
+  // Now process all rows
+  for (const row of rows) {
+    const action = row['Action']?.trim()?.toLowerCase()
+    const date = parseSchwabDate(row['Date'])
+
     // Skip NRA Tax Adj rows - they will be merged into dividend transactions
     if (action === 'nra tax adj') {
       continue
     }
-    
-    const normalized = normalizeSchwabRow(row, fileId, rowIndex, nraTaxAdjByKey)
+
+    // Skip withholding rows that are linked to interest transactions
+    if (date && linkedWithholdingDates.has(date) &&
+        (action?.includes('withholding') || action?.includes('tax')) &&
+        !row['Symbol']?.trim()) {
+      continue
+    }
+
+    const normalized = normalizeSchwabRow(row, fileId, rowIndex, nraTaxAdjByKey, interestWithholdingByDate)
     if (normalized) {
       transactions.push(normalized)
       rowIndex++
@@ -79,17 +112,19 @@ function isOptionsTransaction(type: typeof TransactionType[keyof typeof Transact
 
 /**
  * Normalize a single Schwab row
- * 
+ *
  * @param row The CSV row to normalize
  * @param fileId Unique file identifier
  * @param rowIndex Row index for generating unique ID
  * @param nraTaxAdjByKey Map of NRA Tax Adj rows keyed by "symbol|date" for linking to dividends
+ * @param interestWithholdingByDate Map of withholding tax rows keyed by date for linking to interest
  */
 function normalizeSchwabRow(
   row: RawCSVRow,
   fileId: string,
   rowIndex: number,
-  nraTaxAdjByKey: Map<string, RawCSVRow>
+  nraTaxAdjByKey: Map<string, RawCSVRow>,
+  interestWithholdingByDate: Map<string, RawCSVRow>
 ): GenericTransaction | null {
   const action = row['Action']?.trim()
   const symbol = row['Symbol']?.trim()
@@ -120,20 +155,20 @@ function normalizeSchwabRow(
   let grossDividend: number | null = null
   let withholdingTax: number | null = null
   let netTotal = total
-  
+
   const isDividend = type === TransactionType.DIVIDEND
   if (isDividend && symbol && date) {
     const key = `${symbol}|${date}`
     const nraTaxRow = nraTaxAdjByKey.get(key)
-    
+
     if (nraTaxRow) {
       // Schwab amount is GROSS dividend
       grossDividend = amount !== null ? Math.abs(amount) : null
-      
+
       // NRA Tax Adj amount is withholding tax (stored as negative)
       const nraTaxAmount = parseSchwabCurrency(nraTaxRow['Amount'])
       withholdingTax = nraTaxAmount !== null ? Math.abs(nraTaxAmount) : null
-      
+
       // Net = Gross - Withholding
       if (grossDividend !== null && withholdingTax !== null) {
         netTotal = grossDividend - withholdingTax
@@ -141,6 +176,35 @@ function normalizeSchwabRow(
     } else {
       // No NRA Tax Adj - dividend amount is both gross and net
       grossDividend = amount !== null ? Math.abs(amount) : null
+    }
+  }
+
+  // For interest transactions, link to withholding tax if present
+  // Interest amounts are NET (after tax withheld)
+  // Withholding tax amounts are negative
+  let grossInterest: number | null = null
+  let interestWithholdingTax: number | null = null
+
+  const isInterest = type === TransactionType.INTEREST
+  if (isInterest && date) {
+    const withholdingRow = interestWithholdingByDate.get(date)
+
+    if (withholdingRow) {
+      // Interest amount is NET (what you received)
+      const netInterest = amount !== null ? Math.abs(amount) : null
+
+      // Withholding tax amount is stored as negative
+      const withholdingAmount = parseSchwabCurrency(withholdingRow['Amount'])
+      interestWithholdingTax = withholdingAmount !== null ? Math.abs(withholdingAmount) : null
+
+      // Gross = Net + Withholding
+      if (netInterest !== null && interestWithholdingTax !== null) {
+        grossInterest = netInterest + interestWithholdingTax
+        netTotal = netInterest // Keep netTotal as the net amount received
+      }
+    } else {
+      // No withholding - interest amount is both gross and net
+      grossInterest = amount !== null ? Math.abs(amount) : null
     }
   }
 
@@ -197,7 +261,7 @@ function normalizeSchwabRow(
     quantity,
     price,
     currency: 'USD', // Schwab reports in USD
-    total: isDividend ? netTotal : total, // Use net for dividends
+    total: isDividend ? netTotal : isInterest ? netTotal : total, // Use net for dividends and interest
     fee,
     ratio,
     notes: isIncompleteStockPlanActivity
@@ -206,7 +270,9 @@ function normalizeSchwabRow(
         ? 'Stock Plan Activity'
         : withholdingTax !== null
           ? `Gross dividend: $${grossDividend?.toFixed(2)}, Tax withheld: $${withholdingTax.toFixed(2)}`
-          : null,
+          : interestWithholdingTax !== null
+            ? `Gross interest: $${grossInterest?.toFixed(2)}, Tax withheld: $${interestWithholdingTax.toFixed(2)}`
+            : null,
     incomplete: isIncompleteStockPlanActivity,
     ignored: isIncompleteStockPlanActivity, // Ignore Stock Plan Activity without price
     is_short_sell: isShortSell || undefined,
@@ -214,6 +280,11 @@ function normalizeSchwabRow(
     ...(isDividend && {
       grossDividend,
       withholdingTax,
+    }),
+    // Interest withholding fields (for SA106 reporting)
+    ...(isInterest && {
+      grossInterest,
+      interestWithholdingTax,
     }),
     // Options-specific fields
     ...(optionsData && {
