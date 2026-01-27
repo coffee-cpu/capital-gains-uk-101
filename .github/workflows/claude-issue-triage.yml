@@ -8,8 +8,7 @@ jobs:
   triage:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-      pull-requests: write
+      contents: read
       issues: write
       id-token: write
 
@@ -70,12 +69,6 @@ jobs:
             - Provide a helpful answer if possible, referencing docs/ or CLAUDE.md
             - Link to relevant code sections or documentation
 
-            **For Trivial Implementations:**
-            If the fix is straightforward (e.g., typo, simple config change, minor UI tweak):
-            - Create a branch and implement the fix
-            - Run tests to ensure nothing breaks: `npm test`
-            - Create a PR linking to the issue
-
             **If Additional Information is Needed:**
             - Politely ask the poster for specific details:
               - For bugs: steps to reproduce, browser version, sample CSV (anonymized), expected vs actual behavior
@@ -86,7 +79,5 @@ jobs:
             - Use issue labels when appropriate (bug, enhancement, question, duplicate, needs-info)
             - Always thank the user for their contribution
             - Include HMRC references when discussing tax calculation behavior
-            - If creating a PR, ensure it passes tests before submitting
-
           claude_args: |
-            --allowedTools "Read,Glob,Grep,Edit,Write,Bash(npm test:*),Bash(npm run test:*),Bash(npx vitest:*),Bash(gh issue:*),Bash(gh pr:*),Bash(gh label:*),Bash(git:*),WebSearch,WebFetch"
+            --allowedTools "Read,Glob,Grep,Bash(gh issue:*),Bash(gh label:*),WebSearch,WebFetch"
