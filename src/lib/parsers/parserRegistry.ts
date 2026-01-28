@@ -1,49 +1,37 @@
 /**
  * Parser Registry
  *
- * Maps broker types to their respective parser functions.
- * This eliminates the need for switch statements when selecting parsers.
+ * Delegates to the central broker registry for parser functions.
+ * This file maintains backward compatibility with existing code.
  */
 
 import { BrokerType, RawCSVRow } from '../../types/broker'
 import { GenericTransaction } from '../../types/transaction'
-import { normalizeSchwabTransactions } from './schwab'
-import { normalizeSchwabEquityAwardsTransactions } from './schwabEquityAwards'
-import { normalizeInteractiveBrokersTransactions } from './interactiveBrokers'
-import { normalizeGenericTransactions } from './generic'
-import { normalizeTrading212Transactions } from './trading212'
-import { normalizeFreetradeTransactions } from './freetrade'
-import { normalizeEquatePlusTransactions } from './equatePlus'
-import { normalizeRevolutTransactions } from './revolut'
-import { normalizeCoinbaseTransactions } from './coinbase'
-import { normalizeCoinbaseProTransactions } from './coinbasePro'
+import { getBrokerDefinition, getBrokerDisplayName } from '../../config/brokers'
 
 /**
- * Parser function signature
+ * Parser function signature (legacy - for backward compatibility)
+ * New code should use ParserFunction from brokerDefinition.ts
  */
 export type ParserFunction = (rows: RawCSVRow[], fileId: string) => GenericTransaction[]
 
 /**
- * Registry mapping broker types to parser functions
- */
-export const PARSER_REGISTRY: Record<BrokerType, ParserFunction | null> = {
-  [BrokerType.SCHWAB]: normalizeSchwabTransactions,
-  [BrokerType.SCHWAB_EQUITY_AWARDS]: normalizeSchwabEquityAwardsTransactions,
-  [BrokerType.INTERACTIVE_BROKERS]: normalizeInteractiveBrokersTransactions,
-  [BrokerType.FREETRADE]: normalizeFreetradeTransactions,
-  [BrokerType.EQUATE_PLUS]: normalizeEquatePlusTransactions,
-  [BrokerType.REVOLUT]: normalizeRevolutTransactions,
-  [BrokerType.COINBASE]: normalizeCoinbaseTransactions,
-  [BrokerType.COINBASE_PRO]: normalizeCoinbaseProTransactions,
-  [BrokerType.GENERIC]: normalizeGenericTransactions,
-  [BrokerType.TRADING212]: normalizeTrading212Transactions,
-  [BrokerType.UNKNOWN]: null,
-}
-
-/**
  * Get parser function for a broker type
- * Returns null if broker is unknown or unsupported
+ * Returns a wrapper that passes the display name to the parser
+ * @param broker BrokerType enum value
+ * @returns Parser function or null if broker is unknown or unsupported
  */
 export function getParser(broker: BrokerType): ParserFunction | null {
-  return PARSER_REGISTRY[broker] ?? null
+  if (broker === BrokerType.UNKNOWN) {
+    return null
+  }
+
+  const definition = getBrokerDefinition(broker)
+  if (!definition || definition.enabled === false) {
+    return null
+  }
+
+  // Return a wrapper that passes the display name to the parser
+  const displayName = getBrokerDisplayName(broker)
+  return (rows: RawCSVRow[], fileId: string) => definition.parser(rows, fileId, displayName)
 }
