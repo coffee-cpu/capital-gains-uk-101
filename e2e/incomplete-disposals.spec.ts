@@ -116,26 +116,6 @@ test.describe('Incomplete Disposal Tracking', () => {
     await expect(gainsCard).toContainText('£0')
   })
 
-  test.skip('should show "No Matching Acquisitions" warning in disposal details panel', async ({ page }) => {
-    // TODO: Fix this test - disposal records section not rendering in E2E environment
-    // Manually verified this works in the browser
-  })
-
-  test.skip('should NOT show Section 104 badge in disposal details for fully unmatched disposal', async ({ page }) => {
-    // TODO: Fix this test - disposal records section not rendering in E2E environment
-    // Manually verified this works in the browser
-  })
-
-  test.skip('should show correct calculation summary for fully unmatched disposal', async ({ page }) => {
-    // TODO: Fix this test - disposal records section not rendering in E2E environment
-    // Manually verified this works in the browser
-  })
-
-  test.skip('should show correct disposal count in Disposal Records header', async ({ page }) => {
-    // TODO: Fix this test - disposal records section not rendering in E2E environment
-    // Manually verified this works in the browser
-  })
-
   test('should show multiple incomplete disposals for tax year 2025/26', async ({ page }) => {
     // Select tax year 2025/26 which has GlobalBank and TravelGroup unmatched disposals
     const taxYearSelect = page.locator('select').filter({ hasText: /2025\/26/ }).first()
