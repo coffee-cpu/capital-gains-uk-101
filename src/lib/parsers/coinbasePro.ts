@@ -1,4 +1,5 @@
 import type { GenericTransaction } from '../../types/transaction'
+import { TransactionType } from '../../types/transaction'
 import type { RawCSVRow } from '../../types/broker'
 import { isFiatCurrency } from '../currencies'
 
@@ -139,7 +140,7 @@ export function normalizeCoinbaseProTransactions(
     if (isFiatTrade) {
       // Simple fiat trade (e.g., XRP-GBP, BTC-GBP)
       // Create a single BUY or SELL transaction
-      const type = side.toUpperCase() === 'BUY' ? 'BUY' : 'SELL'
+      const type = side.toUpperCase() === 'BUY' ? TransactionType.BUY : TransactionType.SELL
 
       const transaction: GenericTransaction = {
         id: `${fileId}-${transactionIndex++}`,
@@ -186,7 +187,7 @@ export function normalizeCoinbaseProTransactions(
           id: `${fileId}-${transactionIndex++}`,
           source: 'Coinbase Pro',
           date,
-          type: 'SELL',
+          type: TransactionType.SELL,
           symbol: quote,
           name: null,
           quantity: absTotal, // Amount of quote currency spent (e.g., 0.52 ETH)
@@ -207,7 +208,7 @@ export function normalizeCoinbaseProTransactions(
           id: `${fileId}-${transactionIndex++}`,
           source: 'Coinbase Pro',
           date,
-          type: 'BUY',
+          type: TransactionType.BUY,
           symbol: base,
           name: null,
           quantity: absSize, // Amount of base acquired (e.g., 28.23 LINK)
@@ -230,7 +231,7 @@ export function normalizeCoinbaseProTransactions(
           id: `${fileId}-${transactionIndex++}`,
           source: 'Coinbase Pro',
           date,
-          type: 'SELL',
+          type: TransactionType.SELL,
           symbol: base,
           name: null,
           quantity: absSize, // Amount of base sold
@@ -247,7 +248,7 @@ export function normalizeCoinbaseProTransactions(
           id: `${fileId}-${transactionIndex++}`,
           source: 'Coinbase Pro',
           date,
-          type: 'BUY',
+          type: TransactionType.BUY,
           symbol: quote,
           name: null,
           quantity: absTotal, // Amount of quote received

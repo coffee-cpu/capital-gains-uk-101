@@ -1,4 +1,5 @@
 import type { GenericTransaction } from '../../types/transaction'
+import { TransactionType } from '../../types/transaction'
 import type { RawCSVRow } from '../../types/broker'
 
 /**
@@ -23,21 +24,21 @@ import type { RawCSVRow } from '../../types/broker'
  * - Notes: Additional info
  */
 
+type TransactionTypeValue = typeof TransactionType[keyof typeof TransactionType]
+
 /**
  * Map Coinbase transaction type to GenericTransaction type
  * Note: 'convert' and 'reward income' transactions are handled specially in normalizeCoinbaseTransactions
  * to generate multiple transactions.
  */
-function mapTransactionType(
-  transactionType: string
-): 'BUY' | 'SELL' | 'DIVIDEND' | 'FEE' | 'INTEREST' | 'TRANSFER' | 'TAX' | 'STOCK_SPLIT' | 'UNKNOWN' | null {
+function mapTransactionType(transactionType: string): TransactionTypeValue | null {
   const typeLower = transactionType.toLowerCase()
 
   // Buy transactions (including Advanced Trade Buy)
-  if (typeLower === 'buy' || typeLower === 'advanced trade buy') return 'BUY'
+  if (typeLower === 'buy' || typeLower === 'advanced trade buy') return TransactionType.BUY
 
   // Sell transactions (including Advanced Trade Sell)
-  if (typeLower === 'sell' || typeLower === 'advanced trade sell') return 'SELL'
+  if (typeLower === 'sell' || typeLower === 'advanced trade sell') return TransactionType.SELL
 
   // Reward Income and Staking Income - return null to signal special handling
   // Both generate two transactions: INTEREST (taxable income) + BUY (cost basis for CGT)
@@ -52,7 +53,7 @@ function mapTransactionType(
     typeLower === 'pro deposit' ||
     typeLower === 'pro withdrawal'
   )
-    return 'TRANSFER'
+    return TransactionType.TRANSFER
 
   // Convert transactions (crypto to crypto) - return null to signal special handling
   if (typeLower === 'convert') return null
@@ -63,11 +64,11 @@ function mapTransactionType(
     typeLower === 'retail unstaking transfer' ||
     typeLower === 'retail eth2 deprecation'
   )
-    return 'TRANSFER'
+    return TransactionType.TRANSFER
 
   // Unknown types
   console.warn(`Unknown Coinbase transaction type: "${transactionType}", marking as UNKNOWN`)
-  return 'UNKNOWN'
+  return TransactionType.UNKNOWN
 }
 
 /**
@@ -209,7 +210,7 @@ export function normalizeCoinbaseTransactions(
         id: `${fileId}-${transactionIndex++}`,
         source: 'Coinbase',
         date: parseDate(timestamp),
-        type: 'BUY',
+        type: TransactionType.BUY,
         symbol: asset,
         name: null,
         quantity: finalQuantity,
@@ -235,7 +236,7 @@ export function normalizeCoinbaseTransactions(
         id: `${fileId}-${transactionIndex++}`,
         source: 'Coinbase',
         date: parseDate(timestamp),
-        type: 'SELL',
+        type: TransactionType.SELL,
         symbol: asset,
         name: null,
         quantity: finalQuantity,
@@ -259,7 +260,7 @@ export function normalizeCoinbaseTransactions(
           id: `${fileId}-${transactionIndex++}`,
           source: 'Coinbase',
           date: parseDate(timestamp),
-          type: 'BUY',
+          type: TransactionType.BUY,
           symbol: convertInfo.acquiredAsset,
           name: null,
           quantity: convertInfo.acquiredQuantity,
