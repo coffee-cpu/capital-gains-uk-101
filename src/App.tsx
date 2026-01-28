@@ -9,6 +9,7 @@ import { Sidebar } from './components/Sidebar'
 import { FlowGuide } from './components/FlowGuide'
 import { HelpPanel } from './components/HelpPanel'
 import { SessionResumeDialog } from './components/SessionResumeDialog'
+import { IssuesPanel } from './components/IssuesPanel'
 import { useTransactionStore } from './stores/transactionStore'
 import { useSettingsStore, useInitializeSettings } from './stores/settingsStore'
 import { db, clearAllData, ensureDatabaseCompatible } from './lib/db'
@@ -198,6 +199,7 @@ function App() {
             <div className="space-y-8">
               <FlowGuide />
               <CSVImporter />
+              <IssuesPanel />
               <TaxYearSummary />
               <Dashboard />
               <TransactionList />
