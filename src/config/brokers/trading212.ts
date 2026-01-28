@@ -10,7 +10,7 @@ export const trading212Definition: BrokerDefinition = {
     requiredHeaders: ['Action', 'Time', 'ISIN', 'Ticker', 'No. of shares'],
     priority: 50,
   },
-  parser: (rows, fileId, _source) => normalizeTrading212Transactions(rows, fileId),
+  parser: normalizeTrading212Transactions,
   instructions: {
     steps: [
       'Log into Trading 212 app or website',

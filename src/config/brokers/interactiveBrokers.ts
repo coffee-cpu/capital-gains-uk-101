@@ -59,7 +59,7 @@ export const interactiveBrokersDefinition: BrokerDefinition = {
     priority: 5, // Check early since it has unique multi-section format
     customDetector: detectInteractiveBrokers,
   },
-  parser: (rows, fileId, _source) => normalizeInteractiveBrokersTransactions(rows, fileId),
+  parser: normalizeInteractiveBrokersTransactions,
   instructions: {
     steps: [
       'Log into Client Portal → Performance & Reports → Transaction History',

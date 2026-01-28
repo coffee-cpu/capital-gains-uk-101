@@ -10,7 +10,7 @@ export const equatePlusDefinition: BrokerDefinition = {
     requiredHeaders: ['Order reference', 'Date', 'Order type', 'Quantity', 'Execution price', 'Instrument', 'Product type'],
     priority: 50,
   },
-  parser: (rows, fileId, _source) => normalizeEquatePlusTransactions(rows, fileId),
+  parser: normalizeEquatePlusTransactions,
   instructions: {
     steps: [
       'Log into your EquatePlus account',

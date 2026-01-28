@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { getEnabledBrokerDefinitions, getEnabledBrokerCount } from '../config/brokers'
+import { getEnabledBrokerDefinitions } from '../config/brokers'
 import { BrokerInstructions } from './BrokerInstructions'
 
 /**
@@ -11,7 +11,6 @@ export function BrokerFormatsList() {
   const [expandedFormat, setExpandedFormat] = useState<string | null>(null)
 
   const brokerDefinitions = getEnabledBrokerDefinitions()
-  const brokerCount = getEnabledBrokerCount()
 
   const handleToggle = (shortId: string) => {
     setExpandedFormat(expandedFormat === shortId ? null : shortId)
@@ -31,7 +30,7 @@ export function BrokerFormatsList() {
         >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
         </svg>
-        <span>Supported formats & export guides ({brokerCount})</span>
+        <span>Supported formats & export guides ({brokerDefinitions.length})</span>
       </button>
       {showFormats && (
         <ul className="space-y-2 ml-6">

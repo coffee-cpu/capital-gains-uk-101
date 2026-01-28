@@ -16,12 +16,10 @@ import { GenericTransaction } from './transaction'
  * Parser function signature
  * @param rows Raw CSV rows from the file
  * @param fileId Unique identifier for the file (used for transaction IDs)
- * @param source Display name of the broker (passed from registry)
  */
 export type ParserFunction = (
   rows: RawCSVRow[],
-  fileId: string,
-  source: string
+  fileId: string
 ) => GenericTransaction[]
 
 /**

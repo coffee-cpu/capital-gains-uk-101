@@ -11,7 +11,7 @@ export const genericDefinition: BrokerDefinition = {
     // High priority (lower number) because it has very specific lowercase headers
     priority: 15,
   },
-  parser: (rows, fileId, _source) => normalizeGenericTransactions(rows, fileId),
+  parser: normalizeGenericTransactions,
   instructions: {
     steps: [],
     notes: [

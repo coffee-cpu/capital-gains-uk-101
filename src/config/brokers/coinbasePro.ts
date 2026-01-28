@@ -10,7 +10,7 @@ export const coinbaseProDefinition: BrokerDefinition = {
     requiredHeaders: ['portfolio', 'trade id', 'product', 'side', 'created at', 'size', 'size unit', 'price', 'fee', 'total', 'price/fee/total unit'],
     priority: 55, // Check before regular Coinbase
   },
-  parser: (rows, fileId, _source) => normalizeCoinbaseProTransactions(rows, fileId),
+  parser: normalizeCoinbaseProTransactions,
   instructions: {
     steps: [
       'Log into coinbase.com',

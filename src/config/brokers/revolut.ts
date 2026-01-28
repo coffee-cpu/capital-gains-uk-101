@@ -10,7 +10,7 @@ export const revolutDefinition: BrokerDefinition = {
     requiredHeaders: ['Date', 'Ticker', 'Type', 'Quantity', 'Price per share', 'Total Amount', 'Currency', 'FX Rate'],
     priority: 50,
   },
-  parser: (rows, fileId, _source) => normalizeRevolutTransactions(rows, fileId),
+  parser: normalizeRevolutTransactions,
   instructions: {
     steps: [],
   },

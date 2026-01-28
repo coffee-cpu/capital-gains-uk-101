@@ -10,7 +10,7 @@ export const schwabDefinition: BrokerDefinition = {
     requiredHeaders: ['Date', 'Action', 'Symbol', 'Description', 'Quantity', 'Price', 'Fees & Comm', 'Amount'],
     priority: 20,
   },
-  parser: (rows, fileId, _source) => normalizeSchwabTransactions(rows, fileId),
+  parser: normalizeSchwabTransactions,
   instructions: {
     steps: [
       'Log into schwab.com → Accounts → Transaction History',

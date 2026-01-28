@@ -2,22 +2,16 @@
  * Parser Registry
  *
  * Delegates to the central broker registry for parser functions.
- * This file maintains backward compatibility with existing code.
  */
 
-import { BrokerType, RawCSVRow } from '../../types/broker'
-import { GenericTransaction } from '../../types/transaction'
-import { getBrokerDefinition, getBrokerDisplayName } from '../../config/brokers'
+import { BrokerType } from '../../types/broker'
+import { ParserFunction } from '../../types/brokerDefinition'
+import { getBrokerDefinition } from '../../config/brokers'
 
-/**
- * Parser function signature (legacy - for backward compatibility)
- * New code should use ParserFunction from brokerDefinition.ts
- */
-export type ParserFunction = (rows: RawCSVRow[], fileId: string) => GenericTransaction[]
+export type { ParserFunction }
 
 /**
  * Get parser function for a broker type
- * Returns a wrapper that passes the display name to the parser
  * @param broker BrokerType enum value
  * @returns Parser function or null if broker is unknown or unsupported
  */
@@ -31,7 +25,5 @@ export function getParser(broker: BrokerType): ParserFunction | null {
     return null
   }
 
-  // Return a wrapper that passes the display name to the parser
-  const displayName = getBrokerDisplayName(broker)
-  return (rows: RawCSVRow[], fileId: string) => definition.parser(rows, fileId, displayName)
+  return definition.parser
 }

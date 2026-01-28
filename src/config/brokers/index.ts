@@ -6,7 +6,7 @@
  */
 
 import { BrokerType } from '../../types/broker'
-import { BrokerDefinition, ParserFunction } from '../../types/brokerDefinition'
+import { BrokerDefinition } from '../../types/brokerDefinition'
 
 // Import all broker definitions
 import { schwabDefinition } from './schwab'
@@ -80,27 +80,6 @@ export function getEnabledBrokerDefinitions(): BrokerDefinition[] {
 export function getBrokerDisplayName(type: BrokerType): string {
   const definition = BROKER_REGISTRY.get(type)
   return definition?.displayName ?? type
-}
-
-/**
- * Get parser function for a broker type
- * @param type BrokerType enum value
- * @returns Parser function or null if not found/disabled
- */
-export function getBrokerParser(type: BrokerType): ParserFunction | null {
-  const definition = BROKER_REGISTRY.get(type)
-  if (!definition || definition.enabled === false) {
-    return null
-  }
-  return definition.parser
-}
-
-/**
- * Get count of enabled brokers
- * @returns Number of enabled brokers
- */
-export function getEnabledBrokerCount(): number {
-  return ALL_BROKER_DEFINITIONS.filter(def => def.enabled !== false).length
 }
 
 // Re-export individual definitions for direct access if needed

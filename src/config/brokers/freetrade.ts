@@ -10,7 +10,7 @@ export const freetradeDefinition: BrokerDefinition = {
     requiredHeaders: ['Title', 'Type', 'Timestamp', 'Buy / Sell', 'Ticker', 'ISIN', 'Order Type'],
     priority: 50,
   },
-  parser: (rows, fileId, _source) => normalizeFreetradeTransactions(rows, fileId),
+  parser: normalizeFreetradeTransactions,
   instructions: {
     steps: [
       'Open Freetrade mobile app (iOS/Android)',

@@ -10,7 +10,7 @@ export const coinbaseDefinition: BrokerDefinition = {
     requiredHeaders: ['Timestamp', 'Transaction Type', 'Asset', 'Quantity Transacted', 'Price at Transaction', 'Fees and/or Spread'],
     priority: 60,
   },
-  parser: (rows, fileId, _source) => normalizeCoinbaseTransactions(rows, fileId),
+  parser: normalizeCoinbaseTransactions,
   instructions: {
     steps: [
       'Log into coinbase.com',

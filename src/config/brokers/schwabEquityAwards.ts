@@ -11,7 +11,7 @@ export const schwabEquityAwardsDefinition: BrokerDefinition = {
     // Higher priority (lower number) than regular Schwab since it has more specific headers
     priority: 10,
   },
-  parser: (rows, fileId, _source) => normalizeSchwabEquityAwardsTransactions(rows, fileId),
+  parser: normalizeSchwabEquityAwardsTransactions,
   instructions: {
     steps: [
       'Log into schwab.com → Accounts → Transaction History',
