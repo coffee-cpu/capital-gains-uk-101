@@ -71,7 +71,9 @@ function normalizeSchwabEquityAwardsPair(
   if (action.toLowerCase().includes('lapse')) {
     type = TransactionType.BUY // RSU vest = acquiring shares
   } else {
-    return null // Skip unknown actions
+    // Return UNKNOWN for unrecognized actions
+    console.warn(`Unknown Schwab Equity Awards action: "${action}", marking as UNKNOWN`)
+    type = TransactionType.UNKNOWN
   }
 
   // Notes about tax withholding

@@ -12,6 +12,11 @@ const TRADE_TYPES = new Set(['Buy', 'Sell', 'Assignment'])
 const INTEREST_TYPES = new Set(['Credit Interest', 'Debit Interest', 'Investment Interest Paid', 'Investment Interest Received'])
 
 /**
+ * Transaction types from IB for transfers (deposits/withdrawals)
+ */
+const TRANSFER_TYPES = new Set(['Deposit', 'Withdrawal', 'Transfer'])
+
+/**
  * Parse gross amount from IB row (handles column name with trailing space)
  */
 function parseGrossAmount(row: RawCSVRow): number | null {
@@ -144,7 +149,33 @@ function normalizeIBTransactionHistoryRow(
     return normalizeInterestRow(row, fileId, rowIndex, baseCurrency, transactionType, date, description)
   }
 
-  return null
+  // Handle transfer transactions (deposits, withdrawals)
+  if (TRANSFER_TYPES.has(transactionType)) {
+    return {
+      ...createBaseTransaction(fileId, rowIndex, baseCurrency, date, description),
+      symbol: 'CASH',
+      type: TransactionType.TRANSFER,
+      quantity: null,
+      price: null,
+      total: parseGrossAmount(row),
+      fee: null,
+      notes: transactionType,
+    }
+  }
+
+  // Return UNKNOWN for unrecognized transaction types
+  console.warn(`Unknown Interactive Brokers transaction type: "${transactionType}", marking as UNKNOWN`)
+  const symbol = row['Symbol']?.trim() || ''
+  return {
+    ...createBaseTransaction(fileId, rowIndex, baseCurrency, date, description),
+    symbol,
+    type: TransactionType.UNKNOWN,
+    quantity: null,
+    price: null,
+    total: parseGrossAmount(row),
+    fee: null,
+    notes: `Unrecognized transaction type: ${transactionType}`,
+  }
 }
 
 /**

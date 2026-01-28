@@ -206,7 +206,7 @@ describe('normalizeSchwabEquityAwardsTransactions', () => {
     expect(transactions[0].notes).toBeNull()
   })
 
-  it('should skip unknown actions', () => {
+  it('should mark unknown actions as UNKNOWN', () => {
     const rows: RawCSVRow[] = [
       {
         'Date': '08/15/2024',
@@ -246,7 +246,9 @@ describe('normalizeSchwabEquityAwardsTransactions', () => {
 
     const transactions = normalizeSchwabEquityAwardsTransactions(rows, 'test-file')
 
-    expect(transactions).toHaveLength(0)
+    expect(transactions).toHaveLength(1)
+    expect(transactions[0].type).toBe('UNKNOWN')
+    expect(transactions[0].symbol).toBe('AAPL')
   })
 
   it('should skip invalid rows', () => {

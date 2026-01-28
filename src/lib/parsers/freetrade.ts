@@ -50,8 +50,31 @@ function normalizeFreetradeRow(row: RawCSVRow, fileId: string, rowIndex: number)
     return parseStockSplitTransaction(row, fileId, rowIndex, date, title, ticker, isin)
   }
 
-  // Skip unknown types (e.g., MONTHLY_STATEMENT, TAX_CERTIFICATE)
-  return null
+  // Skip known non-transaction types (metadata, not actual transactions)
+  const NON_TRANSACTION_TYPES = ['MONTHLY_STATEMENT', 'TAX_CERTIFICATE']
+  if (NON_TRANSACTION_TYPES.includes(type)) {
+    return null
+  }
+
+  // Return UNKNOWN for unrecognized transaction types
+  console.warn(`Unknown Freetrade type: "${type}", marking as UNKNOWN`)
+  return {
+    id: `${fileId}-${rowIndex}`,
+    source: 'Freetrade',
+    symbol: ticker || '',
+    name: title || null,
+    date,
+    type: TransactionType.UNKNOWN,
+    quantity: null,
+    price: null,
+    currency: row['Account Currency']?.trim() || 'GBP',
+    total: parseFloat(row['Total Amount']) || null,
+    fee: null,
+    ratio: null,
+    notes: `Unrecognized transaction type: ${type}`,
+    incomplete: false,
+    ignored: false,
+  }
 }
 
 /**

@@ -87,7 +87,7 @@ describe('Interactive Brokers Parser', () => {
       })
     })
 
-    it('should skip non-trade transaction types that are not dividend or interest', () => {
+    it('should handle various transaction types including transfers and unknown', () => {
       const rows = [
         createIBRow({
           'Section': 'Transaction History',
@@ -149,9 +149,15 @@ describe('Interactive Brokers Parser', () => {
 
       const result = normalizeInteractiveBrokersTransactions(rows, 'test-file')
 
-      expect(result).toHaveLength(1) // Only the Buy row
-      expect(result[0].type).toBe(TransactionType.BUY)
-      expect(result[0].symbol).toBe('VUSD')
+      expect(result).toHaveLength(4) // Adjustment (UNKNOWN), Deposit, Withdrawal, and Buy
+      expect(result[0].type).toBe(TransactionType.UNKNOWN)
+      expect(result[0].notes).toBe('Unrecognized transaction type: Adjustment')
+      expect(result[1].type).toBe(TransactionType.TRANSFER)
+      expect(result[1].notes).toBe('Deposit')
+      expect(result[2].type).toBe(TransactionType.TRANSFER)
+      expect(result[2].notes).toBe('Withdrawal')
+      expect(result[3].type).toBe(TransactionType.BUY)
+      expect(result[3].symbol).toBe('VUSD')
     })
 
     it('should parse dividend transactions', () => {
