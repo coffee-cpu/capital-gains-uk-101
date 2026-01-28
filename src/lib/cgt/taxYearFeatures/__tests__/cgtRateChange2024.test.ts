@@ -67,6 +67,8 @@ function createSummary(
     dividendAllowance: 500,
     totalInterest: 0,
     totalInterestGbp: 0,
+    grossInterestGbp: 0,
+    totalInterestWithholdingTaxGbp: 0,
     incompleteDisposals: 0,
   }
 }

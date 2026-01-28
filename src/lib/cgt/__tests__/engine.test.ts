@@ -829,6 +829,50 @@ describe('CGT Engine', () => {
       expect(summary.taxYear).toBe('2024/25')
       expect(summary.totalInterest).toBe(2)
       expect(summary.totalInterestGbp).toBe(1200)
+      expect(summary.grossInterestGbp).toBe(1200) // No withholding, so gross = net
+      expect(summary.totalInterestWithholdingTaxGbp).toBe(0)
+    })
+
+    it('should calculate interest withholding tax in tax year summary', () => {
+      const transactions: EnrichedTransaction[] = [
+        {
+          id: 'tx-1',
+          source: 'test',
+          symbol: 'CASH',
+          name: 'Foreign Savings Account',
+          date: '2024-06-15',
+          type: 'INTEREST',
+          quantity: null,
+          price: null,
+          currency: 'USD',
+          total: 720, // Net after 10% withholding
+          fee: 0,
+          notes: null,
+          fx_rate: 1.0,
+          price_gbp: null,
+          value_gbp: 720,
+          fee_gbp: 0,
+          fx_source: 'HMRC',
+          fx_error: null,
+          tax_year: '2024/25',
+          gain_group: 'NONE',
+          grossInterest: 800, // Gross before withholding
+          interestWithholdingTax: 80, // 10% withholding
+          grossInterest_gbp: 800,
+          interestWithholdingTax_gbp: 80,
+        },
+      ]
+
+      const result = calculateCGT(transactions)
+
+      expect(result.taxYearSummaries).toHaveLength(1)
+
+      const summary = result.taxYearSummaries[0]
+      expect(summary.taxYear).toBe('2024/25')
+      expect(summary.totalInterest).toBe(1)
+      expect(summary.totalInterestGbp).toBe(720) // Net amount
+      expect(summary.grossInterestGbp).toBe(800) // Gross amount
+      expect(summary.totalInterestWithholdingTaxGbp).toBe(80) // Tax withheld
     })
 
     it('should handle disposals with no matching acquisitions (incomplete data)', () => {

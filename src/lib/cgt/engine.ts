@@ -248,6 +248,16 @@ function generateTaxYearSummaries(
       0
     )
 
+    // Calculate gross interest and withholding tax (similar to dividends)
+    const grossInterestGbp = yearInterest.reduce(
+      (sum, tx) => sum + (tx.grossInterest_gbp ?? tx.value_gbp ?? 0),
+      0
+    )
+    const totalInterestWithholdingTaxGbp = yearInterest.reduce(
+      (sum, tx) => sum + (tx.interestWithholdingTax_gbp ?? 0),
+      0
+    )
+
     // Count incomplete disposals (those with missing acquisition data)
     const incompleteDisposals = yearDisposals.filter(d => d.isIncomplete).length
 
@@ -272,6 +282,8 @@ function generateTaxYearSummaries(
       dividendAllowance,
       totalInterest,
       totalInterestGbp,
+      grossInterestGbp,
+      totalInterestWithholdingTaxGbp,
       incompleteDisposals,
     }
 
