@@ -277,8 +277,9 @@ function mapSchwabAction(action: string): SchwabActionResult {
   } else if (actionLower.includes('fee') || actionLower === 'misc cash entry') {
     type = TransactionType.FEE
   } else {
-    // Return TRANSFER as a fallback for unknown actions so we don't filter them out
-    type = TransactionType.TRANSFER
+    // Return UNKNOWN for unrecognized actions so users can see them and report issues
+    console.warn(`Unknown Schwab action: "${action}", marking as UNKNOWN`)
+    type = TransactionType.UNKNOWN
   }
 
   return { type, isShortSell }

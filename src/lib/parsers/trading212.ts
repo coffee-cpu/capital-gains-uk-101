@@ -30,7 +30,7 @@ import type { RawCSVRow } from '../../types/broker'
  * - ID: Unique transaction ID
  */
 
-type TransactionTypeString = 'BUY' | 'SELL' | 'DIVIDEND' | 'FEE' | 'INTEREST' | 'TRANSFER' | 'TAX' | 'STOCK_SPLIT'
+type TransactionTypeString = 'BUY' | 'SELL' | 'DIVIDEND' | 'FEE' | 'INTEREST' | 'TRANSFER' | 'TAX' | 'STOCK_SPLIT' | 'UNKNOWN'
 
 /**
  * Exact match mappings for Trading 212 actions
@@ -72,8 +72,8 @@ function mapActionToType(action: string): TransactionTypeString {
     }
   }
 
-  console.warn(`Unknown Trading 212 action: "${action}", treating as FEE`)
-  return 'FEE'
+  console.warn(`Unknown Trading 212 action: "${action}", marking as UNKNOWN`)
+  return 'UNKNOWN'
 }
 
 /**

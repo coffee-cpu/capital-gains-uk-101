@@ -366,6 +366,9 @@ export function TransactionList() {
                 if (tx.type === 'STOCK_SPLIT') {
                   return 'Stock splits are treated as share reorganisations under HMRC TCGA92/S127. This split adjusts all transactions for this stock before the split date to post-split quantities for CGT calculations. No disposal occurs.'
                 }
+                if (tx.type === 'UNKNOWN') {
+                  return 'This transaction type was not recognized by the parser. It is not included in CGT calculations. If you believe this should be supported, please create an issue at github.com/coffee-cpu/capital-gains-uk-101/issues'
+                }
                 return null
               }
 
@@ -664,6 +667,7 @@ export function TransactionList() {
                           tx.type === 'TAX' ? 'bg-yellow-100 text-yellow-800' :
                           tx.type === 'TRANSFER' ? 'bg-orange-100 text-orange-800' :
                           tx.type === 'STOCK_SPLIT' ? 'bg-indigo-100 text-indigo-800 cursor-pointer hover:ring-2 hover:ring-offset-1 hover:ring-indigo-400 transition-all' :
+                          tx.type === 'UNKNOWN' ? 'bg-amber-100 text-amber-800' :
                           'bg-gray-100 text-gray-800'
                         }`}
                         onClick={tx.type === 'STOCK_SPLIT' ? (e) => {

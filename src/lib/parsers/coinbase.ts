@@ -30,7 +30,7 @@ import type { RawCSVRow } from '../../types/broker'
  */
 function mapTransactionType(
   transactionType: string
-): 'BUY' | 'SELL' | 'DIVIDEND' | 'FEE' | 'INTEREST' | 'TRANSFER' | 'TAX' | 'STOCK_SPLIT' | null {
+): 'BUY' | 'SELL' | 'DIVIDEND' | 'FEE' | 'INTEREST' | 'TRANSFER' | 'TAX' | 'STOCK_SPLIT' | 'UNKNOWN' | null {
   const typeLower = transactionType.toLowerCase()
 
   // Buy transactions (including Advanced Trade Buy)
@@ -65,9 +65,9 @@ function mapTransactionType(
   )
     return 'TRANSFER'
 
-  // Unknown types - default to TRANSFER
-  console.warn(`Unknown Coinbase transaction type: "${transactionType}", treating as TRANSFER`)
-  return 'TRANSFER'
+  // Unknown types
+  console.warn(`Unknown Coinbase transaction type: "${transactionType}", marking as UNKNOWN`)
+  return 'UNKNOWN'
 }
 
 /**

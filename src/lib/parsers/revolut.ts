@@ -17,7 +17,7 @@ import type { RawCSVRow } from '../../types/broker'
  * - FX Rate: Exchange rate to GBP
  */
 
-type TransactionTypeString = 'BUY' | 'SELL' | 'DIVIDEND' | 'FEE' | 'INTEREST' | 'TRANSFER' | 'TAX' | 'STOCK_SPLIT'
+type TransactionTypeString = 'BUY' | 'SELL' | 'DIVIDEND' | 'FEE' | 'INTEREST' | 'TRANSFER' | 'TAX' | 'STOCK_SPLIT' | 'UNKNOWN'
 
 /**
  * Keyword-based mappings for Revolut types (checked in order)
@@ -48,8 +48,8 @@ function mapTypeToTransactionType(type: string): TransactionTypeString {
     }
   }
 
-  console.warn(`Unknown Revolut type: "${type}", treating as FEE`)
-  return 'FEE'
+  console.warn(`Unknown Revolut type: "${type}", marking as UNKNOWN`)
+  return 'UNKNOWN'
 }
 
 /**

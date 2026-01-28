@@ -19,6 +19,7 @@ export const GenericTransactionSchema = z.object({
     'TRANSFER',
     'TAX',
     'STOCK_SPLIT',
+    'UNKNOWN',
     // Options trading types
     'OPTIONS_BUY_TO_OPEN',
     'OPTIONS_SELL_TO_OPEN',
@@ -97,6 +98,7 @@ export const TransactionType = {
   TRANSFER: 'TRANSFER',
   TAX: 'TAX',
   STOCK_SPLIT: 'STOCK_SPLIT',
+  UNKNOWN: 'UNKNOWN',
   // Options trading types
   OPTIONS_BUY_TO_OPEN: 'OPTIONS_BUY_TO_OPEN',
   OPTIONS_SELL_TO_OPEN: 'OPTIONS_SELL_TO_OPEN',

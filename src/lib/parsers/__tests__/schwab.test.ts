@@ -356,7 +356,7 @@ describe('Schwab Parser', () => {
       expect(result).toHaveLength(0)
     })
 
-    it('should map unknown actions to TRANSFER type', () => {
+    it('should map unknown actions to UNKNOWN type', () => {
       const rows = [
         {
           'Date': '03/15/2024',
@@ -373,7 +373,7 @@ describe('Schwab Parser', () => {
       const result = normalizeSchwabTransactions(rows, 'test-file')
 
       expect(result).toHaveLength(1)
-      expect(result[0].type).toBe(TransactionType.TRANSFER)
+      expect(result[0].type).toBe(TransactionType.UNKNOWN)
     })
 
     it('should handle empty values correctly', () => {
