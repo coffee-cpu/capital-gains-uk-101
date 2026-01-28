@@ -1,4 +1,5 @@
 import type { GenericTransaction } from '../../types/transaction'
+import { TransactionType } from '../../types/transaction'
 import type { RawCSVRow } from '../../types/broker'
 
 /**
@@ -17,29 +18,29 @@ import type { RawCSVRow } from '../../types/broker'
  * - FX Rate: Exchange rate to GBP
  */
 
-type TransactionTypeString = 'BUY' | 'SELL' | 'DIVIDEND' | 'FEE' | 'INTEREST' | 'TRANSFER' | 'TAX' | 'STOCK_SPLIT' | 'UNKNOWN'
+type TransactionTypeValue = typeof TransactionType[keyof typeof TransactionType]
 
 /**
  * Keyword-based mappings for Revolut types (checked in order)
  * Order matters: more specific patterns should come first
  */
-const REVOLUT_TYPE_MAP: Array<{ keyword: string; type: TransactionTypeString }> = [
-  { keyword: 'buy', type: 'BUY' },
-  { keyword: 'sell', type: 'SELL' },
-  { keyword: 'dividend', type: 'DIVIDEND' },
-  { keyword: 'cash top-up', type: 'TRANSFER' },
-  { keyword: 'cash withdrawal', type: 'TRANSFER' },
-  { keyword: 'transfer from revolut', type: 'TRANSFER' },
-  { keyword: 'custody fee', type: 'FEE' },
-  { keyword: 'fee', type: 'FEE' },
-  { keyword: 'stock split', type: 'STOCK_SPLIT' },
-  { keyword: 'tax', type: 'TAX' },
+const REVOLUT_TYPE_MAP: Array<{ keyword: string; type: TransactionTypeValue }> = [
+  { keyword: 'buy', type: TransactionType.BUY },
+  { keyword: 'sell', type: TransactionType.SELL },
+  { keyword: 'dividend', type: TransactionType.DIVIDEND },
+  { keyword: 'cash top-up', type: TransactionType.TRANSFER },
+  { keyword: 'cash withdrawal', type: TransactionType.TRANSFER },
+  { keyword: 'transfer from revolut', type: TransactionType.TRANSFER },
+  { keyword: 'custody fee', type: TransactionType.FEE },
+  { keyword: 'fee', type: TransactionType.FEE },
+  { keyword: 'stock split', type: TransactionType.STOCK_SPLIT },
+  { keyword: 'tax', type: TransactionType.TAX },
 ]
 
 /**
  * Map Revolut type to transaction type
  */
-function mapTypeToTransactionType(type: string): TransactionTypeString {
+function mapTypeToTransactionType(type: string): TransactionTypeValue {
   const typeLower = type.toLowerCase()
 
   for (const { keyword, type: txType } of REVOLUT_TYPE_MAP) {
@@ -49,7 +50,7 @@ function mapTypeToTransactionType(type: string): TransactionTypeString {
   }
 
   console.warn(`Unknown Revolut type: "${type}", marking as UNKNOWN`)
-  return 'UNKNOWN'
+  return TransactionType.UNKNOWN
 }
 
 /**

@@ -1,4 +1,5 @@
 import type { GenericTransaction } from '../../types/transaction'
+import { TransactionType } from '../../types/transaction'
 import type { RawCSVRow } from '../../types/broker'
 
 /**
@@ -30,34 +31,34 @@ import type { RawCSVRow } from '../../types/broker'
  * - ID: Unique transaction ID
  */
 
-type TransactionTypeString = 'BUY' | 'SELL' | 'DIVIDEND' | 'FEE' | 'INTEREST' | 'TRANSFER' | 'TAX' | 'STOCK_SPLIT' | 'UNKNOWN'
+type TransactionTypeValue = typeof TransactionType[keyof typeof TransactionType]
 
 /**
  * Exact match mappings for Trading 212 actions
  */
-const EXACT_ACTION_MAP: Record<string, TransactionTypeString> = {
-  'deposit': 'TRANSFER',
-  'withdrawal': 'TRANSFER',
-  'stock split': 'STOCK_SPLIT',
-  'result adjustment': 'FEE',
+const EXACT_ACTION_MAP: Record<string, TransactionTypeValue> = {
+  'deposit': TransactionType.TRANSFER,
+  'withdrawal': TransactionType.TRANSFER,
+  'stock split': TransactionType.STOCK_SPLIT,
+  'result adjustment': TransactionType.FEE,
 }
 
 /**
  * Keyword-based mappings for Trading 212 actions (checked in order)
  */
-const KEYWORD_ACTION_MAP: Array<{ keyword: string; type: TransactionTypeString }> = [
-  { keyword: 'buy', type: 'BUY' },
-  { keyword: 'sell', type: 'SELL' },
-  { keyword: 'dividend', type: 'DIVIDEND' },
-  { keyword: 'interest', type: 'INTEREST' },
-  { keyword: 'tax', type: 'TAX' },
-  { keyword: 'withholding', type: 'TAX' },
+const KEYWORD_ACTION_MAP: Array<{ keyword: string; type: TransactionTypeValue }> = [
+  { keyword: 'buy', type: TransactionType.BUY },
+  { keyword: 'sell', type: TransactionType.SELL },
+  { keyword: 'dividend', type: TransactionType.DIVIDEND },
+  { keyword: 'interest', type: TransactionType.INTEREST },
+  { keyword: 'tax', type: TransactionType.TAX },
+  { keyword: 'withholding', type: TransactionType.TAX },
 ]
 
 /**
  * Map Trading 212 action to transaction type
  */
-function mapActionToType(action: string): TransactionTypeString {
+function mapActionToType(action: string): TransactionTypeValue {
   const actionLower = action.toLowerCase()
 
   // Check exact matches first
@@ -73,7 +74,7 @@ function mapActionToType(action: string): TransactionTypeString {
   }
 
   console.warn(`Unknown Trading 212 action: "${action}", marking as UNKNOWN`)
-  return 'UNKNOWN'
+  return TransactionType.UNKNOWN
 }
 
 /**
