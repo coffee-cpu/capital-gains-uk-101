@@ -1,0 +1,5 @@
+date,type,symbol,name,currency,quantity,price,total,fee,notes
+2024-06-15,BUY,BTC,Bitcoin,BTC,0.5,35000,17500,10,Crypto purchase
+2024-08-20,SELL,BTC,Bitcoin,BTC,0.25,42000,10500,10,Crypto sale
+2024-07-10,BUY,ETH,Ethereum,ETH,5,2500,12500,5,Crypto purchase
+2024-09-01,SELL,ETH,Ethereum,ETH,2,3000,6000,5,Crypto sale
