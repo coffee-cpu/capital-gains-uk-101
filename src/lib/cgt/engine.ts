@@ -6,7 +6,7 @@ import { sameDayStage } from './sameDayMatcher'
 import { thirtyDayStage } from './thirtyDayMatcher'
 import { section104Stage } from './section104Pool'
 import { getTaxYearBounds } from '../../utils/taxYear'
-import { getEffectiveQuantity, isAcquisition, isDisposal } from './utils'
+import { getEffectiveQuantity, getEffectivePrice, isAcquisition, isDisposal } from './utils'
 import { calculateTaxYearFeatures } from './taxYearFeatures'
 
 /**
@@ -128,7 +128,7 @@ function createDisposalRecords(matchings: MatchingResult[]): DisposalRecord[] {
     // For options transactions, the price is quoted per-share but quantity is in contracts.
     // Each contract typically represents 100 shares (contract_size), so we need to multiply
     // quantity by contract_size to get the correct proceeds calculation.
-    const pricePerShare = disposal.price_gbp || 0
+    const pricePerShare = getEffectivePrice(disposal)
     const contractMultiplier = disposal.contract_size || 1
     const feePerShare = disposal.fee_gbp ? disposal.fee_gbp / (disposalQuantity * contractMultiplier) : 0
 
