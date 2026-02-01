@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-test.describe('Schwab NRA Tax Adj Dividend Panel Verification', () => {
+test.describe('Schwab NRA Tax Adj Dividend & Interest Panel Verification', () => {
   test.beforeEach(async ({ page }) => {
     // Clear IndexedDB before each test
     await page.goto('/')
@@ -27,7 +27,8 @@ test.describe('Schwab NRA Tax Adj Dividend Panel Verification', () => {
     // Upload the Schwab NRA Tax Adj fixture
     // Contains: 1 BUY + 1 SELL (to trigger Tax Year Summary),
     // 1 AAPL dividend with NRA Tax Adj ($15.75 gross, $2.50 withheld),
-    // 1 MSFT dividend without NRA Tax Adj ($22.50 gross)
+    // 1 MSFT dividend without NRA Tax Adj ($22.50 gross),
+    // 1 Credit Interest ($5.00) with NRA Tax Adj on interest ($0.75 withheld, no symbol)
     const fileInput = page.locator('input[type="file"]')
     await expect(fileInput).toBeVisible()
 
@@ -53,7 +54,7 @@ test.describe('Schwab NRA Tax Adj Dividend Panel Verification', () => {
     const dividendButton = page.getByRole('button', { name: /Dividend Income/ })
     await expect(dividendButton).toBeVisible()
 
-    // Verify dividend count shows 2 payments
+    // Verify dividend count shows 2 payments (AAPL + MSFT dividends only, not interest)
     await expect(dividendButton).toContainText('2 payments')
 
     // Expand the dividend details panel
@@ -88,15 +89,37 @@ test.describe('Schwab NRA Tax Adj Dividend Panel Verification', () => {
     await expect(page.getByText('Gross Dividends (before tax withheld)')).toBeVisible()
 
     // Tax Withheld at Source: £1.92 (AAPL's $2.50 NRA Tax Adj converted to GBP)
-    await expect(page.getByText('Tax Withheld at Source')).toBeVisible()
-    await expect(page.getByText('£1.92')).toBeVisible()
+    // Use .first() because £1.92 also appears in the transaction table (TAX row GBP value)
+    await expect(page.getByText('Tax Withheld at Source').first()).toBeVisible()
+    await expect(page.getByText('£1.92').first()).toBeVisible()
 
     // Net Dividends Received: £27.87 (gross £29.79 - withheld £1.92)
-    await expect(page.getByText('Net Dividends Received')).toBeVisible()
-    await expect(page.getByText('£27.87')).toBeVisible()
+    await expect(page.getByText('Net Dividends Received').first()).toBeVisible()
+    await expect(page.getByText('£27.87').first()).toBeVisible()
 
     // --- Status: Within Dividend Allowance ---
     await expect(page.getByText(/Within Dividend Allowance/i)).toBeVisible()
     await expect(page.getByText(/No dividend tax is due/i)).toBeVisible()
+
+    // --- Interest Income Button ---
+    const interestButton = page.getByRole('button', { name: /Interest Income/ })
+    await expect(interestButton).toBeVisible()
+
+    // Verify interest count shows 1 payment
+    await expect(interestButton).toContainText('1 payment')
+
+    // Expand the interest details panel
+    await interestButton.click()
+    await page.waitForTimeout(300)
+
+    // Scroll to ensure all interest content is visible
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+    await page.waitForTimeout(300)
+
+    // --- Interest SA106 Foreign Income Summary ---
+    // The interest panel should show withholding details
+    // Credit Interest: $5.00 gross, NRA Tax Adj: $0.75 withheld (no symbol = TAX_ON_INTEREST)
+    await expect(page.getByText('Gross Interest (before tax withheld)')).toBeVisible()
+    await expect(page.getByText('Net Interest Received')).toBeVisible()
   })
 })

@@ -124,8 +124,12 @@ export interface TaxYearSummary {
   dividendAllowance: number
   /** Total number of interest transactions */
   totalInterest: number
-  /** Total interest income in GBP */
+  /** Total interest income in GBP (net, after withholding) */
   totalInterestGbp: number
+  /** Gross interest in GBP (before withholding tax) - for SA106 */
+  grossInterestGbp: number
+  /** Total withholding tax on interest in GBP - for SA106 */
+  interestWithholdingTaxGbp: number
   /** Number of disposals with incomplete/missing acquisition data */
   incompleteDisposals: number
   /**
@@ -212,5 +216,7 @@ export const TaxYearSummarySchema = z.object({
   dividendAllowance: z.number().nonnegative(),
   totalInterest: z.number().int().nonnegative(),
   totalInterestGbp: z.number().nonnegative(),
+  grossInterestGbp: z.number().nonnegative(),
+  interestWithholdingTaxGbp: z.number().nonnegative(),
   incompleteDisposals: z.number().int().nonnegative(),
 })

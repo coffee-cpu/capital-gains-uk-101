@@ -51,6 +51,8 @@ function createMockTaxYearSummary(overrides: Partial<TaxYearSummary> = {}): TaxY
     dividendAllowance: 500,
     totalInterest: 0,
     totalInterestGbp: 0,
+    grossInterestGbp: 0,
+    interestWithholdingTaxGbp: 0,
     incompleteDisposals: 0,
     ...overrides,
   }

@@ -215,7 +215,7 @@ describe('Schwab Parser', () => {
       expect(result[0].notes).toBe('Stock Plan Activity') // Marked for deduplication
     })
 
-    it('should link NRA Tax Adj to dividend and calculate gross/net/withholding', () => {
+    it('should emit NRA Tax Adj as TAX_ON_DIVIDEND and dividend with gross total', () => {
       const rows = [
         {
           'Date': '09/29/2024',
@@ -241,15 +241,21 @@ describe('Schwab Parser', () => {
 
       const result = normalizeSchwabTransactions(rows, 'test-file')
 
-      // Should produce only ONE transaction (dividend with withholding merged)
-      expect(result).toHaveLength(1)
+      // Should produce TWO transactions (dividend + TAX, not merged)
+      expect(result).toHaveLength(2)
+
+      // Dividend keeps gross total
       expect(result[0].type).toBe(TransactionType.DIVIDEND)
       expect(result[0].symbol).toBe('AAPL')
-      expect(result[0].grossDividend).toBe(25.00)      // Gross amount
-      expect(result[0].withholdingTax).toBe(3.75)      // Tax withheld (absolute)
-      expect(result[0].total).toBe(21.25)              // Net = 25.00 - 3.75
-      expect(result[0].notes).toContain('Gross dividend: $25.00')
-      expect(result[0].notes).toContain('Tax withheld: $3.75')
+      expect(result[0].grossDividend).toBe(25.00)
+      expect(result[0].total).toBe(25.00)              // Gross, not net
+      expect(result[0].withholdingTax).toBeUndefined()  // Schwab uses separate TAX_ON_DIVIDEND rows
+
+      // NRA Tax Adj emitted as TAX_ON_DIVIDEND (has symbol)
+      expect(result[1].type).toBe(TransactionType.TAX_ON_DIVIDEND)
+      expect(result[1].symbol).toBe('AAPL')
+      expect(result[1].total).toBe(3.75)               // Absolute value via calculateTotal
+      expect(result[1].notes).toBe('NRA Tax Adj')
     })
 
     it('should handle dividend without NRA Tax Adj (no withholding)', () => {
@@ -270,12 +276,12 @@ describe('Schwab Parser', () => {
 
       expect(result).toHaveLength(1)
       expect(result[0].type).toBe(TransactionType.DIVIDEND)
-      expect(result[0].grossDividend).toBe(15.75)      // Gross = Net (no withholding)
-      expect(result[0].withholdingTax).toBeNull()      // No withholding
-      expect(result[0].total).toBe(15.75)              // Net = Gross
+      expect(result[0].grossDividend).toBe(15.75)
+      expect(result[0].withholdingTax).toBeUndefined() // Schwab uses separate TAX_ON_DIVIDEND rows
+      expect(result[0].total).toBe(15.75)
     })
 
-    it('should handle multiple dividends with different NRA Tax Adj amounts', () => {
+    it('should emit multiple dividends and NRA Tax Adj as separate transactions', () => {
       const rows = [
         {
           'Date': '09/29/2024',
@@ -321,20 +327,28 @@ describe('Schwab Parser', () => {
 
       const result = normalizeSchwabTransactions(rows, 'test-file')
 
-      // Should produce 2 dividend transactions (NRA Tax Adj merged)
-      expect(result).toHaveLength(2)
-      
-      // AAPL dividend
-      expect(result[0].symbol).toBe('AAPL')
-      expect(result[0].grossDividend).toBe(25.00)
-      expect(result[0].withholdingTax).toBe(3.75)
-      expect(result[0].total).toBe(21.25)
+      // Should produce 4 transactions (2 dividends + 2 TAX, not merged)
+      expect(result).toHaveLength(4)
 
-      // MSFT dividend
-      expect(result[1].symbol).toBe('MSFT')
-      expect(result[1].grossDividend).toBe(50.00)
-      expect(result[1].withholdingTax).toBe(7.50)
-      expect(result[1].total).toBe(42.50)
+      // AAPL dividend (gross)
+      const aaplDiv = result.find(tx => tx.type === TransactionType.DIVIDEND && tx.symbol === 'AAPL')!
+      expect(aaplDiv.grossDividend).toBe(25.00)
+      expect(aaplDiv.total).toBe(25.00)
+
+      // AAPL NRA Tax Adj
+      const aaplTax = result.find(tx => tx.type === TransactionType.TAX_ON_DIVIDEND && tx.symbol === 'AAPL')!
+      expect(aaplTax.total).toBe(3.75)
+      expect(aaplTax.notes).toBe('NRA Tax Adj')
+
+      // MSFT dividend (gross)
+      const msftDiv = result.find(tx => tx.type === TransactionType.DIVIDEND && tx.symbol === 'MSFT')!
+      expect(msftDiv.grossDividend).toBe(50.00)
+      expect(msftDiv.total).toBe(50.00)
+
+      // MSFT NRA Tax Adj
+      const msftTax = result.find(tx => tx.type === TransactionType.TAX_ON_DIVIDEND && tx.symbol === 'MSFT')!
+      expect(msftTax.total).toBe(7.50)
+      expect(msftTax.notes).toBe('NRA Tax Adj')
     })
 
     it('should skip rows with invalid dates', () => {

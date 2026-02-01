@@ -21,8 +21,8 @@ test.describe('CSV Import', () => {
     await expect(page.getByText(/file\(s\) imported successfully/i)).toBeVisible({ timeout: 10000 })
 
     // Check that the success message shows the correct number of transactions
-    // 9 transactions: NRA Tax Adj is merged with dividend, not counted separately
-    await expect(page.getByText(/9 total transactions/i)).toBeVisible()
+    // 10 transactions: NRA Tax Adj is emitted as a separate TAX transaction
+    await expect(page.getByText(/10 total transactions/i)).toBeVisible()
 
     // Verify transactions table is visible (exact match to avoid ambiguity)
     await expect(page.getByRole('heading', { name: 'Transactions', exact: true })).toBeVisible()
@@ -59,7 +59,7 @@ test.describe('CSV Import', () => {
     await expect(page.getByText(/file\(s\) imported successfully/i)).toBeVisible({ timeout: 10000 })
 
     // Check that transactions are displayed (use exact match to avoid ambiguity)
-    await expect(page.getByText('9 total', { exact: true })).toBeVisible()
+    await expect(page.getByText('10 total', { exact: true })).toBeVisible()
 
     // Check for BUY/SELL badges
     await expect(page.locator('.bg-green-100').first()).toBeVisible() // BUY badge

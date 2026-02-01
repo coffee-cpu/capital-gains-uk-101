@@ -30,6 +30,9 @@ function getFxEnricher(fxSource: FXSource): FxEnricher {
  * 2. FX conversion - convert to GBP using selected source
  * 3. Tax year calculation - assign UK tax years
  *
+ * Withholding tax (e.g., NRA Tax Adj) is handled via typed transaction types
+ * (TAX_ON_DIVIDEND, TAX_ON_INTEREST) and summed at the CGT engine level.
+ *
  * Uses singleton enricher instances to maintain in-memory caches (e.g., FX rates)
  * across multiple enrichment runs for better performance.
  *

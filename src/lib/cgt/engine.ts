@@ -220,20 +220,32 @@ function generateTaxYearSummaries(
       tx => tx.tax_year === taxYear && tx.type === 'DIVIDEND'
     )
     const totalDividends = yearDividends.length
-    const totalDividendsGbp = yearDividends.reduce(
-      (sum, tx) => sum + (tx.value_gbp || 0),
-      0
-    )
 
-    // Calculate gross dividends and withholding tax for SA106
+    // Gross dividends: use grossDividend_gbp when available (IB/Freetrade),
+    // otherwise value_gbp (Schwab dividends where total IS gross)
     const grossDividendsGbp = yearDividends.reduce(
       (sum, tx) => sum + (tx.grossDividend_gbp ?? tx.value_gbp ?? 0),
       0
     )
-    const totalWithholdingTaxGbp = yearDividends.reduce(
+
+    // Withholding tax from two sources:
+    // 1. withholdingTax_gbp on DIVIDEND (IB/Freetrade set this directly)
+    // 2. TAX_ON_DIVIDEND transactions (Schwab NRA Tax Adj emitted as separate rows)
+    const dividendWithholdingFromIncome = yearDividends.reduce(
       (sum, tx) => sum + (tx.withholdingTax_gbp ?? 0),
       0
     )
+    const yearTaxOnDividend = transactions.filter(
+      tx => tx.tax_year === taxYear && tx.type === 'TAX_ON_DIVIDEND'
+    )
+    const dividendWithholdingFromTax = yearTaxOnDividend.reduce(
+      (sum, tx) => sum + (tx.value_gbp ?? 0),
+      0
+    )
+    const totalWithholdingTaxGbp = dividendWithholdingFromIncome + dividendWithholdingFromTax
+
+    // Net dividends = gross - all withholding
+    const totalDividendsGbp = grossDividendsGbp - totalWithholdingTaxGbp
 
     // Get dividend allowance for this tax year
     const dividendAllowance = getDividendAllowance(taxYear)
@@ -243,10 +255,29 @@ function generateTaxYearSummaries(
       tx => tx.tax_year === taxYear && tx.type === 'INTEREST'
     )
     const totalInterest = yearInterest.length
-    const totalInterestGbp = yearInterest.reduce(
-      (sum, tx) => sum + (tx.value_gbp || 0),
+
+    // Same pattern for interest withholding
+    const interestWithholdingFromIncome = yearInterest.reduce(
+      (sum, tx) => sum + (tx.withholdingTax_gbp ?? 0),
       0
     )
+    const yearTaxOnInterest = transactions.filter(
+      tx => tx.tax_year === taxYear && tx.type === 'TAX_ON_INTEREST'
+    )
+    const interestWithholdingFromTax = yearTaxOnInterest.reduce(
+      (sum, tx) => sum + (tx.value_gbp ?? 0),
+      0
+    )
+    const interestWithholdingTaxGbp = interestWithholdingFromIncome + interestWithholdingFromTax
+
+    // Gross interest: value_gbp + any withholding already subtracted by parser (IB/Freetrade)
+    const grossInterestGbp = yearInterest.reduce(
+      (sum, tx) => sum + (tx.value_gbp || 0),
+      0
+    ) + interestWithholdingFromIncome
+
+    // Net interest = gross - all withholding
+    const totalInterestGbp = grossInterestGbp - interestWithholdingTaxGbp
 
     // Count incomplete disposals (those with missing acquisition data)
     const incompleteDisposals = yearDisposals.filter(d => d.isIncomplete).length
@@ -272,6 +303,8 @@ function generateTaxYearSummaries(
       dividendAllowance,
       totalInterest,
       totalInterestGbp,
+      grossInterestGbp,
+      interestWithholdingTaxGbp,
       incompleteDisposals,
     }
 

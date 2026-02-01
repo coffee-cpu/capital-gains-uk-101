@@ -584,6 +584,30 @@ export function TaxYearSummary() {
                       </span>
                     </div>
 
+                    {currentSummary.interestWithholdingTaxGbp > 0 && (
+                      <div className="bg-purple-50 rounded-lg p-4 space-y-2 border border-purple-100">
+                        <div className="text-sm font-semibold text-purple-900 mb-2">SA106 Foreign Income Summary</div>
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-purple-800">Gross Interest (before tax withheld)</span>
+                          <span className="font-medium text-purple-900">
+                            £{currentSummary.grossInterestGbp.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-purple-800">Tax Withheld at Source</span>
+                          <span className="font-medium text-red-700">
+                            £{currentSummary.interestWithholdingTaxGbp.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center text-sm border-t border-purple-200 pt-2">
+                          <span className="text-purple-800 font-medium">Net Interest Received</span>
+                          <span className="font-medium text-purple-900">
+                            £{currentSummary.totalInterestGbp.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="py-2">
                       <p className="text-sm text-purple-800">
                         <strong>Personal Savings Allowance:</strong>
