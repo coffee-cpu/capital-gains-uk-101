@@ -13,13 +13,10 @@ jobs:
       id-token: write
 
     steps:
-      - name: Checkout PR head
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          repository: ${{ github.event.pull_request.head.repo.full_name }}
-          ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 1
-          persist-credentials: false
 
       - name: Run Claude Code Review
         uses: anthropics/claude-code-action@v1
