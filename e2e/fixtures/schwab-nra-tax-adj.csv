@@ -1,5 +1,4 @@
-"Date","Action","Symbol","Description","Quantity","Price","Fees & Comm","Amount"
-"02/15/2024","Buy","AAPL","APPLE INC","100","$170.00","$0.01","-$17000.01"
-"06/17/2024","Sell","AAPL","APPLE INC","50","$180.00","$0.01","$8999.99"
-"09/16/2024","NRA Tax Adj","AAPL","APPLE INC","","","","-$3.75"
-"09/16/2024","Qualified Dividend","AAPL","APPLE INC","","","","$25.00"
+date,type,symbol,currency,name,quantity,price,total,fee,notes,gross_dividend,withholding_tax
+2024-01-15,BUY,AAPL,GBP,Apple Inc.,100,150.00,15000.00,0.00,,,
+2024-06-15,SELL,AAPL,GBP,Apple Inc.,50,160.00,8000.00,0.00,,,
+2024-09-15,DIVIDEND,AAPL,GBP,Apple Inc.,,,21.25,,,25.00,3.75

@@ -329,6 +329,51 @@ describe('Generic CSV Parser', () => {
       expect(result[1].type).toBe(TransactionType.STOCK_SPLIT)
     })
 
+    it('should parse gross_dividend and withholding_tax for DIVIDEND transactions', () => {
+      const rows = [
+        {
+          date: '2024-09-15',
+          type: 'DIVIDEND',
+          symbol: 'AAPL',
+          currency: 'GBP',
+          total: '21.25',
+          gross_dividend: '25.00',
+          withholding_tax: '3.75',
+          notes: 'Quarterly dividend with NRA withholding',
+        },
+      ]
+
+      const result = normalizeGenericTransactions(rows, 'test-file')
+
+      expect(result).toHaveLength(1)
+      expect(result[0].type).toBe(TransactionType.DIVIDEND)
+      expect(result[0].total).toBe(21.25)
+      expect(result[0].grossDividend).toBe(25.00)
+      expect(result[0].withholdingTax).toBe(3.75)
+    })
+
+    it('should not include grossDividend/withholdingTax for non-DIVIDEND types', () => {
+      const rows = [
+        {
+          date: '2024-01-15',
+          type: 'BUY',
+          symbol: 'AAPL',
+          currency: 'GBP',
+          quantity: '10',
+          price: '150.00',
+          total: '1500.00',
+          gross_dividend: '100',
+          withholding_tax: '15',
+        },
+      ]
+
+      const result = normalizeGenericTransactions(rows, 'test-file')
+
+      expect(result).toHaveLength(1)
+      expect(result[0].grossDividend).toBeUndefined()
+      expect(result[0].withholdingTax).toBeUndefined()
+    })
+
     it('should default to USD currency if not specified', () => {
       const rows = [
         {

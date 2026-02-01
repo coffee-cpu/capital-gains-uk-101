@@ -14,6 +14,8 @@ import { RawCSVRow } from '../../types/broker'
  * - fee (optional, number)
  * - split_ratio (optional, for STOCK_SPLIT only, e.g., "10:1", "2:1")
  * - notes (optional, text)
+ * - gross_dividend (optional, for DIVIDEND only, gross amount before withholding tax)
+ * - withholding_tax (optional, for DIVIDEND only, tax withheld at source)
  */
 
 /**
@@ -71,6 +73,8 @@ function normalizeGenericRow(
   const fee = row['fee'] ? (isNaN(parseFloat(row['fee'])) ? null : parseFloat(row['fee'])) : null
   const notes = row['notes']?.trim() || null
   const ratio = row['split_ratio']?.trim() || null
+  const grossDividend = row['gross_dividend'] ? (isNaN(parseFloat(row['gross_dividend'])) ? null : parseFloat(row['gross_dividend'])) : null
+  const withholdingTax = row['withholding_tax'] ? (isNaN(parseFloat(row['withholding_tax'])) ? null : parseFloat(row['withholding_tax'])) : null
 
   return {
     id: `${fileId}-${rowIndex}`,
@@ -86,6 +90,10 @@ function normalizeGenericRow(
     fee,
     notes,
     ratio,
+    ...(type === TransactionType.DIVIDEND && (grossDividend !== null || withholdingTax !== null) && {
+      grossDividend,
+      withholdingTax,
+    }),
   }
 }
 
