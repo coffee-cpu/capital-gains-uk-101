@@ -1,0 +1,6 @@
+"Date","Action","Symbol","Description","Quantity","Price","Fees & Comm","Amount"
+"06/01/2024","Buy","AAPL","APPLE INC","100","$170.00","$0.03","-$17000.03"
+"09/15/2024","Sell","AAPL","APPLE INC","50","$180.00","$0.02","$8999.98"
+"09/29/2024","NRA Tax Adj","AAPL","APPLE INC","","","","-$2.50"
+"09/29/2024","Qualified Dividend","AAPL","APPLE INC","","","","$15.75"
+"06/20/2024","Qualified Dividend","MSFT","MICROSOFT CORP","","","","$22.50"
