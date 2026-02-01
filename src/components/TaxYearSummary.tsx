@@ -345,7 +345,7 @@ export function TaxYearSummary() {
                       <div className="flex-1">
                         <div className="text-xs text-purple-600 uppercase mb-0.5">Dividend Income</div>
                         <div className="text-xl font-bold text-purple-900 flex items-center gap-2">
-                          £{currentSummary.totalDividendsGbp.toLocaleString('en-GB', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                          £{currentSummary.grossDividendsGbp.toLocaleString('en-GB', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                           <span className="text-xs font-normal text-purple-700">
                             ({currentSummary.totalDividends} {currentSummary.totalDividends === 1 ? 'payment' : 'payments'})
                           </span>
@@ -376,7 +376,7 @@ export function TaxYearSummary() {
                       <div className="flex-1">
                         <div className="text-xs text-purple-600 uppercase mb-0.5">Interest Income</div>
                         <div className="text-xl font-bold text-purple-900 flex items-center gap-2">
-                          £{currentSummary.totalInterestGbp.toLocaleString('en-GB', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                          £{currentSummary.grossInterestGbp.toLocaleString('en-GB', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                           <span className="text-xs font-normal text-purple-700">
                             ({currentSummary.totalInterest} {currentSummary.totalInterest === 1 ? 'payment' : 'payments'})
                           </span>
@@ -577,34 +577,72 @@ export function TaxYearSummary() {
 
                 <div className="p-6 space-y-4">
                   <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-purple-800">Total Interest Received</span>
-                      <span className="font-medium text-purple-900">
-                        £{currentSummary.totalInterestGbp.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </span>
-                    </div>
-
-                    {currentSummary.interestWithholdingTaxGbp > 0 && (
-                      <div className="bg-purple-50 rounded-lg p-4 space-y-2 border border-purple-100">
-                        <div className="text-sm font-semibold text-purple-900 mb-2">SA106 Foreign Income Summary</div>
-                        <div className="flex justify-between items-center text-sm">
-                          <span className="text-purple-800">Gross Interest (before tax withheld)</span>
+                    {/* Show gross/net breakdown if withholding tax exists */}
+                    {currentSummary.interestWithholdingTaxGbp > 0 ? (
+                      <>
+                        <div className="flex justify-between items-center">
+                          <span className="text-purple-800">
+                            Gross Interest (taxable amount)
+                            <Tooltip content="View HMRC guidance on foreign interest">
+                              <a
+                                href="https://www.gov.uk/government/publications/self-assessment-foreign-sa106"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="ml-1 text-purple-600 hover:text-purple-800 underline text-xs"
+                              >
+                                (why?)
+                              </a>
+                            </Tooltip>
+                          </span>
                           <span className="font-medium text-purple-900">
                             £{currentSummary.grossInterestGbp.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </span>
                         </div>
-                        <div className="flex justify-between items-center text-sm">
-                          <span className="text-purple-800">Tax Withheld at Source</span>
-                          <span className="font-medium text-red-700">
-                            £{currentSummary.interestWithholdingTaxGbp.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        <div className="flex justify-between items-center">
+                          <span className="text-purple-800">
+                            Tax Withheld at Source
+                            <Tooltip content="View Foreign Tax Credit Relief guidance">
+                              <a
+                                href="https://www.gov.uk/tax-foreign-income/taxed-twice"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="ml-1 text-purple-600 hover:text-purple-800 underline text-xs"
+                              >
+                                (relief)
+                              </a>
+                            </Tooltip>
                           </span>
-                        </div>
-                        <div className="flex justify-between items-center text-sm border-t border-purple-200 pt-2">
-                          <span className="text-purple-800 font-medium">Net Interest Received</span>
                           <span className="font-medium text-purple-900">
-                            £{currentSummary.totalInterestGbp.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            (£{currentSummary.interestWithholdingTaxGbp.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
                           </span>
                         </div>
+                        <div className="border-t border-purple-300 pt-2">
+                          <div className="flex justify-between items-center font-semibold">
+                            <span className="text-purple-800">Net Interest Received</span>
+                            <span className="text-purple-900">
+                              £{currentSummary.totalInterestGbp.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex justify-between items-center">
+                        <span className="text-purple-800">
+                          Total Interest Received (taxable amount)
+                          <Tooltip content="View HMRC savings interest information">
+                            <a
+                              href="https://www.gov.uk/apply-tax-free-interest-on-savings"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="ml-1 text-purple-600 hover:text-purple-800 underline text-xs"
+                            >
+                              (source)
+                            </a>
+                          </Tooltip>
+                        </span>
+                        <span className="font-medium text-purple-900">
+                          £{currentSummary.totalInterestGbp.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
                       </div>
                     )}
 
@@ -628,6 +666,67 @@ export function TaxYearSummary() {
                       </p>
                     </div>
                   </div>
+
+                  {/* Interest Withholding Tax Information */}
+                  {currentSummary.interestWithholdingTaxGbp > 0 && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                      <div className="flex items-start">
+                        <svg className="h-5 w-5 text-amber-500 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 01-1.581.814L10 13.197l-4.419 3.617A1 1 0 014 16V4z" clipRule="evenodd" />
+                        </svg>
+                        <div className="ml-3 flex-1">
+                          <h4 className="text-sm font-semibold text-amber-900 mb-2">
+                            Interest with Tax Withheld
+                            <Tooltip content="View HMRC SA106 form guidance">
+                              <a
+                                href="https://www.gov.uk/government/publications/self-assessment-foreign-sa106"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="ml-1 text-amber-600 hover:text-amber-800 underline text-xs font-normal"
+                              >
+                                (SA106)
+                              </a>
+                            </Tooltip>
+                          </h4>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between items-center">
+                              <span className="text-amber-800">Gross Interest (before tax withheld)</span>
+                              <span className="font-medium text-amber-900">
+                                £{currentSummary.grossInterestGbp.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-amber-800">Tax Withheld at Source</span>
+                              <span className="font-medium text-amber-900">
+                                £{currentSummary.interestWithholdingTaxGbp.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </span>
+                            </div>
+                            <div className="border-t border-amber-300 pt-2 mt-2">
+                              <div className="flex justify-between items-center">
+                                <span className="text-amber-800 font-medium">Net Interest Received</span>
+                                <span className="font-semibold text-amber-900">
+                                  £{currentSummary.totalInterestGbp.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          <p className="text-xs text-amber-700 mt-3">
+                            <strong>For UK Self Assessment:</strong> Report the gross interest (£{currentSummary.grossInterestGbp.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}) as foreign income. If the tax was withheld by a foreign country, you may be able to claim Foreign Tax Credit Relief for the £{currentSummary.interestWithholdingTaxGbp.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} withheld.
+                            <Tooltip content="View Foreign Tax Credit Relief guidance">
+                              <a
+                                href="https://www.gov.uk/tax-foreign-income/taxed-twice"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="ml-1 text-amber-600 hover:text-amber-800 underline"
+                              >
+                                Learn more
+                              </a>
+                            </Tooltip>
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

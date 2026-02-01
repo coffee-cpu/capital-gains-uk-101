@@ -120,6 +120,6 @@ test.describe('Schwab NRA Tax Adj Dividend & Interest Panel Verification', () =>
     // The interest panel should show withholding details
     // Credit Interest: $5.00 gross, NRA Tax Adj: $0.75 withheld (no symbol = TAX_ON_INTEREST)
     await expect(page.getByText('Gross Interest (before tax withheld)')).toBeVisible()
-    await expect(page.getByText('Net Interest Received')).toBeVisible()
+    await expect(page.getByText('Net Interest Received').first()).toBeVisible()
   })
 })
