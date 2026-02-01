@@ -22,7 +22,6 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          model: claude-opus-4-5-20251101
           track_progress: true
           prompt: |
             You are an expert issue triager for the Capital Gains Tax Visualiser project - a privacy-focused, browser-only web application that helps UK taxpayers calculate capital gains tax on share transactions.
@@ -80,4 +79,4 @@ jobs:
             - Always thank the user for their contribution
             - Include HMRC references when discussing tax calculation behavior
           claude_args: |
-            --allowedTools "Read,Glob,Grep,Bash(gh issue:*),Bash(gh label:*),WebSearch,WebFetch"
+            --model claude-opus-4-5-20251101 --allowedTools "Read,Glob,Grep,Bash(gh issue:*),Bash(gh label:*),WebSearch,WebFetch"
