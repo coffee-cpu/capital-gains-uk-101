@@ -137,7 +137,10 @@ function matchAgainstPool(
   // Calculate proceeds (including selling fees, use split-adjusted price if available)
   const pricePerShare = getEffectivePrice(transaction)
   const effectiveQuantity = getEffectiveQuantity(transaction)
-  const feePerShare = transaction.fee_gbp ? transaction.fee_gbp / Math.max(effectiveQuantity, 1) : 0
+  const contractMultiplier = transaction.contract_size || 1
+  const feePerShare = transaction.fee_gbp
+    ? transaction.fee_gbp / Math.max(effectiveQuantity * contractMultiplier, 1)
+    : 0
   const proceedsPerShare = pricePerShare - feePerShare
   const proceeds = proceedsPerShare * quantityToMatch
 

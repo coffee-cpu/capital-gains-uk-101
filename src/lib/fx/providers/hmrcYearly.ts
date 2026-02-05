@@ -38,10 +38,6 @@ export class HMRCYearlyProvider extends BaseFXProvider {
    * Fetch rate from HMRC yearly average data
    */
   protected async fetchRate(date: string, currency: string): Promise<number> {
-    if (currency === 'GBP') {
-      return 1
-    }
-
     const year = this.getDateKey(date)
     const rates = await this.getYearlyRates(year)
     const rate = rates[currency]

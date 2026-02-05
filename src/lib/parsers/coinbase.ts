@@ -1,6 +1,7 @@
 import type { GenericTransaction } from '../../types/transaction'
 import { TransactionType } from '../../types/transaction'
 import type { RawCSVRow } from '../../types/broker'
+import { parseCurrency } from './parsingUtils'
 
 /**
  * Coinbase CSV Parser
@@ -103,20 +104,6 @@ function parseDate(dateStr: string): string {
 }
 
 /**
- * Parse currency value, handling £/$/€ symbols and various formats
- * Examples: "£389.95711", "-£547.74001", "£0.00"
- */
-function parseCurrencyValue(value: string | undefined): number | null {
-  if (!value || value.trim() === '') return null
-
-  // Remove currency symbols (£, $, €) and commas
-  const cleaned = value.replace(/[£$€,]/g, '').trim()
-  const parsed = parseFloat(cleaned)
-
-  return isNaN(parsed) ? null : parsed
-}
-
-/**
  * Parse quantity, handling scientific notation (e.g., "2.63622E-05")
  */
 function parseQuantity(value: string | undefined): number | null {
@@ -157,10 +144,10 @@ export function normalizeCoinbaseTransactions(
 
     // Parse numeric fields
     const quantity = parseQuantity(row['Quantity Transacted'])
-    const price = parseCurrencyValue(row['Price at Transaction'])
-    const subtotal = parseCurrencyValue(row['Subtotal'])
-    const total = parseCurrencyValue(row['Total (inclusive of fees and/or spread)'])
-    const fee = parseCurrencyValue(row['Fees and/or Spread'])
+    const price = parseCurrency(row['Price at Transaction'])
+    const subtotal = parseCurrency(row['Subtotal'])
+    const total = parseCurrency(row['Total (inclusive of fees and/or spread)'])
+    const fee = parseCurrency(row['Fees and/or Spread'])
 
     // Get currency - Coinbase provides 'Price Currency' column
     const currency = row['Price Currency'] || 'GBP'

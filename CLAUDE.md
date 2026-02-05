@@ -82,12 +82,12 @@ All processing is client-side. The app uses IndexedDB to persist:
 **GenericTransaction** = Raw parsed data from CSV (NO calculations)
 - Represents the original broker statement exactly as imported
 - Required fields: `id`, `source`, `date`, `type`, `symbol`, `currency`, `quantity`, `price`, `total`, `fee`
-- Transaction types: `BUY`, `SELL`, `DIVIDEND`, `FEE`, `INTEREST`, `TRANSFER`, `TAX`, `STOCK_SPLIT`
+- Transaction types: `BUY`, `SELL`, `DIVIDEND`, `FEE`, `INTEREST`, `TRANSFER`, `TAX`, `TAX_ON_DIVIDEND`, `TAX_ON_INTEREST`, `STOCK_SPLIT`, `UNKNOWN`, plus options types (`OPTIONS_BUY_TO_OPEN`, `OPTIONS_SELL_TO_OPEN`, etc.)
 - This is what parsers (`src/lib/parsers/`) output after converting broker-specific formats to a unified structure
 
 **EnrichedTransaction** = GenericTransaction + All computed fields
 - Extends GenericTransaction with calculations performed during enrichment
-- Three enrichment passes (see `src/lib/enrichment.ts`):
+- Three enrichment passes (see `src/lib/enrichment/index.ts` and `src/lib/enrichment/engine.ts`):
   1. **Stock split adjustments**: `split_adjusted_quantity`, `split_adjusted_price`, `split_multiplier`, `applied_splits`
   2. **FX conversion**: `fx_rate`, `price_gbp`, `value_gbp`, `fee_gbp`, `fx_source`
   3. **Tax year & CGT**: `tax_year`, `gain_group`, `match_groups`
@@ -102,14 +102,16 @@ All processing is client-side. The app uses IndexedDB to persist:
 #### 2. Broker Detection & Parsing (`src/lib/brokerDetector.ts`, `src/lib/parsers/`)
 The `detectBroker()` function inspects CSV headers to identify the source format. Each broker has a parser in `src/lib/parsers/` that converts raw CSV rows to GenericTransaction format.
 
-Detection order (important for overlapping formats):
-1. Generic CSV (checks first - most explicit with required headers: `date`, `type`, `symbol`, `currency`)
-2. Schwab Equity Awards (before regular Schwab - has unique headers like `FairMarketValuePrice`, `NetSharesDeposited`)
-3. Charles Schwab (standard brokerage transactions)
-4. Trading 212
-5. Freetrade
-6. EquatePlus
-7. Interactive Brokers
+**Detection uses a priority-based system** (lower number = higher priority) defined in `src/config/brokers/`:
+- Priority 5: Interactive Brokers (unique multi-section format)
+- Priority 10: Schwab Equity Awards (before regular Schwab)
+- Priority 15: Generic CSV (explicit required headers)
+- Priority 20: Charles Schwab
+- Priority 50: Trading 212, Freetrade, EquatePlus, Revolut
+- Priority 55: Coinbase Pro (before regular Coinbase)
+- Priority 60: Coinbase
+
+Each broker definition in `src/config/brokers/*.ts` specifies required headers, optional custom detector function, and parser function.
 
 Each parser must:
 - Generate unique IDs (pattern: `${fileId}-${rowIndex}`)
@@ -117,9 +119,9 @@ Each parser must:
 - Parse currency amounts (handle $, commas, etc.)
 - Map broker-specific actions to standard TransactionType
 
-#### 3. Enrichment Pipeline (`src/lib/enrichment.ts`)
+#### 3. Enrichment Pipeline (`src/lib/enrichment/`)
 
-The `enrichTransactions()` function performs three sequential passes:
+The `enrichTransactions()` function (in `index.ts`) uses the `EnrichmentEngine` (in `engine.ts`) to run three sequential passes via enricher classes in `enrichers/`:
 1. **Stock splits** (sync) - quantities must be in comparable units first
 2. **FX conversion** (async) - API calls to Bank of England for GBP rates
 3. **Tax year calculation** (sync) - assigns UK tax years

@@ -65,7 +65,7 @@ export function applySplitNormalization(transactions: GenericTransaction[]): Enr
   return transactions.map(tx => {
     // Common enrichment placeholder fields (will be populated in subsequent enrichment passes)
     const enrichmentDefaults = {
-      fx_rate: 0,
+      fx_rate: null,
       price_gbp: null,
       value_gbp: null,
       fee_gbp: null,

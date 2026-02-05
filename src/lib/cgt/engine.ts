@@ -130,7 +130,9 @@ function createDisposalRecords(matchings: MatchingResult[]): DisposalRecord[] {
     // quantity by contract_size to get the correct proceeds calculation.
     const pricePerShare = getEffectivePrice(disposal)
     const contractMultiplier = disposal.contract_size || 1
-    const feePerShare = disposal.fee_gbp ? disposal.fee_gbp / (disposalQuantity * contractMultiplier) : 0
+    const feePerShare = disposal.fee_gbp
+      ? disposal.fee_gbp / Math.max(disposalQuantity * contractMultiplier, 1)
+      : 0
 
     // For incomplete disposals, only calculate proceeds for matched shares
     // Multiply by contract_size for options (e.g., 4 contracts * 100 shares * $1.10/share)

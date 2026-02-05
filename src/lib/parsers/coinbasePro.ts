@@ -2,6 +2,7 @@ import type { GenericTransaction } from '../../types/transaction'
 import { TransactionType } from '../../types/transaction'
 import type { RawCSVRow } from '../../types/broker'
 import { isFiatCurrency } from '../currencies'
+import { parseCurrency } from './parsingUtils'
 
 /**
  * Coinbase Pro CSV Parser
@@ -75,16 +76,6 @@ function parseISO8601Date(timestamp: string): string {
 }
 
 /**
- * Parse numeric value, handling potential edge cases
- */
-function parseNumber(value: string | undefined): number | null {
-  if (!value || value.trim() === '') return null
-
-  const parsed = parseFloat(value)
-  return isNaN(parsed) ? null : parsed
-}
-
-/**
  * Normalize Coinbase Pro transactions to GenericTransaction format
  *
  * For fiat pairs (e.g., XRP-GBP, BTC-GBP):
@@ -125,11 +116,11 @@ export function normalizeCoinbaseProTransactions(
     const { base, quote } = productPair
 
     // Parse numeric fields
-    const size = parseNumber(row['size'])
-    const price = parseNumber(row['price'])
-    const fee = parseNumber(row['fee'])
-    const total = parseNumber(row['total'])
-    const gbpValue = parseNumber(row['gbp_value'])
+    const size = parseCurrency(row['size'])
+    const price = parseCurrency(row['price'])
+    const fee = parseCurrency(row['fee'])
+    const total = parseCurrency(row['total'])
+    const gbpValue = parseCurrency(row['gbp_value'])
 
     // Date in YYYY-MM-DD format
     const date = parseISO8601Date(timestamp)

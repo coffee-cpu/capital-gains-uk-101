@@ -51,7 +51,7 @@ export class EnrichmentEngine {
       split_multiplier: 1.0, // No split by default
       applied_splits: [],
       // FX conversion (enrichment pass 2)
-      fx_rate: 0,
+      fx_rate: null,
       price_gbp: null,
       value_gbp: null,
       fee_gbp: null,

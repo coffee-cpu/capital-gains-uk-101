@@ -1,5 +1,6 @@
 import { GenericTransaction, TransactionType } from '../../types/transaction'
 import { RawCSVRow } from '../../types/broker'
+import { parseUSDate, parseCurrency } from './parsingUtils'
 
 /**
  * Normalize Schwab Equity Awards CSV rows to GenericTransaction format
@@ -38,17 +39,17 @@ function normalizeSchwabEquityAwardsPair(
   rowIndex: number
 ): GenericTransaction | null {
   // Transaction row has: Date, Action, Symbol, Description, Quantity
-  const date = parseSchwabDate(transactionRow['Date'])
+  const date = parseUSDate(transactionRow['Date'])
   const action = transactionRow['Action']?.trim()
   const symbol = transactionRow['Symbol']?.trim()
   const description = transactionRow['Description']?.trim()
   const quantityStr = transactionRow['Quantity']?.trim()
 
   // Detail row has: AwardDate, AwardId, FairMarketValuePrice, SharesSoldWithheldForTaxes, NetSharesDeposited, Taxes
-  const fmvPrice = parseSchwabCurrency(detailRow['FairMarketValuePrice'])
+  const fmvPrice = parseCurrency(detailRow['FairMarketValuePrice'])
   const sharesSoldForTaxes = parseFloat(detailRow['SharesSoldWithheldForTaxes']) || 0
   const netShares = parseFloat(detailRow['NetSharesDeposited']) || 0
-  const taxes = parseSchwabCurrency(detailRow['Taxes']) || 0
+  const taxes = parseCurrency(detailRow['Taxes']) || 0
 
   if (!date || !symbol || !action) {
     return null
@@ -97,30 +98,3 @@ function normalizeSchwabEquityAwardsPair(
   }
 }
 
-/**
- * Parse Schwab date format: "MM/DD/YYYY"
- * Returns ISO date string (YYYY-MM-DD) or null
- */
-function parseSchwabDate(dateStr: string): string | null {
-  if (!dateStr) return null
-
-  const match = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
-  if (!match) return null
-
-  const [, month, day, year] = match
-  return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
-}
-
-/**
- * Parse Schwab currency format: "$1,234.56"
- * Returns number or null
- */
-function parseSchwabCurrency(value: string): number | null {
-  if (!value || value.trim() === '') return null
-
-  // Remove $, commas, and parse
-  const cleaned = value.replace(/[\$,]/g, '')
-  const parsed = parseFloat(cleaned)
-
-  return isNaN(parsed) ? null : parsed
-}

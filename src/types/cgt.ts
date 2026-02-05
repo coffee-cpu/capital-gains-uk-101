@@ -1,5 +1,4 @@
-import { z } from 'zod'
-import { EnrichedTransaction, GainGroup } from './transaction'
+import { EnrichedTransaction, GainGroupType } from './transaction'
 import type { TaxYearFeaturesMap } from '../lib/cgt/taxYearFeatures/types'
 
 /**
@@ -26,7 +25,7 @@ export interface MatchingResult {
     costBasisGbp: number
   }>
   /** Which HMRC rule was applied */
-  rule: typeof GainGroup[keyof typeof GainGroup]
+  rule: GainGroupType
   /** Total quantity matched under this rule */
   quantityMatched: number
   /** Total cost basis in GBP for the matched quantity */
@@ -164,59 +163,3 @@ export interface CGTCalculationResult {
   }
 }
 
-/**
- * Zod schemas for validation
- */
-
-export const Section104PoolSchema = z.object({
-  symbol: z.string(),
-  quantity: z.number(),
-  totalCostGbp: z.number(),
-  averageCostGbp: z.number(),
-  history: z.array(z.object({
-    date: z.string().date(),
-    type: z.enum(['BUY', 'SELL']),
-    quantity: z.number(),
-    costOrProceeds: z.number(),
-    balanceQuantity: z.number(),
-    balanceCost: z.number(),
-    transactionId: z.string(),
-  })),
-})
-
-export const DisposalRecordSchema = z.object({
-  id: z.string(),
-  disposal: z.any(), // EnrichedTransaction
-  matchings: z.array(z.any()), // MatchingResult[]
-  proceedsGbp: z.number(),
-  allowableCostsGbp: z.number(),
-  gainOrLossGbp: z.number(),
-  taxYear: z.string(),
-  unmatchedQuantity: z.number().optional(),
-  isIncomplete: z.boolean(),
-})
-
-export const TaxYearSummarySchema = z.object({
-  taxYear: z.string(),
-  startDate: z.string().date(),
-  endDate: z.string().date(),
-  disposals: z.array(DisposalRecordSchema),
-  totalDisposals: z.number().int().nonnegative(),
-  totalProceedsGbp: z.number(),
-  totalAllowableCostsGbp: z.number(),
-  totalGainsGbp: z.number().nonnegative(),
-  totalLossesGbp: z.number().nonpositive(),
-  netGainOrLossGbp: z.number(),
-  annualExemptAmount: z.number().nonnegative(),
-  taxableGainGbp: z.number().nonnegative(),
-  totalDividends: z.number().int().nonnegative(),
-  totalDividendsGbp: z.number().nonnegative(),
-  grossDividendsGbp: z.number().nonnegative(),
-  totalWithholdingTaxGbp: z.number().nonnegative(),
-  dividendAllowance: z.number().nonnegative(),
-  totalInterest: z.number().int().nonnegative(),
-  totalInterestGbp: z.number().nonnegative(),
-  grossInterestGbp: z.number().nonnegative(),
-  interestWithholdingTaxGbp: z.number().nonnegative(),
-  incompleteDisposals: z.number().int().nonnegative(),
-})

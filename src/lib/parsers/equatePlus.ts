@@ -1,5 +1,6 @@
 import { GenericTransaction, TransactionType } from '../../types/transaction'
 import { RawCSVRow } from '../../types/broker'
+import { parseCurrency } from './parsingUtils'
 
 /**
  * Normalize EquatePlus CSV rows to GenericTransaction format
@@ -64,10 +65,10 @@ function parseSellTransaction(
 ): GenericTransaction | null {
     const instrument = row['Instrument']?.trim() || ''
     const symbol = extractSymbol(instrument)
-    const quantity = parseEquatePlusNumber(row['Quantity'])
-    const executionPrice = parseEquatePlusPrice(row['Execution price'])
-    const fees = parseEquatePlusPrice(row['Fees']) || 0
-    const netProceeds = parseEquatePlusPrice(row['Net proceeds'])
+    const quantity = parseCurrency(row['Quantity'])
+    const executionPrice = parseCurrency(row['Execution price'])
+    const fees = parseCurrency(row['Fees']) || 0
+    const netProceeds = parseCurrency(row['Net proceeds'])
     const orderRef = row['Order reference']?.trim()
 
     const notes = []
@@ -107,8 +108,8 @@ function parseWithholdToCoverTransaction(
 ): GenericTransaction | null {
     const instrument = row['Instrument']?.trim() || ''
     const symbol = extractSymbol(instrument)
-    const netUnits = parseEquatePlusNumber(row['Net units'])
-    const executionPrice = parseEquatePlusPrice(row['Execution price'])
+    const netUnits = parseCurrency(row['Net units'])
+    const executionPrice = parseCurrency(row['Execution price'])
     const orderRef = row['Order reference']?.trim()
 
     // If Net units is provided and positive, this is an acquisition (RSU vest)
@@ -157,8 +158,8 @@ function parseDividendTransaction(
 ): GenericTransaction | null {
     const instrument = row['Instrument']?.trim() || ''
     const symbol = extractSymbol(instrument)
-    const quantity = parseEquatePlusNumber(row['Quantity'])
-    const netProceeds = parseEquatePlusPrice(row['Net proceeds'])
+    const quantity = parseCurrency(row['Quantity'])
+    const netProceeds = parseCurrency(row['Net proceeds'])
     const orderRef = row['Order reference']?.trim()
 
     const notes = []
@@ -233,29 +234,4 @@ function parseEquatePlusDate(dateStr: string): string | null {
     return `${year}-${monthNum}-${dayPadded}`
 }
 
-/**
- * Parse EquatePlus number format (with commas): "9,652" -> 9652
- */
-function parseEquatePlusNumber(value: string | undefined): number | null {
-    if (!value) return null
-
-    // Remove commas and parse
-    const cleaned = value.replace(/,/g, '')
-    const parsed = parseFloat(cleaned)
-
-    return isNaN(parsed) ? null : parsed
-}
-
-/**
- * Parse EquatePlus price format: "£4.59" -> 4.59
- */
-function parseEquatePlusPrice(value: string | undefined): number | null {
-    if (!value) return null
-
-    // Remove £ symbol, commas, and parse
-    const cleaned = value.replace(/£/g, '').replace(/,/g, '')
-    const parsed = parseFloat(cleaned)
-
-    return isNaN(parsed) ? null : parsed
-}
 

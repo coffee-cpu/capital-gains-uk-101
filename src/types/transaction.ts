@@ -68,7 +68,7 @@ export const EnrichedTransactionSchema = GenericTransactionSchema.extend({
   applied_splits: z.array(z.string()).optional().describe('Array of stock split transaction IDs that were applied to normalize this transaction'),
 
   // FX conversion (computed during enrichment, Step 2)
-  fx_rate: z.number().describe('FX rate used for GBP conversion'),
+  fx_rate: z.number().nullable().describe('FX rate used for GBP conversion (null when rate unavailable)'),
   price_gbp: z.number().nullable().describe('Price per unit in GBP'),
   split_adjusted_price_gbp: z.number().nullable().optional().describe('Split-adjusted price per unit in GBP (price_gbp adjusted for stock splits)'),
   value_gbp: z.number().nullable().describe('Total value in GBP'),
@@ -123,6 +123,9 @@ export const GainGroup = {
   SHORT_SELL: 'SHORT_SELL',
   NONE: 'NONE',
 } as const
+
+/** Type alias for GainGroup values */
+export type GainGroupType = typeof GainGroup[keyof typeof GainGroup]
 
 /**
  * Stock Split Event
