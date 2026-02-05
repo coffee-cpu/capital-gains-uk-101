@@ -1,5 +1,5 @@
 import { EnrichedTransaction } from '../../../types/transaction'
-import { FXSource, FXSourceAttributions, DEFAULT_FX_SOURCE } from '../../../types/fxSource'
+import { FXSource, FXSourceAttributions } from '../../../types/fxSource'
 import { FXManager, convertToGBP } from '../../fx'
 import { Enricher } from '../types'
 import { isFiatCurrency } from '../../currencies'
@@ -31,7 +31,7 @@ export class FxEnricher implements Enricher {
   private fxManager: FXManager
 
   constructor(fxSource?: FXSource) {
-    this.fxManager = new FXManager(fxSource ?? DEFAULT_FX_SOURCE)
+    this.fxManager = new FXManager(fxSource)
   }
 
   /**
@@ -84,24 +84,21 @@ export class FxEnricher implements Enricher {
         const fxResult = await this.fxManager.getRate(tx.date, tx.currency)
         const fxRate = fxResult.rate
 
-        // Convert prices to GBP
-        const priceGbp = tx.price !== null ? convertToGBP(tx.price, fxRate) : null
-        const splitAdjustedPriceGbp =
-          tx.split_adjusted_price !== null && tx.split_adjusted_price !== undefined
-            ? convertToGBP(tx.split_adjusted_price, fxRate)
-            : null
-        const valueGbp = tx.total !== null ? convertToGBP(tx.total, fxRate) : null
-        const feeGbp = tx.fee !== null ? convertToGBP(tx.fee, fxRate) : null
+        // Convert prices to GBP (using != null to check both null and undefined)
+        const priceGbp = tx.price != null ? convertToGBP(tx.price, fxRate) : null
+        const splitAdjustedPriceGbp = tx.split_adjusted_price != null
+          ? convertToGBP(tx.split_adjusted_price, fxRate)
+          : null
+        const valueGbp = tx.total != null ? convertToGBP(tx.total, fxRate) : null
+        const feeGbp = tx.fee != null ? convertToGBP(tx.fee, fxRate) : null
 
         // Convert SA106 dividend withholding fields to GBP
-        const grossDividendGbp =
-          tx.grossDividend !== null && tx.grossDividend !== undefined
-            ? convertToGBP(tx.grossDividend, fxRate)
-            : null
-        const withholdingTaxGbp =
-          tx.withholdingTax !== null && tx.withholdingTax !== undefined
-            ? convertToGBP(tx.withholdingTax, fxRate)
-            : null
+        const grossDividendGbp = tx.grossDividend != null
+          ? convertToGBP(tx.grossDividend, fxRate)
+          : null
+        const withholdingTaxGbp = tx.withholdingTax != null
+          ? convertToGBP(tx.withholdingTax, fxRate)
+          : null
 
         enriched.push({
           ...tx,

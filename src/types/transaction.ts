@@ -124,6 +124,9 @@ export const GainGroup = {
   NONE: 'NONE',
 } as const
 
+/** Type alias for GainGroup values */
+export type GainGroupType = typeof GainGroup[keyof typeof GainGroup]
+
 /**
  * Stock Split Event
  * Represents a stock split/reorganisation under HMRC TCGA92/S127
