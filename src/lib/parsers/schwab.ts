@@ -1,6 +1,6 @@
 import { GenericTransaction, TransactionType } from '../../types/transaction'
 import { RawCSVRow } from '../../types/broker'
-import { calculateTotal } from './parsingUtils'
+import { calculateTotal, parseCurrency, parseUSDate } from './parsingUtils'
 
 /**
  * Parsed options symbol data
@@ -85,11 +85,11 @@ function normalizeSchwabRow(
     type = symbol ? TransactionType.TAX_ON_DIVIDEND : TransactionType.TAX_ON_INTEREST
   }
 
-  // Parse numeric values - use parseSchwabQuantity to handle commas
-  const quantity = parseSchwabQuantity(row['Quantity'])
-  const price = parseSchwabCurrency(row['Price']) || null
-  const fee = parseSchwabCurrency(row['Fees & Comm']) || null
-  const amount = parseSchwabCurrency(row['Amount']) || null
+  // Parse numeric values
+  const quantity = parseCurrency(row['Quantity'])
+  const price = parseCurrency(row['Price']) || null
+  const fee = parseCurrency(row['Fees & Comm']) || null
+  const amount = parseCurrency(row['Amount']) || null
 
   // Calculate total (for buys, amount is negative, for sells positive)
   const total = calculateTotal(amount, quantity, price)
@@ -249,29 +249,9 @@ function parseSchwabDate(dateStr: string): string | null {
 
   // Handle "as of" dates - use the "as of" date (transaction date) not settlement date
   const parts = dateStr.split(' as of ')
-  const dateToUse = parts.length > 1 ? parts[1].trim() : parts[0].trim()
-
-  const match = dateToUse.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
-  if (!match) return null
-
-  const [, month, day, year] = match
-  return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
+  return parseUSDate(parts.length > 1 ? parts[1] : parts[0])
 }
 
-
-/**
- * Parse Schwab currency format: "$1,234.56" or "-$1,234.56"
- * Returns number or null
- */
-function parseSchwabCurrency(value: string): number | null {
-  if (!value || value.trim() === '') return null
-
-  // Remove $, commas, and parse
-  const cleaned = value.replace(/[\$,]/g, '')
-  const parsed = parseFloat(cleaned)
-
-  return isNaN(parsed) ? null : parsed
-}
 
 /**
  * Parse stock split ratio from Schwab description
@@ -332,16 +312,3 @@ export function parseOptionsSymbol(symbol: string): ParsedOptionsSymbol | null {
   }
 }
 
-/**
- * Parse quantity that may contain commas (e.g., "1,000" -> 1000)
- * Also handles negative quantities
- */
-function parseSchwabQuantity(value: string): number | null {
-  if (!value || value.trim() === '') return null
-
-  // Remove commas and parse
-  const cleaned = value.replace(/,/g, '')
-  const parsed = parseFloat(cleaned)
-
-  return isNaN(parsed) ? null : parsed
-}

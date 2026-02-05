@@ -1,6 +1,7 @@
 import type { GenericTransaction } from '../../types/transaction'
 import { TransactionType } from '../../types/transaction'
 import type { RawCSVRow } from '../../types/broker'
+import { parseNumber } from './parsingUtils'
 
 /**
  * Revolut CSV Parser
@@ -60,19 +61,6 @@ function parseDate(dateStr: string): string {
   // Revolut uses ISO 8601 format with microseconds
   // Extract just the date part (YYYY-MM-DD)
   return dateStr.split('T')[0]
-}
-
-/**
- * Parse numeric value, handling empty strings and currency symbols
- */
-function parseNumber(value: string | undefined): number | undefined {
-  if (!value || value.trim() === '') return undefined
-
-  // Remove currency symbols ($, £, €) and commas, preserve negative sign
-  const cleaned = value.replace(/[$£€,]/g, '').trim()
-  const parsed = parseFloat(cleaned)
-
-  return isNaN(parsed) ? undefined : parsed
 }
 
 /**

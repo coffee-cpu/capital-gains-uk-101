@@ -714,7 +714,7 @@ export function TransactionList() {
                     ) : tx.price_gbp !== null ? (
                       <div className="flex items-center gap-2">
                         {tx.currency !== 'GBP' ? (
-                          <Tooltip content={`FX Rate: ${tx.fx_rate.toFixed(4)} ${tx.currency}/GBP (${tx.fx_source} - ${formatFxDate(tx.date, tx.fx_source)})`}>
+                          <Tooltip content={`FX Rate: ${tx.fx_rate?.toFixed(4) ?? '—'} ${tx.currency}/GBP (${tx.fx_source} - ${formatFxDate(tx.date, tx.fx_source)})`}>
                             <span className="cursor-help border-b border-dotted border-gray-400">
                               £{tx.price_gbp.toFixed(2)}
                             </span>
@@ -746,7 +746,7 @@ export function TransactionList() {
                     {hasFxError ? (
                       <span className="text-red-600 font-medium">Error</span>
                     ) : tx.value_gbp !== null && tx.currency !== 'GBP' ? (
-                      <Tooltip content={`FX Rate: ${tx.fx_rate.toFixed(4)} ${tx.currency}/GBP (${tx.fx_source} - ${formatFxDate(tx.date, tx.fx_source)})`}>
+                      <Tooltip content={`FX Rate: ${tx.fx_rate?.toFixed(4) ?? '—'} ${tx.currency}/GBP (${tx.fx_source} - ${formatFxDate(tx.date, tx.fx_source)})`}>
                         <span className="cursor-help border-b border-dotted border-gray-400">
                           £{tx.value_gbp.toFixed(2)}
                         </span>
@@ -766,7 +766,7 @@ export function TransactionList() {
                     {hasFxError ? (
                       <span className="text-red-600 font-medium">Error</span>
                     ) : tx.fee_gbp !== null && tx.fee_gbp !== 0 && tx.currency !== 'GBP' ? (
-                      <Tooltip content={`FX Rate: ${tx.fx_rate.toFixed(4)} ${tx.currency}/GBP (${tx.fx_source} - ${formatFxDate(tx.date, tx.fx_source)})`}>
+                      <Tooltip content={`FX Rate: ${tx.fx_rate?.toFixed(4) ?? '—'} ${tx.currency}/GBP (${tx.fx_source} - ${formatFxDate(tx.date, tx.fx_source)})`}>
                         <span className="cursor-help border-b border-dotted border-gray-400">
                           £{tx.fee_gbp.toFixed(2)}
                         </span>

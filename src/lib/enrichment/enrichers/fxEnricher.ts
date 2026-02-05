@@ -69,7 +69,7 @@ export class FxEnricher implements Enricher {
 
           enriched.push({
             ...tx,
-            fx_rate: 0,
+            fx_rate: null,
             price_gbp: null,
             split_adjusted_price_gbp: null,
             value_gbp: null,
@@ -124,7 +124,7 @@ export class FxEnricher implements Enricher {
         // Mark transaction with error - no fallback values
         enriched.push({
           ...tx,
-          fx_rate: 0,
+          fx_rate: null,
           price_gbp: null,
           split_adjusted_price_gbp: null,
           value_gbp: null,

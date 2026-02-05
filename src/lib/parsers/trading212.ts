@@ -1,6 +1,7 @@
 import type { GenericTransaction } from '../../types/transaction'
 import { TransactionType } from '../../types/transaction'
 import type { RawCSVRow } from '../../types/broker'
+import { parseNumber } from './parsingUtils'
 
 /**
  * Trading 212 CSV Parser
@@ -84,19 +85,6 @@ function parseDate(dateStr: string): string {
   // Trading 212 uses: "2025-09-09 07:03:13"
   // We need: "2025-09-09"
   return dateStr.split(' ')[0]
-}
-
-/**
- * Parse numeric value, handling empty strings and various formats
- */
-function parseNumber(value: string | undefined): number | undefined {
-  if (!value || value.trim() === '') return undefined
-
-  // Remove any currency symbols and commas
-  const cleaned = value.replace(/[£$€,]/g, '').trim()
-  const parsed = parseFloat(cleaned)
-
-  return isNaN(parsed) ? undefined : parsed
 }
 
 /**
