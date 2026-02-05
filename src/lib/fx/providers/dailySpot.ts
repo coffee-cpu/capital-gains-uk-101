@@ -43,10 +43,6 @@ export class DailySpotProvider extends BaseFXProvider {
    * Fetch rate from Frankfurter API for a single date
    */
   protected async fetchRate(date: string, currency: string): Promise<number> {
-    if (currency === 'GBP') {
-      return 1
-    }
-
     // Frankfurter uses GBP as base, returns rates for other currencies
     const url = `https://api.frankfurter.dev/v1/${date}?from=GBP&to=${currency}`
 
@@ -73,7 +69,6 @@ export class DailySpotProvider extends BaseFXProvider {
 
       return rate
     } catch (error) {
-      console.error(`Failed to fetch daily spot rate for ${currency} on ${date}:`, error)
       throw new Error(
         `Failed to fetch daily spot rate for ${currency} on ${date}: ${error instanceof Error ? error.message : 'Unknown error'}`
       )

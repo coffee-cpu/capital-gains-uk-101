@@ -35,10 +35,6 @@ export class HMRCMonthlyProvider extends BaseFXProvider {
    * Fetch rate from HMRC API
    */
   protected async fetchRate(date: string, currency: string): Promise<number> {
-    if (currency === 'GBP') {
-      return 1
-    }
-
     const [year, month] = date.split('-')
     const url = `https://hmrc.matchilling.com/rate/${year}/${month}.json`
 
@@ -65,7 +61,6 @@ export class HMRCMonthlyProvider extends BaseFXProvider {
       // For example, if USD rate is 1.27, it means 1 GBP = 1.27 USD
       return rate
     } catch (error) {
-      console.error(`Failed to fetch HMRC FX rate for ${currency} in ${year}/${month}:`, error)
       throw new Error(
         `Failed to fetch HMRC FX rate for ${currency} in ${year}/${month}: ${error instanceof Error ? error.message : 'Unknown error'}`
       )
