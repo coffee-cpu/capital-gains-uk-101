@@ -21,6 +21,7 @@ export function CSVImporter() {
   const setTransactions = useTransactionStore((state) => state.setTransactions)
   const setCGTResults = useTransactionStore((state) => state.setCGTResults)
   const fxSource = useSettingsStore((state) => state.fxSource)
+  const autoSplitsEnabled = useSettingsStore((state) => state.autoSplitsEnabled)
 
   // Build supported brokers text for the upload area
   const supportedBrokers = getEnabledBrokerDefinitions()
@@ -130,7 +131,7 @@ export function CSVImporter() {
     }
 
     // Process all transactions from DB (deduplicate, enrich, calculate CGT)
-    const cgtResults = await processTransactionsFromDB(fxSource)
+    const cgtResults = await processTransactionsFromDB(fxSource, autoSplitsEnabled)
     if (cgtResults) {
       setTransactions(cgtResults.transactions)
       setCGTResults(cgtResults)

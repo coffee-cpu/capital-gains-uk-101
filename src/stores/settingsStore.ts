@@ -8,6 +8,10 @@ interface SettingsState {
   fxSource: FXSource
   setFXSource: (fxSource: FXSource) => Promise<void>
 
+  // Auto-splits
+  autoSplitsEnabled: boolean
+  setAutoSplitsEnabled: (enabled: boolean) => Promise<void>
+
   // Track if settings have been loaded from IndexedDB
   isInitialized: boolean
   initializeFromDB: () => Promise<void>
@@ -23,6 +27,7 @@ export const useSettingsStore = create<SettingsState>()(
   persist(
     (set, get) => ({
       fxSource: DEFAULT_FX_SOURCE,
+      autoSplitsEnabled: true,
       isInitialized: false,
 
       setFXSource: async (fxSource: FXSource) => {
@@ -40,20 +45,38 @@ export const useSettingsStore = create<SettingsState>()(
         }
       },
 
+      setAutoSplitsEnabled: async (enabled: boolean) => {
+        set({ autoSplitsEnabled: enabled })
+
+        try {
+          await db.settings.put({
+            key: 'autoSplitsEnabled',
+            value: String(enabled),
+            updatedAt: new Date().toISOString(),
+          })
+        } catch (error) {
+          console.error('Failed to persist autoSplitsEnabled to IndexedDB:', error)
+        }
+      },
+
       initializeFromDB: async () => {
         if (get().isInitialized) return
 
         try {
-          const setting = await db.settings.get('fxSource')
-          if (setting?.value) {
-            // Validate the value is a valid source
+          const fxSetting = await db.settings.get('fxSource')
+          if (fxSetting?.value) {
             const validSources: FXSource[] = ['HMRC_MONTHLY', 'HMRC_YEARLY_AVG', 'DAILY_SPOT']
-            if (validSources.includes(setting.value as FXSource)) {
-              set({ fxSource: setting.value as FXSource })
+            if (validSources.includes(fxSetting.value as FXSource)) {
+              set({ fxSource: fxSetting.value as FXSource })
             }
           }
+
+          const autoSplitsSetting = await db.settings.get('autoSplitsEnabled')
+          if (autoSplitsSetting?.value) {
+            set({ autoSplitsEnabled: autoSplitsSetting.value !== 'false' })
+          }
         } catch (error) {
-          console.error('Failed to load FX source from IndexedDB:', error)
+          console.error('Failed to load settings from IndexedDB:', error)
         }
 
         set({ isInitialized: true })
@@ -64,6 +87,7 @@ export const useSettingsStore = create<SettingsState>()(
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         fxSource: state.fxSource,
+        autoSplitsEnabled: state.autoSplitsEnabled,
       }),
     }
   )

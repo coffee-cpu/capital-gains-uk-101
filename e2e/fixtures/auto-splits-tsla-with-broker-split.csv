@@ -1,0 +1,4 @@
+date,type,symbol,currency,name,quantity,price,total,fee,notes,ratio
+2019-01-02,BUY,TSLA,USD,Tesla Inc.,1,310.12,310.12,0.00,,
+2020-08-31,STOCK_SPLIT,TSLA,USD,Tesla Inc.,,,,,,5:1
+2025-06-15,SELL,TSLA,USD,Tesla Inc.,15,280.00,4200.00,0.00,,

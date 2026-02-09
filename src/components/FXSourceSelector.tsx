@@ -20,7 +20,7 @@ import { processTransactionsFromDB } from '../lib/transactionProcessor'
  * It is, however, expected that a reasonable and consistent method is used."
  */
 export function FXSourceSelector() {
-  const { fxSource, setFXSource } = useSettingsStore()
+  const { fxSource, setFXSource, autoSplitsEnabled } = useSettingsStore()
   const { setTransactions, setCGTResults, setIsLoading, transactions } = useTransactionStore()
   const [isChanging, setIsChanging] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
@@ -70,7 +70,7 @@ export function FXSourceSelector() {
       await setFXSource(newSource)
 
       // Re-process all transactions with the new FX source
-      const cgtResults = await processTransactionsFromDB(newSource)
+      const cgtResults = await processTransactionsFromDB(newSource, autoSplitsEnabled)
       if (cgtResults) {
         setTransactions(cgtResults.transactions)
         setCGTResults(cgtResults)
