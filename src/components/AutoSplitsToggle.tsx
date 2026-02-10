@@ -42,9 +42,9 @@ export function AutoSplitsToggle() {
 
   return (
     <div className="flex items-center gap-2">
-      <Tooltip content="Automatically fetch stock split data from community-maintained sources. When enabled, missing splits are detected and applied for correct CGT calculations.">
+      <Tooltip content="Fetch stock split data from community-maintained sources (coffee-cpu/stock-splits-data). When enabled, missing splits are applied for correct CGT calculations. This data may be incomplete — you can also upload your own splits via Generic CSV.">
         <label className="flex items-center gap-2 cursor-pointer text-sm">
-          <span className="text-gray-600 whitespace-nowrap">Auto-splits</span>
+          <span className="text-gray-600 whitespace-nowrap">Community split data</span>
           <button
             role="switch"
             aria-checked={autoSplitsEnabled}

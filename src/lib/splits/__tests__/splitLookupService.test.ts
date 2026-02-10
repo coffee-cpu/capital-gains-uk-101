@@ -85,7 +85,7 @@ describe('getAutoSplitsForTransactions', () => {
     expect(result).toHaveLength(1)
     const split = result[0]
     expect(split.id).toBe('auto-split-TSLA-2020-08-31')
-    expect(split.source).toBe('Auto-detected')
+    expect(split.source).toBe('Community')
     expect(split.type).toBe('STOCK_SPLIT')
     expect(split.symbol).toBe('TSLA')
     expect(split.date).toBe('2020-08-31')

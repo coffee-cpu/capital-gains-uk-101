@@ -110,7 +110,7 @@ function getYearRange(transactions: GenericTransaction[]): number[] {
 function splitRecordToTransaction(split: SplitRecord): GenericTransaction {
   return {
     id: `auto-split-${split.symbol}-${split.date}`,
-    source: 'Auto-detected',
+    source: 'Community',
     symbol: split.symbol,
     name: split.name ?? null,
     date: split.date,
