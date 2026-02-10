@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-/** Mock CDN data for TSLA splits */
+/** Mock CDN data for TSLA splits (uses ratioNew/ratioOld integer format) */
 function tslaSplitData(year: number) {
   if (year === 2020) {
     return {
@@ -16,7 +16,8 @@ function tslaSplitData(year: number) {
           symbol: 'TSLA',
           name: 'Tesla Inc.',
           date: '2020-08-31',
-          ratio: '5:1',
+          ratioNew: 5,
+          ratioOld: 1,
           exchange: 'NASDAQ',
           source: 'https://example.com',
           notes: '5-for-1 forward split',
@@ -33,7 +34,8 @@ function tslaSplitData(year: number) {
           symbol: 'TSLA',
           name: 'Tesla Inc.',
           date: '2022-08-24',
-          ratio: '3:1',
+          ratioNew: 3,
+          ratioOld: 1,
           exchange: 'NASDAQ',
           source: 'https://example.com',
           notes: '3-for-1 forward split',

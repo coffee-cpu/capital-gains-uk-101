@@ -2,7 +2,6 @@ import { db } from '../db'
 
 /**
  * A parsed stock split record with typed ratio fields.
- * The data source layer parses CDN ratio strings ("5:1") into numeric fields.
  */
 export interface SplitRecord {
   symbol: string
@@ -17,13 +16,14 @@ export interface SplitRecord {
 }
 
 /**
- * Raw CDN split record shape (before parsing ratio string).
+ * Raw CDN split record shape (ratioNew/ratioOld integer fields).
  */
 interface CdnSplitRecord {
   symbol: string
   name?: string
   date: string
-  ratio: string  // e.g., "5:1"
+  ratioNew: number  // new shares received (e.g., 4 for a 4-for-1 split)
+  ratioOld: number  // old shares exchanged (e.g., 1 for a 4-for-1 split)
   isin?: string
   exchange?: string
   source?: string
@@ -53,7 +53,7 @@ const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000
 /**
  * Fetches stock split data from the coffee-cpu/stock-splits-data repo via jsDelivr CDN.
  *
- * - Parses CDN ratio strings into typed ratioFrom/ratioTo numbers
+ * - Maps CDN ratioNew/ratioOld fields to internal ratioTo/ratioFrom
  * - Uses IndexedDB (split_data_cache table) for caching with 7-day TTL
  * - On network failure, falls back to stale cache if available
  * - 404s (year file doesn't exist) are handled silently
@@ -135,17 +135,14 @@ export class JsDelivrSplitSource implements SplitDataSource {
   }
 
   private parseCdnRecord(record: CdnSplitRecord): SplitRecord | null {
-    if (!record.ratio || !record.symbol || !record.date) {
+    if (!record.symbol || !record.date) {
       return null
     }
 
-    const parts = record.ratio.split(':')
-    if (parts.length !== 2) return null
+    const ratioTo = record.ratioNew
+    const ratioFrom = record.ratioOld
 
-    const ratioTo = parseFloat(parts[0])
-    const ratioFrom = parseFloat(parts[1])
-
-    if (isNaN(ratioTo) || isNaN(ratioFrom) || ratioFrom === 0 || ratioTo === 0) {
+    if (!ratioTo || !ratioFrom || ratioFrom === 0 || ratioTo === 0) {
       return null
     }
 
