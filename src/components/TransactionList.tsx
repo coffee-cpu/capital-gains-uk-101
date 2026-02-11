@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useTransactionStore } from '../stores/transactionStore'
 import { ClearDataButton } from './ClearDataButton'
 import { Tooltip } from './Tooltip'
@@ -6,6 +6,16 @@ import { FXSourceSelector } from './FXSourceSelector'
 import { AutoSplitsToggle } from './AutoSplitsToggle'
 import { exportTransactionsToCSV } from '../utils/csvExport'
 import { isAcquisition, isDisposal, getUnitLabel } from '../lib/cgt/utils'
+import type { EnrichedTransaction } from '../types/transaction'
+
+// Filter state interface
+interface TransactionFilters {
+  type: string
+  symbol: string
+  source: string
+  cgtRule: string
+  status: string
+}
 
 // Helper to get currency symbol
 function getCurrencySymbol(currency: string): string {
@@ -34,6 +44,15 @@ function formatFxDate(date: string, fxSource: string): string {
   return date.substring(0, 7)
 }
 
+// Default empty filters
+const defaultFilters: TransactionFilters = {
+  type: '',
+  symbol: '',
+  source: '',
+  cgtRule: '',
+  status: '',
+}
+
 export function TransactionList() {
   const transactions = useTransactionStore((state) => state.transactions)
   const isLoading = useTransactionStore((state) => state.isLoading)
@@ -42,10 +61,116 @@ export function TransactionList() {
   const toggleHelpPanelWithContext = useTransactionStore((state) => state.toggleHelpPanelWithContext)
   const [showFxInfo, setShowFxInfo] = useState(false)
   const [hoveredMatchGroup, setHoveredMatchGroup] = useState<string | null>(null)
+  const [filters, setFilters] = useState<TransactionFilters>(defaultFilters)
+  const [showFilters, setShowFilters] = useState(false)
 
   // Get disposal records and Section 104 pools
   const disposals = getDisposals()
   const section104Pools = getSection104Pools()
+
+  // Extract unique filter options from transactions
+  const filterOptions = useMemo(() => {
+    const types = new Set<string>()
+    const symbols = new Set<string>()
+    const sources = new Set<string>()
+
+    for (const tx of transactions) {
+      if (tx.type) types.add(tx.type)
+      if (tx.symbol) symbols.add(tx.symbol)
+      if (tx.source) sources.add(tx.source)
+    }
+
+    return {
+      types: Array.from(types).sort(),
+      symbols: Array.from(symbols).sort(),
+      sources: Array.from(sources).sort(),
+    }
+  }, [transactions])
+
+  // Apply filters to transactions
+  const filteredTransactions = useMemo(() => {
+    return transactions.filter((tx: EnrichedTransaction) => {
+      // Type filter
+      if (filters.type && tx.type !== filters.type) return false
+
+      // Symbol filter
+      if (filters.symbol && tx.symbol !== filters.symbol) return false
+
+      // Source filter
+      if (filters.source && tx.source !== filters.source) return false
+
+      // CGT Rule filter - check actual matching rules from disposal records
+      if (filters.cgtRule) {
+        const isBuyOrSell = isAcquisition(tx) || isDisposal(tx)
+
+        if (filters.cgtRule === 'non-cgt') {
+          // Non-CGT means not a buy/sell transaction
+          if (isBuyOrSell) return false
+        } else if (!isBuyOrSell) {
+          // CGT rule filters only apply to buy/sell transactions
+          return false
+        } else {
+          // Check actual matching rules from disposal records
+          const matchingRules = new Set<string>()
+
+          if (isDisposal(tx)) {
+            // For disposals, get rules from their matchings
+            const disposal = disposals.find(d => d.disposal.id === tx.id)
+            if (disposal) {
+              for (const matching of disposal.matchings) {
+                matchingRules.add(matching.rule)
+              }
+            }
+          } else if (isAcquisition(tx)) {
+            // For acquisitions, find all disposals that used this acquisition
+            for (const disposal of disposals) {
+              for (const matching of disposal.matchings) {
+                for (const acq of matching.acquisitions) {
+                  if (acq.transaction.id === tx.id) {
+                    matchingRules.add(matching.rule)
+                  }
+                }
+              }
+            }
+            // Check if remaining shares went to Section 104 pool
+            const pool = tx.symbol ? section104Pools.get(tx.symbol) : null
+            if (pool?.history?.some(h => h.transactionId === tx.id && h.type === 'BUY')) {
+              matchingRules.add('SECTION_104')
+            }
+          }
+
+          // Check if the selected filter matches any of the transaction's rules
+          if (filters.cgtRule === 'same-day' && !matchingRules.has('SAME_DAY')) return false
+          if (filters.cgtRule === '30-day' && !matchingRules.has('30_DAY')) return false
+          if (filters.cgtRule === 'section-104' && !matchingRules.has('SECTION_104')) return false
+          if (filters.cgtRule === 'short-sell' && !matchingRules.has('SHORT_SELL')) return false
+        }
+      }
+
+      // Status filter
+      if (filters.status) {
+        if (filters.status === 'incomplete' && !tx.incomplete) return false
+        if (filters.status === 'fx-error' && !tx.fx_error) return false
+        if (filters.status === 'ignored' && !tx.ignored) return false
+        if (filters.status === 'ok' && (tx.incomplete || tx.fx_error || tx.ignored)) return false
+      }
+
+      return true
+    })
+  }, [transactions, filters, disposals, section104Pools])
+
+  // Check if any filters are active
+  const hasActiveFilters = Object.values(filters).some(v => v !== '')
+
+  // Update a single filter
+  const updateFilter = (key: keyof TransactionFilters, value: string) => {
+    setFilters(prev => ({ ...prev, [key]: value }))
+  }
+
+  // Reset all filters
+  const resetFilters = () => {
+    setFilters(defaultFilters)
+  }
 
   // Helper to get help context for a badge label
   const getContextForBadge = (label: string) => {
@@ -84,8 +209,8 @@ export function TransactionList() {
     }
   }
 
-  // Sort transactions by date (oldest first)
-  const sortedTransactions = [...transactions].sort((a, b) => {
+  // Sort filtered transactions by date (oldest first)
+  const sortedTransactions = [...filteredTransactions].sort((a, b) => {
     return new Date(a.date).getTime() - new Date(b.date).getTime()
   })
 
@@ -119,10 +244,34 @@ export function TransactionList() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-2xl font-semibold text-gray-900">Transactions</h2>
-            <p className="text-sm text-gray-500 mt-1">{transactions.length} total</p>
+            <p className="text-sm text-gray-500 mt-1">
+              {hasActiveFilters
+                ? `${filteredTransactions.length} of ${transactions.length} shown`
+                : `${transactions.length} total`
+              }
+            </p>
           </div>
           <div className="flex items-center gap-2">
             <AutoSplitsToggle />
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`inline-flex items-center px-3 py-2 border shadow-sm text-sm leading-4 font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                showFilters || hasActiveFilters
+                  ? 'border-blue-500 text-blue-700 bg-blue-50 hover:bg-blue-100'
+                  : 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50'
+              }`}
+              title={showFilters ? 'Hide filters' : 'Show filters'}
+            >
+              <svg className="h-4 w-4 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+              </svg>
+              <span className="hidden sm:inline">Filters</span>
+              {hasActiveFilters && (
+                <span className="ml-1.5 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-blue-600 rounded-full">
+                  {Object.values(filters).filter(v => v !== '').length}
+                </span>
+              )}
+            </button>
             <button
               onClick={() => exportTransactionsToCSV(transactions)}
               className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
@@ -137,6 +286,130 @@ export function TransactionList() {
           </div>
         </div>
       </div>
+
+      {/* Filter Controls */}
+      {showFilters && (
+        <div className="px-6 py-4 bg-gray-50 border-b border-gray-200" role="region" aria-label="Transaction filters">
+          <div className="flex flex-wrap gap-3 items-end">
+            {/* Type Filter */}
+            <div className="flex flex-col min-w-[140px]">
+              <label htmlFor="filter-type" className="text-xs font-medium text-gray-600 mb-1">
+                Type
+              </label>
+              <select
+                id="filter-type"
+                value={filters.type}
+                onChange={(e) => updateFilter('type', e.target.value)}
+                aria-describedby="filter-type-desc"
+                className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">All types</option>
+                {filterOptions.types.map(type => (
+                  <option key={type} value={type}>{type}</option>
+                ))}
+              </select>
+              <span id="filter-type-desc" className="sr-only">Filter transactions by type such as BUY, SELL, or DIVIDEND</span>
+            </div>
+
+            {/* Symbol Filter */}
+            <div className="flex flex-col min-w-[140px]">
+              <label htmlFor="filter-symbol" className="text-xs font-medium text-gray-600 mb-1">
+                Symbol
+              </label>
+              <select
+                id="filter-symbol"
+                value={filters.symbol}
+                onChange={(e) => updateFilter('symbol', e.target.value)}
+                aria-describedby="filter-symbol-desc"
+                className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">All symbols</option>
+                {filterOptions.symbols.map(symbol => (
+                  <option key={symbol} value={symbol}>{symbol}</option>
+                ))}
+              </select>
+              <span id="filter-symbol-desc" className="sr-only">Filter transactions by stock symbol</span>
+            </div>
+
+            {/* Source Filter */}
+            <div className="flex flex-col min-w-[140px]">
+              <label htmlFor="filter-source" className="text-xs font-medium text-gray-600 mb-1">
+                Source
+              </label>
+              <select
+                id="filter-source"
+                value={filters.source}
+                onChange={(e) => updateFilter('source', e.target.value)}
+                aria-describedby="filter-source-desc"
+                className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">All sources</option>
+                {filterOptions.sources.map(source => (
+                  <option key={source} value={source}>{source}</option>
+                ))}
+              </select>
+              <span id="filter-source-desc" className="sr-only">Filter transactions by broker or import source</span>
+            </div>
+
+            {/* CGT Rule Filter */}
+            <div className="flex flex-col min-w-[140px]">
+              <label htmlFor="filter-cgt" className="text-xs font-medium text-gray-600 mb-1">
+                CGT Rule
+              </label>
+              <select
+                id="filter-cgt"
+                value={filters.cgtRule}
+                onChange={(e) => updateFilter('cgtRule', e.target.value)}
+                aria-describedby="filter-cgt-desc"
+                className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">All rules</option>
+                <option value="same-day">Same Day</option>
+                <option value="30-day">30-Day</option>
+                <option value="section-104">Section 104</option>
+                <option value="short-sell">Short Sell</option>
+                <option value="non-cgt">Non-CGT</option>
+              </select>
+              <span id="filter-cgt-desc" className="sr-only">Filter by Capital Gains Tax matching rule applied to the transaction</span>
+            </div>
+
+            {/* Status Filter */}
+            <div className="flex flex-col min-w-[140px]">
+              <label htmlFor="filter-status" className="text-xs font-medium text-gray-600 mb-1">
+                Status
+              </label>
+              <select
+                id="filter-status"
+                value={filters.status}
+                onChange={(e) => updateFilter('status', e.target.value)}
+                aria-describedby="filter-status-desc"
+                className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">All statuses</option>
+                <option value="ok">OK</option>
+                <option value="incomplete">Incomplete</option>
+                <option value="fx-error">FX Error</option>
+                <option value="ignored">Ignored</option>
+              </select>
+              <span id="filter-status-desc" className="sr-only">Filter by transaction status such as incomplete or FX errors</span>
+            </div>
+
+            {/* Reset Button */}
+            {hasActiveFilters && (
+              <button
+                onClick={resetFilters}
+                aria-label="Clear all filters"
+                className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors"
+              >
+                <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Clear filters
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Warning for FX rate errors */}
       {fxErrorCount > 0 && (
