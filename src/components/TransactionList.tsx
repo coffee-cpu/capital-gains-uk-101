@@ -3,6 +3,7 @@ import { useTransactionStore } from '../stores/transactionStore'
 import { ClearDataButton } from './ClearDataButton'
 import { Tooltip } from './Tooltip'
 import { FXSourceSelector } from './FXSourceSelector'
+import { AutoSplitsToggle } from './AutoSplitsToggle'
 import { exportTransactionsToCSV } from '../utils/csvExport'
 import { isAcquisition, isDisposal, getUnitLabel } from '../lib/cgt/utils'
 
@@ -121,6 +122,7 @@ export function TransactionList() {
             <p className="text-sm text-gray-500 mt-1">{transactions.length} total</p>
           </div>
           <div className="flex items-center gap-2">
+            <AutoSplitsToggle />
             <button
               onClick={() => exportTransactionsToCSV(transactions)}
               className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
@@ -778,7 +780,16 @@ export function TransactionList() {
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {tx.source}
+                    <div className="flex items-center gap-1.5">
+                      {tx.source}
+                      {tx.type === 'STOCK_SPLIT' && tx.source === 'Community' && (
+                        <Tooltip content="This stock split was fetched from community-maintained split data (coffee-cpu/stock-splits-data). It was not included in your broker CSV.">
+                          <span className="inline-flex px-1.5 py-0.5 text-[10px] font-semibold rounded-full bg-teal-100 text-teal-800 border border-teal-300">
+                            Community
+                          </span>
+                        </Tooltip>
+                      )}
+                    </div>
                   </td>
                 </tr>
               )

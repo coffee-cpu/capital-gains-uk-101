@@ -26,6 +26,15 @@ export interface ImportedFile {
 }
 
 /**
+ * Cached stock split year data from external sources (e.g., jsDelivr CDN)
+ */
+export interface CachedSplitYear {
+  year: number // Primary key: the year (e.g., 2024)
+  data: string // JSON-encoded split data for the year
+  fetchedAt: string // ISO timestamp of when data was fetched
+}
+
+/**
  * User settings
  */
 export interface UserSetting {
@@ -42,6 +51,7 @@ export class CGTDatabase extends Dexie {
   fx_rates!: Table<FXRate, string>
   imported_files!: Table<ImportedFile, string>
   settings!: Table<UserSetting, string>
+  split_data_cache!: Table<CachedSplitYear, number>
 
   constructor() {
     super('cgt-visualizer')
@@ -66,6 +76,15 @@ export class CGTDatabase extends Dexie {
       fx_rates: 'id, date, currency, fxSource',
       imported_files: 'fileId, filename, importedAt',
       settings: 'key',
+    })
+
+    // Version 4: Add split_data_cache table for auto-fetched stock split data
+    this.version(4).stores({
+      transactions: 'id, source, symbol, date, type',
+      fx_rates: 'id, date, currency, fxSource',
+      imported_files: 'fileId, filename, importedAt',
+      settings: 'key',
+      split_data_cache: 'year',
     })
   }
 }

@@ -28,6 +28,7 @@ function App() {
   const setCGTResults = useTransactionStore((state) => state.setCGTResults)
   const setIsLoading = useTransactionStore((state) => state.setIsLoading)
   const fxSource = useSettingsStore((state) => state.fxSource)
+  const autoSplitsEnabled = useSettingsStore((state) => state.autoSplitsEnabled)
 
   // Ensure database is compatible before anything else
   // (automatically clears incompatible schemas)
@@ -81,7 +82,7 @@ function App() {
   const loadTransactions = async () => {
     setIsLoading(true)
     try {
-      const cgtResults = await processTransactionsFromDB(fxSource)
+      const cgtResults = await processTransactionsFromDB(fxSource, autoSplitsEnabled)
       if (cgtResults) {
         setTransactions(cgtResults.transactions)
         setCGTResults(cgtResults)
