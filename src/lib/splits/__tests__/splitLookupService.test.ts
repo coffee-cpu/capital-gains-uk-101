@@ -193,6 +193,24 @@ describe('getAutoSplitsForTransactions', () => {
     expect(result).toEqual([])
   })
 
+  it('caps year range to 50 years for malformed dates', async () => {
+    mockSource = new MockSplitSource([])
+
+    const transactions = [
+      makeTx({ id: '1', symbol: 'AAPL', date: '1900-01-01', type: 'BUY' }),
+      makeTx({ id: '2', symbol: 'AAPL', date: '2024-06-01', type: 'SELL' }),
+    ]
+
+    await getAutoSplitsForTransactions(transactions, mockSource)
+
+    const calledYears = mockSource.fetchSplitsForYears.mock.calls[0][0]
+    const currentYear = new Date().getFullYear()
+    // Should cap at 51 entries (currentYear - 50 through currentYear), not 124+
+    expect(calledYears.length).toBeLessThanOrEqual(51)
+    expect(calledYears[0]).toBe(currentYear - 50)
+    expect(calledYears[calledYears.length - 1]).toBe(currentYear)
+  })
+
   it('handles reverse splits correctly', async () => {
     mockSource = new MockSplitSource([
       { symbol: 'XYZ', date: '2023-05-15', ratioFrom: 20, ratioTo: 1 },

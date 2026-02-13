@@ -50,20 +50,29 @@ export async function getAutoSplitsForTransactions(
     // Build list of existing broker-provided splits for deduplication
     // Uses fuzzy date matching (±7 days) because brokers may record split dates
     // slightly differently than CDN sources (e.g., ex-date vs effective date)
-    const brokerSplits: Array<{ symbol: string; dateMs: number }> = []
+    const brokerSplits: Array<{ symbol: string; dateMs: number; ratio?: string | null }> = []
     for (const tx of transactions) {
       if (tx.type === 'STOCK_SPLIT' && tx.symbol && tx.date) {
-        brokerSplits.push({ symbol: tx.symbol, dateMs: new Date(tx.date).getTime() })
+        brokerSplits.push({ symbol: tx.symbol, dateMs: new Date(tx.date).getTime(), ratio: tx.ratio })
       }
     }
 
     // Deduplicate: broker-provided splits take priority (fuzzy ±7 day match)
+    // When both dates and ratios match, it's definitely a duplicate.
+    // When dates match but ratios differ, still dedupe (broker data wins).
     const DEDUP_WINDOW_MS = 7 * 24 * 60 * 60 * 1000
     const newSplits = relevantSplits.filter(s => {
       const cdnDateMs = new Date(s.date).getTime()
-      return !brokerSplits.some(
-        b => b.symbol === s.symbol && Math.abs(b.dateMs - cdnDateMs) <= DEDUP_WINDOW_MS
-      )
+      const cdnRatio = `${s.ratioTo}:${s.ratioFrom}`
+      return !brokerSplits.some(b => {
+        if (b.symbol !== s.symbol) return false
+        const withinWindow = Math.abs(b.dateMs - cdnDateMs) <= DEDUP_WINDOW_MS
+        if (!withinWindow) return false
+        if (b.ratio && b.ratio !== cdnRatio) {
+          console.debug(`Auto-splits: skipping CDN split ${s.symbol} ${s.date} (${cdnRatio}) — broker has ${b.ratio} within ±7 days`)
+        }
+        return true
+      })
     })
 
     // Convert to synthetic GenericTransaction records
@@ -96,6 +105,12 @@ function getYearRange(transactions: GenericTransaction[]): number[] {
   // Extend to current year (splits may have happened after last transaction)
   const currentYear = new Date().getFullYear()
   maxYear = Math.max(maxYear, currentYear)
+
+  // Cap range to prevent runaway requests from malformed dates
+  const MAX_YEAR_SPAN = 50
+  if (maxYear - minYear > MAX_YEAR_SPAN) {
+    minYear = maxYear - MAX_YEAR_SPAN
+  }
 
   const years: number[] = []
   for (let y = minYear; y <= maxYear; y++) {
