@@ -27,6 +27,41 @@ const FEE_TYPES = new Set(['Other Fee', 'Adjustment'])
 const TAX_TYPES = new Set(['Sales Tax'])
 
 /**
+ * Parsed options symbol components
+ */
+interface ParsedIBOptionsSymbol {
+  underlying: string
+  expirationDate: string // YYYY-MM-DD
+  strikePrice: number
+  optionType: 'CALL' | 'PUT'
+}
+
+/**
+ * Check if an IB symbol represents an options contract
+ * IB format: SYMBOL<spaces>YYMMDDX######## (e.g., "GLD   270115C00580000")
+ */
+function isIBOptionsSymbol(symbol: string): boolean {
+  return /^[A-Z]+\s+\d{6}[CP]\d{8}$/.test(symbol)
+}
+
+/**
+ * Parse IB options symbol format
+ * Example: "GLD   270115C00580000" → { underlying: "GLD", expirationDate: "2027-01-15", strikePrice: 580, optionType: "CALL" }
+ */
+function parseIBOptionsSymbol(symbol: string): ParsedIBOptionsSymbol | null {
+  const match = symbol.match(/^([A-Z]+)\s+(\d{2})(\d{2})(\d{2})([CP])(\d{8})$/)
+  if (!match) return null
+
+  const [, underlying, yy, mm, dd, typeChar, strikeStr] = match
+  return {
+    underlying,
+    expirationDate: `20${yy}-${mm}-${dd}`,
+    strikePrice: parseInt(strikeStr, 10) / 1000,
+    optionType: typeChar === 'C' ? 'CALL' : 'PUT',
+  }
+}
+
+/**
  * Parse gross amount from IB row (handles column name with trailing space)
  */
 function parseGrossAmount(row: RawCSVRow): number | null {
@@ -76,23 +111,61 @@ export function normalizeInteractiveBrokersTransactions(rows: RawCSVRow[], fileI
   // Extract base currency from Summary section if available
   const baseCurrency = extractBaseCurrency(rows)
 
-  // After preprocessing, the CSV has proper column headers:
-  // Section, RowType, Date, Account, Description, Transaction Type, Symbol, Quantity, Price, Gross Amount, Commission, Net Amount
-  // Summary rows are included for base currency extraction, with extra columns padded
+  // Collect Transaction History data rows and sort by date (IB CSVs are reverse chronological)
+  const dataRows = rows.filter(
+    row => row['Section'] === 'Transaction History' && row['RowType'] === 'Data'
+  )
+  dataRows.sort((a, b) => (a['Date'] || '').localeCompare(b['Date'] || ''))
 
-  for (const row of rows) {
-    const sectionName = row['Section']
-    const rowType = row['RowType']
+  // Track net options positions for synthetic expiration injection
+  const optionsPositions = new Map<string, number>()
 
-    // Process only "Transaction History,Data" rows
-    if (sectionName === 'Transaction History' && rowType === 'Data') {
-      const normalized = normalizeIBTransactionHistoryRow(row, fileId, rowIndex, baseCurrency)
-      if (normalized) {
-        transactions.push(normalized)
-        rowIndex++
-      }
+  for (const row of dataRows) {
+    const normalized = normalizeIBTransactionHistoryRow(row, fileId, rowIndex, baseCurrency, optionsPositions)
+    if (normalized) {
+      transactions.push(normalized)
+      rowIndex++
     }
   }
+
+  // Inject synthetic OPTIONS_EXPIRED for options with remaining positions past expiration
+  const today = new Date().toISOString().split('T')[0]
+  for (const [symbol, netPosition] of optionsPositions) {
+    if (netPosition === 0) continue
+
+    const parsed = parseIBOptionsSymbol(symbol)
+    if (!parsed || parsed.expirationDate > today) continue
+
+    // Position still open past expiration — inject synthetic expiration
+    const absQty = Math.abs(netPosition)
+    transactions.push({
+      id: `${fileId}-exp-${rowIndex}`,
+      source: 'Interactive Brokers',
+      name: `${parsed.underlying} ${parsed.optionType} $${parsed.strikePrice} expired`,
+      date: parsed.expirationDate,
+      currency: baseCurrency,
+      ratio: null,
+      incomplete: false,
+      ignored: false,
+      symbol,
+      type: TransactionType.OPTIONS_EXPIRED,
+      // Negative qty for long positions (disposal), positive for short (acquisition)
+      quantity: netPosition > 0 ? -absQty : absQty,
+      price: 0,
+      total: 0,
+      fee: null,
+      notes: 'Synthetic: assumed expired (no closing activity found)',
+      underlying_symbol: parsed.underlying,
+      option_type: parsed.optionType,
+      strike_price: parsed.strikePrice,
+      expiration_date: parsed.expirationDate,
+      // IB amounts already include the 100-share contract multiplier, so don't set contract_size
+    })
+    rowIndex++
+  }
+
+  // Sort final list by date
+  transactions.sort((a, b) => a.date.localeCompare(b.date))
 
   return transactions
 }
@@ -127,7 +200,8 @@ function normalizeIBTransactionHistoryRow(
   row: RawCSVRow,
   fileId: string,
   rowIndex: number,
-  baseCurrency: string
+  baseCurrency: string,
+  optionsPositions: Map<string, number>
 ): GenericTransaction | null {
   const transactionType = row['Transaction Type']?.trim()
   if (!transactionType) {
@@ -146,7 +220,7 @@ function normalizeIBTransactionHistoryRow(
 
   // Handle trade transactions (Buy, Sell, Assignment)
   if (TRADE_TYPES.has(transactionType)) {
-    return normalizeTradeRow(row, fileId, rowIndex, baseCurrency, transactionType, date, description)
+    return normalizeTradeRow(row, fileId, rowIndex, baseCurrency, transactionType, date, description, optionsPositions)
   }
 
   // Handle dividend transactions
@@ -244,7 +318,8 @@ function normalizeTradeRow(
   baseCurrency: string,
   transactionType: string,
   date: string,
-  description: string | undefined
+  description: string | undefined,
+  optionsPositions: Map<string, number>
 ): GenericTransaction | null {
   const symbol = row['Symbol']?.trim()
 
@@ -261,6 +336,47 @@ function normalizeTradeRow(
   const total = grossAmount !== null ? Math.abs(grossAmount) : null
   const quantity = rawQuantity !== null ? Math.abs(rawQuantity) : null
   const price = total !== null && quantity !== null && quantity > 0 ? total / quantity : null
+
+  // Check if this is an options trade
+  if (isIBOptionsSymbol(symbol)) {
+    const parsed = parseIBOptionsSymbol(symbol)
+    if (!parsed) return null
+
+    // Determine options transaction type using position tracking
+    const currentPosition = optionsPositions.get(symbol) || 0
+    let type: typeof TransactionType[keyof typeof TransactionType]
+
+    if (transactionType === 'Assignment') {
+      type = TransactionType.OPTIONS_ASSIGNED
+    } else if (rawQuantity !== null && rawQuantity > 0) {
+      // Buying: if we're short, this closes; otherwise opens
+      type = currentPosition < 0 ? TransactionType.OPTIONS_BUY_TO_CLOSE : TransactionType.OPTIONS_BUY_TO_OPEN
+    } else {
+      // Selling: if we're long, this closes; otherwise opens
+      type = currentPosition > 0 ? TransactionType.OPTIONS_SELL_TO_CLOSE : TransactionType.OPTIONS_SELL_TO_OPEN
+    }
+
+    // Update position tracking (rawQuantity is positive for buys, negative for sells)
+    if (rawQuantity !== null) {
+      optionsPositions.set(symbol, currentPosition + rawQuantity)
+    }
+
+    return {
+      ...createBaseTransaction(fileId, rowIndex, baseCurrency, date, description),
+      symbol,
+      type,
+      quantity,
+      price,
+      total,
+      fee: commission || null,
+      notes: transactionType === 'Assignment' ? 'Options Assignment' : null,
+      underlying_symbol: parsed.underlying,
+      option_type: parsed.optionType,
+      strike_price: parsed.strikePrice,
+      expiration_date: parsed.expirationDate,
+      // IB Gross Amount already includes the 100-share contract multiplier, so don't set contract_size
+    }
+  }
 
   return {
     ...createBaseTransaction(fileId, rowIndex, baseCurrency, date, description),
