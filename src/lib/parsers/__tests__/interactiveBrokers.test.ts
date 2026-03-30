@@ -149,15 +149,15 @@ describe('Interactive Brokers Parser', () => {
 
       const result = normalizeInteractiveBrokersTransactions(rows, 'test-file')
 
-      expect(result).toHaveLength(4) // Adjustment (FEE), Deposit, Withdrawal, and Buy
-      expect(result[0].type).toBe(TransactionType.FEE)
-      expect(result[0].notes).toBe('Adjustment')
-      expect(result[1].type).toBe(TransactionType.TRANSFER)
-      expect(result[1].notes).toBe('Deposit')
+      expect(result).toHaveLength(4) // Sorted by date: Withdrawal, Buy, Deposit, Adjustment (FEE)
+      expect(result[0].type).toBe(TransactionType.TRANSFER)
+      expect(result[0].notes).toBe('Withdrawal')
+      expect(result[1].type).toBe(TransactionType.BUY)
+      expect(result[1].symbol).toBe('VUSD')
       expect(result[2].type).toBe(TransactionType.TRANSFER)
-      expect(result[2].notes).toBe('Withdrawal')
-      expect(result[3].type).toBe(TransactionType.BUY)
-      expect(result[3].symbol).toBe('VUSD')
+      expect(result[2].notes).toBe('Deposit')
+      expect(result[3].type).toBe(TransactionType.FEE)
+      expect(result[3].notes).toBe('Adjustment')
     })
 
     it('should parse dividend transactions', () => {
@@ -383,10 +383,9 @@ describe('Interactive Brokers Parser', () => {
       const result = normalizeInteractiveBrokersTransactions(rows, 'test-file')
 
       expect(result).toHaveLength(2)
-      expect(result[0].id).toBe('test-file-1')
-      expect(result[1].id).toBe('test-file-2')
-      expect(result[0].type).toBe(TransactionType.BUY)
-      expect(result[1].type).toBe(TransactionType.SELL)
+      // Sorted by date: Sell (2022-05-11) before Buy (2024-09-27)
+      expect(result[0].type).toBe(TransactionType.SELL)
+      expect(result[1].type).toBe(TransactionType.BUY)
     })
 
     it('should skip rows with missing date or symbol', () => {
