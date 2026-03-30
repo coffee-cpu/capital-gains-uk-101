@@ -12,9 +12,19 @@ const TRADE_TYPES = new Set(['Buy', 'Sell', 'Assignment'])
 const INTEREST_TYPES = new Set(['Credit Interest', 'Debit Interest', 'Investment Interest Paid', 'Investment Interest Received'])
 
 /**
- * Transaction types from IB for transfers (deposits/withdrawals)
+ * Transaction types from IB for transfers (deposits/withdrawals, FX conversions)
  */
-const TRANSFER_TYPES = new Set(['Deposit', 'Withdrawal', 'Transfer'])
+const TRANSFER_TYPES = new Set(['Deposit', 'Withdrawal', 'Transfer', 'Forex Trade Component'])
+
+/**
+ * Transaction types from IB for fees (subscriptions, withdrawal fees, FX adjustments)
+ */
+const FEE_TYPES = new Set(['Other Fee', 'Adjustment'])
+
+/**
+ * Transaction types from IB for taxes (VAT on subscriptions)
+ */
+const TAX_TYPES = new Set(['Sales Tax'])
 
 /**
  * Parse gross amount from IB row (handles column name with trailing space)
@@ -149,11 +159,57 @@ function normalizeIBTransactionHistoryRow(
     return normalizeInterestRow(row, fileId, rowIndex, baseCurrency, transactionType, date, description)
   }
 
-  // Handle transfer transactions (deposits, withdrawals)
-  if (TRANSFER_TYPES.has(transactionType)) {
+  // Handle foreign tax withholding (tax on dividends)
+  if (transactionType === 'Foreign Tax Withholding') {
+    const symbol = row['Symbol']?.trim() || 'CASH'
+    if (symbol === '-') return null
+    return {
+      ...createBaseTransaction(fileId, rowIndex, baseCurrency, date, description),
+      symbol,
+      type: TransactionType.TAX_ON_DIVIDEND,
+      quantity: null,
+      price: null,
+      total: parseGrossAmount(row),
+      fee: null,
+      notes: 'Foreign Tax Withholding',
+    }
+  }
+
+  // Handle fee transactions (subscription fees, withdrawal fees, FX adjustments)
+  if (FEE_TYPES.has(transactionType)) {
+    const symbol = row['Symbol']?.trim()
+    return {
+      ...createBaseTransaction(fileId, rowIndex, baseCurrency, date, description),
+      symbol: (symbol && symbol !== '-') ? symbol : 'CASH',
+      type: TransactionType.FEE,
+      quantity: null,
+      price: null,
+      total: parseGrossAmount(row),
+      fee: null,
+      notes: transactionType,
+    }
+  }
+
+  // Handle tax transactions (VAT on subscriptions)
+  if (TAX_TYPES.has(transactionType)) {
     return {
       ...createBaseTransaction(fileId, rowIndex, baseCurrency, date, description),
       symbol: 'CASH',
+      type: TransactionType.TAX,
+      quantity: null,
+      price: null,
+      total: parseGrossAmount(row),
+      fee: null,
+      notes: transactionType,
+    }
+  }
+
+  // Handle transfer transactions (deposits, withdrawals, FX conversions)
+  if (TRANSFER_TYPES.has(transactionType)) {
+    const symbol = row['Symbol']?.trim()
+    return {
+      ...createBaseTransaction(fileId, rowIndex, baseCurrency, date, description),
+      symbol: (symbol && symbol !== '-') ? symbol : 'CASH',
       type: TransactionType.TRANSFER,
       quantity: null,
       price: null,

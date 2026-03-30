@@ -149,9 +149,9 @@ describe('Interactive Brokers Parser', () => {
 
       const result = normalizeInteractiveBrokersTransactions(rows, 'test-file')
 
-      expect(result).toHaveLength(4) // Adjustment (UNKNOWN), Deposit, Withdrawal, and Buy
-      expect(result[0].type).toBe(TransactionType.UNKNOWN)
-      expect(result[0].notes).toBe('Unrecognized transaction type: Adjustment')
+      expect(result).toHaveLength(4) // Adjustment (FEE), Deposit, Withdrawal, and Buy
+      expect(result[0].type).toBe(TransactionType.FEE)
+      expect(result[0].notes).toBe('Adjustment')
       expect(result[1].type).toBe(TransactionType.TRANSFER)
       expect(result[1].notes).toBe('Deposit')
       expect(result[2].type).toBe(TransactionType.TRANSFER)

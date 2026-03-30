@@ -132,7 +132,7 @@ export async function preprocessInteractiveBrokersCSV(file: File): Promise<File>
           } else if (sectionName === 'Summary') {
             // Also include Summary section for base currency extraction
             // Pad with empty columns to match Transaction History column count
-            summaryRows.push(`${sectionName},${rowType},${restOfLine},,,,,,,,`)
+            summaryRows.push(`${sectionName},${rowType},${restOfLine},,,,,,,,,`)
           }
         }
       }
