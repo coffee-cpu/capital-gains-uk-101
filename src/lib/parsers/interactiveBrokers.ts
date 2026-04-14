@@ -235,11 +235,10 @@ function normalizeIBTransactionHistoryRow(
 
   // Handle foreign tax withholding (tax on dividends)
   if (transactionType === 'Foreign Tax Withholding') {
-    const symbol = row['Symbol']?.trim() || 'CASH'
-    if (symbol === '-') return null
+    const symbol = row['Symbol']?.trim()
     return {
       ...createBaseTransaction(fileId, rowIndex, baseCurrency, date, description),
-      symbol,
+      symbol: (symbol && symbol !== '-') ? symbol : 'CASH',
       type: TransactionType.TAX_ON_DIVIDEND,
       quantity: null,
       price: null,
@@ -341,6 +340,10 @@ function normalizeTradeRow(
   if (isIBOptionsSymbol(symbol)) {
     const parsed = parseIBOptionsSymbol(symbol)
     if (!parsed) return null
+
+    // Guard against misclassification: Assignment has no quantity column in IB exports,
+    // but Buy/Sell rows with unparseable quantity would otherwise fall into the selling branch below
+    if (rawQuantity === null && transactionType !== 'Assignment') return null
 
     // Determine options transaction type using position tracking
     const currentPosition = optionsPositions.get(symbol) || 0
