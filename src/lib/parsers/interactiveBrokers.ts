@@ -103,8 +103,13 @@ function createBaseTransaction(
  *
  * @param rows Raw CSV rows
  * @param fileId Unique identifier for this file
+ * @param referenceDate Optional reference date (YYYY-MM-DD) for synthetic expiration injection. Defaults to today.
  */
-export function normalizeInteractiveBrokersTransactions(rows: RawCSVRow[], fileId: string): GenericTransaction[] {
+export function normalizeInteractiveBrokersTransactions(
+  rows: RawCSVRow[],
+  fileId: string,
+  referenceDate?: string
+): GenericTransaction[] {
   const transactions: GenericTransaction[] = []
   let rowIndex = 1
 
@@ -129,7 +134,7 @@ export function normalizeInteractiveBrokersTransactions(rows: RawCSVRow[], fileI
   }
 
   // Inject synthetic OPTIONS_EXPIRED for options with remaining positions past expiration
-  const today = new Date().toISOString().split('T')[0]
+  const today = referenceDate ?? new Date().toISOString().split('T')[0]
   for (const [symbol, netPosition] of optionsPositions) {
     if (netPosition === 0) continue
 
