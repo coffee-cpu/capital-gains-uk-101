@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { isCoinbaseCSV, stripCoinbaseMetadataRows } from '../csvParser'
+import { isCoinbaseCSV, stripCoinbaseMetadataRows } from '../parsers/coinbase'
 
 /**
  * Helper to read File content as text (works in jsdom test environment)

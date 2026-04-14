@@ -1,5 +1,105 @@
 import { GenericTransaction, TransactionType } from '../../types/transaction'
 import { RawCSVRow } from '../../types/broker'
+import { CSVPreprocessor, readFileHead } from './fileUtils'
+
+/**
+ * Raw-file preprocessor for Interactive Brokers' multi-section CSV format.
+ * Registered in `csvParser.ts`.
+ */
+export const ibCSVPreprocessor: CSVPreprocessor = {
+  async matches(file: File): Promise<boolean> {
+    const text = await readFileHead(file, 2000)
+    if (!text) return false
+    const hasStatement = text.includes('Statement,Header,') || text.includes('Statement,Data,')
+    const hasTransactionHistory =
+      text.includes('Transaction History,Header,') || text.includes('Transaction History,Data,')
+    return hasStatement && hasTransactionHistory
+  },
+  apply: preprocessInteractiveBrokersCSV,
+}
+
+/**
+ * Preprocess Interactive Brokers CSV to handle its multi-section format
+ *
+ * IB CSVs have multiple sections with different column counts:
+ * - Statement: 4 columns (Statement,Header/Data,Field Name,Field Value)
+ * - Summary: 4 columns (Summary,Header/Data,Field Name,Field Value)
+ * - Transaction History: 11+ columns
+ *
+ * We extract the Transaction History header and promote it to the CSV's single header row,
+ * then include Summary data rows (padded to match the header width so base currency can be
+ * extracted downstream) alongside Transaction History data rows.
+ */
+export async function preprocessInteractiveBrokersCSV(file: File): Promise<File> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const text = e.target?.result as string
+      if (!text) {
+        reject(new Error('Failed to read file'))
+        return
+      }
+
+      const lines = text.split('\n')
+      let headerRow: string | null = null
+      const summaryRows: string[] = []
+      const transactionRows: string[] = []
+
+      for (const line of lines) {
+        if (!line.trim()) continue
+
+        // Parse the line to extract section name and row type
+        // Use a simple regex since we just need the first two columns
+        const match = line.match(/^([^,]+),([^,]+),(.*)$/)
+        if (!match) {
+          continue
+        }
+
+        const sectionName = match[1]
+        const rowType = match[2]
+        const restOfLine = match[3]
+
+        if (rowType === 'Header') {
+          // Store the header for Transaction History section
+          if (sectionName === 'Transaction History') {
+            // Create header row with Section and RowType columns prepended
+            headerRow = `Section,RowType,${restOfLine}`
+          }
+        } else if (rowType === 'Data') {
+          // Collect data rows for Transaction History section
+          if (sectionName === 'Transaction History') {
+            transactionRows.push(`${sectionName},${rowType},${restOfLine}`)
+          } else if (sectionName === 'Summary') {
+            // Also include Summary section for base currency extraction
+            // Pad with empty columns to match Transaction History column count
+            summaryRows.push(`${sectionName},${rowType},${restOfLine},,,,,,,,,`)
+          }
+        }
+      }
+
+      if (!headerRow) {
+        reject(new Error('Could not find Transaction History header in Interactive Brokers CSV'))
+        return
+      }
+
+      // Build the final CSV with header FIRST, then Summary rows, then Transaction History rows
+      const processedRows = [headerRow, ...summaryRows, ...transactionRows]
+
+      if (processedRows.length <= 1) {
+        reject(new Error('Could not find Transaction History data in Interactive Brokers CSV'))
+        return
+      }
+
+      const processedCsv = processedRows.join('\n')
+      const processedFile = new File([processedCsv], file.name, { type: file.type })
+      resolve(processedFile)
+    }
+    reader.onerror = () => {
+      reject(new Error('Failed to read file'))
+    }
+    reader.readAsText(file)
+  })
+}
 
 /**
  * Transaction types from IB that represent actual trades (capital gains relevant)

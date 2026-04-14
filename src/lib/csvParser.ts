@@ -1,10 +1,18 @@
 import Papa from 'papaparse'
 import { RawCSVRow } from '../types/broker'
+import { CSVPreprocessor } from './parsers/fileUtils'
+import { ibCSVPreprocessor } from './parsers/interactiveBrokers'
+import { coinbaseCSVPreprocessor } from './parsers/coinbase'
 
 /**
- * Broker type for preprocessing (subset that needs special handling)
+ * Registered raw-file preprocessors, checked in order. First match wins.
+ * New broker preprocessors are added by exporting a `CSVPreprocessor`
+ * from the parser module and appending it here.
  */
-type PreprocessBroker = 'interactive-brokers' | 'coinbase' | 'standard'
+const PREPROCESSORS: readonly CSVPreprocessor[] = [
+  ibCSVPreprocessor,
+  coinbaseCSVPreprocessor,
+]
 
 /**
  * Parse CSV file into raw rows
@@ -29,204 +37,16 @@ export async function parseCSV(file: File): Promise<RawCSVRow[]> {
 }
 
 /**
- * Detect which broker needs preprocessing and apply it
- * Returns the preprocessed file ready for standard parsing
+ * Dispatch raw-file preprocessing to the first registered preprocessor that matches.
+ * Returns the original file unchanged if none apply.
  */
 export async function preprocessCSVFile(file: File): Promise<File> {
-  const brokerType = await detectPreprocessBroker(file)
-
-  switch (brokerType) {
-    case 'interactive-brokers':
-      return preprocessInteractiveBrokersCSV(file)
-    case 'coinbase':
-      return stripCoinbaseMetadataRows(file)
-    default:
-      return file
+  for (const preprocessor of PREPROCESSORS) {
+    if (await preprocessor.matches(file)) {
+      return preprocessor.apply(file)
+    }
   }
-}
-
-/**
- * Detect broker type for preprocessing by reading the first few KB of the file
- */
-async function detectPreprocessBroker(file: File): Promise<PreprocessBroker> {
-  const text = await readFileHead(file, 2000)
-  if (!text) return 'standard'
-
-  // Check for Interactive Brokers multi-section format
-  const hasIBStatement = text.includes('Statement,Header,') || text.includes('Statement,Data,')
-  const hasIBTransactionHistory = text.includes('Transaction History,Header,') || text.includes('Transaction History,Data,')
-  if (hasIBStatement && hasIBTransactionHistory) {
-    return 'interactive-brokers'
-  }
-
-  // Check for Coinbase metadata rows
-  const lines = text.split('\n').filter(line => line.trim())
-  if (lines.length >= 2 && lines[0].startsWith('Transactions') && lines[1].startsWith('User')) {
-    return 'coinbase'
-  }
-
-  return 'standard'
-}
-
-/**
- * Read the first N bytes of a file as text
- */
-function readFileHead(file: File, bytes: number): Promise<string | null> {
-  return new Promise((resolve) => {
-    const reader = new FileReader()
-    reader.onload = (e) => resolve(e.target?.result as string || null)
-    reader.onerror = () => resolve(null)
-    reader.readAsText(file.slice(0, bytes))
-  })
-}
-
-/**
- * Preprocess Interactive Brokers CSV to handle its multi-section format
- *
- * IB CSVs have multiple sections with different column counts:
- * - Statement: 4 columns (Statement,Header/Data,Field Name,Field Value)
- * - Summary: 4 columns (Summary,Header/Data,Field Name,Field Value)
- * - Transaction History: 11+ columns
- *
- * We need to extract each section's header and apply it to that section's data rows
- */
-export async function preprocessInteractiveBrokersCSV(file: File): Promise<File> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const text = e.target?.result as string
-      if (!text) {
-        reject(new Error('Failed to read file'))
-        return
-      }
-
-      const lines = text.split('\n')
-      let headerRow: string | null = null
-      const summaryRows: string[] = []
-      const transactionRows: string[] = []
-
-      for (const line of lines) {
-        if (!line.trim()) continue
-
-        // Parse the line to extract section name and row type
-        // Use a simple regex since we just need the first two columns
-        const match = line.match(/^([^,]+),([^,]+),(.*)$/)
-        if (!match) {
-          continue
-        }
-
-        const sectionName = match[1]
-        const rowType = match[2]
-        const restOfLine = match[3]
-
-        if (rowType === 'Header') {
-          // Store the header for Transaction History section
-          if (sectionName === 'Transaction History') {
-            // Create header row with Section and RowType columns prepended
-            headerRow = `Section,RowType,${restOfLine}`
-          }
-        } else if (rowType === 'Data') {
-          // Collect data rows for Transaction History section
-          if (sectionName === 'Transaction History') {
-            transactionRows.push(`${sectionName},${rowType},${restOfLine}`)
-          } else if (sectionName === 'Summary') {
-            // Also include Summary section for base currency extraction
-            // Pad with empty columns to match Transaction History column count
-            summaryRows.push(`${sectionName},${rowType},${restOfLine},,,,,,,,,`)
-          }
-        }
-      }
-
-      if (!headerRow) {
-        reject(new Error('Could not find Transaction History header in Interactive Brokers CSV'))
-        return
-      }
-
-      // Build the final CSV with header FIRST, then Summary rows, then Transaction History rows
-      const processedRows = [headerRow, ...summaryRows, ...transactionRows]
-
-      if (processedRows.length <= 1) {
-        reject(new Error('Could not find Transaction History data in Interactive Brokers CSV'))
-        return
-      }
-
-      const processedCsv = processedRows.join('\n')
-      const processedFile = new File([processedCsv], file.name, { type: file.type })
-      resolve(processedFile)
-    }
-    reader.onerror = () => {
-      reject(new Error('Failed to read file'))
-    }
-    reader.readAsText(file)
-  })
-}
-
-/**
- * Check if a file is a Coinbase CSV by reading the first few lines
- * Coinbase CSVs have a distinctive structure:
- * - Optional blank line(s) at the start
- * - "Transactions" row (may have trailing commas)
- * - "User,<name>,<uuid>,..." row
- */
-export async function isCoinbaseCSV(file: File): Promise<boolean> {
-  const text = await readFileHead(file, 500)
-  if (!text) return false
-
-  const lines = text.split('\n').filter(line => line.trim())
-  return lines.length >= 2 && lines[0].startsWith('Transactions') && lines[1].startsWith('User')
-}
-
-/**
- * Strip the metadata rows from a Coinbase CSV file and return a new File
- * Coinbase CSVs have:
- * - Optional blank line(s) at the start
- * - "Transactions" row
- * - "User,<name>,<uuid>,..." row
- * - Actual headers row
- * - Data rows
- *
- * We need to remove everything before the actual headers row (which starts with "ID")
- */
-export async function stripCoinbaseMetadataRows(file: File): Promise<File> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const text = e.target?.result as string
-      if (!text) {
-        reject(new Error('Failed to read file'))
-        return
-      }
-
-      // Split by lines and find where the actual headers start
-      const lines = text.split('\n')
-
-      // Find the index of the header row (starts with "ID")
-      let headerRowIndex = -1
-      for (let i = 0; i < Math.min(10, lines.length); i++) {
-        const trimmedLine = lines[i].trim()
-        if (trimmedLine.startsWith('ID,') || trimmedLine.startsWith('ID\t')) {
-          headerRowIndex = i
-          break
-        }
-      }
-
-      if (headerRowIndex === -1) {
-        reject(new Error('Could not find Coinbase CSV headers'))
-        return
-      }
-
-      // Rejoin from the header row onwards
-      const csvWithoutMetadata = lines.slice(headerRowIndex).join('\n')
-
-      // Create a new File object with the stripped content
-      const strippedFile = new File([csvWithoutMetadata], file.name, { type: file.type })
-      resolve(strippedFile)
-    }
-    reader.onerror = () => {
-      reject(new Error('Failed to read file'))
-    }
-    reader.readAsText(file)
-  })
+  return file
 }
 
 /**
