@@ -42,7 +42,7 @@ export async function preprocessInteractiveBrokersCSV(file: File): Promise<File>
 
       const lines = text.split('\n')
       let headerRow: string | null = null
-      const summaryRows: string[] = []
+      const summaryDataRows: Array<{ sectionName: string; rowType: string; restOfLine: string }> = []
       const transactionRows: string[] = []
 
       for (const line of lines) {
@@ -70,9 +70,8 @@ export async function preprocessInteractiveBrokersCSV(file: File): Promise<File>
           if (sectionName === 'Transaction History') {
             transactionRows.push(`${sectionName},${rowType},${restOfLine}`)
           } else if (sectionName === 'Summary') {
-            // Also include Summary section for base currency extraction
-            // Pad with empty columns to match Transaction History column count
-            summaryRows.push(`${sectionName},${rowType},${restOfLine},,,,,,,,,`)
+            // Defer padding until we've seen the TH header (field count varies by IB export version)
+            summaryDataRows.push({ sectionName, rowType, restOfLine })
           }
         }
       }
@@ -81,6 +80,15 @@ export async function preprocessInteractiveBrokersCSV(file: File): Promise<File>
         reject(new Error('Could not find Transaction History header in Interactive Brokers CSV'))
         return
       }
+
+      // Pad Summary rows to match the TH header width so PapaParse accepts both
+      // old (10 TH fields) and new (11+ TH fields) IB export formats.
+      const headerFieldCount = headerRow.split(',').length
+      const summaryRows = summaryDataRows.map(({ sectionName, rowType, restOfLine }) => {
+        const baseRow = `${sectionName},${rowType},${restOfLine}`
+        const paddingCount = Math.max(0, headerFieldCount - baseRow.split(',').length)
+        return baseRow + ','.repeat(paddingCount)
+      })
 
       // Build the final CSV with header FIRST, then Summary rows, then Transaction History rows
       const processedRows = [headerRow, ...summaryRows, ...transactionRows]
