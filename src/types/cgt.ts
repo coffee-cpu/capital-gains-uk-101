@@ -74,7 +74,7 @@ export interface Section104Pool {
   /** History of pool operations for audit trail */
   history: Array<{
     date: string
-    type: 'BUY' | 'SELL'
+    type: 'BUY' | 'SELL' | 'EQUALISATION'
     quantity: number
     costOrProceeds: number
     balanceQuantity: number
@@ -131,6 +131,10 @@ export interface TaxYearSummary {
   interestWithholdingTaxGbp: number
   /** Number of disposals with incomplete/missing acquisition data */
   incompleteDisposals: number
+  /** Total number of equalisation transactions (return of capital from funds) */
+  totalEqualisations: number
+  /** Total equalisation amount in GBP (reduces Section 104 pool cost basis) */
+  totalEqualisationGbp: number
   /**
    * Tax year-specific feature data.
    * Each feature stores its calculated data under its unique ID.

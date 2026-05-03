@@ -70,6 +70,8 @@ function createSummary(
     grossInterestGbp: 0,
     interestWithholdingTaxGbp: 0,
     incompleteDisposals: 0,
+    totalEqualisations: 0,
+    totalEqualisationGbp: 0,
   }
 }
 
