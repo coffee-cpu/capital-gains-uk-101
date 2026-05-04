@@ -284,6 +284,16 @@ function generateTaxYearSummaries(
     // Count incomplete disposals (those with missing acquisition data)
     const incompleteDisposals = yearDisposals.filter(d => d.isIncomplete).length
 
+    // Calculate equalisation totals for this tax year
+    const yearEqualisations = transactions.filter(
+      tx => tx.tax_year === taxYear && tx.type === 'EQUALISATION'
+    )
+    const totalEqualisations = yearEqualisations.length
+    const totalEqualisationGbp = yearEqualisations.reduce(
+      (sum, tx) => sum + Math.abs(tx.value_gbp ?? 0),
+      0
+    )
+
     // Create the summary (without features first)
     const summary: TaxYearSummary = {
       taxYear,
@@ -308,6 +318,8 @@ function generateTaxYearSummaries(
       grossInterestGbp,
       interestWithholdingTaxGbp,
       incompleteDisposals,
+      totalEqualisations,
+      totalEqualisationGbp,
     }
 
     // Calculate tax year-specific features

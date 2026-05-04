@@ -61,6 +61,13 @@ export function applySection104Pooling(
 
     // Process each transaction in chronological order
     for (const tx of sorted) {
+      // Equalisation reduces the pool cost basis (return of capital, HMRC CG57701)
+      // Process before quantity check since equalisation has no share quantity
+      if (tx.type === TransactionType.EQUALISATION) {
+        applyEqualisationToPool(pool, tx)
+        continue
+      }
+
       const remainingQuantity = getRemainingQuantity(tx, existingMatchings)
 
       if (remainingQuantity <= 0) {
@@ -104,6 +111,44 @@ function addToPool(
     type: 'BUY',
     quantity,
     costOrProceeds: totalCost,
+    balanceQuantity: pool.quantity,
+    balanceCost: pool.totalCostGbp,
+    transactionId: transaction.id,
+  })
+}
+
+/**
+ * Apply an equalisation payment to the Section 104 pool
+ *
+ * Equalisation is a return of capital paid by funds to investors who bought
+ * between distribution periods. Under HMRC CG57701, it reduces the cost basis
+ * of the holding rather than being treated as income.
+ *
+ * The pool's totalCostGbp is reduced by the equalisation amount (floored at 0),
+ * and averageCostGbp is recalculated. Future disposals will have a higher gain
+ * because the cost basis is lower.
+ */
+function applyEqualisationToPool(
+  pool: Section104Pool,
+  transaction: EnrichedTransaction
+): void {
+  // value_gbp is null when FX enrichment failed — skip silently rather than
+  // applying an unknown reduction. The transaction still appears in the UI.
+  const amount = Math.abs(transaction.value_gbp ?? 0)
+  if (amount === 0) return
+
+  // Cap at current pool cost so it never goes negative
+  const reduction = Math.min(amount, pool.totalCostGbp)
+  if (reduction === 0) return  // Pool already empty — nothing to reduce
+
+  pool.totalCostGbp -= reduction
+  pool.averageCostGbp = pool.quantity > 0 ? pool.totalCostGbp / pool.quantity : 0
+
+  pool.history.push({
+    date: transaction.date,
+    type: 'EQUALISATION',
+    quantity: 0,
+    costOrProceeds: reduction,
     balanceQuantity: pool.quantity,
     balanceCost: pool.totalCostGbp,
     transactionId: transaction.id,
