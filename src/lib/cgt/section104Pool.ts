@@ -132,11 +132,16 @@ function applyEqualisationToPool(
   pool: Section104Pool,
   transaction: EnrichedTransaction
 ): void {
+  // value_gbp is null when FX enrichment failed — skip silently rather than
+  // applying an unknown reduction. The transaction still appears in the UI.
   const amount = Math.abs(transaction.value_gbp ?? 0)
   if (amount === 0) return
 
+  // Cap at current pool cost so it never goes negative
   const reduction = Math.min(amount, pool.totalCostGbp)
-  pool.totalCostGbp = Math.max(0, pool.totalCostGbp - amount)
+  if (reduction === 0) return  // Pool already empty — nothing to reduce
+
+  pool.totalCostGbp -= reduction
   pool.averageCostGbp = pool.quantity > 0 ? pool.totalCostGbp / pool.quantity : 0
 
   pool.history.push({

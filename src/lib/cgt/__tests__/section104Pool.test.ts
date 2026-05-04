@@ -417,6 +417,92 @@ describe('Section 104 Pool', () => {
       expect(pool.averageCostGbp).toBeCloseTo(12301.98 / 3, 1)
     })
 
+    describe('equalisation transactions', () => {
+      function makeTx(
+        overrides: Partial<EnrichedTransaction> & Pick<EnrichedTransaction, 'id' | 'type' | 'date'>
+      ): EnrichedTransaction {
+        return {
+          source: 'test',
+          symbol: 'VWRL',
+          name: 'Vanguard FTSE All-World ETF',
+          quantity: null,
+          price: null,
+          currency: 'GBP',
+          total: null,
+          fee: null,
+          notes: null,
+          fx_rate: 1,
+          price_gbp: null,
+          value_gbp: null,
+          fee_gbp: null,
+          fx_source: 'test',
+          fx_error: null,
+          tax_year: '2023/24',
+          gain_group: 'NONE',
+          ...overrides,
+        }
+      }
+
+      it('reduces pool cost and produces higher gain on subsequent SELL', () => {
+        const transactions: EnrichedTransaction[] = [
+          makeTx({ id: 'buy-1', type: 'BUY', date: '2023-11-01', quantity: 10, price: 100, price_gbp: 100, value_gbp: 1000, fee_gbp: 0 }),
+          makeTx({ id: 'eq-1',  type: 'EQUALISATION', date: '2023-12-31', value_gbp: 100 }),
+          makeTx({ id: 'sell-1', type: 'SELL', date: '2024-06-01', quantity: 10, price: 110, price_gbp: 110, value_gbp: 1100, fee_gbp: 0 }),
+        ]
+
+        const [matchings, pools] = applySection104Pooling(transactions, [])
+
+        const pool = pools.get('VWRL')!
+        expect(pool.quantity).toBe(0)
+        // Cost basis should be 1000 - 100 = 900 (not 1000)
+        expect(matchings[0].totalCostBasisGbp).toBeCloseTo(900, 2)
+        expect(pool.history).toHaveLength(3)
+        expect(pool.history[1].type).toBe('EQUALISATION')
+        expect(pool.history[1].costOrProceeds).toBeCloseTo(100, 2)
+      })
+
+      it('floors pool cost at zero when equalisation exceeds total cost', () => {
+        const transactions: EnrichedTransaction[] = [
+          makeTx({ id: 'buy-1', type: 'BUY', date: '2023-11-01', quantity: 10, price: 100, price_gbp: 100, value_gbp: 1000, fee_gbp: 0 }),
+          makeTx({ id: 'eq-1',  type: 'EQUALISATION', date: '2023-12-31', value_gbp: 1500 }),
+        ]
+
+        const [, pools] = applySection104Pooling(transactions, [])
+
+        const pool = pools.get('VWRL')!
+        expect(pool.totalCostGbp).toBe(0)
+        expect(pool.averageCostGbp).toBe(0)
+        // History records the actual reduction applied (capped at pool cost), not the full amount
+        expect(pool.history[1].costOrProceeds).toBeCloseTo(1000, 2)
+      })
+
+      it('skips silently when value_gbp is null (FX failure)', () => {
+        const transactions: EnrichedTransaction[] = [
+          makeTx({ id: 'buy-1', type: 'BUY', date: '2023-11-01', quantity: 10, price: 100, price_gbp: 100, value_gbp: 1000, fee_gbp: 0 }),
+          makeTx({ id: 'eq-1',  type: 'EQUALISATION', date: '2023-12-31', value_gbp: null, fx_error: 'FX rate unavailable' }),
+        ]
+
+        const [, pools] = applySection104Pooling(transactions, [])
+
+        const pool = pools.get('VWRL')!
+        expect(pool.totalCostGbp).toBeCloseTo(1000, 2)
+        expect(pool.history).toHaveLength(1)  // Only the BUY entry; no EQUALISATION entry
+      })
+
+      it('is a no-op when the pool is empty', () => {
+        const transactions: EnrichedTransaction[] = [
+          makeTx({ id: 'eq-1', type: 'EQUALISATION', date: '2023-12-31', value_gbp: 50 }),
+        ]
+
+        const [, pools] = applySection104Pooling(transactions, [])
+
+        const pool = pools.get('VWRL')!
+        expect(pool.totalCostGbp).toBe(0)
+        expect(pool.averageCostGbp).toBe(0)
+        expect(pool.history).toHaveLength(0)  // No entry since reduction was zero
+      })
+    })
+
     it('should handle options with multiple buys and sell from pool', () => {
       // Buy 2 contracts, then buy 3 more, then sell 4 from pool
       const transactions: EnrichedTransaction[] = [
