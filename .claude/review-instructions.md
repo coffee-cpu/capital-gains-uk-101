@@ -40,7 +40,7 @@ For any changes involving tax calculations, CGT matching rules, or financial com
 
 When reviewing PRs that touch files in:
 - `src/lib/cgt/` - CGT matching engine
-- `src/lib/enrichment.ts` - Transaction enrichment
+- `src/lib/enrichment/` - Transaction enrichment pipeline
 - `src/utils/taxYear.ts` - Tax year calculations
 - Any component displaying tax calculations
 

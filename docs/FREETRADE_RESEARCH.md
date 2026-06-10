@@ -1,7 +1,7 @@
 # Freetrade CSV Format Research
 
-**Last Updated**: 2025-10-28
-**Status**: Research phase - exact CSV format not yet confirmed
+**Last Updated**: 2026-06-10
+**Status**: ✅ IMPLEMENTED — Freetrade support shipped (parser: `src/lib/parsers/freetrade.ts`, definition: `src/config/brokers/freetrade.ts`). This document is retained as historical research; the implementation checklist below reflects a superseded architecture.
 
 ## Overview
 
