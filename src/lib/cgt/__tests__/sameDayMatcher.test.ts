@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { applySameDayRule, getRemainingQuantity } from '../sameDayMatcher'
+import { applySameDayRule } from '../sameDayMatcher'
+import { getRemainingQuantity } from '../utils'
 import { EnrichedTransaction } from '../../../types/transaction'
 
 describe('Same-Day Matcher', () => {

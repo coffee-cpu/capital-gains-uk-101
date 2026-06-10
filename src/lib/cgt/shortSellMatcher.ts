@@ -145,8 +145,6 @@ function createShortSellMatching(
   }
 }
 
-// Re-export getRemainingQuantity for backward compatibility
-export { getRemainingQuantity } from './utils'
 
 /**
  * Short Sell Rule Pipeline Stage

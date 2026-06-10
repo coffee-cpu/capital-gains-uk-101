@@ -7,7 +7,7 @@ import {
   isAcquisition,
   isDisposal,
   groupBySymbol,
-  getRemainingQuantity,
+  MatchedQuantityTracker,
   calculateCostBasis,
 } from './utils'
 
@@ -43,6 +43,9 @@ export function applySection104Pooling(
   const matchings: MatchingResult[] = []
   const pools = new Map<string, Section104Pool>()
 
+  // O(1) remaining-quantity lookups against prior-rule matchings
+  const tracker = new MatchedQuantityTracker(existingMatchings)
+
   // Group by symbol
   const bySymbol = groupBySymbol(transactions)
 
@@ -61,7 +64,7 @@ export function applySection104Pooling(
 
     // Process each transaction in chronological order
     for (const tx of sorted) {
-      const remainingQuantity = getRemainingQuantity(tx, existingMatchings)
+      const remainingQuantity = tracker.getRemaining(tx)
 
       if (remainingQuantity <= 0) {
         continue // Already fully matched by other rules
