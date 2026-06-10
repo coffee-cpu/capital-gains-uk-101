@@ -26,7 +26,6 @@ describe('Same-Day Matcher', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
         {
           id: 'tx-2',
@@ -48,7 +47,6 @@ describe('Same-Day Matcher', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
       ]
 
@@ -84,7 +82,6 @@ describe('Same-Day Matcher', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
         {
           id: 'tx-2',
@@ -106,7 +103,6 @@ describe('Same-Day Matcher', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
       ]
 
@@ -139,7 +135,6 @@ describe('Same-Day Matcher', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
         {
           id: 'tx-2',
@@ -161,7 +156,6 @@ describe('Same-Day Matcher', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
         {
           id: 'tx-3',
@@ -183,7 +177,6 @@ describe('Same-Day Matcher', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
       ]
 
@@ -216,7 +209,6 @@ describe('Same-Day Matcher', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
         {
           id: 'tx-2',
@@ -238,7 +230,6 @@ describe('Same-Day Matcher', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
       ]
 
@@ -273,7 +264,6 @@ describe('Same-Day Matcher', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
         {
           id: 'sell-2',
@@ -295,7 +285,6 @@ describe('Same-Day Matcher', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
         {
           id: 'buy-1',
@@ -317,7 +306,6 @@ describe('Same-Day Matcher', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
         {
           id: 'buy-2',
@@ -339,7 +327,6 @@ describe('Same-Day Matcher', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
       ]
 
@@ -383,7 +370,6 @@ describe('Same-Day Matcher', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
         {
           id: 'tx-2',
@@ -405,7 +391,6 @@ describe('Same-Day Matcher', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
       ]
 
@@ -439,7 +424,6 @@ describe('Same-Day Matcher', () => {
           fx_source: 'test',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
           underlying_symbol: 'SMCI',
           option_type: 'CALL',
           strike_price: 1200.00,
@@ -466,7 +450,6 @@ describe('Same-Day Matcher', () => {
           fx_source: 'test',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
           underlying_symbol: 'SMCI',
           option_type: 'CALL',
           strike_price: 1200.00,
@@ -513,7 +496,6 @@ describe('Same-Day Matcher', () => {
           fx_source: 'test',
           fx_error: null,
           tax_year: '2025/26',
-          gain_group: 'NONE',
           underlying_symbol: 'CRWV',
           option_type: 'CALL',
           strike_price: 110.00,
@@ -540,7 +522,6 @@ describe('Same-Day Matcher', () => {
           fx_source: 'test',
           fx_error: null,
           tax_year: '2025/26',
-          gain_group: 'NONE',
           underlying_symbol: 'CRWV',
           option_type: 'CALL',
           strike_price: 110.00,
@@ -581,7 +562,6 @@ describe('Same-Day Matcher', () => {
         fx_source: 'HMRC',
         fx_error: null,
         tax_year: '2023/24',
-        gain_group: 'NONE',
       }
 
       const remaining = getRemainingQuantity(transaction, [])
@@ -609,7 +589,6 @@ describe('Same-Day Matcher', () => {
         fx_source: 'HMRC',
         fx_error: null,
         tax_year: '2023/24',
-        gain_group: 'NONE',
       }
 
       const matchings = [
@@ -653,7 +632,6 @@ describe('Same-Day Matcher', () => {
         fx_source: 'HMRC',
         fx_error: null,
         tax_year: '2023/24',
-        gain_group: 'NONE',
       }
 
       const matchings = [

@@ -146,7 +146,7 @@ export interface TaxYearSummary {
  * Complete CGT calculation result
  */
 export interface CGTCalculationResult {
-  /** All enriched transactions with gain_group populated */
+  /** All enriched transactions with match_groups populated */
   transactions: EnrichedTransaction[]
   /** All disposal records across all tax years */
   disposals: DisposalRecord[]

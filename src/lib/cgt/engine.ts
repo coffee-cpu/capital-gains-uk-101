@@ -71,7 +71,7 @@ export function calculateCGT(
   }
 
   // Return all transactions (including ignored ones) so they can be displayed in UI
-  // But merge back the ignored ones without any gain_group modifications
+  // But merge back the ignored ones without any match-group modifications
   const allTransactionsWithGroups = transactions.map(tx => {
     if (tx.ignored) return tx
     const updated = updatedTransactions.find(u => u.id === tx.id)

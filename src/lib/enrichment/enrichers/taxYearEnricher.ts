@@ -12,7 +12,7 @@ import { Enricher } from '../types'
  * Populates fields:
  * - tax_year
  *
- * Note: gain_group and match_groups are populated later by the CGT engine,
+ * Note: match_groups is populated later by the CGT engine,
  * not during enrichment.
  */
 export class TaxYearEnricher implements Enricher {

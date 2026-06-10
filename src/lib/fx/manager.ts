@@ -129,28 +129,6 @@ export class FXManager {
 }
 
 /**
- * Singleton instance for shared use
- */
-let defaultManager: FXManager | null = null
-
-/**
- * Get the default FX Manager instance
- */
-export function getDefaultFXManager(): FXManager {
-  if (!defaultManager) {
-    defaultManager = new FXManager()
-  }
-  return defaultManager
-}
-
-/**
- * Reset the default FX Manager (for testing)
- */
-export function resetDefaultFXManager(): void {
-  defaultManager = null
-}
-
-/**
  * Convert amount from foreign currency to GBP
  *
  * @param amount Amount in foreign currency

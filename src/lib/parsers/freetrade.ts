@@ -1,5 +1,6 @@
 import { GenericTransaction, TransactionType } from '../../types/transaction'
 import { RawCSVRow } from '../../types/broker'
+import { parseISODate } from './parsingUtils'
 
 /**
  * Normalize Freetrade CSV rows to GenericTransaction format
@@ -315,12 +316,5 @@ function parseStockSplitTransaction(
  * Returns ISO date string (YYYY-MM-DD) or null
  */
 function parseFreetradeDate(dateStr: string): string | null {
-  if (!dateStr) return null
-
-  // Freetrade uses ISO 8601 format - just extract the date part
-  const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/)
-  if (!match) return null
-
-  const [, year, month, day] = match
-  return `${year}-${month}-${day}`
+  return parseISODate(dateStr)
 }

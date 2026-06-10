@@ -48,19 +48,3 @@ export async function preprocessCSVFile(file: File): Promise<File> {
   }
   return file
 }
-
-/**
- * Parse CSV from text content
- */
-export function parseCSVText(text: string): RawCSVRow[] {
-  const result = Papa.parse<RawCSVRow>(text, {
-    header: true,
-    skipEmptyLines: true,
-  })
-
-  if (result.errors.length > 0) {
-    throw new Error(`CSV parsing errors: ${result.errors.map(e => e.message).join(', ')}`)
-  }
-
-  return result.data
-}

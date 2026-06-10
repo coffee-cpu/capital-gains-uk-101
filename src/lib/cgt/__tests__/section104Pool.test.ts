@@ -26,7 +26,6 @@ describe('Section 104 Pool', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
       ]
 
@@ -65,7 +64,6 @@ describe('Section 104 Pool', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
         {
           id: 'tx-2',
@@ -87,7 +85,6 @@ describe('Section 104 Pool', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
       ]
 
@@ -125,7 +122,6 @@ describe('Section 104 Pool', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
         {
           id: 'tx-2',
@@ -147,7 +143,6 @@ describe('Section 104 Pool', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
       ]
 
@@ -182,7 +177,6 @@ describe('Section 104 Pool', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
         {
           id: 'tx-2',
@@ -204,7 +198,6 @@ describe('Section 104 Pool', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
       ]
 
@@ -257,7 +250,6 @@ describe('Section 104 Pool', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
         {
           id: 'tx-2',
@@ -279,7 +271,6 @@ describe('Section 104 Pool', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
       ]
 
@@ -312,7 +303,6 @@ describe('Section 104 Pool', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
         {
           id: 'tx-2',
@@ -334,7 +324,6 @@ describe('Section 104 Pool', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
         {
           id: 'tx-3',
@@ -356,7 +345,6 @@ describe('Section 104 Pool', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
       ]
 
@@ -392,7 +380,6 @@ describe('Section 104 Pool', () => {
           fx_source: 'test',
           fx_error: null,
           tax_year: '2025/26',
-          gain_group: 'NONE',
           underlying_symbol: 'CRWV',
           option_type: 'CALL',
           strike_price: 110.00,
@@ -440,7 +427,6 @@ describe('Section 104 Pool', () => {
           fx_source: 'test',
           fx_error: null,
           tax_year: '2025/26',
-          gain_group: 'NONE',
           underlying_symbol: 'GOOGL',
           option_type: 'CALL',
           strike_price: 160.00,
@@ -467,7 +453,6 @@ describe('Section 104 Pool', () => {
           fx_source: 'test',
           fx_error: null,
           tax_year: '2025/26',
-          gain_group: 'NONE',
           underlying_symbol: 'GOOGL',
           option_type: 'CALL',
           strike_price: 160.00,
@@ -494,7 +479,6 @@ describe('Section 104 Pool', () => {
           fx_source: 'test',
           fx_error: null,
           tax_year: '2025/26',
-          gain_group: 'NONE',
           underlying_symbol: 'GOOGL',
           option_type: 'CALL',
           strike_price: 160.00,

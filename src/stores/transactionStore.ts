@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { GenericTransaction, EnrichedTransaction } from '../types/transaction'
+import { EnrichedTransaction } from '../types/transaction'
 import { CGTCalculationResult, DisposalRecord, TaxYearSummary, Section104Pool } from '../types/cgt'
 import { HelpContext } from '../utils/helpContent'
 
@@ -15,12 +15,10 @@ interface TransactionState {
   setTransactions: (transactions: EnrichedTransaction[]) => void
   setSelectedTaxYear: (year: string) => void
   setCGTResults: (results: CGTCalculationResult) => void
-  addTransactions: (transactions: GenericTransaction[]) => void
   setHasExportedPDF: (hasExported: boolean) => void
   setIsLoading: (isLoading: boolean) => void
   // Help panel actions
   setHelpPanelOpen: (open: boolean) => void
-  setHelpContext: (context: HelpContext) => void
   toggleHelpPanelWithContext: (context: HelpContext) => void
   // Computed getters for CGT data
   getDisposals: () => DisposalRecord[]
@@ -62,8 +60,6 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
 
   setHelpPanelOpen: (open) => set({ isHelpPanelOpen: open }),
 
-  setHelpContext: (context) => set({ helpContext: context }),
-
   toggleHelpPanelWithContext: (context) => {
     const state = get()
     // If panel is open and showing the same context, close it
@@ -74,24 +70,6 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
       set({ helpContext: context, isHelpPanelOpen: true })
     }
   },
-
-  addTransactions: (newTransactions) =>
-    set((state) => ({
-      transactions: [
-        ...state.transactions,
-        ...newTransactions.map(tx => ({
-          ...tx,
-          fx_rate: 1, // Will be enriched later
-          price_gbp: tx.price,
-          value_gbp: tx.total,
-          fee_gbp: tx.fee,
-          fx_source: 'Not yet enriched',
-          fx_error: null,
-          tax_year: '2024/25',
-          gain_group: 'NONE' as const,
-        })),
-      ],
-    })),
 
   // Computed getters
   getDisposals: () => get().cgtResults?.disposals ?? [],

@@ -14,7 +14,7 @@
 export * from '../../types/fxSource'
 
 // Re-export manager
-export { FXManager, getDefaultFXManager, resetDefaultFXManager, convertToGBP } from './manager'
+export { FXManager, convertToGBP } from './manager'
 
 // Re-export providers for direct access if needed
 export { HMRCMonthlyProvider } from './providers/hmrcMonthly'

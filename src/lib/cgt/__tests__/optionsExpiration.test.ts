@@ -62,7 +62,6 @@ describe('Options Expiration', () => {
       fee_gbp: tx.fee,
       fx_source: 'test',
       tax_year: '2023/24',
-      gain_group: 'NONE' as const,
     }))
 
     console.log('\n=== Enriched Transactions ===')
@@ -86,9 +85,9 @@ describe('Options Expiration', () => {
       console.log(`  Incomplete: ${d.isIncomplete}`)
     })
 
-    console.log('\n=== Transaction gain_groups ===')
+    console.log('\n=== Transaction match_groups ===')
     result.transactions.forEach(tx => {
-      console.log(`  ${tx.type} (${tx.symbol}) on ${tx.date}: gain_group=${tx.gain_group}`)
+      console.log(`  ${tx.type} (${tx.symbol}) on ${tx.date}: match_groups=${tx.match_groups?.join(',') ?? '-'}`)
     })
 
     console.log('\n=== Section 104 Pools ===')
