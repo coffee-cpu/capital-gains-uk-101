@@ -360,7 +360,7 @@ describe('Coinbase Pro Parser', () => {
         expect(result[0].symbol).toBe('ETH')
       })
 
-      it('should throw error for malformed timestamp (no T separator)', () => {
+      it('should accept space-separated timestamp (no T separator)', () => {
         const rows: RawCSVRow[] = [
           {
             'portfolio': 'default',
@@ -377,12 +377,12 @@ describe('Coinbase Pro Parser', () => {
           },
         ]
 
-        expect(() => {
-          normalizeCoinbaseProTransactions(rows, 'test-file')
-        }).toThrow('Invalid date format in timestamp')
+        const result = normalizeCoinbaseProTransactions(rows, 'test-file')
+        expect(result).toHaveLength(1)
+        expect(result[0].date).toBe('2020-10-14')
       })
 
-      it('should throw error for invalid date format', () => {
+      it('should skip rows with invalid date format instead of aborting the import', () => {
         const rows: RawCSVRow[] = [
           {
             'portfolio': 'default',
@@ -397,17 +397,27 @@ describe('Coinbase Pro Parser', () => {
             'total': '-1010',
             'price/fee/total unit': 'GBP',
           },
+          {
+            'portfolio': 'default',
+            'trade id': '124',
+            'product': 'ETH-GBP',
+            'side': 'BUY',
+            'created at': '2020-10-15T11:00:00.000Z',
+            'size': '1',
+            'size unit': 'ETH',
+            'price': '300',
+            'fee': '5',
+            'total': '-305',
+            'price/fee/total unit': 'GBP',
+          },
         ]
 
-        expect(() => {
-          normalizeCoinbaseProTransactions(rows, 'test-file')
-        }).toThrow('Invalid date format in timestamp')
-        expect(() => {
-          normalizeCoinbaseProTransactions(rows, 'test-file')
-        }).toThrow('Expected YYYY-MM-DD')
+        const result = normalizeCoinbaseProTransactions(rows, 'test-file')
+        expect(result).toHaveLength(1)
+        expect(result[0].symbol).toBe('ETH')
       })
 
-      it('should throw error for timestamp without date part', () => {
+      it('should skip rows with timestamp without date part', () => {
         const rows: RawCSVRow[] = [
           {
             'portfolio': 'default',
@@ -424,9 +434,8 @@ describe('Coinbase Pro Parser', () => {
           },
         ]
 
-        expect(() => {
-          normalizeCoinbaseProTransactions(rows, 'test-file')
-        }).toThrow('Invalid ISO 8601 timestamp format')
+        const result = normalizeCoinbaseProTransactions(rows, 'test-file')
+        expect(result).toHaveLength(0)
       })
     })
 

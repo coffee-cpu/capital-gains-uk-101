@@ -48,28 +48,19 @@ function parseProduct(product: string): { base: string; quote: string } | null {
  * e.g., "2020-10-14T10:42:20.072Z" -> "2020-10-14"
  *
  * @param timestamp - ISO 8601 formatted timestamp string
- * @returns Date in YYYY-MM-DD format
- * @throws Error if timestamp is invalid or malformed
+ * @returns Date in YYYY-MM-DD format, or null if invalid (row is skipped,
+ *          matching every other parser's behaviour)
  */
-function parseISO8601Date(timestamp: string): string {
-  // Validate input exists and is a string
+function parseISO8601Date(timestamp: string): string | null {
   if (!timestamp || typeof timestamp !== 'string') {
-    throw new Error('Invalid timestamp: empty or non-string value')
+    return null
   }
 
-  // Split on 'T' to extract date part
-  const parts = timestamp.split('T')
-  if (parts.length === 0 || !parts[0]) {
-    throw new Error(`Invalid ISO 8601 timestamp format: "${timestamp}"`)
-  }
-
-  const datePart = parts[0]
+  const datePart = timestamp.split(/[T ]/)[0]
 
   // Validate basic YYYY-MM-DD format
   if (!/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
-    throw new Error(
-      `Invalid date format in timestamp: "${timestamp}". Expected YYYY-MM-DD`
-    )
+    return null
   }
 
   return datePart
@@ -122,8 +113,12 @@ export function normalizeCoinbaseProTransactions(
     const total = parseCurrency(row['total'])
     const gbpValue = parseCurrency(row['gbp_value'])
 
-    // Date in YYYY-MM-DD format
+    // Date in YYYY-MM-DD format (skip rows with malformed timestamps)
     const date = parseISO8601Date(timestamp)
+    if (!date) {
+      console.warn(`Coinbase Pro: Invalid timestamp "${timestamp}", skipping row`)
+      continue
+    }
 
     // Determine if this is a fiat or crypto-to-crypto trade
     const isFiatTrade = isFiatCurrency(quote)

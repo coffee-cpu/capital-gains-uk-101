@@ -179,6 +179,21 @@ export function getRemainingQuantity(
 }
 
 /**
+ * Apportion a transaction's fee across its underlying units (shares,
+ * or shares-per-contract for options).
+ *
+ * Quantities can be fractional (e.g. 0.5 shares on Trading 212/Freetrade),
+ * so the divisor must not be clamped to 1 — that would silently understate
+ * the fee for sub-1 quantities.
+ *
+ * @returns Fee in GBP per underlying unit (0 if no fee or no quantity)
+ */
+export function getFeePerUnit(transaction: EnrichedTransaction): number {
+  const units = getEffectiveQuantity(transaction) * (transaction.contract_size || 1)
+  return transaction.fee_gbp && units > 0 ? transaction.fee_gbp / units : 0
+}
+
+/**
  * Calculate cost basis for an acquisition
  *
  * Computes the total cost including purchase price and fees,
@@ -194,11 +209,27 @@ export function calculateCostBasis(
   quantityToMatch: number
 ): number {
   const pricePerShare = getEffectivePrice(acquisition)
-  const effectiveQuantity = getEffectiveQuantity(acquisition)
   const contractMultiplier = acquisition.contract_size || 1
-  const feePerShare = acquisition.fee_gbp
-    ? acquisition.fee_gbp / Math.max(effectiveQuantity * contractMultiplier, 1)
-    : 0
-  const costBasisPerShare = pricePerShare + feePerShare
+  const costBasisPerShare = pricePerShare + getFeePerUnit(acquisition)
   return costBasisPerShare * quantityToMatch * contractMultiplier
+}
+
+/**
+ * Calculate net proceeds for the matched portion of a disposal
+ *
+ * Selling fees are apportioned per unit and deducted from the price,
+ * mirroring how calculateCostBasis adds them for acquisitions.
+ *
+ * @param disposal The sell transaction
+ * @param quantityToMatch Number of shares/contracts being matched
+ * @returns Net proceeds in GBP for the matched quantity
+ */
+export function calculateNetProceeds(
+  disposal: EnrichedTransaction,
+  quantityToMatch: number
+): number {
+  const pricePerShare = getEffectivePrice(disposal)
+  const contractMultiplier = disposal.contract_size || 1
+  const proceedsPerShare = pricePerShare - getFeePerUnit(disposal)
+  return proceedsPerShare * quantityToMatch * contractMultiplier
 }

@@ -6,7 +6,7 @@ import { sameDayStage } from './sameDayMatcher'
 import { thirtyDayStage } from './thirtyDayMatcher'
 import { section104Stage } from './section104Pool'
 import { getTaxYearBounds } from '../../utils/taxYear'
-import { getEffectiveQuantity, getEffectivePrice, isAcquisition, isDisposal } from './utils'
+import { getEffectiveQuantity, isAcquisition, isDisposal, calculateNetProceeds } from './utils'
 import { calculateTaxYearFeatures } from './taxYearFeatures'
 
 /**
@@ -126,20 +126,9 @@ function createDisposalRecords(matchings: MatchingResult[]): DisposalRecord[] {
     // Calculate proceeds - ONLY for matched portion to ensure accurate CGT calculation
     //
     // For options transactions, the price is quoted per-share but quantity is in contracts.
-    // Each contract typically represents 100 shares (contract_size), so we need to multiply
-    // quantity by contract_size to get the correct proceeds calculation.
-    const pricePerShare = getEffectivePrice(disposal)
-    const contractMultiplier = disposal.contract_size || 1
-    const feePerShare = disposal.fee_gbp
-      ? disposal.fee_gbp / Math.max(disposalQuantity * contractMultiplier, 1)
-      : 0
-
-    // For incomplete disposals, only calculate proceeds for matched shares
-    // Multiply by contract_size for options (e.g., 4 contracts * 100 shares * $1.10/share)
-    const matchedProceeds = (pricePerShare - feePerShare) * totalMatchedQuantity * contractMultiplier
-
-    // For complete records, use all proceeds
-    const netProceeds = matchedProceeds
+    // Each contract typically represents 100 shares (contract_size), handled inside
+    // calculateNetProceeds.
+    const netProceeds = calculateNetProceeds(disposal, totalMatchedQuantity)
 
     // Sum up all allowable costs from matched acquisitions
     const totalCostBasis = disposalMatchings.reduce(

@@ -2,8 +2,8 @@ import { EnrichedTransaction, TransactionType } from '../../types/transaction'
 import { Section104Pool, MatchingResult } from '../../types/cgt'
 import { MatchingStage } from './pipeline'
 import {
-  getEffectiveQuantity,
   getEffectivePrice,
+  getFeePerUnit,
   isAcquisition,
   isDisposal,
   groupBySymbol,
@@ -135,13 +135,7 @@ function matchAgainstPool(
   }
 
   // Calculate proceeds (including selling fees, use split-adjusted price if available)
-  const pricePerShare = getEffectivePrice(transaction)
-  const effectiveQuantity = getEffectiveQuantity(transaction)
-  const contractMultiplier = transaction.contract_size || 1
-  const feePerShare = transaction.fee_gbp
-    ? transaction.fee_gbp / Math.max(effectiveQuantity * contractMultiplier, 1)
-    : 0
-  const proceedsPerShare = pricePerShare - feePerShare
+  const proceedsPerShare = getEffectivePrice(transaction) - getFeePerUnit(transaction)
   const proceeds = proceedsPerShare * quantityToMatch
 
   // Record in history only if we matched something
