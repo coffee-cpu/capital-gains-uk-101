@@ -14,10 +14,13 @@ export function HelpPanel() {
 
   const content = getHelpContent(context)
 
-  // Reset to explanation tab when context changes
-  useEffect(() => {
+  // Reset to explanation tab when context changes (adjust-state-during-render
+  // pattern — avoids the extra render an effect would cause)
+  const [prevContext, setPrevContext] = useState(context)
+  if (prevContext !== context) {
+    setPrevContext(context)
     setActiveTab('explanation')
-  }, [context])
+  }
 
   // Handle Escape key to close panel
   useEffect(() => {

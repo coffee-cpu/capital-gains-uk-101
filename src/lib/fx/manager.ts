@@ -5,6 +5,7 @@ import {
   DEFAULT_FX_SOURCE,
 } from '../../types/fxSource'
 import { GenericTransaction } from '../../types/transaction'
+import { isFiatCurrency } from '../currencies'
 import { HMRCMonthlyProvider } from './providers/hmrcMonthly'
 import { HMRCYearlyProvider } from './providers/hmrcYearly'
 import { DailySpotProvider } from './providers/dailySpot'
@@ -72,6 +73,11 @@ export class FXManager {
     if (!ratePromise) {
       ratePromise = provider.getRate(date, currency)
       this.rateCache.set(cacheKey, ratePromise)
+      // Evict failures so a transient network error doesn't poison the
+      // cache for the rest of the session — the next enrichment run retries
+      ratePromise.catch(() => {
+        this.rateCache.delete(cacheKey)
+      })
     }
 
     return ratePromise
@@ -94,7 +100,9 @@ export class FXManager {
     const currencies = new Set<string>()
 
     for (const tx of transactions) {
-      if (tx.currency !== 'GBP') {
+      // Only fiat currencies have FX rates; crypto symbols (e.g. BTC) would
+      // never be cacheable and force a full time-series re-download every run
+      if (tx.currency !== 'GBP' && isFiatCurrency(tx.currency)) {
         dates.push(tx.date)
         currencies.add(tx.currency)
       }

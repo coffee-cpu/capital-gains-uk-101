@@ -62,7 +62,8 @@ export class HMRCMonthlyProvider extends BaseFXProvider {
       return rate
     } catch (error) {
       throw new Error(
-        `Failed to fetch HMRC FX rate for ${currency} in ${year}/${month}: ${error instanceof Error ? error.message : 'Unknown error'}`
+        `Failed to fetch HMRC FX rate for ${currency} in ${year}/${month}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        { cause: error }
       )
     }
   }

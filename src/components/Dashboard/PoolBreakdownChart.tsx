@@ -28,6 +28,10 @@ interface PoolBreakdownChartProps {
   holdingsData: CurrentHoldingsResult
 }
 
+// Stable empty references so hooks' dependencies don't change on every render
+const EMPTY_CHART_DATA: PoolBreakdownResult['data'] = []
+const EMPTY_SYMBOLS: string[] = []
+
 // Pie chart data type with index signature for Recharts compatibility
 type PieDataPoint = CurrentHoldingPoint & { [key: string]: string | number }
 
@@ -119,11 +123,9 @@ function PieTooltip({ active, payload }: PieTooltipProps) {
 }
 
 export function PoolBreakdownChart({ data, holdingsData }: PoolBreakdownChartProps) {
-  if (!data || data.data.length === 0 || data.symbols.length === 0) {
-    return <EmptyState message="No Section 104 pools to display" />
-  }
-
-  const { data: chartData, symbols } = data
+  // Hooks must run unconditionally — the empty-state return comes after them
+  const chartData = data?.data ?? EMPTY_CHART_DATA
+  const symbols = data?.symbols ?? EMPTY_SYMBOLS
   const colors = generateSymbolColors(symbols)
 
   // Limit to top 8 symbols for readability
@@ -156,6 +158,10 @@ export function PoolBreakdownChart({ data, holdingsData }: PoolBreakdownChartPro
   // Prepare pie chart data
   const hasHoldings = holdingsData && holdingsData.holdings.length > 0
   const pieData = hasHoldings ? (holdingsData.holdings as PieDataPoint[]) : []
+
+  if (!data || chartData.length === 0 || symbols.length === 0) {
+    return <EmptyState message="No Section 104 pools to display" />
+  }
 
   // Custom label renderer for pie - positioned outside with connector lines
   const RADIAN = Math.PI / 180

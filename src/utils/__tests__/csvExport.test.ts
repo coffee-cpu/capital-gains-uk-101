@@ -26,12 +26,10 @@ describe('csvExport', () => {
 
     // Mock URL methods if they don't exist (jsdom environment)
     if (!URL.createObjectURL) {
-      // @ts-ignore - Adding method that doesn't exist in test environment
-      URL.createObjectURL = vi.fn()
+      URL.createObjectURL = vi.fn() as unknown as typeof URL.createObjectURL
     }
     if (!URL.revokeObjectURL) {
-      // @ts-ignore - Adding method that doesn't exist in test environment
-      URL.revokeObjectURL = vi.fn()
+      URL.revokeObjectURL = vi.fn() as unknown as typeof URL.revokeObjectURL
     }
 
     // Spy on URL methods

@@ -7,12 +7,13 @@ import {
   buildPoolBreakdownData,
   buildCurrentHoldingsData,
 } from '../../lib/chartData'
-import { Section104Pool } from '../../types/cgt'
+import { DisposalRecord, Section104Pool } from '../../types/cgt'
 import { EnrichedTransaction } from '../../types/transaction'
 
 // Stable empty references to prevent infinite re-renders
 const EMPTY_POOLS = new Map<string, Section104Pool>()
 const EMPTY_TRANSACTIONS: EnrichedTransaction[] = []
+const EMPTY_DISPOSALS: DisposalRecord[] = []
 
 type ChartType = 'transactions' | 'section104'
 
@@ -26,7 +27,7 @@ export function Dashboard() {
   const cgtResults = useTransactionStore((state) => state.cgtResults)
 
   // Get data with stable fallbacks
-  const disposals = cgtResults?.disposals ?? []
+  const disposals = cgtResults?.disposals ?? EMPTY_DISPOSALS
   const section104Pools = cgtResults?.section104Pools ?? EMPTY_POOLS
   const transactions = cgtResults?.transactions ?? EMPTY_TRANSACTIONS
 
