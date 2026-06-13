@@ -132,7 +132,7 @@ export function normalizeTrading212Transactions(
 
       // For BUY/SELL: Calculate total from price × quantity in the original currency
       // For others (DIVIDEND, INTEREST, TRANSFER): Use the CSV total (already in correct currency)
-      let total: number | null = null
+      let total: number | null
       if (type === 'BUY' || type === 'SELL') {
         // Calculate from price × quantity for buy/sell transactions
         total = price !== undefined && price !== null &&

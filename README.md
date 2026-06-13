@@ -8,7 +8,7 @@ A free, privacy-focused web application that helps UK taxpayers understand and c
 
 ## Features
 
-- ✅ CSV import from popular brokers (Charles Schwab, Trading 212, EquatePlus, Generic CSV format)
+- ✅ CSV import from popular brokers (Charles Schwab, Trading 212, Interactive Brokers, Freetrade, EquatePlus, Revolut, Coinbase, Generic CSV format)
 - ✅ Transaction management with persistent storage
 - ✅ Support for all transaction types (buys, sells, dividends, transfers, stock splits, etc.)
 - ✅ Stock split handling (TCGA92/S127) with split-adjusted quantities
@@ -98,6 +98,9 @@ Each disposal generates a detailed record showing:
 - ✅ Trading 212 (with stock split support)
 - ✅ Interactive Brokers
 - ✅ Freetrade
+- ✅ Revolut
+- ✅ Coinbase
+- ✅ Coinbase Pro
 - ✅ Generic CSV format (universal import)
 
 ## Tech Stack

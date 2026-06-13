@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { applyShortSellRule, getRemainingQuantity } from '../shortSellMatcher'
+import { applyShortSellRule } from '../shortSellMatcher'
+import { getRemainingQuantity } from '../utils'
 import { EnrichedTransaction } from '../../../types/transaction'
 
 /**
@@ -24,7 +25,6 @@ function createTransaction(
     fx_source: 'HMRC',
     fx_error: null,
     tax_year: '2023/24',
-    gain_group: 'NONE',
     ...overrides,
   }
 }

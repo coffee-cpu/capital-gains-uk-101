@@ -116,14 +116,47 @@ export async function ensureDatabaseCompatible(): Promise<void> {
 
     if (needsReset) {
       console.warn('Database schema incompatible, clearing and recreating:', errorMessage)
-      // Delete the incompatible database
+      // FX rates and split data are re-fetchable, but user transactions are
+      // not — salvage them before deleting the incompatible database
+      const salvaged = await salvageTransactions()
       await db.delete()
       // Reopen with fresh schema
       await db.open()
+      if (salvaged.length > 0) {
+        try {
+          await db.transactions.bulkPut(salvaged)
+          console.warn(`Restored ${salvaged.length} transactions after database reset`)
+        } catch (restoreError) {
+          console.error('Failed to restore transactions after database reset:', restoreError)
+        }
+      }
     } else {
       // Re-throw unexpected errors
       throw error
     }
+  }
+}
+
+/**
+ * Best-effort read of the transactions table from an incompatible database.
+ *
+ * Opens the existing database in Dexie's dynamic mode (no schema declaration),
+ * which works regardless of how the stored schema diverges from the current
+ * code. Returns an empty array if anything fails.
+ */
+async function salvageTransactions(): Promise<GenericTransaction[]> {
+  const legacyDb = new Dexie('cgt-visualizer')
+  try {
+    await legacyDb.open()
+    if (!legacyDb.tables.some(t => t.name === 'transactions')) {
+      return []
+    }
+    return await legacyDb.table<GenericTransaction, string>('transactions').toArray()
+  } catch (error) {
+    console.warn('Could not salvage transactions from incompatible database:', error)
+    return []
+  } finally {
+    legacyDb.close()
   }
 }
 

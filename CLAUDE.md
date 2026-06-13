@@ -43,7 +43,7 @@ npm run test:all         # Run both unit and E2E tests
 ### Single Test Examples
 ```bash
 npx vitest run src/lib/__tests__/brokerDetector.test.ts
-npx playwright test e2e/import.spec.ts
+npx playwright test e2e/csv-import.spec.ts
 ```
 
 ## Architecture
@@ -69,9 +69,9 @@ CSV Import → Broker Detection → Parsing (to GenericTransaction) → Enrichme
 - **Parsing/Normalization**: Converting broker-specific CSV formats to `GenericTransaction` (unified structure, raw data only)
 - **Enrichment**: Adding computed fields to create `EnrichedTransaction` (split adjustments → FX conversion → tax year)
 
-All processing is client-side. The app uses IndexedDB to persist:
-- Imported transactions (GenericTransaction format with raw data)
-- Cached FX rates from Bank of England API
+All processing is client-side. The app uses IndexedDB to persist imported
+transactions (GenericTransaction format with raw data), cached FX rates,
+imported-file metadata, user settings, and auto-fetched stock split data.
 
 ### Key Concepts
 
@@ -90,7 +90,7 @@ All processing is client-side. The app uses IndexedDB to persist:
 - Three enrichment passes (see `src/lib/enrichment/index.ts` and `src/lib/enrichment/engine.ts`):
   1. **Stock split adjustments**: `split_adjusted_quantity`, `split_adjusted_price`, `split_multiplier`, `applied_splits`
   2. **FX conversion**: `fx_rate`, `price_gbp`, `value_gbp`, `fee_gbp`, `fx_source`
-  3. **Tax year & CGT**: `tax_year`, `gain_group`, `match_groups`
+  3. **Tax year & CGT**: `tax_year`, `match_groups`
 
 **Why This Matters**:
 - ✅ **Audit trail**: Original quantities match broker statements exactly
@@ -123,23 +123,27 @@ Each parser must:
 
 The `enrichTransactions()` function (in `index.ts`) uses the `EnrichmentEngine` (in `engine.ts`) to run three sequential passes via enricher classes in `enrichers/`:
 1. **Stock splits** (sync) - quantities must be in comparable units first
-2. **FX conversion** (async) - API calls to Bank of England for GBP rates
+2. **FX conversion** (async) - fetches GBP rates from the user-selected FX source (see `src/lib/fx/`)
 3. **Tax year calculation** (sync) - assigns UK tax years
 
 #### 4. State Management
 - **Runtime state**: Zustand store (`src/stores/transactionStore.ts`) holds currently loaded transactions and selected tax year
-- **Persistence**: Dexie database (`src/lib/db.ts`) with two tables:
+- **Persistence**: Dexie database (`src/lib/db.ts`, schema v4) with five tables:
   - `transactions`: Indexed by id, source, symbol, date, type
-  - `fx_rates`: Indexed by [date+currency] composite key
+  - `fx_rates`: Primary key `id` (format `SOURCE-dateKey-currency`, e.g. `HMRC_MONTHLY-2025-05-USD`)
+  - `imported_files`: Metadata for duplicate-import detection
+  - `settings`: User settings (FX source, auto-splits toggle)
+  - `split_data_cache`: Auto-fetched stock split data by year
 
 #### 5. Tax Year Calculation (`src/utils/taxYear.ts`)
 UK tax years run April 6 to April 5. Format: `2023/24` means 6 April 2023 to 5 April 2024.
 
 #### 6. HMRC CGT Matching Rules (`src/lib/cgt/`)
 The CGT engine applies rules in this order:
-1. **Same-Day Rule**: Match buys/sells on same calendar day (TCGA92/S105(1))
-2. **30-Day Rule**: Match repurchases within 30 days after disposal - "bed and breakfast" (TCGA92/S106A(5))
-3. **Section 104 Pool**: Remaining holdings pooled for average cost basis (TCGA92/S104)
+1. **Short-Sell Rule**: Match explicit short sells (`is_short_sell` flag) with subsequent covering buys
+2. **Same-Day Rule**: Match buys/sells on same calendar day (TCGA92/S105(1))
+3. **30-Day Rule**: Match repurchases within 30 days after disposal - "bed and breakfast" (TCGA92/S106A(5))
+4. **Section 104 Pool**: Remaining holdings pooled for average cost basis (TCGA92/S104)
 
 **Important**: CGT matching uses `split_adjusted_quantity ?? quantity` from the enrichment pipeline via `getEffectiveQuantity()` helper.
 
@@ -161,29 +165,37 @@ Key directories:
 
 ### Adding a New Broker Parser
 
-1. Define broker detection in `src/lib/brokerDetector.ts`:
-   - Add new `BrokerType` enum value in `src/types/broker.ts`
-   - Implement detection function checking for unique headers
-   - Add to detection chain in correct priority order
+Broker support is config-driven: detection, parsing, instructions, and the
+example file all live on a single `BrokerDefinition`. `src/lib/brokerDetector.ts`
+is a generic engine that iterates the registry — no per-broker code goes there.
+
+1. Add a `BrokerType` enum value in `src/types/broker.ts`
 
 2. Create parser in `src/lib/parsers/{broker}.ts`:
    - Export `normalize{Broker}Transactions(rows, fileId)` function
-   - Parse broker-specific date format to ISO YYYY-MM-DD
-   - Parse currency values (remove symbols, commas)
+   - Parse broker-specific date format to ISO YYYY-MM-DD (use helpers from `parsingUtils.ts`)
+   - Parse currency values with `parseCurrency`/`parseNumber` (handles symbols, commas)
    - Map broker actions to TransactionType enum
    - Generate unique IDs: `${fileId}-${rowIndex}`
    - Set source name (user-facing broker name)
    - Return GenericTransaction[]
 
-3. Write tests in `src/lib/parsers/__tests__/{broker}.test.ts`
+3. Create a broker definition in `src/config/brokers/{broker}.ts`:
+   - Specify `detection.requiredHeaders`, `detection.priority`, and an optional
+     `customDetector` for formats header matching can't identify
+   - Wire the `parser` function from step 2, user-facing `instructions`, and `exampleFile`
+   - Register it in `ALL_BROKER_DEFINITIONS` in `src/config/brokers/index.ts`
+   - If the raw file needs preprocessing before CSV parsing (multi-section
+     exports etc.), export a `CSVPreprocessor` and add it to `PREPROCESSORS`
+     in `src/lib/csvParser.ts`
+
+4. Write tests in `src/lib/parsers/__tests__/{broker}.test.ts`
    - Test date parsing edge cases
    - Test currency parsing (positive/negative, with symbols)
    - Test action mapping to transaction types
-   - Use real CSV examples from `test-data/`
 
-4. Update `src/lib/csvParser.ts` to route detected broker to new parser
-
-5. Add sample CSV file to `test-data/` directory
+5. Add an example CSV to `public/examples/` (referenced by `exampleFile`) and,
+   for E2E coverage, a fixture in `e2e/fixtures/`
 
 ### Transaction ID Generation
 IDs must be unique within a session. Pattern: `${fileId}-${rowIndex}` where:
@@ -199,7 +211,7 @@ Always store dates as ISO 8601: `YYYY-MM-DD`. Parsers must convert from broker-s
 - Never use `any` - prefer `unknown` and type guards if needed
 
 ### Code Quality
-- **Always address linter warnings** before committing code
+- **Always address linter warnings** before committing code: run `npm run lint` (ESLint with typescript-eslint and react-hooks rules)
 - Remove unused variables, imports, and parameters
 - Fix TypeScript errors and warnings (e.g., TS6133 for unused declarations)
 - Ensure proper JSX structure (adjacent elements must be wrapped)
@@ -209,9 +221,10 @@ Always store dates as ISO 8601: `YYYY-MM-DD`. Parsers must convert from broker-s
 
 **Pre-commit Checklist** - Always run these before committing:
 1. ✅ **Build check**: Run `npm run build` - ensures TypeScript compilation succeeds and catches type errors
-2. ✅ **Unit tests**: Run `npm test` - verifies logic correctness
-3. ✅ **E2E tests** (when applicable): Run `npm run test:e2e` - catches integration issues when UI changes are involved
-4. ✅ **User approval**: Ask user to validate changes
+2. ✅ **Lint**: Run `npm run lint` - catches hook violations and other issues the compiler misses
+3. ✅ **Unit tests**: Run `npm test` - verifies logic correctness
+4. ✅ **E2E tests** (when applicable): Run `npm run test:e2e` - catches integration issues when UI changes are involved
+5. ✅ **User approval**: Ask user to validate changes
 
 **Important Guidelines**:
 - **ALWAYS ask the user to validate changes before committing**
@@ -299,11 +312,16 @@ PapaParse configuration:
 - Always handle parsing errors gracefully
 
 ### FX Rate Enrichment
-Bank of England API provides historical GBP rates via HMRC's official exchange rate service. Rates are cached in `fx_rates` IndexedDB table with composite key `[date+currency]`.
+Three user-selectable FX sources (`src/lib/fx/providers/`):
+- **HMRC Monthly Rates** (default): official monthly rates via an HMRC data mirror (hmrc.matchilling.com / trade-tariff.service.gov.uk)
+- **HMRC Yearly Average**: annual average rates from HMRC CSV publications
+- **Daily Spot**: ECB daily reference rates via the Frankfurter API
+
+Rates are cached in the `fx_rates` IndexedDB table keyed by `SOURCE-dateKey-currency`.
 
 ### Stock Splits
 Stock splits are handled per HMRC TCGA92/S127 (share reorganisations):
-- Split adjustments are the first enrichment pass (`applySplitNormalization`)
+- Split adjustments are the first enrichment pass (`SplitEnricher` in `src/lib/enrichment/enrichers/`)
 - Pre-split quantities normalized to post-split units for CGT matching
 - Original quantities preserved for audit trail
 - UI displays both original and split-adjusted values with purple badges

@@ -115,6 +115,35 @@ describe('EquatePlus Parser', () => {
             expect(result).toHaveLength(0)
         })
 
+        it('should skip WITHHOLD-TO-COVER transactions with negative net units', () => {
+            const rows = [
+                {
+                    'Order reference': '76384202',
+                    'Date': '15 Jun 2023',
+                    'Order type': 'Withhold-to-cover',
+                    'Quantity': '800',
+                    'Status': 'Executed',
+                    'Execution price': '£10.00',
+                    'Instrument': 'XXX Award',
+                    'Product type': 'restricted stock units',
+                    'Strike price / cost basis': '-',
+                    'Taxes withheld': '-',
+                    'Fees': '-',
+                    'Net proceeds': '-',
+                    'Net units': '-25',
+                    'Foreign exchange currency': '-',
+                    'Foreign exchange rate': '-',
+                    'Net proceeds after foreign exchange': '-',
+                },
+            ]
+
+            const result = normalizeEquatePlusTransactions(rows, 'test-file')
+
+            // Negative net units = shares withheld for taxes; must not become
+            // a negative-quantity BUY in the Section 104 pool
+            expect(result).toHaveLength(0)
+        })
+
         it('should normalize a DIVIDEND transaction', () => {
             const rows = [
                 {

@@ -73,7 +73,7 @@ export const EnrichedTransactionSchema = GenericTransactionSchema.extend({
   split_adjusted_price_gbp: z.number().nullable().optional().describe('Split-adjusted price per unit in GBP (price_gbp adjusted for stock splits)'),
   value_gbp: z.number().nullable().describe('Total value in GBP'),
   fee_gbp: z.number().nullable().describe('Fee amount in GBP'),
-  fx_source: z.string().describe('Source of FX rate (e.g. Bank of England)'),
+  fx_source: z.string().describe('Source of FX rate (e.g. HMRC Monthly Exchange Rates)'),
   fx_error: z.string().nullable().optional().describe('Error message if FX rate fetch failed'),
 
   // Dividend withholding tax in GBP (for SA106 reporting)
@@ -82,7 +82,6 @@ export const EnrichedTransactionSchema = GenericTransactionSchema.extend({
 
   // Tax year and CGT matching (computed during enrichment, Step 3)
   tax_year: z.string().describe('UK tax year (e.g. 2023/24)'),
-  gain_group: z.enum(['SAME_DAY', '30_DAY', 'SECTION_104', 'SHORT_SELL', 'NONE']).describe('HMRC matching rule applied'),
   match_groups: z.array(z.string()).optional().describe('Array of match group IDs this transaction belongs to. A single acquisition can match multiple disposals, so this is an array.'),
 })
 

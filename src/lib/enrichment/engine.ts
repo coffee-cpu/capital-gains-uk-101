@@ -59,7 +59,6 @@ export class EnrichmentEngine {
       fx_error: null,
       // Tax year and CGT matching (enrichment pass 3)
       tax_year: '',
-      gain_group: 'NONE' as const,
       match_groups: [],
     }))
   }

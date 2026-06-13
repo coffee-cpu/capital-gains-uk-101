@@ -5,7 +5,7 @@ import {
   isAcquisition,
   isDisposal,
   groupBySymbol,
-  getRemainingQuantity,
+  MatchedQuantityTracker,
   calculateCostBasis,
 } from './utils'
 
@@ -35,6 +35,9 @@ export function applySameDayRule(
 ): MatchingResult[] {
   const matchings: MatchingResult[] = []
 
+  // O(1) remaining-quantity lookups against prior-rule matchings
+  const tracker = new MatchedQuantityTracker(priorMatchings)
+
   // Group transactions by symbol
   const bySymbol = groupBySymbol(transactions)
 
@@ -53,7 +56,7 @@ export function applySameDayRule(
       }
 
       // Match sells against buys on the same day, respecting prior matchings
-      const dayMatchings = matchSameDayTransactions(sells, buys, priorMatchings)
+      const dayMatchings = matchSameDayTransactions(sells, buys, tracker)
       matchings.push(...dayMatchings)
     }
   }
@@ -67,14 +70,14 @@ export function applySameDayRule(
 function matchSameDayTransactions(
   sells: EnrichedTransaction[],
   buys: EnrichedTransaction[],
-  priorMatchings: MatchingResult[] = []
+  tracker: MatchedQuantityTracker
 ): MatchingResult[] {
   const matchings: MatchingResult[] = []
 
   // Track remaining quantities for each buy, accounting for prior matchings
   const buyQuantities = new Map<string, number>()
   buys.forEach(buy => {
-    const remaining = getRemainingQuantity(buy, priorMatchings)
+    const remaining = tracker.getRemaining(buy)
     if (remaining > 0) {
       buyQuantities.set(buy.id, remaining)
     }
@@ -82,7 +85,7 @@ function matchSameDayTransactions(
 
   // Process each sell, accounting for prior matchings
   for (const sell of sells) {
-    const remainingSellQuantity = getRemainingQuantity(sell, priorMatchings)
+    const remainingSellQuantity = tracker.getRemaining(sell)
 
     if (remainingSellQuantity <= 0) {
       continue // Already fully matched by prior rules
@@ -153,8 +156,6 @@ function groupByDate(
   return groups
 }
 
-// Re-export getRemainingQuantity for backward compatibility
-export { getRemainingQuantity } from './utils'
 
 /**
  * Same-Day Rule Pipeline Stage (TCGA92/S105(1))

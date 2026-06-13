@@ -1,5 +1,14 @@
 # Feature Plan: 2024-25 CGT Rate Change Adjustment Support
 
+> **Status (2026-06): largely implemented.** Phases 1 (detection/alert) and 3
+> (PDF section) shipped via the tax-year-features registry
+> (`src/lib/cgt/taxYearFeatures/cgtRateChange2024.ts`,
+> `src/components/taxYearFeatures/CGTRateChange2024Panel.tsx`,
+> `src/lib/cgt/taxYearFeatures/pdfRenderers/cgtRateChange2024PDF.tsx`) —
+> different file names than proposed below. Phase 2 (in-app adjustment
+> calculator) was intentionally not built; the app links to HMRC's official
+> adjustment calculator instead. Retained for historical context.
+
 ## Problem Statement
 
 The 2024-25 tax year introduced a mid-year CGT rate change (30 October 2024), increasing rates from 10%/20% to 18%/24% for "other gains" (shares/securities). HMRC's automatic Self Assessment calculations do not account for this split, requiring taxpayers to manually calculate and report adjustments.

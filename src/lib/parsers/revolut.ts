@@ -1,7 +1,7 @@
 import type { GenericTransaction } from '../../types/transaction'
 import { TransactionType } from '../../types/transaction'
 import type { RawCSVRow } from '../../types/broker'
-import { parseNumber } from './parsingUtils'
+import { parseNumber, extractCurrencyFromAmount } from './parsingUtils'
 
 /**
  * Revolut CSV Parser
@@ -68,14 +68,7 @@ function parseDate(dateStr: string): string {
  * Falls back to the Currency column if no symbol detected
  */
 function extractCurrency(amount: string | undefined, currencyColumn: string): string {
-  if (!amount) return currencyColumn || 'USD'
-
-  // Map currency symbols to currency codes
-  if (amount.includes('$')) return 'USD'
-  if (amount.includes('£')) return 'GBP'
-  if (amount.includes('€')) return 'EUR'
-
-  return currencyColumn || 'USD'
+  return extractCurrencyFromAmount(amount, currencyColumn || 'USD')
 }
 
 /**

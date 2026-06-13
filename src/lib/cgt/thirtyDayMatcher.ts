@@ -5,7 +5,7 @@ import {
   isAcquisition,
   isDisposal,
   groupBySymbol,
-  getRemainingQuantity,
+  MatchedQuantityTracker,
   calculateCostBasis,
 } from './utils'
 
@@ -41,6 +41,10 @@ export function applyThirtyDayRule(
 ): MatchingResult[] {
   const matchings: MatchingResult[] = []
 
+  // Tracks quantities consumed by prior rules and by 30-day matchings as
+  // they are created, so remaining-quantity lookups are O(1)
+  const tracker = new MatchedQuantityTracker(sameDayMatchings)
+
   // Group by symbol
   const bySymbol = groupBySymbol(transactions)
 
@@ -52,24 +56,23 @@ export function applyThirtyDayRule(
     const sells = sorted.filter(tx => isDisposal(tx))
 
     for (const sell of sells) {
-      // Combine same-day + existing 30-day matchings for accurate remaining quantity
-      const allMatchings = [...sameDayMatchings, ...matchings]
-      const remainingSellQuantity = getRemainingQuantity(sell, allMatchings)
+      const remainingSellQuantity = tracker.getRemaining(sell)
       if (remainingSellQuantity <= 0) {
         continue
       }
 
       // Find buys within 30 days AFTER this sell
-      const matchingBuys = findBuysWithin30Days(sell, sorted, allMatchings)
+      const matchingBuys = findBuysWithin30Days(sell, sorted, tracker)
 
       if (matchingBuys.length === 0) {
         continue
       }
 
       // Match the sell against the buys
-      const matching = matchSellAgainstBuys(sell, matchingBuys, remainingSellQuantity, allMatchings)
+      const matching = matchSellAgainstBuys(sell, matchingBuys, remainingSellQuantity, tracker)
       if (matching) {
         matchings.push(matching)
+        tracker.add(matching)
       }
     }
   }
@@ -83,7 +86,7 @@ export function applyThirtyDayRule(
 function findBuysWithin30Days(
   sell: EnrichedTransaction,
   sortedTransactions: EnrichedTransaction[],
-  existingMatchings: MatchingResult[]
+  tracker: MatchedQuantityTracker
 ): EnrichedTransaction[] {
   const sellDate = new Date(sell.date)
   const thirtyDaysLater = new Date(sellDate)
@@ -109,8 +112,7 @@ function findBuysWithin30Days(
     }
 
     // Must have remaining unmatched quantity
-    const remaining = getRemainingQuantity(tx, existingMatchings)
-    if (remaining > 0) {
+    if (tracker.getRemaining(tx) > 0) {
       matchingBuys.push(tx)
     }
   }
@@ -125,7 +127,7 @@ function matchSellAgainstBuys(
   sell: EnrichedTransaction,
   buys: EnrichedTransaction[],
   sellQuantity: number,
-  existingMatchings: MatchingResult[]
+  tracker: MatchedQuantityTracker
 ): MatchingResult | null {
   let remainingSellQuantity = sellQuantity
   const acquisitions: MatchingResult['acquisitions'] = []
@@ -136,7 +138,7 @@ function matchSellAgainstBuys(
       break
     }
 
-    const availableBuyQuantity = getRemainingQuantity(buy, existingMatchings)
+    const availableBuyQuantity = tracker.getRemaining(buy)
     if (availableBuyQuantity <= 0) {
       continue
     }

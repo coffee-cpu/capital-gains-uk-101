@@ -143,10 +143,10 @@ describe('Coinbase Parser', () => {
         type: 'INTEREST',
         symbol: 'USDC',
         quantity: 0.270984,
-        price: 0.7455543304135473,
         total: 0.20203,
         fee: 0,
       })
+      expect(result[0].price).toBeCloseTo(0.74555433, 8)
       expect(result[0].notes).toContain('[Reward Income - Taxable]')
 
       // Second transaction: BUY for CGT cost basis
@@ -155,10 +155,10 @@ describe('Coinbase Parser', () => {
         type: 'BUY',
         symbol: 'USDC',
         quantity: 0.270984,
-        price: 0.7455543304135473,
         total: 0.20203,
         fee: 0, // Fee already on INTEREST transaction
       })
+      expect(result[1].price).toBeCloseTo(0.74555433, 8)
       expect(result[1].notes).toContain('[Reward Income - Cost Basis]')
     })
 

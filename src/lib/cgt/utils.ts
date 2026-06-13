@@ -151,6 +151,9 @@ export function groupBySymbol(
  * Calculates how much of a transaction's quantity hasn't been
  * matched by previous rules (same-day, 30-day, Section 104).
  *
+ * Note: this scans all matchings on every call. Inside matcher loops use
+ * MatchedQuantityTracker instead, which answers the same question in O(1).
+ *
  * @param transaction The transaction to check
  * @param matchings All existing matchings to consider
  * @returns Remaining unmatched quantity (always >= 0)
@@ -179,6 +182,57 @@ export function getRemainingQuantity(
 }
 
 /**
+ * Incremental tracker of matched quantities per transaction
+ *
+ * Replaces repeated getRemainingQuantity() scans (O(matchings) per call,
+ * O(n²)+ overall in the matcher loops) with O(1) lookups. Build it once per
+ * stage from the existing matchings, then add() each new matching as it is
+ * created.
+ */
+export class MatchedQuantityTracker {
+  private matched = new Map<string, number>()
+
+  constructor(matchings: MatchingResult[] = []) {
+    for (const matching of matchings) {
+      this.add(matching)
+    }
+  }
+
+  /** Record a matching's quantities against its disposal and acquisitions */
+  add(matching: MatchingResult): void {
+    this.increment(matching.disposal.id, matching.quantityMatched)
+    for (const acq of matching.acquisitions) {
+      this.increment(acq.transaction.id, acq.quantityMatched)
+    }
+  }
+
+  /** Remaining unmatched quantity for a transaction (always >= 0) */
+  getRemaining(transaction: EnrichedTransaction): number {
+    const matchedQuantity = this.matched.get(transaction.id) ?? 0
+    return Math.max(0, getEffectiveQuantity(transaction) - matchedQuantity)
+  }
+
+  private increment(id: string, quantity: number): void {
+    this.matched.set(id, (this.matched.get(id) ?? 0) + quantity)
+  }
+}
+
+/**
+ * Apportion a transaction's fee across its underlying units (shares,
+ * or shares-per-contract for options).
+ *
+ * Quantities can be fractional (e.g. 0.5 shares on Trading 212/Freetrade),
+ * so the divisor must not be clamped to 1 — that would silently understate
+ * the fee for sub-1 quantities.
+ *
+ * @returns Fee in GBP per underlying unit (0 if no fee or no quantity)
+ */
+export function getFeePerUnit(transaction: EnrichedTransaction): number {
+  const units = getEffectiveQuantity(transaction) * (transaction.contract_size || 1)
+  return transaction.fee_gbp && units > 0 ? transaction.fee_gbp / units : 0
+}
+
+/**
  * Calculate cost basis for an acquisition
  *
  * Computes the total cost including purchase price and fees,
@@ -194,11 +248,27 @@ export function calculateCostBasis(
   quantityToMatch: number
 ): number {
   const pricePerShare = getEffectivePrice(acquisition)
-  const effectiveQuantity = getEffectiveQuantity(acquisition)
   const contractMultiplier = acquisition.contract_size || 1
-  const feePerShare = acquisition.fee_gbp
-    ? acquisition.fee_gbp / Math.max(effectiveQuantity * contractMultiplier, 1)
-    : 0
-  const costBasisPerShare = pricePerShare + feePerShare
+  const costBasisPerShare = pricePerShare + getFeePerUnit(acquisition)
   return costBasisPerShare * quantityToMatch * contractMultiplier
+}
+
+/**
+ * Calculate net proceeds for the matched portion of a disposal
+ *
+ * Selling fees are apportioned per unit and deducted from the price,
+ * mirroring how calculateCostBasis adds them for acquisitions.
+ *
+ * @param disposal The sell transaction
+ * @param quantityToMatch Number of shares/contracts being matched
+ * @returns Net proceeds in GBP for the matched quantity
+ */
+export function calculateNetProceeds(
+  disposal: EnrichedTransaction,
+  quantityToMatch: number
+): number {
+  const pricePerShare = getEffectivePrice(disposal)
+  const contractMultiplier = disposal.contract_size || 1
+  const proceedsPerShare = pricePerShare - getFeePerUnit(disposal)
+  return proceedsPerShare * quantityToMatch * contractMultiplier
 }

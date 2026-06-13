@@ -15,6 +15,10 @@ import { BaseFXProvider } from './base'
 export class HMRCMonthlyProvider extends BaseFXProvider {
   readonly fxSource: FXSource = 'HMRC_MONTHLY'
 
+  // Each month's JSON contains ALL currencies; share one in-flight fetch per
+  // month so multi-currency histories don't re-download the same file
+  private monthlyResponseCache = new Map<string, Promise<HMRCRateResponse>>()
+
   /**
    * Generate cache key in format: HMRC_MONTHLY-YYYY-MM-CURRENCY
    */
@@ -32,19 +36,37 @@ export class HMRCMonthlyProvider extends BaseFXProvider {
   }
 
   /**
+   * Fetch the full month response, deduplicating concurrent requests
+   */
+  private fetchMonth(year: string, month: string): Promise<HMRCRateResponse> {
+    const key = `${year}-${month}`
+    let promise = this.monthlyResponseCache.get(key)
+    if (!promise) {
+      promise = (async () => {
+        const url = `https://hmrc.matchilling.com/rate/${year}/${month}.json`
+        const response = await fetch(url)
+        if (!response.ok) {
+          throw new Error(`HMRC API error: ${response.status}`)
+        }
+        return (await response.json()) as HMRCRateResponse
+      })()
+      this.monthlyResponseCache.set(key, promise)
+      // Evict failures so transient errors can be retried
+      promise.catch(() => {
+        this.monthlyResponseCache.delete(key)
+      })
+    }
+    return promise
+  }
+
+  /**
    * Fetch rate from HMRC API
    */
   protected async fetchRate(date: string, currency: string): Promise<number> {
     const [year, month] = date.split('-')
-    const url = `https://hmrc.matchilling.com/rate/${year}/${month}.json`
 
     try {
-      const response = await fetch(url)
-      if (!response.ok) {
-        throw new Error(`HMRC API error: ${response.status}`)
-      }
-
-      const data: HMRCRateResponse = await response.json()
+      const data = await this.fetchMonth(year, month)
       const rateStr = data.rates[currency]
 
       if (!rateStr) {
@@ -62,7 +84,8 @@ export class HMRCMonthlyProvider extends BaseFXProvider {
       return rate
     } catch (error) {
       throw new Error(
-        `Failed to fetch HMRC FX rate for ${currency} in ${year}/${month}: ${error instanceof Error ? error.message : 'Unknown error'}`
+        `Failed to fetch HMRC FX rate for ${currency} in ${year}/${month}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        { cause: error }
       )
     }
   }

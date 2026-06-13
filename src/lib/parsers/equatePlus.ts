@@ -114,7 +114,7 @@ function parseWithholdToCoverTransaction(
 
     // If Net units is provided and positive, this is an acquisition (RSU vest)
     // If Net units is 0 or negative, shares were withheld for taxes (not an acquisition we care about)
-    if (!netUnits || netUnits === 0) {
+    if (!netUnits || netUnits <= 0) {
         // This is just shares withheld for taxes, not a real acquisition
         // We can skip it or mark it as ignored
         return null

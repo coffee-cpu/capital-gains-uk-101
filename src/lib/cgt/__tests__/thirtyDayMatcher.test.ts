@@ -26,7 +26,6 @@ describe('30-Day Matcher', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
         {
           id: 'tx-2',
@@ -48,7 +47,6 @@ describe('30-Day Matcher', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
       ]
 
@@ -83,7 +81,6 @@ describe('30-Day Matcher', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
         {
           id: 'tx-2',
@@ -105,7 +102,6 @@ describe('30-Day Matcher', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
       ]
 
@@ -136,7 +132,6 @@ describe('30-Day Matcher', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
         {
           id: 'tx-2',
@@ -158,7 +153,6 @@ describe('30-Day Matcher', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
       ]
 
@@ -189,7 +183,6 @@ describe('30-Day Matcher', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
         {
           id: 'tx-2',
@@ -211,7 +204,6 @@ describe('30-Day Matcher', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
       ]
 
@@ -242,7 +234,6 @@ describe('30-Day Matcher', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
         {
           id: 'tx-2',
@@ -264,7 +255,6 @@ describe('30-Day Matcher', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
       ]
 
@@ -295,7 +285,6 @@ describe('30-Day Matcher', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
         {
           id: 'tx-2',
@@ -317,7 +306,6 @@ describe('30-Day Matcher', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
       ]
 
@@ -348,7 +336,6 @@ describe('30-Day Matcher', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'SAME_DAY',
         },
         {
           id: 'tx-2',
@@ -370,7 +357,6 @@ describe('30-Day Matcher', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
         {
           id: 'tx-3',
@@ -392,7 +378,6 @@ describe('30-Day Matcher', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
       ]
 
@@ -440,7 +425,6 @@ describe('30-Day Matcher', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
         {
           id: 'tx-2',
@@ -462,7 +446,6 @@ describe('30-Day Matcher', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
         {
           id: 'tx-3',
@@ -484,7 +467,6 @@ describe('30-Day Matcher', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
       ]
 
@@ -523,7 +505,6 @@ describe('30-Day Matcher', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
         {
           id: 'sell-2',
@@ -545,7 +526,6 @@ describe('30-Day Matcher', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
         {
           id: 'buy-1',
@@ -567,7 +547,6 @@ describe('30-Day Matcher', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
         {
           id: 'buy-2',
@@ -589,7 +568,6 @@ describe('30-Day Matcher', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
       ]
 

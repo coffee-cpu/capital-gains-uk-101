@@ -35,7 +35,6 @@ describe('Pipeline', () => {
     fx_source: 'HMRC',
     fx_error: null,
     tax_year: '2023/24',
-    gain_group: 'NONE',
   })
 
   // Helper function to create a test matching

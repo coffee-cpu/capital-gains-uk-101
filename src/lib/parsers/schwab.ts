@@ -73,7 +73,9 @@ function normalizeSchwabRow(
   }
 
   // Map Schwab action to transaction type
-  let { type, isShortSell } = mapSchwabAction(action)
+  const mapped = mapSchwabAction(action)
+  const isShortSell = mapped.isShortSell
+  let type = mapped.type
   if (!type) {
     return null // Skip unknown actions for now
   }

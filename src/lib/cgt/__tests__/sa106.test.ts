@@ -35,7 +35,6 @@ describe('SA106 Foreign Income', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2024/25',
-          gain_group: 'NONE',
           // SA106 fields
           grossDividend: 100,
           withholdingTax: 15,
@@ -78,7 +77,6 @@ describe('SA106 Foreign Income', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2024/25',
-          gain_group: 'NONE',
           grossDividend: 100,
           withholdingTax: 15,
           grossDividend_gbp: 100,
@@ -104,7 +102,6 @@ describe('SA106 Foreign Income', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2024/25',
-          gain_group: 'NONE',
           grossDividend: 200,
           withholdingTax: 30,
           grossDividend_gbp: 200,
@@ -130,7 +127,6 @@ describe('SA106 Foreign Income', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2024/25',
-          gain_group: 'NONE',
           grossDividend: 50,
           withholdingTax: 7.50,
           grossDividend_gbp: 50,
@@ -170,7 +166,6 @@ describe('SA106 Foreign Income', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2024/25',
-          gain_group: 'NONE',
           // No SA106 fields for UK dividends
           grossDividend: null,
           withholdingTax: null,
@@ -212,7 +207,6 @@ describe('SA106 Foreign Income', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2024/25',
-          gain_group: 'NONE',
           grossDividend: null,
           withholdingTax: null,
           grossDividend_gbp: null,
@@ -239,7 +233,6 @@ describe('SA106 Foreign Income', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2024/25',
-          gain_group: 'NONE',
           grossDividend: 100,
           withholdingTax: 15,
           grossDividend_gbp: 100,
@@ -282,7 +275,6 @@ describe('SA106 Foreign Income', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
           grossDividend: 200,
           withholdingTax: 30,
           grossDividend_gbp: 200,
@@ -309,7 +301,6 @@ describe('SA106 Foreign Income', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2024/25',
-          gain_group: 'NONE',
           grossDividend: 100,
           withholdingTax: 15,
           grossDividend_gbp: 100,
@@ -352,7 +343,6 @@ describe('SA106 Foreign Income', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2024/25',
-          gain_group: 'NONE',
           grossDividend: 50,
           withholdingTax: 0, // Explicitly zero
           grossDividend_gbp: 50,
@@ -392,7 +382,6 @@ describe('SA106 Foreign Income', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2024/25',
-          gain_group: 'NONE',
         },
         // SELL transaction
         {
@@ -415,7 +404,6 @@ describe('SA106 Foreign Income', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2024/25',
-          gain_group: 'NONE',
         },
         // DIVIDEND with withholding
         {
@@ -438,7 +426,6 @@ describe('SA106 Foreign Income', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2024/25',
-          gain_group: 'NONE',
           grossDividend: 100,
           withholdingTax: 15,
           grossDividend_gbp: 100,
@@ -491,7 +478,6 @@ describe('SA106 Foreign Income', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2024/25',
-          gain_group: 'NONE',
           grossDividend: 85, // From original dividend row
           withholdingTax: 12.75, // 15% of 85
           grossDividend_gbp: 68, // 85 / 1.25
@@ -531,7 +517,6 @@ describe('SA106 Foreign Income', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2024/25',
-          gain_group: 'NONE',
           grossDividend: 18.11, // Calculated: net + withholding
           withholdingTax: 2.36,
           grossDividend_gbp: 18.11,
@@ -569,7 +554,6 @@ describe('SA106 Foreign Income', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2024/25',
-          gain_group: 'NONE',
           grossDividend: 100,
           withholdingTax: 15, // Calculated from gross - net
           grossDividend_gbp: 80,
@@ -607,7 +591,6 @@ describe('SA106 Foreign Income', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2024/25',
-          gain_group: 'NONE',
           grossDividend: 5.50,
           withholdingTax: 0.83, // 15% of 5.50
           grossDividend_gbp: 4.40,
@@ -646,7 +629,6 @@ describe('SA106 Foreign Income', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2024/25',
-          gain_group: 'NONE',
           grossDividend: 100,
           withholdingTax: 15,
           grossDividend_gbp: 100,
@@ -689,7 +671,6 @@ describe('SA106 Foreign Income', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2024/25',
-          gain_group: 'NONE',
           grossDividend: 100,
           withholdingTax: 15,
           grossDividend_gbp: 100,
@@ -716,7 +697,6 @@ describe('SA106 Foreign Income', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2024/25',
-          gain_group: 'NONE',
           grossDividend: 50,
           withholdingTax: 7.50,
           grossDividend_gbp: 50,
@@ -755,7 +735,6 @@ describe('SA106 Foreign Income', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2024/25',
-          gain_group: 'NONE',
           grossDividend: 1.00,
           withholdingTax: 0.15,
           grossDividend_gbp: 1.00,
@@ -796,7 +775,6 @@ describe('SA106 Foreign Income', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: taxYear,
-          gain_group: 'NONE',
           grossDividend: 100,
           withholdingTax: 15,
           grossDividend_gbp: 100,

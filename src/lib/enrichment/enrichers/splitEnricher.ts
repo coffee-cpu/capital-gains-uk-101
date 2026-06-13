@@ -5,7 +5,7 @@ import { Enricher } from '../types'
  * Extract stock split events from transactions
  * Converts STOCK_SPLIT transactions into StockSplitEvent records
  */
-function extractStockSplits(transactions: EnrichedTransaction[]): StockSplitEvent[] {
+export function extractStockSplits(transactions: EnrichedTransaction[]): StockSplitEvent[] {
   const splits: StockSplitEvent[] = []
 
   for (const tx of transactions) {

@@ -53,7 +53,6 @@ describe('Options Short Sell', () => {
       fee_gbp: tx.fee,
       fx_source: 'test',
       tax_year: '2025/26',
-      gain_group: 'NONE' as const,
     }))
 
     console.log('\n=== Enriched Transactions ===')
@@ -69,9 +68,9 @@ describe('Options Short Sell', () => {
       console.log(`  ${d.disposal.symbol}: proceeds=${d.proceedsGbp.toFixed(2)}, costs=${d.allowableCostsGbp.toFixed(2)}, gain=${d.gainOrLossGbp.toFixed(2)}`)
       console.log(`  Rule: ${d.matchings[0]?.rule}`)
     })
-    console.log('\nTransaction gain_groups:')
+    console.log('\nTransaction match_groups:')
     result.transactions.forEach(tx => {
-      console.log(`  ${tx.type}: gain_group=${tx.gain_group}`)
+      console.log(`  ${tx.type}: match_groups=${tx.match_groups?.join(',') ?? '-'}`)
     })
 
     // Verify the matching worked
@@ -178,7 +177,6 @@ describe('Options Short Sell', () => {
       fee_gbp: tx.fee,
       fx_source: 'test',
       tax_year: tx.date.startsWith('2024') ? '2024/25' : '2025/26',
-      gain_group: 'NONE' as const,
     }))
 
     const result = calculateCGT(enriched)
@@ -195,9 +193,9 @@ describe('Options Short Sell', () => {
       console.log(`  Rules: ${d.matchings.map(m => m.rule).join(', ')}`)
     })
 
-    console.log('\n=== Transaction gain_groups ===')
+    console.log('\n=== Transaction match_groups ===')
     result.transactions.forEach(tx => {
-      console.log(`  ${tx.type} (${tx.symbol}): gain_group=${tx.gain_group}`)
+      console.log(`  ${tx.type} (${tx.symbol}): match_groups=${tx.match_groups?.join(',') ?? '-'}`)
     })
 
     // Should have 2 disposals: options + stock
@@ -291,7 +289,6 @@ describe('Options Short Sell', () => {
       fee_gbp: tx.fee,
       fx_source: 'test',
       tax_year: '2025/26',
-      gain_group: 'NONE' as const,
     }))
 
     const result = calculateCGT(enriched)
@@ -308,9 +305,9 @@ describe('Options Short Sell', () => {
       console.log(`  Rules: ${d.matchings.map(m => m.rule).join(', ')}`)
     })
 
-    console.log('\n=== Transaction gain_groups ===')
+    console.log('\n=== Transaction match_groups ===')
     result.transactions.forEach(tx => {
-      console.log(`  ${tx.type} (${tx.symbol}): gain_group=${tx.gain_group}`)
+      console.log(`  ${tx.type} (${tx.symbol}): match_groups=${tx.match_groups?.join(',') ?? '-'}`)
     })
 
     console.log('\n=== Section 104 Pools ===')
@@ -418,7 +415,6 @@ describe('Options Short Sell', () => {
       fee_gbp: tx.fee,
       fx_source: 'test',
       tax_year: '2023/24',
-      gain_group: 'NONE' as const,
     }))
 
     console.log('\n=== Enriched Transactions ===')
@@ -442,9 +438,9 @@ describe('Options Short Sell', () => {
       console.log(`  Incomplete: ${d.isIncomplete}`)
     })
 
-    console.log('\n=== Transaction gain_groups ===')
+    console.log('\n=== Transaction match_groups ===')
     result.transactions.forEach(tx => {
-      console.log(`  ${tx.type} (${tx.symbol}) on ${tx.date}: gain_group=${tx.gain_group}`)
+      console.log(`  ${tx.type} (${tx.symbol}) on ${tx.date}: match_groups=${tx.match_groups?.join(',') ?? '-'}`)
     })
 
     // Should have 2 disposals (one for each Sell to Open)

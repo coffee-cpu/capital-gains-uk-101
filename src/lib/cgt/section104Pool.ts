@@ -2,12 +2,12 @@ import { EnrichedTransaction, TransactionType } from '../../types/transaction'
 import { Section104Pool, MatchingResult } from '../../types/cgt'
 import { MatchingStage } from './pipeline'
 import {
-  getEffectiveQuantity,
   getEffectivePrice,
+  getFeePerUnit,
   isAcquisition,
   isDisposal,
   groupBySymbol,
-  getRemainingQuantity,
+  MatchedQuantityTracker,
   calculateCostBasis,
 } from './utils'
 
@@ -43,6 +43,9 @@ export function applySection104Pooling(
   const matchings: MatchingResult[] = []
   const pools = new Map<string, Section104Pool>()
 
+  // O(1) remaining-quantity lookups against prior-rule matchings
+  const tracker = new MatchedQuantityTracker(existingMatchings)
+
   // Group by symbol
   const bySymbol = groupBySymbol(transactions)
 
@@ -61,7 +64,7 @@ export function applySection104Pooling(
 
     // Process each transaction in chronological order
     for (const tx of sorted) {
-      const remainingQuantity = getRemainingQuantity(tx, existingMatchings)
+      const remainingQuantity = tracker.getRemaining(tx)
 
       if (remainingQuantity <= 0) {
         continue // Already fully matched by other rules
@@ -135,13 +138,7 @@ function matchAgainstPool(
   }
 
   // Calculate proceeds (including selling fees, use split-adjusted price if available)
-  const pricePerShare = getEffectivePrice(transaction)
-  const effectiveQuantity = getEffectiveQuantity(transaction)
-  const contractMultiplier = transaction.contract_size || 1
-  const feePerShare = transaction.fee_gbp
-    ? transaction.fee_gbp / Math.max(effectiveQuantity * contractMultiplier, 1)
-    : 0
-  const proceedsPerShare = pricePerShare - feePerShare
+  const proceedsPerShare = getEffectivePrice(transaction) - getFeePerUnit(transaction)
   const proceeds = proceedsPerShare * quantityToMatch
 
   // Record in history only if we matched something

@@ -26,7 +26,6 @@ describe('CGT Engine', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
         {
           id: 'tx-2',
@@ -48,7 +47,6 @@ describe('CGT Engine', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
       ]
 
@@ -85,7 +83,6 @@ describe('CGT Engine', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
         {
           id: 'tx-1',
@@ -107,7 +104,6 @@ describe('CGT Engine', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
         {
           id: 'tx-2',
@@ -129,7 +125,6 @@ describe('CGT Engine', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
       ]
 
@@ -162,7 +157,6 @@ describe('CGT Engine', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
         {
           id: 'tx-2',
@@ -184,7 +178,6 @@ describe('CGT Engine', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
       ]
 
@@ -217,7 +210,6 @@ describe('CGT Engine', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
         {
           id: 'tx-2',
@@ -239,7 +231,6 @@ describe('CGT Engine', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
       ]
 
@@ -276,7 +267,6 @@ describe('CGT Engine', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
         {
           id: 'tx-2',
@@ -298,7 +288,6 @@ describe('CGT Engine', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
       ]
 
@@ -339,7 +328,6 @@ describe('CGT Engine', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2022/23',
-          gain_group: 'NONE',
         },
         // Same-day buy and sell
         {
@@ -362,7 +350,6 @@ describe('CGT Engine', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
         {
           id: 'tx-3',
@@ -384,7 +371,6 @@ describe('CGT Engine', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
         // 30-day repurchase
         {
@@ -407,7 +393,6 @@ describe('CGT Engine', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
       ]
 
@@ -451,7 +436,6 @@ describe('CGT Engine', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
         {
           id: 'tx-2',
@@ -473,7 +457,6 @@ describe('CGT Engine', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
         {
           id: 'tx-3',
@@ -495,7 +478,6 @@ describe('CGT Engine', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
       ]
 
@@ -529,7 +511,6 @@ describe('CGT Engine', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2024/25',
-          gain_group: 'NONE',
         },
         {
           id: 'tx-2',
@@ -551,7 +532,6 @@ describe('CGT Engine', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2024/25',
-          gain_group: 'NONE',
         },
       ]
 
@@ -588,7 +568,6 @@ describe('CGT Engine', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2024/25',
-          gain_group: 'NONE',
         },
       ]
 
@@ -621,7 +600,6 @@ describe('CGT Engine', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2023/24',
-          gain_group: 'NONE',
         },
         {
           id: 'tx-2',
@@ -643,7 +621,6 @@ describe('CGT Engine', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2024/25',
-          gain_group: 'NONE',
         },
         {
           id: 'tx-3',
@@ -665,7 +642,6 @@ describe('CGT Engine', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2021/22',
-          gain_group: 'NONE',
         },
       ]
 
@@ -708,7 +684,6 @@ describe('CGT Engine', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2024/25',
-          gain_group: 'NONE',
         },
         {
           id: 'tx-2',
@@ -730,7 +705,6 @@ describe('CGT Engine', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2024/25',
-          gain_group: 'NONE',
         },
         {
           id: 'tx-3',
@@ -752,7 +726,6 @@ describe('CGT Engine', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2024/25',
-          gain_group: 'NONE',
         },
       ]
 
@@ -795,7 +768,6 @@ describe('CGT Engine', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2024/25',
-          gain_group: 'NONE',
         },
         {
           id: 'tx-2',
@@ -817,7 +789,6 @@ describe('CGT Engine', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2024/25',
-          gain_group: 'NONE',
         },
       ]
 
@@ -855,7 +826,6 @@ describe('CGT Engine', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2024/25',
-          gain_group: 'NONE',
         },
       ]
 
@@ -910,7 +880,6 @@ describe('CGT Engine', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2024/25',
-          gain_group: 'NONE',
         },
         {
           id: 'tx-2',
@@ -932,7 +901,6 @@ describe('CGT Engine', () => {
           fx_source: 'HMRC',
           fx_error: null,
           tax_year: '2024/25',
-          gain_group: 'NONE',
         },
       ]
 

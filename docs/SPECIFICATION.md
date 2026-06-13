@@ -36,13 +36,12 @@ The tool behaves like a blend of **regex101**, **Google Sheets**, and a **visual
 | State storage (persistence) | IndexedDB (via [`dexie`](https://dexie.org/)) |
 | State management (runtime) | [Zustand](https://zustand-demo.pmnd.rs/) |
 | Schema validation | [Zod](https://zod.dev/) |
-| FX rates | [Bank of England API](https://www.bankofengland.co.uk/boeapps/database/) + cached JSON fallback |
+| FX rates | HMRC monthly/yearly rates (trade-tariff.service.gov.uk mirror) + ECB daily spot via [Frankfurter](https://frankfurter.dev/) |
 | Charts | [Recharts](https://recharts.org/) |
 | PDF export | [@react-pdf/renderer](https://react-pdf.org/) |
-| Styling | TailwindCSS + Framer Motion |
+| Styling | TailwindCSS |
 | Unit testing | [Vitest](https://vitest.dev/) |
 | E2E testing | [Playwright](https://playwright.dev/) |
-| Type generation | json-schema-to-typescript |
 
 ---
 
@@ -133,9 +132,9 @@ Once imported, each transaction can be enriched with computed attributes for dis
   "price_gbp": 141.09,
   "value_gbp": 1410.96,
   "fee_gbp": 0,
-  "fx_source": "Bank of England",
+  "fx_source": "HMRC Monthly Exchange Rates",
   "tax_year": "2023/24",
-  "gain_group": "SAME_DAY"
+  "match_groups": ["sell-123"]
 }
 ```
 
@@ -185,8 +184,8 @@ Hover tooltips will display short HMRC explanations.
 ## 📊 User Interface
 
 ### Main Table
-- Columns: Date, Symbol, Type, Quantity, Price (orig), FX Rate, GBP Value, Gain Group  
-- Color background by `gain_group`
+- Columns: Date, Symbol, Type, Quantity, Price (orig), FX Rate, GBP Value, CGT Rule badges  
+- Rule badges (Same Day / 30-Day / Section 104 / Short Sell) derived from `match_groups` and disposal matchings
 - Sorting and filtering by date, symbol, or type
 
 ---
@@ -249,7 +248,7 @@ Each sale record links to its matched purchase(s) with proportional cost basis a
 | Schema Validation | Zod |
 | Visualization | Recharts |
 | CSV Parsing | PapaParse |
-| FX Rates | Bank of England API + JSON cache |
+| FX Rates | HMRC monthly/yearly + ECB (Frankfurter) |
 | PDF Export | @react-pdf/renderer |
 | Unit Testing | Vitest |
 | E2E Testing | Playwright |
@@ -307,7 +306,7 @@ storage <--> enricher : Cache data & FX rates
 
 Planned license: **MIT**  
 Data sources:
-- Bank of England FX rates  
+- HMRC exchange rates / ECB (Frankfurter) FX rates  
 - User-supplied broker CSV exports  
 
 ---

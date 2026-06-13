@@ -254,10 +254,7 @@ function TradeStatsPanel({ stats }: TradeStatsPanelProps) {
 }
 
 export function TransactionsChart({ data }: TransactionsChartProps) {
-  if (!data || data.length === 0) {
-    return <EmptyState message="No transactions to display" />
-  }
-
+  // Hooks must run unconditionally — the empty-state return comes after them
   // Add timestamp and index for positioning
   const dataWithTimestamp = useMemo(() => {
     return data.map((point, index) => ({
@@ -351,6 +348,10 @@ export function TransactionsChart({ data }: TransactionsChartProps) {
 
   // Calculate trade statistics
   const tradeStats = useMemo(() => calculateTradeStats(data), [data])
+
+  if (!data || data.length === 0) {
+    return <EmptyState message="No transactions to display" />
+  }
 
   return (
     <div className="flex gap-6">

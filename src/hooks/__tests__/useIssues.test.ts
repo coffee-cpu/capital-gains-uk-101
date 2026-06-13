@@ -24,7 +24,6 @@ function createMockTransaction(overrides: Partial<EnrichedTransaction> = {}): En
     fee_gbp: 7.90,
     fx_source: 'HMRC Monthly',
     tax_year: '2024/25',
-    gain_group: 'NONE',
     ...overrides,
   }
 }

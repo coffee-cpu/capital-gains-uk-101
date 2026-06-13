@@ -70,7 +70,8 @@ export class DailySpotProvider extends BaseFXProvider {
       return rate
     } catch (error) {
       throw new Error(
-        `Failed to fetch daily spot rate for ${currency} on ${date}: ${error instanceof Error ? error.message : 'Unknown error'}`
+        `Failed to fetch daily spot rate for ${currency} on ${date}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        { cause: error }
       )
     }
   }

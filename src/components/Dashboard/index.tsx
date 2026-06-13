@@ -1,18 +1,26 @@
-import { useMemo, useState } from 'react'
+import { Suspense, lazy, useMemo, useState } from 'react'
 import { useTransactionStore } from '../../stores/transactionStore'
-import { TransactionsChart } from './TransactionsChart'
-import { PoolBreakdownChart } from './PoolBreakdownChart'
+
+// Lazy-load the chart components so recharts (~400 kB) stays out of the
+// main bundle, mirroring how @react-pdf/renderer is loaded on demand
+const TransactionsChart = lazy(() =>
+  import('./TransactionsChart').then(m => ({ default: m.TransactionsChart }))
+)
+const PoolBreakdownChart = lazy(() =>
+  import('./PoolBreakdownChart').then(m => ({ default: m.PoolBreakdownChart }))
+)
 import {
   buildTransactionTimeline,
   buildPoolBreakdownData,
   buildCurrentHoldingsData,
 } from '../../lib/chartData'
-import { Section104Pool } from '../../types/cgt'
+import { DisposalRecord, Section104Pool } from '../../types/cgt'
 import { EnrichedTransaction } from '../../types/transaction'
 
 // Stable empty references to prevent infinite re-renders
 const EMPTY_POOLS = new Map<string, Section104Pool>()
 const EMPTY_TRANSACTIONS: EnrichedTransaction[] = []
+const EMPTY_DISPOSALS: DisposalRecord[] = []
 
 type ChartType = 'transactions' | 'section104'
 
@@ -26,7 +34,7 @@ export function Dashboard() {
   const cgtResults = useTransactionStore((state) => state.cgtResults)
 
   // Get data with stable fallbacks
-  const disposals = cgtResults?.disposals ?? []
+  const disposals = cgtResults?.disposals ?? EMPTY_DISPOSALS
   const section104Pools = cgtResults?.section104Pools ?? EMPTY_POOLS
   const transactions = cgtResults?.transactions ?? EMPTY_TRANSACTIONS
 
@@ -89,7 +97,15 @@ export function Dashboard() {
 
         {/* Chart content */}
         <div className="p-6">
-          {renderChart()}
+          <Suspense
+            fallback={
+              <div className="flex items-center justify-center h-72 text-gray-500">
+                Loading chart…
+              </div>
+            }
+          >
+            {renderChart()}
+          </Suspense>
         </div>
       </div>
     </div>
