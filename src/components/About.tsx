@@ -360,6 +360,40 @@ export function About() {
             </div>
           </section>
 
+          {/* Feedback & Corrections */}
+          <section className="bg-white shadow rounded-lg p-6">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">Feedback &amp; Corrections</h2>
+            <div className="space-y-4 text-gray-700">
+              <p>
+                Spotted an incorrect calculation, an unsupported broker format, or anything else that
+                looks wrong? Please let us know — the more detail you can share (broker, transaction
+                type, expected vs. actual result), the easier it is to fix.
+              </p>
+              <p>
+                <a
+                  href="https://github.com/coffee-cpu/capital-gains-uk-101/issues/new"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                >
+                  Report an issue on GitHub
+                </a>
+              </p>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h3 className="text-sm font-medium text-blue-900 mb-1">Manually correcting or adding transactions</h3>
+                <p className="text-sm text-blue-800">
+                  Need to fix a transaction or add one that's missing (for example, a purchase made
+                  before your broker export begins)? Export your data using{' '}
+                  <strong>Export Generic CSV</strong> in the Transactions section, edit the rows in a
+                  spreadsheet, and re-import the corrected file. The Generic CSV format is
+                  auto-detected, so any additions or corrections flow through the same FX, stock-split
+                  and CGT calculations as a broker import.
+                </p>
+              </div>
+            </div>
+          </section>
+
           {/* Project Stats */}
           <CodingStats />
 
