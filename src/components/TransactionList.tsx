@@ -42,6 +42,7 @@ export function TransactionList() {
   const toggleHelpPanelWithContext = useTransactionStore((state) => state.toggleHelpPanelWithContext)
   const [showFxInfo, setShowFxInfo] = useState(false)
   const [hoveredMatchGroup, setHoveredMatchGroup] = useState<string | null>(null)
+  const [filterMode, setFilterMode] = useState<'all' | 'attention'>('all')
 
   // Get disposal records and Section 104 pools
   const disposals = getDisposals()
@@ -89,6 +90,19 @@ export function TransactionList() {
     return new Date(a.date).getTime() - new Date(b.date).getTime()
   })
 
+  // A transaction "needs attention" if it is missing required data (e.g. Schwab
+  // Stock Plan Activity without price) or failed FX conversion. The filter below
+  // lets users jump straight to these rows instead of scrolling.
+  const needsAttention = (tx: typeof transactions[number]) =>
+    Boolean(tx.incomplete || tx.fx_error)
+  const attentionCount = transactions.filter(needsAttention).length
+
+  // Apply the active filter to decide which rows to render
+  const visibleTransactions =
+    filterMode === 'attention'
+      ? sortedTransactions.filter(needsAttention)
+      : sortedTransactions
+
   // Check for FX rate errors
   const fxErrorTransactions = transactions.filter(tx => tx.fx_error)
   const fxErrorCount = fxErrorTransactions.length
@@ -119,9 +133,39 @@ export function TransactionList() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-2xl font-semibold text-gray-900">Transactions</h2>
-            <p className="text-sm text-gray-500 mt-1">{transactions.length} total</p>
+            <p className="text-sm text-gray-500 mt-1">
+              {filterMode === 'attention'
+                ? `Showing ${visibleTransactions.length} of ${transactions.length}`
+                : `${transactions.length} total`}
+            </p>
           </div>
           <div className="flex items-center gap-2">
+            {attentionCount > 0 && (
+              <button
+                onClick={() => setFilterMode(filterMode === 'attention' ? 'all' : 'attention')}
+                aria-pressed={filterMode === 'attention'}
+                className={`inline-flex items-center px-3 py-2 border shadow-sm text-sm leading-4 font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition-colors ${
+                  filterMode === 'attention'
+                    ? 'border-yellow-400 bg-yellow-100 text-yellow-900 hover:bg-yellow-200'
+                    : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                }`}
+                title={
+                  filterMode === 'attention'
+                    ? 'Show all transactions'
+                    : 'Show only transactions needing attention (missing data or FX errors)'
+                }
+              >
+                <svg className="h-4 w-4 sm:mr-2" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                <span className="hidden sm:inline">
+                  {filterMode === 'attention' ? 'Show all' : 'Needs attention'}
+                </span>
+                <span className="ml-1.5 inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-yellow-200 text-yellow-900">
+                  {attentionCount}
+                </span>
+              </button>
+            )}
             <AutoSplitsToggle />
             <button
               onClick={() => exportTransactionsToCSV(transactions)}
@@ -312,7 +356,14 @@ export function TransactionList() {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {sortedTransactions.map((tx) => {
+            {visibleTransactions.length === 0 && (
+              <tr>
+                <td colSpan={12} className="px-6 py-8 text-center text-sm text-gray-500">
+                  No transactions need attention.
+                </td>
+              </tr>
+            )}
+            {visibleTransactions.map((tx) => {
               // Determine if this transaction is relevant to CGT calculations
               // BUY/SELL and options transactions directly affect capital gains
               const isRelevant = isAcquisition(tx) || isDisposal(tx)
