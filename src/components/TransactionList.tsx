@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTransactionStore } from '../stores/transactionStore'
 import { ClearDataButton } from './ClearDataButton'
 import { Tooltip } from './Tooltip'
@@ -38,6 +38,7 @@ export function TransactionList() {
   const transactions = useTransactionStore((state) => state.transactions)
   const isLoading = useTransactionStore((state) => state.isLoading)
   const getDisposals = useTransactionStore((state) => state.getDisposals)
+  const cgtResults = useTransactionStore((state) => state.cgtResults)
   const getSection104Pools = useTransactionStore((state) => state.getSection104Pools)
   const toggleHelpPanelWithContext = useTransactionStore((state) => state.toggleHelpPanelWithContext)
   const [showFxInfo, setShowFxInfo] = useState(false)
@@ -96,8 +97,9 @@ export function TransactionList() {
   // disposal). The filter below lets users jump straight to these rows instead
   // of scrolling. The disposal set mirrors the Issues panel (useIssues), which
   // flags disposals where `isIncomplete` is true.
-  const incompleteDisposalIds = new Set(
-    disposals.filter(d => d.isIncomplete).map(d => d.disposal.id)
+  const incompleteDisposalIds = useMemo(
+    () => new Set(cgtResults?.disposals.filter(d => d.isIncomplete).map(d => d.disposal.id)),
+    [cgtResults]
   )
   const needsAttention = (tx: typeof transactions[number]) =>
     Boolean(tx.incomplete || tx.fx_error || incompleteDisposalIds.has(tx.id))
