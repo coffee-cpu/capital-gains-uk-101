@@ -66,6 +66,26 @@ describe('brokerDetector', () => {
       expect(result.confidence).toBeGreaterThan(0.8)
     })
 
+    it('should detect Trading 212 format with the newer Time (UTC) header', () => {
+      const trading212Rows = [
+        {
+          'Action': 'Market buy',
+          'Time (UTC)': '2025-07-16 08:39:58+00:00',
+          'Ticker': 'RR',
+          'No. of shares': '25.9686809800',
+          'Total': '260.00',
+        },
+      ]
+
+      const result = detectBroker(trading212Rows)
+
+      expect(result.broker).toBe(BrokerType.TRADING212)
+      expect(result.confidence).toBeGreaterThan(0.8)
+      expect(result.headerMatches).toContain('Action')
+      expect(result.headerMatches).toContain('Time')
+      expect(result.headerMatches).toContain('Ticker')
+    })
+
     it('should prefer Schwab over Trading212 when Schwab has higher confidence', () => {
       const mixedRows = [
         {
