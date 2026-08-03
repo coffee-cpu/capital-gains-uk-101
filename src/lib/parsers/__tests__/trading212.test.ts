@@ -47,6 +47,45 @@ describe('Trading 212 Parser', () => {
       })
     })
 
+    it('should normalize a buy transaction from the newer Trading 212 export format', () => {
+      const rows = [
+        {
+          'Action': 'Market buy',
+          'Time (UTC)': '2025-07-16 08:39:58+00:00',
+          'Ticker': 'RR',
+          'Name': 'Rolls-Royce',
+          'No. of shares': '25.9686809800',
+          'Price / share': '996.2000000000',
+          'Currency (Price / share)': 'GBX',
+          'Total': '260.00',
+          'Currency (Total)': 'GBP',
+          'Stamp duty reserve tax': '1.30',
+          'Currency (Stamp duty reserve tax)': 'GBP',
+          'Currency conversion fee': '',
+          'Currency (Currency conversion fee)': '',
+          'Notes': '',
+          'ID': 'EOF35712623564',
+        },
+      ]
+
+      const result = normalizeTrading212Transactions(rows, 'test-file')
+
+      expect(result).toHaveLength(1)
+      expect(result[0]).toMatchObject({
+        id: 'test-file-1',
+        source: 'Trading 212',
+        symbol: 'RR',
+        name: 'Rolls-Royce',
+        date: '2025-07-16',
+        type: TransactionType.BUY,
+        quantity: 25.9686809800,
+        price: 9.962,
+        currency: 'GBP',
+        total: 25.9686809800 * 9.962,
+        fee: 1.3,
+      })
+    })
+
     it('should normalize a Limit sell transaction', () => {
       const rows = [
         {

@@ -1,6 +1,32 @@
-import { BrokerType } from '../../types/broker'
+import { BrokerType, RawCSVRow } from '../../types/broker'
 import { BrokerDefinition } from '../../types/brokerDefinition'
 import { normalizeTrading212Transactions } from '../../lib/parsers/trading212'
+
+function detectTrading212Headers(headers: string[], rows: RawCSVRow[]) {
+  void rows
+  const normalizedHeaders = headers.map(header => header.trim())
+  const hasAction = normalizedHeaders.includes('Action')
+  const hasTime = normalizedHeaders.includes('Time') || normalizedHeaders.includes('Time (UTC)')
+  const hasIsin = normalizedHeaders.includes('ISIN')
+  const hasTicker = normalizedHeaders.includes('Ticker')
+  const hasShares = normalizedHeaders.includes('No. of shares') || normalizedHeaders.includes('Quantity')
+  const hasTotal = normalizedHeaders.includes('Total')
+
+  const matchedHeaders = [
+    hasAction ? 'Action' : null,
+    hasTime ? 'Time' : null,
+    hasIsin ? 'ISIN' : null,
+    hasTicker ? 'Ticker' : null,
+    hasShares ? 'No. of shares' : null,
+    hasTotal ? 'Total' : null,
+  ].filter((header): header is string => header !== null)
+
+  return {
+    broker: BrokerType.TRADING212,
+    confidence: matchedHeaders.length / 6,
+    headerMatches: matchedHeaders,
+  }
+}
 
 export const trading212Definition: BrokerDefinition = {
   type: BrokerType.TRADING212,
@@ -9,6 +35,7 @@ export const trading212Definition: BrokerDefinition = {
   detection: {
     requiredHeaders: ['Action', 'Time', 'ISIN', 'Ticker', 'No. of shares'],
     priority: 50,
+    customDetector: detectTrading212Headers,
   },
   parser: normalizeTrading212Transactions,
   instructions: {
