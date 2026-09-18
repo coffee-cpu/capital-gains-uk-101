@@ -6,17 +6,21 @@ import { parseNumber } from './parsingUtils'
 /**
  * Trading 212 CSV Parser
  *
- * Converts Trading 212 transaction exports to GenericTransaction format
+ * Converts Trading 212 transaction exports to GenericTransaction format.
  *
- * Expected columns:
+ * Two export formats are supported. Columns are only included in an export
+ * when relevant to the transactions in the selected date range.
+ *
+ * Expected columns (legacy format / newer format where renamed):
  * - Action: Transaction type (Market buy, Limit sell, Dividend, Deposit, etc.)
- * - Time: Timestamp (YYYY-MM-DD HH:MM:SS)
+ * - Time / Time (UTC): Timestamp (YYYY-MM-DD HH:MM:SS, newer exports add a UTC offset)
  * - ISIN: Security identifier
  * - Ticker: Stock symbol
  * - Name: Company name
  * - No. of shares: Quantity
  * - Price / share: Unit price
- * - Currency (Price / share): Price currency
+ * - Currency (Price / share): Price currency. UK-listed securities are
+ *   quoted in GBX (pence) and normalised to GBP by this parser.
  * - Exchange rate: FX rate to account currency
  * - Result: Profit/loss (for sales)
  * - Currency (Result): Result currency
@@ -24,8 +28,10 @@ import { parseNumber } from './parsingUtils'
  * - Currency (Total): Total currency
  * - Withholding tax: Tax withheld
  * - Currency (Withholding tax): Tax currency
- * - Transaction fee: Trading fee
- * - Currency (Transaction fee): Fee currency
+ * - Transaction fee: Trading fee (legacy)
+ * - Currency (Transaction fee): Fee currency (legacy)
+ * - Stamp duty reserve tax: UK SDRT on purchases (newer format)
+ * - Currency (Stamp duty reserve tax): SDRT currency (newer format)
  * - Currency conversion fee: FX fee
  * - Currency (Currency conversion fee): FX fee currency
  * - Notes: Additional info
@@ -33,6 +39,48 @@ import { parseNumber } from './parsingUtils'
  */
 
 type TransactionTypeValue = typeof TransactionType[keyof typeof TransactionType]
+
+const HEADER_LOOKUPS = {
+  time: ['Time', 'Time (UTC)'],
+  quantity: ['No. of shares'],
+  price: ['Price / share'],
+  priceCurrency: ['Currency (Price / share)'],
+  transactionFee: ['Transaction fee', 'Stamp duty reserve tax'],
+  currencyConversionFee: ['Currency conversion fee'],
+  withholdingTax: ['Withholding tax'],
+  withholdingTaxCurrency: ['Currency (Withholding tax)'],
+} as const
+
+function getRowValue(row: RawCSVRow, headers: readonly string[]): string | undefined {
+  for (const header of headers) {
+    const value = row[header]
+    if (value !== undefined && value !== null && value !== '') {
+      return value
+    }
+  }
+
+  return undefined
+}
+
+/**
+ * Sum the numeric values of every populated column in the group.
+ * Fee-type columns are conditionally included per export and each one is an
+ * allowable cost (TCGA92/S38), so they must be summed rather than
+ * first-wins-resolved. The per-fee `Currency (...)` columns are not applied;
+ * fees are assumed to share the transaction currency (a pre-existing
+ * limitation of the fee model, see the `fee` handling below).
+ */
+function sumRowValues(row: RawCSVRow, headers: readonly string[]): number | undefined {
+  let sum: number | undefined
+  for (const header of headers) {
+    const value = parseNumber(row[header])
+    if (value !== undefined) {
+      sum = (sum ?? 0) + value
+    }
+  }
+
+  return sum
+}
 
 /**
  * Exact match mappings for Trading 212 actions
@@ -97,7 +145,7 @@ export function normalizeTrading212Transactions(
   return rows
     .map((row, index) => {
       const action = row['Action']
-      const time = row['Time']
+      const time = getRowValue(row, HEADER_LOOKUPS.time)
       const ticker = row['Ticker']
       const name = row['Name']
 
@@ -107,12 +155,12 @@ export function normalizeTrading212Transactions(
       const type = mapActionToType(action)
 
       // Parse numeric fields
-      const quantity = parseNumber(row['No. of shares'])
-      const price = parseNumber(row['Price / share'])
+      const quantity = parseNumber(getRowValue(row, HEADER_LOOKUPS.quantity))
+      const price = parseNumber(getRowValue(row, HEADER_LOOKUPS.price))
       const csvTotal = parseNumber(row['Total'])
-      const transactionFee = parseNumber(row['Transaction fee'])
-      const currencyConversionFee = parseNumber(row['Currency conversion fee'])
-      const withholdingTax = parseNumber(row['Withholding tax'])
+      const transactionFee = sumRowValues(row, HEADER_LOOKUPS.transactionFee)
+      const currencyConversionFee = parseNumber(getRowValue(row, HEADER_LOOKUPS.currencyConversionFee))
+      const withholdingTax = parseNumber(getRowValue(row, HEADER_LOOKUPS.withholdingTax))
 
       // Combine all fees
       let fee: number | undefined
@@ -120,24 +168,28 @@ export function normalizeTrading212Transactions(
         fee = (transactionFee || 0) + (currencyConversionFee || 0)
       }
 
-      // Get currencies - use price currency as the transaction currency
-      // Trading 212 stores the original price in its native currency,
-      // and converts total to account currency (usually GBP)
-      const priceCurrency = row['Currency (Price / share)']
+      // Get currencies - use price currency as the transaction currency.
+      // Trading 212 quotes UK-listed securities in GBX (pence), which must
+      // be normalised to GBP before FX enrichment.
+      const priceCurrency = getRowValue(row, HEADER_LOOKUPS.priceCurrency)
       const totalCurrency = row['Currency (Total)']
+      const isPenceQuoted = priceCurrency?.toUpperCase() === 'GBX'
+      const normalizedPrice = isPenceQuoted && price !== undefined
+        ? price / 100
+        : price
 
       // The transaction currency should be the price currency (e.g., USD for US stocks)
       // NOT the total currency (which is the account currency after conversion)
-      const currency = priceCurrency || totalCurrency || 'GBP'
+      const currency = isPenceQuoted ? 'GBP' : priceCurrency || totalCurrency || 'GBP'
 
       // For BUY/SELL: Calculate total from price × quantity in the original currency
       // For others (DIVIDEND, INTEREST, TRANSFER): Use the CSV total (already in correct currency)
       let total: number | null
       if (type === 'BUY' || type === 'SELL') {
         // Calculate from price × quantity for buy/sell transactions
-        total = price !== undefined && price !== null &&
+        total = normalizedPrice !== undefined && normalizedPrice !== null &&
                 quantity !== undefined && quantity !== null
-          ? price * quantity
+          ? normalizedPrice * quantity
           : null
       } else {
         // Use CSV total for non-trading transactions (dividends, interest, transfers)
@@ -152,7 +204,7 @@ export function normalizeTrading212Transactions(
         symbol: ticker || '',
         name: name || null,
         quantity: quantity ?? null,
-        price: price ?? null,
+        price: normalizedPrice ?? null,
         currency,
         total,
         fee: fee ?? null,
@@ -162,7 +214,7 @@ export function normalizeTrading212Transactions(
       // For dividend transactions, calculate gross dividend and store withholding tax
       // Gross = Net (total) + Withholding Tax
       if (type === 'DIVIDEND') {
-        const taxCurrency = row['Currency (Withholding tax)'] || currency
+        const taxCurrency = getRowValue(row, HEADER_LOOKUPS.withholdingTaxCurrency) || currency
           
         // Calculate gross dividend: total (net) + withholding tax
         const grossDividend = withholdingTax && total !== null
@@ -182,7 +234,7 @@ export function normalizeTrading212Transactions(
         }
       } else if (withholdingTax && withholdingTax > 0) {
         // For non-dividend transactions with withholding tax, just add to notes
-        const taxCurrency = row['Currency (Withholding tax)'] || currency
+        const taxCurrency = getRowValue(row, HEADER_LOOKUPS.withholdingTaxCurrency) || currency
         const taxNote = `Withholding tax: ${withholdingTax} ${taxCurrency}`
         transaction.notes = transaction.notes
           ? `${transaction.notes}; ${taxNote}`
