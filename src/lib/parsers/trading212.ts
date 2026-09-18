@@ -161,6 +161,7 @@ export function normalizeTrading212Transactions(
       const transactionFee = sumRowValues(row, HEADER_LOOKUPS.transactionFee)
       const currencyConversionFee = parseNumber(getRowValue(row, HEADER_LOOKUPS.currencyConversionFee))
       const withholdingTax = parseNumber(getRowValue(row, HEADER_LOOKUPS.withholdingTax))
+      const exchangeRate = parseNumber(row['Exchange rate'])
 
       // Combine all fees
       let fee: number | undefined
@@ -168,9 +169,8 @@ export function normalizeTrading212Transactions(
         fee = (transactionFee || 0) + (currencyConversionFee || 0)
       }
 
-      // Get currencies - use price currency as the transaction currency.
-      // Trading 212 quotes UK-listed securities in GBX (pence), which must
-      // be normalised to GBP before FX enrichment.
+      // Get currencies. Trading 212 quotes UK-listed securities in GBX
+      // (pence), which must be normalised to GBP before FX enrichment.
       const priceCurrency = getRowValue(row, HEADER_LOOKUPS.priceCurrency)
       const totalCurrency = row['Currency (Total)']
       const isPenceQuoted = priceCurrency?.toUpperCase() === 'GBX'
@@ -178,14 +178,12 @@ export function normalizeTrading212Transactions(
         ? price / 100
         : price
 
-      // The transaction currency should be the price currency (e.g., USD for US stocks)
-      // NOT the total currency (which is the account currency after conversion)
-      const currency = isPenceQuoted ? 'GBP' : priceCurrency || totalCurrency || 'GBP'
+      const isTrade = type === 'BUY' || type === 'SELL'
 
       // For BUY/SELL: Calculate total from price × quantity in the original currency
       // For others (DIVIDEND, INTEREST, TRANSFER): Use the CSV total (already in correct currency)
       let total: number | null
-      if (type === 'BUY' || type === 'SELL') {
+      if (isTrade) {
         // Calculate from price × quantity for buy/sell transactions
         total = normalizedPrice !== undefined && normalizedPrice !== null &&
                 quantity !== undefined && quantity !== null
@@ -195,6 +193,18 @@ export function normalizeTrading212Transactions(
         // Use CSV total for non-trading transactions (dividends, interest, transfers)
         total = csvTotal ?? null
       }
+
+      // GenericTransaction has a single `currency` field applied to price,
+      // total, fee etc. alike during FX enrichment, so it must match
+      // whichever figure is actually used as `total` above:
+      // - Trades: `total` is computed from price × quantity, so it's in the
+      //   price currency (GBX quotes normalise to GBP).
+      // - Non-trades: `total` is the CSV `Total` column, which can be in a
+      //   different currency than `Price / share` (e.g. a USD-quoted
+      //   dividend credited as a GBP total) - so it must use `Currency (Total)`.
+      const currency = isTrade
+        ? (isPenceQuoted ? 'GBP' : priceCurrency || totalCurrency || 'GBP')
+        : (totalCurrency || priceCurrency || 'GBP')
 
       const transaction: GenericTransaction = {
         id: `${fileId}-${index + 1}`,
@@ -215,17 +225,32 @@ export function normalizeTrading212Transactions(
       // Gross = Net (total) + Withholding Tax
       if (type === 'DIVIDEND') {
         const taxCurrency = getRowValue(row, HEADER_LOOKUPS.withholdingTaxCurrency) || currency
-          
+
+        // Withholding tax is deducted at source in the instrument's
+        // currency, which can differ from `currency` (the CSV `Total`
+        // column's currency, e.g. USD tax withheld on a dividend credited
+        // as a GBP total). Convert it with the same `Exchange rate` that
+        // turns an instrument-currency amount into the account-currency
+        // total (see `currency` above) before combining it with `total` -
+        // otherwise gross dividend would sum mismatched-currency figures
+        // as if they were equal.
+        const withholdingTaxInTxCurrency = withholdingTax !== undefined &&
+          taxCurrency !== currency &&
+          exchangeRate !== undefined
+          ? withholdingTax * exchangeRate
+          : withholdingTax
+
         // Calculate gross dividend: total (net) + withholding tax
-        const grossDividend = withholdingTax && total !== null
-          ? total + withholdingTax
+        const grossDividend = withholdingTaxInTxCurrency && total !== null
+          ? total + withholdingTaxInTxCurrency
           : total
 
         // Store in dedicated SA106 fields
         transaction.grossDividend = grossDividend
-        transaction.withholdingTax = withholdingTax ?? null
+        transaction.withholdingTax = withholdingTaxInTxCurrency ?? null
 
-        // Add withholding tax to notes for visibility
+        // Add withholding tax to notes for visibility (raw CSV figure and
+        // its own currency, for audit trail)
         if (withholdingTax && withholdingTax > 0) {
           const taxNote = `Gross: ${grossDividend?.toFixed(2)} ${currency}, Tax withheld: ${withholdingTax} ${taxCurrency}`
           transaction.notes = transaction.notes

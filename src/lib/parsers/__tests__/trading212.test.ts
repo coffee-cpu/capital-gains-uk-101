@@ -191,6 +191,54 @@ describe('Trading 212 Parser', () => {
       expect(result[0].notes).toContain('Tax withheld: 2.36 GBP')
     })
 
+    it('should use the Total currency, not the price currency, for a dividend paid in a different currency', () => {
+      // Trading 212 can quote a dividend's per-share price in the security's
+      // listing currency (USD for AAPL) while crediting the account in the
+      // account's base currency (GBP) via Exchange rate - so `Currency (Total)`
+      // and `Currency (Price / share)` can legitimately differ.
+      const rows = [
+        {
+          'Action': 'Dividend',
+          'Time': '2025-09-20 10:00:00',
+          'ISIN': 'US0378331005',
+          'Ticker': 'AAPL',
+          'Name': 'Apple Inc.',
+          'No. of shares': '10.0000000000',
+          'Price / share': '0.2400000000',
+          'Currency (Price / share)': 'USD',
+          'Exchange rate': '0.79',
+          'Currency (Result)': 'GBP',
+          'Total': '1.85',
+          'Currency (Total)': 'GBP',
+          'Withholding tax': '0.36',
+          'Currency (Withholding tax)': 'USD',
+          'Transaction fee': '',
+          'Currency (Transaction fee)': '',
+          'Currency conversion fee': '',
+          'Currency (Currency conversion fee)': '',
+          'Notes': '',
+          'ID': 'DIV-FX',
+        },
+      ]
+
+      const result = normalizeTrading212Transactions(rows, 'test-file')
+
+      expect(result).toHaveLength(1)
+      expect(result[0].type).toBe(TransactionType.DIVIDEND)
+      // `total` (and the SA106 fields derived from it) come from the CSV
+      // `Total` column, so `currency` must match `Currency (Total)` - not
+      // `Currency (Price / share)` - otherwise FX enrichment would apply a
+      // USD->GBP rate to a value that is already in GBP.
+      expect(result[0].currency).toBe('GBP')
+      expect(result[0].total).toBe(1.85)
+      // Withholding tax (0.36 USD) is converted to the transaction currency
+      // (GBP) via the CSV Exchange rate (0.79) before being combined with
+      // `total` - summing 0.36 and 1.85 as if both were GBP would overstate
+      // the gross dividend and the tax withheld.
+      expect(result[0].withholdingTax).toBeCloseTo(0.2844, 10) // 0.36 × 0.79
+      expect(result[0].grossDividend).toBeCloseTo(2.1344, 10) // 1.85 + 0.2844
+    })
+
     it('should normalize deposit transactions', () => {
       const rows = [
         {
