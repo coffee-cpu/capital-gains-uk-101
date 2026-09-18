@@ -67,13 +67,22 @@ describe('brokerDetector', () => {
     })
 
     it('should detect Trading 212 format with the newer Time (UTC) header', () => {
+      // Header row taken from a real newer-format export
       const trading212Rows = [
         {
           'Action': 'Market buy',
-          'Time (UTC)': '2025-07-16 08:39:58+00:00',
-          'Ticker': 'RR',
-          'No. of shares': '25.9686809800',
-          'Total': '260.00',
+          'Time (UTC)': '2025-09-09 07:03:13+00:00',
+          'ISIN': 'IE00BK5BQT80',
+          'Ticker': 'VWRP',
+          'Name': 'Vanguard FTSE All-World (Acc)',
+          'Notes': '',
+          'ID': 'EOF38462075394',
+          'No. of shares': '42.2654268800',
+          'Price / share': '118.3000000000',
+          'Currency (Price / share)': 'GBP',
+          'Exchange rate': '1.00000000',
+          'Total': '5000.00',
+          'Currency (Total)': 'GBP',
         },
       ]
 
@@ -82,8 +91,25 @@ describe('brokerDetector', () => {
       expect(result.broker).toBe(BrokerType.TRADING212)
       expect(result.confidence).toBeGreaterThan(0.8)
       expect(result.headerMatches).toContain('Action')
-      expect(result.headerMatches).toContain('Time')
+      expect(result.headerMatches).toContain('Time (UTC)')
       expect(result.headerMatches).toContain('Ticker')
+    })
+
+    it('should not detect a generic CSV without Trading 212 share/price columns as Trading 212', () => {
+      const genericRows = [
+        {
+          'Action': 'Buy',
+          'Time': '2025-01-15 10:30:00',
+          'Ticker': 'AAPL',
+          'Quantity': '10',
+          'Total': '1500.00',
+        },
+      ]
+
+      const result = detectBroker(genericRows)
+
+      expect(result.broker).not.toBe(BrokerType.TRADING212)
+      expect(result.confidence).toBeLessThan(0.8)
     })
 
     it('should prefer Schwab over Trading212 when Schwab has higher confidence', () => {

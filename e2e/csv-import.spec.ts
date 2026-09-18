@@ -114,6 +114,31 @@ test.describe('CSV Import', () => {
     await expect(page.getByText(/from Trading 212/i)).toBeVisible()
   })
 
+  test('should import newer-format Trading 212 CSV and normalize GBX prices', async ({ page }) => {
+    await page.goto('/')
+
+    // Find the file input
+    const fileInput = page.locator('input[type="file"]')
+    await expect(fileInput).toBeVisible()
+
+    // Upload the newer-format Trading 212 file (Time (UTC), Stamp duty reserve tax, GBX prices)
+    const filePath = path.join(__dirname, 'fixtures', 'trading212-new-format.csv')
+    await fileInput.setInputFiles(filePath)
+
+    // Wait for success message
+    await expect(page.getByText(/file\(s\) imported successfully/i)).toBeVisible({ timeout: 10000 })
+
+    // Check that the success message shows the correct number of transactions
+    await expect(page.getByText(/6 total transactions/i)).toBeVisible()
+
+    // Verify the success message mentions Trading 212
+    await expect(page.getByText(/from Trading 212/i)).toBeVisible()
+
+    // Verify the GBX-quoted buy (996.20 GBX/share) is shown normalized to GBP
+    await expect(page.getByText('RR').first()).toBeVisible()
+    await expect(page.getByText('£9.96').first()).toBeVisible()
+  })
+
   test('should import Freetrade CSV successfully', async ({ page }) => {
     await page.goto('/')
 

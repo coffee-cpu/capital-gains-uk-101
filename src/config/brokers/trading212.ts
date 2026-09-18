@@ -1,30 +1,40 @@
-import { BrokerType, RawCSVRow } from '../../types/broker'
+import { BrokerType, RawCSVRow, BrokerDetectionResult } from '../../types/broker'
 import { BrokerDefinition } from '../../types/brokerDefinition'
 import { normalizeTrading212Transactions } from '../../lib/parsers/trading212'
 
-function detectTrading212Headers(headers: string[], rows: RawCSVRow[]) {
-  void rows
+function detectTrading212Headers(headers: string[], _rows: RawCSVRow[]): BrokerDetectionResult {
   const normalizedHeaders = headers.map(header => header.trim())
-  const hasAction = normalizedHeaders.includes('Action')
-  const hasTime = normalizedHeaders.includes('Time') || normalizedHeaders.includes('Time (UTC)')
-  const hasIsin = normalizedHeaders.includes('ISIN')
-  const hasTicker = normalizedHeaders.includes('Ticker')
-  const hasShares = normalizedHeaders.includes('No. of shares') || normalizedHeaders.includes('Quantity')
-  const hasTotal = normalizedHeaders.includes('Total')
+  const matchFirst = (...candidates: string[]) =>
+    candidates.find(candidate => normalizedHeaders.includes(candidate))
 
-  const matchedHeaders = [
-    hasAction ? 'Action' : null,
-    hasTime ? 'Time' : null,
-    hasIsin ? 'ISIN' : null,
-    hasTicker ? 'Ticker' : null,
-    hasShares ? 'No. of shares' : null,
-    hasTotal ? 'Total' : null,
-  ].filter((header): header is string => header !== null)
+  const action = matchFirst('Action')
+  const time = matchFirst('Time', 'Time (UTC)')
+  const isin = matchFirst('ISIN')
+  const ticker = matchFirst('Ticker')
+  const shares = matchFirst('No. of shares')
+  const pricePerShare = matchFirst('Price / share')
+  const priceCurrency = matchFirst('Currency (Price / share)')
+
+  // Anchor on Trading 212-specific share/price columns before reporting any
+  // confidence: a generic CSV carrying Action/Time/Ticker/Total would
+  // otherwise score high enough to short-circuit lower-priority brokers.
+  const isTrading212Shape = Boolean(
+    action && time && ticker && (shares || pricePerShare || priceCurrency)
+  )
+  if (!isTrading212Shape) {
+    return { broker: BrokerType.TRADING212, confidence: 0, headerMatches: [] }
+  }
+
+  // Score over the five core columns present in both the legacy ("Time")
+  // and newer ("Time (UTC)") export formats.
+  const coreMatches = [action, time, isin, ticker, shares].filter(
+    (header): header is string => header !== undefined
+  )
 
   return {
     broker: BrokerType.TRADING212,
-    confidence: matchedHeaders.length / 6,
-    headerMatches: matchedHeaders,
+    confidence: coreMatches.length / 5,
+    headerMatches: coreMatches,
   }
 }
 
@@ -33,7 +43,7 @@ export const trading212Definition: BrokerDefinition = {
   displayName: 'Trading 212',
   shortId: 'trading212',
   detection: {
-    requiredHeaders: ['Action', 'Time', 'ISIN', 'Ticker', 'No. of shares'],
+    requiredHeaders: [], // Uses custom detector instead
     priority: 50,
     customDetector: detectTrading212Headers,
   },

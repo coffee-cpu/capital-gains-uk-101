@@ -6,17 +6,21 @@ import { parseNumber } from './parsingUtils'
 /**
  * Trading 212 CSV Parser
  *
- * Converts Trading 212 transaction exports to GenericTransaction format
+ * Converts Trading 212 transaction exports to GenericTransaction format.
  *
- * Expected columns:
+ * Two export formats are supported. Columns are only included in an export
+ * when relevant to the transactions in the selected date range.
+ *
+ * Expected columns (legacy format / newer format where renamed):
  * - Action: Transaction type (Market buy, Limit sell, Dividend, Deposit, etc.)
- * - Time: Timestamp (YYYY-MM-DD HH:MM:SS)
+ * - Time / Time (UTC): Timestamp (YYYY-MM-DD HH:MM:SS, newer exports add a UTC offset)
  * - ISIN: Security identifier
  * - Ticker: Stock symbol
  * - Name: Company name
  * - No. of shares: Quantity
  * - Price / share: Unit price
- * - Currency (Price / share): Price currency
+ * - Currency (Price / share): Price currency. UK-listed securities are
+ *   quoted in GBX (pence) and normalised to GBP by this parser.
  * - Exchange rate: FX rate to account currency
  * - Result: Profit/loss (for sales)
  * - Currency (Result): Result currency
@@ -24,8 +28,10 @@ import { parseNumber } from './parsingUtils'
  * - Currency (Total): Total currency
  * - Withholding tax: Tax withheld
  * - Currency (Withholding tax): Tax currency
- * - Transaction fee: Trading fee
- * - Currency (Transaction fee): Fee currency
+ * - Transaction fee: Trading fee (legacy)
+ * - Currency (Transaction fee): Fee currency (legacy)
+ * - Stamp duty reserve tax: UK SDRT on purchases (newer format)
+ * - Currency (Stamp duty reserve tax): SDRT currency (newer format)
  * - Currency conversion fee: FX fee
  * - Currency (Currency conversion fee): FX fee currency
  * - Notes: Additional info
@@ -54,6 +60,26 @@ function getRowValue(row: RawCSVRow, headers: readonly string[]): string | undef
   }
 
   return undefined
+}
+
+/**
+ * Sum the numeric values of every populated column in the group.
+ * Fee-type columns are conditionally included per export and each one is an
+ * allowable cost (TCGA92/S38), so they must be summed rather than
+ * first-wins-resolved. The per-fee `Currency (...)` columns are not applied;
+ * fees are assumed to share the transaction currency (a pre-existing
+ * limitation of the fee model, see the `fee` handling below).
+ */
+function sumRowValues(row: RawCSVRow, headers: readonly string[]): number | undefined {
+  let sum: number | undefined
+  for (const header of headers) {
+    const value = parseNumber(row[header])
+    if (value !== undefined) {
+      sum = (sum ?? 0) + value
+    }
+  }
+
+  return sum
 }
 
 /**
@@ -132,7 +158,7 @@ export function normalizeTrading212Transactions(
       const quantity = parseNumber(getRowValue(row, HEADER_LOOKUPS.quantity))
       const price = parseNumber(getRowValue(row, HEADER_LOOKUPS.price))
       const csvTotal = parseNumber(row['Total'])
-      const transactionFee = parseNumber(getRowValue(row, HEADER_LOOKUPS.transactionFee))
+      const transactionFee = sumRowValues(row, HEADER_LOOKUPS.transactionFee)
       const currencyConversionFee = parseNumber(getRowValue(row, HEADER_LOOKUPS.currencyConversionFee))
       const withholdingTax = parseNumber(getRowValue(row, HEADER_LOOKUPS.withholdingTax))
 
