@@ -161,6 +161,7 @@ export function normalizeTrading212Transactions(
       const transactionFee = sumRowValues(row, HEADER_LOOKUPS.transactionFee)
       const currencyConversionFee = parseNumber(getRowValue(row, HEADER_LOOKUPS.currencyConversionFee))
       const withholdingTax = parseNumber(getRowValue(row, HEADER_LOOKUPS.withholdingTax))
+      const exchangeRate = parseNumber(row['Exchange rate'])
 
       // Combine all fees
       let fee: number | undefined
@@ -224,17 +225,32 @@ export function normalizeTrading212Transactions(
       // Gross = Net (total) + Withholding Tax
       if (type === 'DIVIDEND') {
         const taxCurrency = getRowValue(row, HEADER_LOOKUPS.withholdingTaxCurrency) || currency
-          
+
+        // Withholding tax is deducted at source in the instrument's
+        // currency, which can differ from `currency` (the CSV `Total`
+        // column's currency, e.g. USD tax withheld on a dividend credited
+        // as a GBP total). Convert it with the same `Exchange rate` that
+        // turns an instrument-currency amount into the account-currency
+        // total (see `currency` above) before combining it with `total` -
+        // otherwise gross dividend would sum mismatched-currency figures
+        // as if they were equal.
+        const withholdingTaxInTxCurrency = withholdingTax !== undefined &&
+          taxCurrency !== currency &&
+          exchangeRate !== undefined
+          ? withholdingTax * exchangeRate
+          : withholdingTax
+
         // Calculate gross dividend: total (net) + withholding tax
-        const grossDividend = withholdingTax && total !== null
-          ? total + withholdingTax
+        const grossDividend = withholdingTaxInTxCurrency && total !== null
+          ? total + withholdingTaxInTxCurrency
           : total
 
         // Store in dedicated SA106 fields
         transaction.grossDividend = grossDividend
-        transaction.withholdingTax = withholdingTax ?? null
+        transaction.withholdingTax = withholdingTaxInTxCurrency ?? null
 
-        // Add withholding tax to notes for visibility
+        // Add withholding tax to notes for visibility (raw CSV figure and
+        // its own currency, for audit trail)
         if (withholdingTax && withholdingTax > 0) {
           const taxNote = `Gross: ${grossDividend?.toFixed(2)} ${currency}, Tax withheld: ${withholdingTax} ${taxCurrency}`
           transaction.notes = transaction.notes

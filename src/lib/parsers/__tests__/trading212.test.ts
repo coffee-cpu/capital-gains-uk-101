@@ -231,7 +231,12 @@ describe('Trading 212 Parser', () => {
       // USD->GBP rate to a value that is already in GBP.
       expect(result[0].currency).toBe('GBP')
       expect(result[0].total).toBe(1.85)
-      expect(result[0].grossDividend).toBe(2.21) // 1.85 + 0.36
+      // Withholding tax (0.36 USD) is converted to the transaction currency
+      // (GBP) via the CSV Exchange rate (0.79) before being combined with
+      // `total` - summing 0.36 and 1.85 as if both were GBP would overstate
+      // the gross dividend and the tax withheld.
+      expect(result[0].withholdingTax).toBeCloseTo(0.2844, 10) // 0.36 × 0.79
+      expect(result[0].grossDividend).toBeCloseTo(2.1344, 10) // 1.85 + 0.2844
     })
 
     it('should normalize deposit transactions', () => {
