@@ -147,7 +147,7 @@ function matchSellAgainstBuys(
       .map(transaction => ({ transaction, available: tracker.getRemaining(transaction) }))
       .filter(item => item.available > 0)
     const dayAvailable = available.reduce((sum, item) => sum + item.available, 0)
-    if (dayAvailable <= 0) {
+    if (dayAvailable <= QUANTITY_EPSILON) {
       continue
     }
 

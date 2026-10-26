@@ -46,7 +46,7 @@ async function openDisposal(page: Page, symbol: string, date: string) {
 }
 
 test.describe('HMRC HS284 Example 3 - Section 104 holding (Lobster plc)', () => {
-  // HS284 Example 3 (figures identical across the 2023-2026 editions):
+  // HS284 Example 3 (figures identical in the 2025 and 2026 editions):
   //   Bought 1,000 shares at 400p + £150 costs   -> pool 1,000 shares, £4,150
   //   Bought   500 shares at 410p +  £80 costs   -> pool 1,500 shares, £6,280
   //   Sold 700 for £3,360, £100 costs: cost £6,280 × 700/1,500 = £2,931 (£2,930.67)
@@ -54,8 +54,10 @@ test.describe('HMRC HS284 Example 3 - Section 104 holding (Lobster plc)', () => 
   //   Pool 800 shares, £3,349 (£3,349.33)
   //   Sold 400 for £2,080, £105 costs: cost £3,349 × 400/800 = £1,675 (£1,674.67)
   //     gain £2,080 - £1,675 - £105 = £300 (app: £300.33)
-  // The sale dates are illustrative (both placed in 2024/25); the
-  // purchase dates follow the 2024/2025 editions.
+  // Dates follow the 2025 edition: bought April 2016 and September 2019,
+  // sold May 2024 and February 2025 (HMRC gives months only), so both
+  // sales fall in 2024/25.
+  // https://assets.publishing.service.gov.uk/media/67d053a7472ec44ed2307859/HS284_Example_3_2025.pdf
   test.beforeEach(async ({ page }) => {
     await importFixture(page, 'hmrc-hs284-example3.csv')
     await selectTaxYear(page, '2024/25')
