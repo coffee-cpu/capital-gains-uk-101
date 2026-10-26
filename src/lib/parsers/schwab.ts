@@ -93,11 +93,13 @@ function normalizeSchwabRow(
   const fee = parseCurrency(row['Fees & Comm']) || null
   const amount = parseCurrency(row['Amount']) || null
 
-  // Calculate total (for buys, amount is negative, for sells positive)
-  const total = calculateTotal(amount, quantity, price)
-
   const isDividend = type === TransactionType.DIVIDEND
   const isNraTaxAdj = action?.toLowerCase() === 'nra tax adj'
+
+  // Calculate total (for buys, amount is negative, for sells positive).
+  // NRA Tax Adj keeps its sign: negative = tax withheld, positive = tax
+  // refunded. Taking the absolute value would count a refund as more tax.
+  const total = isNraTaxAdj ? amount : calculateTotal(amount, quantity, price)
 
   // For dividends, Schwab amount IS the gross dividend
   const grossDividend = isDividend && amount !== null ? Math.abs(amount) : null

@@ -254,8 +254,31 @@ describe('Schwab Parser', () => {
       // NRA Tax Adj emitted as TAX_ON_DIVIDEND (has symbol)
       expect(result[1].type).toBe(TransactionType.TAX_ON_DIVIDEND)
       expect(result[1].symbol).toBe('AAPL')
-      expect(result[1].total).toBe(3.75)               // Absolute value via calculateTotal
+      expect(result[1].total).toBe(-3.75)              // Signed: negative = tax withheld
       expect(result[1].notes).toBe('NRA Tax Adj')
+    })
+
+    it('should keep the sign of NRA Tax Adj so a refund offsets the tax withheld', () => {
+      const nraTaxAdj = (date: string, amount: string) => ({
+        'Date': date,
+        'Action': 'NRA Tax Adj',
+        'Symbol': 'AAPL',
+        'Description': 'APPLE INC',
+        'Quantity': '',
+        'Price': '',
+        'Fees & Comm': '',
+        'Amount': amount,
+      })
+      const rows = [
+        nraTaxAdj('09/29/2024', '-$3.75'),  // Tax withheld
+        nraTaxAdj('10/15/2024', '$3.75'),   // Credit back of that tax
+      ]
+
+      const result = normalizeSchwabTransactions(rows, 'test-file')
+
+      // Taking the absolute value would turn the refund into more tax withheld
+      expect(result.map(tx => tx.type)).toEqual([TransactionType.TAX_ON_DIVIDEND, TransactionType.TAX_ON_DIVIDEND])
+      expect(result.map(tx => tx.total)).toEqual([-3.75, 3.75])
     })
 
     it('should handle dividend without NRA Tax Adj (no withholding)', () => {
@@ -337,7 +360,7 @@ describe('Schwab Parser', () => {
 
       // AAPL NRA Tax Adj
       const aaplTax = result.find(tx => tx.type === TransactionType.TAX_ON_DIVIDEND && tx.symbol === 'AAPL')!
-      expect(aaplTax.total).toBe(3.75)
+      expect(aaplTax.total).toBe(-3.75)
       expect(aaplTax.notes).toBe('NRA Tax Adj')
 
       // MSFT dividend (gross)
@@ -347,7 +370,7 @@ describe('Schwab Parser', () => {
 
       // MSFT NRA Tax Adj
       const msftTax = result.find(tx => tx.type === TransactionType.TAX_ON_DIVIDEND && tx.symbol === 'MSFT')!
-      expect(msftTax.total).toBe(7.50)
+      expect(msftTax.total).toBe(-7.50)
       expect(msftTax.notes).toBe('NRA Tax Adj')
     })
 

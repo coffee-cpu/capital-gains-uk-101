@@ -221,7 +221,10 @@ function generateTaxYearSummaries(
 
     // Withholding tax from two sources:
     // 1. withholdingTax_gbp on DIVIDEND (IB/Freetrade set this directly)
-    // 2. TAX_ON_DIVIDEND transactions (Schwab NRA Tax Adj emitted as separate rows)
+    // 2. TAX_ON_DIVIDEND transactions (Schwab NRA Tax Adj, IB Foreign Tax
+    //    Withholding). Their total is the signed cash movement: negative when
+    //    tax is withheld, positive when it is refunded. Withholding is
+    //    therefore the negated sum, so a refund reduces it.
     const dividendWithholdingFromIncome = yearDividends.reduce(
       (sum, tx) => sum + (tx.withholdingTax_gbp ?? 0),
       0
@@ -229,7 +232,7 @@ function generateTaxYearSummaries(
     const yearTaxOnDividend = transactions.filter(
       tx => tx.tax_year === taxYear && tx.type === 'TAX_ON_DIVIDEND'
     )
-    const dividendWithholdingFromTax = yearTaxOnDividend.reduce(
+    const dividendWithholdingFromTax = -yearTaxOnDividend.reduce(
       (sum, tx) => sum + (tx.value_gbp ?? 0),
       0
     )
@@ -255,7 +258,8 @@ function generateTaxYearSummaries(
     const yearTaxOnInterest = transactions.filter(
       tx => tx.tax_year === taxYear && tx.type === 'TAX_ON_INTEREST'
     )
-    const interestWithholdingFromTax = yearTaxOnInterest.reduce(
+    // Signed like TAX_ON_DIVIDEND: negative = withheld, positive = refunded
+    const interestWithholdingFromTax = -yearTaxOnInterest.reduce(
       (sum, tx) => sum + (tx.value_gbp ?? 0),
       0
     )

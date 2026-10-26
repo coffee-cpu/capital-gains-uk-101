@@ -1083,3 +1083,64 @@ describe('CGT Engine - HMRC matching regressions', () => {
     })
   })
 })
+
+describe('CGT Engine - dividend and interest withholding tax', () => {
+  // GBP rows, so value_gbp equals the broker's signed total
+  function row(id: string, type: EnrichedTransaction['type'], total: number): EnrichedTransaction {
+    return {
+      id,
+      source: 'test',
+      symbol: type === 'TAX_ON_INTEREST' || type === 'INTEREST' ? '' : 'AAPL',
+      name: null,
+      date: '2024-09-29',
+      type,
+      quantity: null,
+      price: null,
+      currency: 'GBP',
+      total,
+      fee: null,
+      notes: null,
+      fx_rate: 1,
+      price_gbp: null,
+      value_gbp: total,
+      fee_gbp: null,
+      fx_source: 'Native GBP',
+      fx_error: null,
+      tax_year: getTaxYear('2024-09-29'),
+    }
+  }
+
+  it('counts a negative tax row (tax withheld) as positive withholding', () => {
+    // Interactive Brokers "Foreign Tax Withholding" and Schwab "NRA Tax Adj"
+    // both arrive as a negative cash movement
+    const summary = calculateCGT([
+      row('div', 'DIVIDEND', 25),
+      row('tax', 'TAX_ON_DIVIDEND', -3.75),
+    ]).taxYearSummaries[0]
+
+    expect(summary.grossDividendsGbp).toBeCloseTo(25, 6)
+    expect(summary.totalWithholdingTaxGbp).toBeCloseTo(3.75, 6)
+    expect(summary.totalDividendsGbp).toBeCloseTo(21.25, 6)
+  })
+
+  it('nets a refunded withholding (positive tax row) against the tax withheld', () => {
+    const summary = calculateCGT([
+      row('div', 'DIVIDEND', 25),
+      row('tax', 'TAX_ON_DIVIDEND', -3.75),
+      row('refund', 'TAX_ON_DIVIDEND', 3.75),
+    ]).taxYearSummaries[0]
+
+    expect(summary.totalWithholdingTaxGbp).toBeCloseTo(0, 6)
+    expect(summary.totalDividendsGbp).toBeCloseTo(25, 6)
+  })
+
+  it('applies the same sign convention to interest withholding', () => {
+    const summary = calculateCGT([
+      row('int', 'INTEREST', 10),
+      row('tax', 'TAX_ON_INTEREST', -3),
+    ]).taxYearSummaries[0]
+
+    expect(summary.interestWithholdingTaxGbp).toBeCloseTo(3, 6)
+    expect(summary.totalInterestGbp).toBeCloseTo(7, 6)
+  })
+})
