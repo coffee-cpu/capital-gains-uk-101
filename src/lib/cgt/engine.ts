@@ -6,7 +6,7 @@ import { sameDayStage } from './sameDayMatcher'
 import { thirtyDayStage } from './thirtyDayMatcher'
 import { section104Stage } from './section104Pool'
 import { getTaxYearBounds } from '../../utils/taxYear'
-import { getEffectiveQuantity, isAcquisition, isDisposal, calculateNetProceeds } from './utils'
+import { getEffectiveQuantity, isAcquisition, isDisposal, calculateNetProceeds, QUANTITY_EPSILON } from './utils'
 import { calculateTaxYearFeatures } from './taxYearFeatures'
 
 /**
@@ -121,7 +121,7 @@ function createDisposalRecords(matchings: MatchingResult[]): DisposalRecord[] {
 
     // Calculate unmatched quantity (if any)
     const unmatchedQuantity = disposalQuantity - totalMatchedQuantity
-    const isIncomplete = unmatchedQuantity > 0
+    const isIncomplete = unmatchedQuantity > QUANTITY_EPSILON
 
     // Calculate proceeds - ONLY for matched portion to ensure accurate CGT calculation
     //

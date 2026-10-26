@@ -2,6 +2,28 @@ import { EnrichedTransaction, TransactionType } from '../../types/transaction'
 import { MatchingResult } from '../../types/cgt'
 
 /**
+ * Quantities at or below this are treated as zero.
+ *
+ * Fractional shares (e.g. 0.1 + 0.2 - 0.3) leave floating-point residue
+ * like 5.5e-17. Without a tolerance that residue shows up as phantom
+ * unmatched quantities and pool balances.
+ * Well below the smallest real unit we import (1 satoshi = 1e-8).
+ */
+export const QUANTITY_EPSILON = 1e-9
+
+/**
+ * Add whole days to an ISO date (YYYY-MM-DD), returning an ISO date.
+ *
+ * Works in UTC throughout so the result does not depend on the machine's
+ * timezone — local-time Date arithmetic loses an hour across a DST change,
+ * which shifts a "30 days later" boundary back a day.
+ */
+export function addDaysToISODate(date: string, days: number): string {
+  const [y, m, d] = date.slice(0, 10).split('-').map(Number)
+  return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10)
+}
+
+/**
  * Get the unit label for shares vs options contracts
  *
  * Returns "contracts" for options transactions (those with underlying_symbol set),
@@ -178,7 +200,8 @@ export function getRemainingQuantity(
     }
   }
 
-  return Math.max(0, originalQuantity - matchedQuantity)
+  const remaining = originalQuantity - matchedQuantity
+  return remaining > QUANTITY_EPSILON ? remaining : 0
 }
 
 /**
@@ -209,7 +232,8 @@ export class MatchedQuantityTracker {
   /** Remaining unmatched quantity for a transaction (always >= 0) */
   getRemaining(transaction: EnrichedTransaction): number {
     const matchedQuantity = this.matched.get(transaction.id) ?? 0
-    return Math.max(0, getEffectiveQuantity(transaction) - matchedQuantity)
+    const remaining = getEffectiveQuantity(transaction) - matchedQuantity
+    return remaining > QUANTITY_EPSILON ? remaining : 0
   }
 
   private increment(id: string, quantity: number): void {

@@ -9,6 +9,7 @@ import {
   groupBySymbol,
   MatchedQuantityTracker,
   calculateCostBasis,
+  QUANTITY_EPSILON,
 } from './utils'
 
 /**
@@ -134,6 +135,11 @@ function matchAgainstPool(
   if (quantityToMatch > 0) {
     pool.quantity -= quantityToMatch
     pool.totalCostGbp -= costBasisGbp
+    // Fully sold: clear floating-point residue rather than leave a phantom holding
+    if (pool.quantity <= QUANTITY_EPSILON) {
+      pool.quantity = 0
+      pool.totalCostGbp = 0
+    }
     pool.averageCostGbp = pool.quantity > 0 ? pool.totalCostGbp / pool.quantity : 0
   }
 

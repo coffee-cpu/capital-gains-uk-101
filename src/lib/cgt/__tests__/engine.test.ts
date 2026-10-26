@@ -1,6 +1,7 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { calculateCGT } from '../engine'
 import { EnrichedTransaction } from '../../../types/transaction'
+import { getTaxYear } from '../../../utils/taxYear'
 
 describe('CGT Engine', () => {
   describe('calculateCGT', () => {
@@ -929,6 +930,88 @@ describe('CGT Engine', () => {
       // Tax year summary should show incomplete disposal
       const summary = result.taxYearSummaries[0]
       expect(summary.incompleteDisposals).toBe(1)
+    })
+  })
+})
+
+describe('CGT Engine - date and quantity edge cases', () => {
+  // GBP trades with no fees, so cost and proceeds are simply quantity × price
+  function trade(
+    id: string,
+    date: string,
+    type: 'BUY' | 'SELL',
+    quantity: number,
+    price: number
+  ): EnrichedTransaction {
+    return {
+      id,
+      source: 'test',
+      symbol: 'VOD',
+      name: 'Vodafone',
+      date,
+      type,
+      quantity,
+      price,
+      currency: 'GBP',
+      total: quantity * price,
+      fee: 0,
+      notes: null,
+      fx_rate: 1,
+      price_gbp: price,
+      value_gbp: quantity * price,
+      fee_gbp: 0,
+      fx_source: 'Native GBP',
+      fx_error: null,
+      tax_year: getTaxYear(date),
+    }
+  }
+
+  describe('30-day rule window', () => {
+    let originalTZ: string | undefined
+    beforeAll(() => {
+      // The bug only appeared outside UTC; force UK time so CI catches it
+      originalTZ = process.env.TZ
+      process.env.TZ = 'Europe/London'
+    })
+    afterAll(() => {
+      process.env.TZ = originalTZ
+    })
+
+    it('matches a rebuy on day 30 when the window crosses the BST change', () => {
+      // 20 Mar + 30 days = 19 Apr; clocks go forward on 31 Mar 2024
+      const result = calculateCGT([
+        trade('buy-0', '2023-01-03', 'BUY', 10, 100),
+        trade('sell-1', '2024-03-20', 'SELL', 10, 50),
+        trade('buy-1', '2024-04-19', 'BUY', 10, 60),
+      ])
+
+      const matching = result.disposals[0].matchings
+      expect(matching.map(m => m.rule)).toEqual(['30_DAY'])
+      expect(matching[0].acquisitions[0].transaction.id).toBe('buy-1')
+    })
+
+    it('still excludes a rebuy on day 31 across the BST change', () => {
+      const result = calculateCGT([
+        trade('buy-0', '2023-01-03', 'BUY', 10, 100),
+        trade('sell-1', '2024-03-20', 'SELL', 10, 50),
+        trade('buy-1', '2024-04-20', 'BUY', 10, 60),
+      ])
+
+      expect(result.disposals[0].matchings.map(m => m.rule)).toEqual(['SECTION_104'])
+    })
+  })
+
+  describe('fractional quantities', () => {
+    it('does not leave floating-point residue as unmatched or pooled shares', () => {
+      const result = calculateCGT([
+        trade('buy-1', '2024-05-01', 'BUY', 0.1, 100),
+        trade('buy-2', '2024-05-02', 'BUY', 0.2, 100),
+        trade('sell-1', '2024-06-03', 'SELL', 0.3, 120),
+      ])
+
+      expect(result.disposals[0].isIncomplete).toBe(false)
+      expect(result.section104Pools.get('VOD')!.quantity).toBe(0)
+      expect(result.section104Pools.get('VOD')!.totalCostGbp).toBe(0)
     })
   })
 })

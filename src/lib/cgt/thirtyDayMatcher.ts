@@ -7,6 +7,7 @@ import {
   groupBySymbol,
   MatchedQuantityTracker,
   calculateCostBasis,
+  addDaysToISODate,
 } from './utils'
 
 /**
@@ -88,9 +89,9 @@ function findBuysWithin30Days(
   sortedTransactions: EnrichedTransaction[],
   tracker: MatchedQuantityTracker
 ): EnrichedTransaction[] {
-  const sellDate = new Date(sell.date)
-  const thirtyDaysLater = new Date(sellDate)
-  thirtyDaysLater.setDate(thirtyDaysLater.getDate() + 30)
+  // ISO dates compare correctly as strings; avoid Date objects so the
+  // window doesn't shift across a DST change in the user's timezone
+  const lastEligibleDate = addDaysToISODate(sell.date, 30)
 
   const matchingBuys: EnrichedTransaction[] = []
 
@@ -99,15 +100,13 @@ function findBuysWithin30Days(
       continue
     }
 
-    const txDate = new Date(tx.date)
-
     // Must be after the sell date (not including the sell date itself)
-    if (txDate <= sellDate) {
+    if (tx.date <= sell.date) {
       continue
     }
 
     // Must be within 30 days
-    if (txDate > thirtyDaysLater) {
+    if (tx.date > lastEligibleDate) {
       break // Since transactions are sorted, we can stop here
     }
 
