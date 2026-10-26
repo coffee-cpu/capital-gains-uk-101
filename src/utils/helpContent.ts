@@ -327,7 +327,7 @@ The allowance has been significantly reduced in recent years.`,
 - Dividends are not subject to CGT - they have their own tax rules
 - You receive a dividend allowance each tax year
 - Dividends above the allowance are taxed at dividend tax rates
-- These rates are different from (and lower than) income tax and CGT rates
+- These rates are lower than the matching income tax rates (but not lower than CGT rates)
 
 **Dividend Allowance** (tax-free threshold):
 
@@ -339,9 +339,9 @@ The allowance has been significantly reduced in recent years.`,
 
 **Dividend Tax Rates** (on amounts above allowance):
 
-- Basic rate taxpayers: 8.75%
-- Higher rate taxpayers: 33.75%
-- Additional rate taxpayers: 39.35%
+- 2026/27 onwards: 10.75% basic, 35.75% higher, 39.35% additional
+- 2022/23 to 2025/26: 8.75% basic, 33.75% higher, 39.35% additional
+- 2016/17 to 2021/22: 7.5% basic, 32.5% higher, 38.1% additional
 
 **Reporting requirements**:
 
@@ -352,20 +352,20 @@ The allowance has been significantly reduced in recent years.`,
 **Important**: This visualizer tracks dividend income per tax year to help you determine if you need to report. It does NOT calculate the actual dividend tax owed - consult HMRC guidance or a tax advisor for that.`,
     example: {
       title: 'Dividend Tax Example',
-      scenario: 'In the 2024/25 tax year, you received £2,500 in dividends from UK companies. You are a basic rate taxpayer.',
+      scenario: 'In the 2026/27 tax year, you received £2,500 in dividends from UK companies. You are a basic rate taxpayer.',
       calculation: [
         'Total dividends received: £2,500',
-        'Less: Dividend allowance (2024/25): £500',
+        'Less: Dividend allowance (2026/27): £500',
         'Taxable dividends: £2,000',
         '',
         'Tax calculation:',
-        '  £2,000 × 8.75% (basic rate) = £175',
+        '  £2,000 × 10.75% (basic rate) = £215',
         '',
         'Reporting requirement:',
         '  Dividends > £500 but < £10,000',
         '  → Must inform HMRC (letter or phone acceptable)'
       ],
-      result: 'You owe £175 in dividend tax and must inform HMRC about these dividends.'
+      result: 'You owe £215 in dividend tax and must inform HMRC about these dividends.'
     },
     references: [
       {

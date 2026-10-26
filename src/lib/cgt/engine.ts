@@ -343,7 +343,8 @@ function getAnnualExemptAmount(taxYear: string): number {
  *
  * Note: Dividend tax is separate from capital gains tax.
  * Dividends above the allowance may be subject to dividend tax rates
- * (8.75% basic, 33.75% higher, 39.35% additional rate).
+ * (from 2026/27: 10.75% basic, 35.75% higher, 39.35% additional;
+ * 2022/23 to 2025/26: 8.75%, 33.75%, 39.35%).
  */
 function getDividendAllowance(taxYear: string): number {
   // Tax year format: "YYYY/YY" e.g., "2023/24"
