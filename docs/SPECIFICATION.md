@@ -229,7 +229,7 @@ All CGT matching rules implemented according to official HMRC guidance:
 - [CG51620 – Section 104 holding (pooled holdings)](https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51620)
 
 Order of application:
-1. **Same-Day Rule** (TCGA92/S105(1)) — match buys/sells on the same calendar day
+1. **Same-Day Rule** (TCGA92/S105(1)) — match buys/sells on the same calendar day; all buys (and all sells) on one day count as a single transaction, so partial matches use the day's average cost
 2. **30-Day Rule** (TCGA92/S106A(5) and (5A)) — match repurchases within 30 days after a disposal
 3. **Section 104 Pool** (TCGA92/S104) — all remaining holdings grouped for average cost
 
