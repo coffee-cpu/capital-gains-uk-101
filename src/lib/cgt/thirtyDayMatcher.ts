@@ -9,6 +9,7 @@ import {
   calculateCostBasis,
   allocateProRata,
   addDaysToISODate,
+  QUANTITY_EPSILON,
 } from './utils'
 
 /**
@@ -134,9 +135,11 @@ function matchSellAgainstBuys(
 
   // Match against buys in chronological order (FIFO by day). Buys on the
   // same day are one acquisition (TCGA92/S105(1)), so a partial match draws
-  // on them pro rata at the day's average cost.
+  // on them pro rata at the day's average cost. The split uses each buy's
+  // remaining quantity, which equals the day's original mix unless an
+  // earlier rule (e.g. a short-sell cover) consumed one buy on its own.
   for (const dayBuys of groupConsecutiveByDate(buys)) {
-    if (remainingSellQuantity <= 0) {
+    if (remainingSellQuantity <= QUANTITY_EPSILON) {
       break
     }
 
@@ -151,7 +154,7 @@ function matchSellAgainstBuys(
     const quantityFromDay = Math.min(remainingSellQuantity, dayAvailable)
 
     for (const { transaction: buy, quantity } of allocateProRata(available, quantityFromDay)) {
-      if (quantity <= 0) continue
+      if (quantity <= QUANTITY_EPSILON) continue
       acquisitions.push({
         transaction: buy,
         quantityMatched: quantity,

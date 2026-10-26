@@ -998,6 +998,28 @@ describe('CGT Engine - HMRC matching regressions', () => {
         expect(sameDay.totalCostBasisGbp / sameDay.quantityMatched).toBeCloseTo(175, 6)
       }
     })
+    it('keeps fractional same-day matches exact with no near-zero rows', () => {
+      const result = calculateCGT([
+        trade('buy-1', '2024-05-01', 'BUY', 0.1, 100),
+        trade('buy-2', '2024-05-01', 'BUY', 0.2, 200),
+        trade('buy-3', '2024-05-01', 'BUY', 0.3, 300),
+        trade('sell-1', '2024-05-01', 'SELL', 0.15, 250),
+        trade('sell-2', '2024-05-01', 'SELL', 0.2, 250),
+      ])
+
+      const sameDay = result.disposals.map(d => d.matchings.find(m => m.rule === 'SAME_DAY')!)
+      expect(sameDay.map(m => m.quantityMatched)).toEqual([0.15, 0.2])
+      for (const matching of sameDay) {
+        matching.acquisitions.forEach(acq => expect(acq.quantityMatched).toBeGreaterThan(1e-9))
+        // Day's average cost: (10 + 40 + 90) / 0.6 = £233.33
+        expect(matching.totalCostBasisGbp / matching.quantityMatched).toBeCloseTo(140 / 0.6, 6)
+      }
+
+      // The unmatched 0.25 shares carry the same average into the pool
+      const pool = result.section104Pools.get('VOD')!
+      expect(pool.quantity).toBeCloseTo(0.25, 9)
+      expect(pool.totalCostGbp / pool.quantity).toBeCloseTo(140 / 0.6, 6)
+    })
   })
 
   describe('30-day rule window', () => {

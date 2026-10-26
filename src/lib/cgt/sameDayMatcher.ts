@@ -8,6 +8,7 @@ import {
   MatchedQuantityTracker,
   calculateCostBasis,
   allocateProRata,
+  QUANTITY_EPSILON,
 } from './utils'
 
 /**
@@ -111,7 +112,7 @@ function matchSameDayTransactions(
         ? buyRemaining[buyIndex]
         : (buyQuantity * sellQuantity) / totalMatched
       buyRemaining[buyIndex] -= quantityMatched
-      if (quantityMatched <= 0) return
+      if (quantityMatched <= QUANTITY_EPSILON) return
 
       acquisitions.push({
         transaction: buy,
