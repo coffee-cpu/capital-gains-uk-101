@@ -47,7 +47,7 @@ This order prevents tax avoidance strategies like "bed and breakfast" where inve
       },
       {
         title: 'HS284 - Shares and Capital Gains Tax',
-        url: 'https://www.gov.uk/government/publications/shares-and-capital-gains-tax-hs284-self-assessment-helpsheet/hs284-shares-and-capital-gains-tax-2024',
+        url: 'https://www.gov.uk/government/publications/shares-and-capital-gains-tax-hs284-self-assessment-helpsheet',
         description: 'HMRC helpsheet for individuals'
       }
     ]
@@ -145,6 +145,11 @@ This order prevents tax avoidance strategies like "bed and breakfast" where inve
         title: 'TCGA 1992 Section 106A',
         url: 'https://www.legislation.gov.uk/ukpga/1992/12/section/106A',
         description: 'Legislation: Identification of relevant securities'
+      },
+      {
+        title: 'HS284 - Shares and Capital Gains Tax',
+        url: 'https://www.gov.uk/government/publications/shares-and-capital-gains-tax-hs284-self-assessment-helpsheet',
+        description: 'HMRC helpsheet with a worked 30-day rule example (Example 2)'
       }
     ]
   },
@@ -203,6 +208,11 @@ This order prevents tax avoidance strategies like "bed and breakfast" where inve
         title: 'TCGA 1992 Section 104',
         url: 'https://www.legislation.gov.uk/ukpga/1992/12/section/104',
         description: 'Legislation: Shares pooling rules'
+      },
+      {
+        title: 'HS284 - Shares and Capital Gains Tax',
+        url: 'https://www.gov.uk/government/publications/shares-and-capital-gains-tax-hs284-self-assessment-helpsheet',
+        description: 'HMRC helpsheet with a worked Section 104 pool example (Example 3)'
       }
     ]
   },
@@ -485,7 +495,7 @@ You are still required to report the full disposal to HMRC, including the unmatc
     references: [
       {
         title: 'HS284 - Shares and Capital Gains Tax',
-        url: 'https://www.gov.uk/government/publications/shares-and-capital-gains-tax-hs284-self-assessment-helpsheet/hs284-shares-and-capital-gains-tax-2024',
+        url: 'https://www.gov.uk/government/publications/shares-and-capital-gains-tax-hs284-self-assessment-helpsheet',
         description: 'HMRC helpsheet explaining share disposal reporting requirements'
       },
       {
