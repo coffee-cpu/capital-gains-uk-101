@@ -1,0 +1,4 @@
+date,type,symbol,currency,name,quantity,price,total,fee,notes
+2023-06-01,BUY,SAMEDAY,GBP,Same Day plc,10,100.00,1000.00,0,"First buy of the day"
+2023-06-01,BUY,SAMEDAY,GBP,Same Day plc,10,200.00,2000.00,0,"Second buy of the day"
+2023-06-01,SELL,SAMEDAY,GBP,Same Day plc,10,150.00,1500.00,0,"Sold at the day's average cost"
