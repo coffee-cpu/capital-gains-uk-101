@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { calculateCostBasis, calculateNetProceeds, getFeePerUnit } from '../utils'
+import { addDaysToISODate, calculateCostBasis, calculateNetProceeds, getFeePerUnit } from '../utils'
 import { EnrichedTransaction, TransactionType } from '../../../types/transaction'
 
 function makeTx(overrides: Partial<EnrichedTransaction>): EnrichedTransaction {
@@ -63,5 +63,14 @@ describe('CGT utils fee apportionment', () => {
     const buy = makeTx({ quantity: 0, fee_gbp: 5 })
 
     expect(getFeePerUnit(buy)).toBe(0)
+  })
+})
+
+describe('addDaysToISODate', () => {
+  it('adds days across month, year and DST boundaries', () => {
+    expect(addDaysToISODate('2024-03-20', 30)).toBe('2024-04-19')
+    expect(addDaysToISODate('2024-10-10', 30)).toBe('2024-11-09')
+    expect(addDaysToISODate('2023-12-15', 30)).toBe('2024-01-14')
+    expect(addDaysToISODate('2024-02-15', 30)).toBe('2024-03-16') // leap year
   })
 })
