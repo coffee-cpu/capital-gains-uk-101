@@ -66,6 +66,8 @@ This order prevents tax avoidance strategies like "bed and breakfast" where inve
 - Those 50 shares are matched first using the same-day rule
 - The purchase price of those 50 shares determines your cost basis
 
+**Several trades on one day**: All shares bought on the same day count as one purchase, and all shares sold that day count as one sale. If you bought at different prices during the day, the cost used is the day's **average** price, not the earliest or cheapest purchase. Any shares left over carry that same average cost into the 30-day rule or the Section 104 pool.
+
 **Important**: The matching happens regardless of the order of transactions within the day. Even if the sale happened before the purchase in the same day, they still match.`,
     example: {
       title: 'Same-Day Matching Example',
@@ -106,13 +108,13 @@ This order prevents tax avoidance strategies like "bed and breakfast" where inve
 
 **How it works**:
 - If you sell shares on June 15, 2024
-- And you buy shares of the same company between June 16-July 14, 2024 (next 30 days)
+- And you buy shares of the same company between June 16-July 15, 2024 (next 30 days)
 - Those purchases are matched against your sale
 - This happens even if you already owned other shares
 
 **Important**: The 30-day window starts the day AFTER the sale. If you sell on June 15, the window runs from June 16 to July 15 (inclusive).
 
-**Matching order within 30 days**: Earliest acquisitions are matched first (FIFO within the 30-day window).`,
+**Matching order within 30 days**: Earliest acquisitions are matched first (FIFO within the 30-day window). Purchases made on the same day count as one purchase at their average price.`,
     example: {
       title: '30-Day Rule Example',
       scenario: 'On June 1, you sold 100 shares at £200 each. On June 20 (19 days later), you bought back 50 shares at £180 each. You also have 200 shares in your Section 104 pool.',

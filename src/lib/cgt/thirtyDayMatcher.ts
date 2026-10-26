@@ -7,7 +7,9 @@ import {
   groupBySymbol,
   MatchedQuantityTracker,
   calculateCostBasis,
+  allocateProRata,
   addDaysToISODate,
+  QUANTITY_EPSILON,
 } from './utils'
 
 /**
@@ -131,28 +133,36 @@ function matchSellAgainstBuys(
   let remainingSellQuantity = sellQuantity
   const acquisitions: MatchingResult['acquisitions'] = []
 
-  // Match against buys in chronological order (FIFO)
-  for (const buy of buys) {
-    if (remainingSellQuantity <= 0) {
+  // Match against buys in chronological order (FIFO by day). Buys on the
+  // same day are one acquisition (TCGA92/S105(1)), so a partial match draws
+  // on them pro rata at the day's average cost. The split uses each buy's
+  // remaining quantity, which equals the day's original mix unless an
+  // earlier rule (e.g. a short-sell cover) consumed one buy on its own.
+  for (const dayBuys of groupConsecutiveByDate(buys)) {
+    if (remainingSellQuantity <= QUANTITY_EPSILON) {
       break
     }
 
-    const availableBuyQuantity = tracker.getRemaining(buy)
-    if (availableBuyQuantity <= 0) {
+    const available = dayBuys
+      .map(transaction => ({ transaction, available: tracker.getRemaining(transaction) }))
+      .filter(item => item.available > 0)
+    const dayAvailable = available.reduce((sum, item) => sum + item.available, 0)
+    if (dayAvailable <= QUANTITY_EPSILON) {
       continue
     }
 
-    // Match as much as possible from this buy
-    const quantityToMatch = Math.min(remainingSellQuantity, availableBuyQuantity)
-    const costBasisGbp = calculateCostBasis(buy, quantityToMatch)
+    const quantityFromDay = Math.min(remainingSellQuantity, dayAvailable)
 
-    acquisitions.push({
-      transaction: buy,
-      quantityMatched: quantityToMatch,
-      costBasisGbp,
-    })
+    for (const { transaction: buy, quantity } of allocateProRata(available, quantityFromDay)) {
+      if (quantity <= QUANTITY_EPSILON) continue
+      acquisitions.push({
+        transaction: buy,
+        quantityMatched: quantity,
+        costBasisGbp: calculateCostBasis(buy, quantity),
+      })
+    }
 
-    remainingSellQuantity -= quantityToMatch
+    remainingSellQuantity -= quantityFromDay
   }
 
   // Return matching result if we matched any quantity
@@ -170,6 +180,22 @@ function matchSellAgainstBuys(
   }
 
   return null
+}
+
+/**
+ * Split date-sorted transactions into runs that share the same date
+ */
+function groupConsecutiveByDate(sorted: EnrichedTransaction[]): EnrichedTransaction[][] {
+  const groups: EnrichedTransaction[][] = []
+  for (const tx of sorted) {
+    const current = groups[groups.length - 1]
+    if (current && current[0].date === tx.date) {
+      current.push(tx)
+    } else {
+      groups.push([tx])
+    }
+  }
+  return groups
 }
 
 /**

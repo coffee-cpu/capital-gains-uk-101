@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { addDaysToISODate, calculateCostBasis, calculateNetProceeds, getFeePerUnit } from '../utils'
+import { addDaysToISODate, allocateProRata, calculateCostBasis, calculateNetProceeds, getFeePerUnit } from '../utils'
 import { EnrichedTransaction, TransactionType } from '../../../types/transaction'
 
 function makeTx(overrides: Partial<EnrichedTransaction>): EnrichedTransaction {
@@ -72,5 +72,30 @@ describe('addDaysToISODate', () => {
     expect(addDaysToISODate('2024-10-10', 30)).toBe('2024-11-09')
     expect(addDaysToISODate('2023-12-15', 30)).toBe('2024-01-14')
     expect(addDaysToISODate('2024-02-15', 30)).toBe('2024-03-16') // leap year
+  })
+})
+
+describe('allocateProRata', () => {
+  const a = makeTx({ id: 'a' })
+  const b = makeTx({ id: 'b' })
+  const c = makeTx({ id: 'c' })
+
+  it('returns every available quantity when asked for at least the total', () => {
+    const result = allocateProRata([{ transaction: a, available: 10 }, { transaction: b, available: 30 }], 50)
+    expect(result.map(r => r.quantity)).toEqual([10, 30])
+  })
+
+  it('splits a partial quantity in proportion to availability', () => {
+    const result = allocateProRata([{ transaction: a, available: 10 }, { transaction: b, available: 30 }], 20)
+    expect(result.map(r => r.quantity)).toEqual([5, 15])
+  })
+
+  it('gives the last item the remainder so the parts sum exactly', () => {
+    const result = allocateProRata(
+      [{ transaction: a, available: 0.1 }, { transaction: b, available: 0.2 }, { transaction: c, available: 0.3 }],
+      0.35
+    )
+    expect(result.reduce((sum, r) => sum + r.quantity, 0)).toBe(0.35)
+    result.forEach(r => expect(r.quantity).toBeGreaterThanOrEqual(0))
   })
 })

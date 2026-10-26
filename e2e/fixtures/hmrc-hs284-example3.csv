@@ -1,0 +1,5 @@
+date,type,symbol,currency,name,quantity,price,total,fee,notes
+2016-04-15,BUY,LOBSTER,GBP,Lobster plc,1000,4.00,4000.00,150.00,"HS284 Example 3: 1,000 shares at 400p plus £150 costs"
+2019-09-16,BUY,LOBSTER,GBP,Lobster plc,500,4.10,2050.00,80.00,"HS284 Example 3: 500 shares at 410p plus £80 costs"
+2024-05-15,SELL,LOBSTER,GBP,Lobster plc,700,4.80,3360.00,100.00,"HS284 Example 3: 700 shares for £3,360 less £100 costs"
+2025-02-03,SELL,LOBSTER,GBP,Lobster plc,400,5.20,2080.00,105.00,"HS284 Example 3: 400 shares for £2,080 less £105 costs"

@@ -7,6 +7,8 @@ import {
   groupBySymbol,
   MatchedQuantityTracker,
   calculateCostBasis,
+  allocateProRata,
+  QUANTITY_EPSILON,
 } from './utils'
 
 /**
@@ -66,76 +68,67 @@ export function applySameDayRule(
 
 /**
  * Match sells against buys on the same day for a single symbol
+ *
+ * Per TCGA92/S105(1) the day's acquisitions are one acquisition and the day's
+ * disposals are one disposal. So when quantities differ, every buy and every
+ * sell is matched pro rata (not first-in first-out): each sell gets the day's
+ * average cost, and any unmatched buys carry the day's average cost into the
+ * 30-day and Section 104 rules.
  */
 function matchSameDayTransactions(
   sells: EnrichedTransaction[],
   buys: EnrichedTransaction[],
   tracker: MatchedQuantityTracker
 ): MatchingResult[] {
-  const matchings: MatchingResult[] = []
+  // Quantities still available after prior rules (e.g. short sells)
+  const openSells = sells
+    .map(transaction => ({ transaction, available: tracker.getRemaining(transaction) }))
+    .filter(item => item.available > 0)
+  const openBuys = buys
+    .map(transaction => ({ transaction, available: tracker.getRemaining(transaction) }))
+    .filter(item => item.available > 0)
 
-  // Track remaining quantities for each buy, accounting for prior matchings
-  const buyQuantities = new Map<string, number>()
-  buys.forEach(buy => {
-    const remaining = tracker.getRemaining(buy)
-    if (remaining > 0) {
-      buyQuantities.set(buy.id, remaining)
-    }
-  })
+  const totalSell = openSells.reduce((sum, item) => sum + item.available, 0)
+  const totalBuy = openBuys.reduce((sum, item) => sum + item.available, 0)
+  const totalMatched = Math.min(totalSell, totalBuy)
 
-  // Process each sell, accounting for prior matchings
-  for (const sell of sells) {
-    const remainingSellQuantity = tracker.getRemaining(sell)
+  if (totalMatched <= 0) {
+    return [] // Everything already matched by prior rules
+  }
 
-    if (remainingSellQuantity <= 0) {
-      continue // Already fully matched by prior rules
-    }
+  const sellAllocations = allocateProRata(openSells, totalMatched)
+  const buyAllocations = allocateProRata(openBuys, totalMatched)
 
-    let currentRemaining = remainingSellQuantity
+  // Each sell draws the same fraction from every buy; the last sell takes
+  // what is left of each buy so the buy totals stay exact
+  const buyRemaining = buyAllocations.map(allocation => allocation.quantity)
+
+  return sellAllocations.map(({ transaction: sell, quantity: sellQuantity }, sellIndex): MatchingResult => {
+    const isLastSell = sellIndex === sellAllocations.length - 1
     const acquisitions: MatchingResult['acquisitions'] = []
 
-    // Match against available buys (FIFO order within the day)
-    for (const buy of buys) {
-      if (currentRemaining <= 0) {
-        break
-      }
-
-      const availableBuyQuantity = buyQuantities.get(buy.id) || 0
-      if (availableBuyQuantity <= 0) {
-        continue
-      }
-
-      // Match as much as possible from this buy
-      const quantityToMatch = Math.min(currentRemaining, availableBuyQuantity)
-      const costBasisGbp = calculateCostBasis(buy, quantityToMatch)
+    buyAllocations.forEach(({ transaction: buy, quantity: buyQuantity }, buyIndex) => {
+      const quantityMatched = isLastSell
+        ? buyRemaining[buyIndex]
+        : (buyQuantity * sellQuantity) / totalMatched
+      buyRemaining[buyIndex] -= quantityMatched
+      if (quantityMatched <= QUANTITY_EPSILON) return
 
       acquisitions.push({
         transaction: buy,
-        quantityMatched: quantityToMatch,
-        costBasisGbp,
-      })
-
-      // Update remaining quantities
-      currentRemaining -= quantityToMatch
-      buyQuantities.set(buy.id, availableBuyQuantity - quantityToMatch)
-    }
-
-    // If we matched any quantity, create a matching result
-    if (acquisitions.length > 0) {
-      const quantityMatched = acquisitions.reduce((sum, acq) => sum + acq.quantityMatched, 0)
-      const totalCostBasisGbp = acquisitions.reduce((sum, acq) => sum + acq.costBasisGbp, 0)
-
-      matchings.push({
-        disposal: sell,
-        acquisitions,
-        rule: 'SAME_DAY',
         quantityMatched,
-        totalCostBasisGbp,
+        costBasisGbp: calculateCostBasis(buy, quantityMatched),
       })
-    }
-  }
+    })
 
-  return matchings
+    return {
+      disposal: sell,
+      acquisitions,
+      rule: 'SAME_DAY',
+      quantityMatched: sellQuantity,
+      totalCostBasisGbp: acquisitions.reduce((sum, acq) => sum + acq.costBasisGbp, 0),
+    }
+  })
 }
 
 /**

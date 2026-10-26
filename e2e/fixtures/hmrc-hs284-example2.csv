@@ -1,0 +1,4 @@
+date,type,symbol,currency,name,quantity,price,total,fee,notes
+2015-03-10,BUY,MESOPOTAMIA,GBP,Mesopotamia plc,9500,1.00,9500.00,0,"Section 104 holding of 9,500 shares (cost assumed; HS284 does not give it)"
+2025-08-30,SELL,MESOPOTAMIA,GBP,Mesopotamia plc,4000,1.50,6000.00,0,"HS284 Example 2: 4,000 shares sold for £6,000"
+2025-09-11,BUY,MESOPOTAMIA,GBP,Mesopotamia plc,500,1.70,850.00,0,"HS284 Example 2: 500 shares bought back for £850"
