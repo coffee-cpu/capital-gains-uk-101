@@ -934,7 +934,7 @@ describe('CGT Engine', () => {
   })
 })
 
-describe('CGT Engine - date and quantity edge cases', () => {
+describe('CGT Engine - HMRC matching regressions', () => {
   // GBP trades with no fees, so cost and proceeds are simply quantity × price
   function trade(
     id: string,
@@ -965,6 +965,40 @@ describe('CGT Engine - date and quantity edge cases', () => {
       tax_year: getTaxYear(date),
     }
   }
+
+  describe('same-day rule treats the day as one acquisition (TCGA92/S105(1))', () => {
+    it('matches a partial same-day sell at the average cost of the day\'s buys', () => {
+      const result = calculateCGT([
+        trade('buy-1', '2024-05-01', 'BUY', 10, 100),
+        trade('buy-2', '2024-05-01', 'BUY', 10, 200),
+        trade('sell-1', '2024-05-01', 'SELL', 10, 150),
+      ])
+
+      // Day's average cost is £150, so selling at £150 is no gain (FIFO gave £500)
+      expect(result.disposals[0].allowableCostsGbp).toBeCloseTo(1500, 6)
+      expect(result.disposals[0].gainOrLossGbp).toBeCloseTo(0, 6)
+
+      // The 10 unmatched shares enter the pool at the same £150 average
+      const pool = result.section104Pools.get('VOD')!
+      expect(pool.quantity).toBeCloseTo(10, 9)
+      expect(pool.totalCostGbp).toBeCloseTo(1500, 6)
+    })
+
+    it('gives every same-day sell the same average cost', () => {
+      const result = calculateCGT([
+        trade('buy-1', '2024-05-01', 'BUY', 30, 100),
+        trade('buy-2', '2024-05-01', 'BUY', 90, 200),
+        trade('sell-1', '2024-05-01', 'SELL', 100, 250),
+        trade('sell-2', '2024-05-01', 'SELL', 50, 250),
+      ])
+
+      // 120 shares bought at an average of £175; each sell is 80% matched
+      for (const disposal of result.disposals) {
+        const sameDay = disposal.matchings.find(m => m.rule === 'SAME_DAY')!
+        expect(sameDay.totalCostBasisGbp / sameDay.quantityMatched).toBeCloseTo(175, 6)
+      }
+    })
+  })
 
   describe('30-day rule window', () => {
     let originalTZ: string | undefined
@@ -998,6 +1032,18 @@ describe('CGT Engine - date and quantity edge cases', () => {
       ])
 
       expect(result.disposals[0].matchings.map(m => m.rule)).toEqual(['SECTION_104'])
+    })
+
+    it('matches same-day rebuys within the window at their average cost', () => {
+      const result = calculateCGT([
+        trade('sell-1', '2024-06-03', 'SELL', 10, 150),
+        trade('buy-1', '2024-06-10', 'BUY', 10, 100),
+        trade('buy-2', '2024-06-10', 'BUY', 10, 200),
+      ])
+
+      const matching = result.disposals[0].matchings[0]
+      expect(matching.rule).toBe('30_DAY')
+      expect(matching.totalCostBasisGbp).toBeCloseTo(1500, 6)
     })
   })
 

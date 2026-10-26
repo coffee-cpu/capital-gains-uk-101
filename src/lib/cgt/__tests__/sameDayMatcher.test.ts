@@ -336,13 +336,13 @@ describe('Same-Day Matcher', () => {
       // Should have 2 matchings (one per SELL)
       expect(matchings).toHaveLength(2)
 
-      // First SELL should match 100 shares (30 from buy-1 + 70 from buy-2)
+      // The day's sells are one disposal (S105(1)): 120 of 150 shares match,
+      // so each sell is matched pro rata at 80%
       const firstSellMatching = matchings.find(m => m.disposal.id === 'sell-1')!
-      expect(firstSellMatching.quantityMatched).toBe(100)
+      expect(firstSellMatching.quantityMatched).toBe(80)
 
-      // Second SELL should only match 20 shares (remaining from buy-2: 90 - 70 = 20)
       const secondSellMatching = matchings.find(m => m.disposal.id === 'sell-2')!
-      expect(secondSellMatching.quantityMatched).toBe(20)
+      expect(secondSellMatching.quantityMatched).toBe(40)
 
       // Total matched should equal total BUY shares (120), not exceed it
       const totalMatched = matchings.reduce((sum, m) => sum + m.quantityMatched, 0)

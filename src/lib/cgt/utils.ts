@@ -4,9 +4,9 @@ import { MatchingResult } from '../../types/cgt'
 /**
  * Quantities at or below this are treated as zero.
  *
- * Fractional shares (e.g. 0.1 + 0.2 - 0.3) leave floating-point residue
- * like 5.5e-17. Without a tolerance that residue shows up as phantom
- * unmatched quantities and pool balances.
+ * Fractional shares (e.g. 0.1 + 0.2 - 0.3) and proportional same-day
+ * allocation leave floating-point residue like 5.5e-17. Without a tolerance
+ * that residue shows up as phantom unmatched quantities and pool balances.
  * Well below the smallest real unit we import (1 satoshi = 1e-8).
  */
 export const QUANTITY_EPSILON = 1e-9
@@ -239,6 +239,39 @@ export class MatchedQuantityTracker {
   private increment(id: string, quantity: number): void {
     this.matched.set(id, (this.matched.get(id) ?? 0) + quantity)
   }
+}
+
+/**
+ * Split a quantity across transactions in proportion to their available
+ * quantities.
+ *
+ * TCGA92/S105(1) treats all acquisitions (or disposals) of the same shares on
+ * one day as a single transaction, so a partial match must draw on each of
+ * them pro rata — giving the day's average cost — rather than first-in
+ * first-out. The last item takes the remainder so the parts sum exactly to
+ * the matched quantity.
+ *
+ * @param items Transactions with their available (unmatched) quantities
+ * @param quantity Total quantity to allocate (capped at the total available)
+ * @returns Allocated quantity per transaction, in input order
+ */
+export function allocateProRata(
+  items: { transaction: EnrichedTransaction; available: number }[],
+  quantity: number
+): { transaction: EnrichedTransaction; quantity: number }[] {
+  const totalAvailable = items.reduce((sum, item) => sum + item.available, 0)
+  if (quantity >= totalAvailable) {
+    return items.map(item => ({ transaction: item.transaction, quantity: item.available }))
+  }
+
+  let allocated = 0
+  return items.map((item, index) => {
+    const share = index === items.length - 1
+      ? Math.max(0, quantity - allocated)
+      : (item.available * quantity) / totalAvailable
+    allocated += share
+    return { transaction: item.transaction, quantity: share }
+  })
 }
 
 /**
