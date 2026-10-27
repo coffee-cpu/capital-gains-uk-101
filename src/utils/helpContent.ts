@@ -352,20 +352,20 @@ The allowance has been significantly reduced in recent years.`,
 **Important**: This visualizer tracks dividend income per tax year to help you determine if you need to report. It does NOT calculate the actual dividend tax owed - consult HMRC guidance or a tax advisor for that.`,
     example: {
       title: 'Dividend Tax Example',
-      scenario: 'In the 2026/27 tax year, you received £2,500 in dividends from UK companies. You are a basic rate taxpayer.',
+      scenario: 'In the 2025/26 tax year, you received £2,500 in dividends from UK companies. You are a basic rate taxpayer.',
       calculation: [
         'Total dividends received: £2,500',
-        'Less: Dividend allowance (2026/27): £500',
+        'Less: Dividend allowance (2025/26): £500',
         'Taxable dividends: £2,000',
         '',
         'Tax calculation:',
-        '  £2,000 × 10.75% (basic rate) = £215',
+        '  £2,000 × 8.75% (basic rate) = £175',
         '',
         'Reporting requirement:',
         '  Dividends > £500 but < £10,000',
         '  → Must inform HMRC (letter or phone acceptable)'
       ],
-      result: 'You owe £215 in dividend tax and must inform HMRC about these dividends.'
+      result: 'You owe £175 in dividend tax and must inform HMRC about these dividends. From 2026/27 the basic rate rises to 10.75%, so the same dividends would cost £215.'
     },
     references: [
       {
