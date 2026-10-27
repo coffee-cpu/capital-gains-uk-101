@@ -1,4 +1,4 @@
-import { db } from '../db'
+import { getSplitDataCache } from '../cache'
 
 /**
  * A parsed stock split record with typed ratio fields.
@@ -54,7 +54,7 @@ const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000
  * Fetches stock split data from the coffee-cpu/stock-splits-data repo via jsDelivr CDN.
  *
  * - Maps CDN ratioNew/ratioOld fields to internal ratioTo/ratioFrom
- * - Uses IndexedDB (split_data_cache table) for caching with 7-day TTL
+ * - Caches responses (IndexedDB in the browser, see `cache.ts`) with a 7-day TTL
  * - On network failure, falls back to stale cache if available
  * - 404s (year file doesn't exist) are handled silently
  */
@@ -91,7 +91,7 @@ export class JsDelivrSplitSource implements SplitDataSource {
       const text = await response.text()
 
       // Cache the raw response
-      await db.split_data_cache.put({
+      await getSplitDataCache().put({
         year,
         data: text,
         fetchedAt: new Date().toISOString(),
@@ -109,7 +109,7 @@ export class JsDelivrSplitSource implements SplitDataSource {
 
   private async getCached(year: number) {
     try {
-      return await db.split_data_cache.get(year)
+      return await getSplitDataCache().get(year)
     } catch {
       return undefined
     }

@@ -1,13 +1,10 @@
 import { useState } from 'react'
-import { parseCSV, preprocessCSVFile } from '../lib/csvParser'
-import { detectBroker } from '../lib/brokerDetector'
-import { getParser } from '../lib/parsers/parserRegistry'
-import { GenericTransaction } from '../types/transaction'
+import { createFileId, importCSVText } from '../lib/import'
+import { readFileAsText } from '../lib/parsers/fileUtils'
 import { useTransactionStore } from '../stores/transactionStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { db } from '../lib/db'
 import { processTransactionsFromDB } from '../lib/transactionProcessor'
-import { normalizeTransactionSymbols } from '../utils/symbolNormalization'
 import { BrokerFormatsList } from './BrokerFormatsList'
 import { getEnabledBrokerDefinitions } from '../config/brokers'
 
@@ -30,14 +27,8 @@ export function CSVImporter() {
 
   const processFile = async (file: File): Promise<{ success: boolean; message: string; count?: number }> => {
     try {
-      // Preprocess the file if needed (handles IB multi-section format, Coinbase metadata, etc.)
-      const preprocessedFile = await preprocessCSVFile(file)
-
-      // Parse CSV using the standard parser
-      const rawRows = await parseCSV(preprocessedFile)
-
       // Generate unique file identifier
-      const fileId = `${file.name.replace(/[^a-z0-9]/gi, '_')}-${file.size}`
+      const fileId = createFileId(file.name, file.size)
 
       // Check for duplicates
       const existingWithFileId = await db.transactions
@@ -53,37 +44,19 @@ export function CSVImporter() {
         }
       }
 
-      // Try to detect broker format
-      const detection = detectBroker(rawRows)
-
-      if (detection.confidence < 0.8) {
-        throw new Error(`Could not detect CSV format (confidence: ${(detection.confidence * 100).toFixed(0)}%). Please check your CSV file format.`)
-      }
-
-      // Get parser for detected broker
-      const parser = getParser(detection.broker)
-      if (!parser) {
-        throw new Error(`Unsupported broker: ${detection.broker}`)
-      }
-
-      let transactions: GenericTransaction[] = parser(rawRows, fileId)
-
-      if (transactions.length === 0) {
-        throw new Error('No valid transactions found in CSV')
-      }
-
-      // Apply symbol normalization (e.g., FB -> META)
-      transactions = normalizeTransactionSymbols(transactions)
+      // Preprocess, parse, detect broker format and normalize to GenericTransaction
+      const text = await readFileAsText(file)
+      const { broker, transactions: parsed } = importCSVText(text, fileId)
 
       // Add import timestamp
       const importedAt = new Date().toISOString()
-      transactions = transactions.map(tx => ({ ...tx, imported_at: importedAt }))
+      const transactions = parsed.map(tx => ({ ...tx, imported_at: importedAt }))
 
       // Store file metadata
       await db.imported_files.add({
         fileId,
         filename: file.name,
-        broker: detection.broker,
+        broker,
         transactionCount: transactions.length,
         importedAt
       })
@@ -92,7 +65,7 @@ export function CSVImporter() {
 
       return {
         success: true,
-        message: `"${file.name}": ${transactions.length} transactions from ${detection.broker}`,
+        message: `"${file.name}": ${transactions.length} transactions from ${broker}`,
         count: transactions.length
       }
     } catch (err) {

@@ -1,5 +1,5 @@
 import { FXSource } from '../../../types/fxSource'
-import { db } from '../../db'
+import { getFxRateCache } from '../../cache'
 import { BaseFXProvider } from './base'
 
 /**
@@ -317,7 +317,7 @@ export class HMRCYearlyProvider extends BaseFXProvider {
   }
 
   /**
-   * Cache yearly rates in IndexedDB
+   * Cache yearly rates
    */
   private async cacheYearlyRates(year: string, rates: Record<string, number>): Promise<void> {
     const entries = Object.entries(rates).map(([currency, rate]) => ({
@@ -329,6 +329,6 @@ export class HMRCYearlyProvider extends BaseFXProvider {
       fxSource: this.fxSource,
     }))
 
-    await db.fx_rates.bulkPut(entries)
+    await getFxRateCache().bulkPut(entries)
   }
 }
