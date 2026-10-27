@@ -128,7 +128,7 @@ The `enrichTransactions()` function (in `index.ts`) uses the `EnrichmentEngine` 
 
 #### 4. State Management
 - **Runtime state**: Zustand store (`src/stores/transactionStore.ts`) holds currently loaded transactions and selected tax year
-- **Persistence**: Dexie database (`src/lib/db.ts`, schema v4) with five tables:
+- **Persistence**: Dexie database (`src/lib/db.ts`, schema v5) with five tables:
   - `transactions`: Indexed by id, source, symbol, date, type
   - `fx_rates`: Primary key `id` (format `SOURCE-dateKey-currency`, e.g. `HMRC_MONTHLY-2025-05-USD`)
   - `imported_files`: Metadata for duplicate-import detection
