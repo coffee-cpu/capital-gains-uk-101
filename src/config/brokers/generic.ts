@@ -21,7 +21,7 @@ export const genericDefinition: BrokerDefinition = {
       'Required for STOCK_SPLIT: split_ratio (e.g., "10:1", "2:1", "1:10" for reverse splits)',
       'Optional: name, total, fee, notes',
       'Transaction types: BUY, SELL, DIVIDEND, FEE, INTEREST, TRANSFER, TAX, TAX_ON_DIVIDEND, TAX_ON_INTEREST, STOCK_SPLIT',
-      'TAX_ON_DIVIDEND / TAX_ON_INTEREST: total is the tax withheld at source (e.g. US withholding on a dividend); positive or negative are both read as tax withheld',
+      'TAX_ON_DIVIDEND / TAX_ON_INTEREST: tax withheld at source (e.g. US withholding on a dividend). Use a negative total for tax withheld and a positive one for a refund; a file with no negative tax rows has every amount read as tax withheld',
     ],
     info: 'A simplified format that matches the data model used internally by this tool. Use this if your broker isn\'t supported yet, or to manually create test data. Stock Splits: Use STOCK_SPLIT to record corporate actions like 10:1 splits. The tool will automatically adjust your cost basis per HMRC TCGA92/S127 rules.',
   },

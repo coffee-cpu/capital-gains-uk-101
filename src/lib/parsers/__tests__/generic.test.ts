@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest'
+import Papa from 'papaparse'
 import { normalizeGenericTransactions } from '../generic'
+import { buildTransactionsCSV } from '../../../utils/csvExport'
 import { TransactionType } from '../../../types/transaction'
 
 describe('Generic CSV Parser', () => {
@@ -83,7 +85,7 @@ describe('Generic CSV Parser', () => {
       expect(result[0].notes).toBe('Quarterly dividend')
     })
 
-    it('should read TAX_ON_DIVIDEND/TAX_ON_INTEREST totals as tax withheld whatever the sign', () => {
+    describe('withholding-tax rows (TAX_ON_DIVIDEND / TAX_ON_INTEREST)', () => {
       const taxRow = (type: string, total: string) => ({
         date: '2024-09-29',
         type,
@@ -91,16 +93,44 @@ describe('Generic CSV Parser', () => {
         currency: 'USD',
         total,
       })
-      const rows = [
-        taxRow('TAX_ON_DIVIDEND', '3.75'),    // positive: older exports, hand-entered
-        taxRow('TAX_ON_DIVIDEND', '-3.75'),   // negative: current exports
-        taxRow('TAX_ON_INTEREST', '0.50'),
-      ]
 
-      const result = normalizeGenericTransactions(rows, 'test-file')
+      it('reads every amount as tax withheld in a file with no negative tax rows', () => {
+        // Older exports stored withholding as positive; hand-entered tax often is too
+        const rows = [
+          taxRow('TAX_ON_DIVIDEND', '3.75'),
+          taxRow('TAX_ON_INTEREST', '0.50'),
+        ]
 
-      // Stored with the engine's convention: negative = tax withheld
-      expect(result.map(tx => tx.total)).toEqual([-3.75, -3.75, -0.5])
+        const result = normalizeGenericTransactions(rows, 'test-file')
+
+        expect(result.map(tx => tx.total)).toEqual([-3.75, -0.5])
+      })
+
+      it('keeps signs as written once the file uses the signed convention', () => {
+        const rows = [
+          taxRow('TAX_ON_DIVIDEND', '-3.75'),  // tax withheld
+          taxRow('TAX_ON_DIVIDEND', '3.75'),   // refund of that tax
+        ]
+
+        const result = normalizeGenericTransactions(rows, 'test-file')
+
+        expect(result.map(tx => tx.total)).toEqual([-3.75, 3.75])
+      })
+
+      it('round-trips a refund through export and re-import', () => {
+        const original = normalizeGenericTransactions([
+          taxRow('TAX_ON_DIVIDEND', '-3.75'),
+          taxRow('TAX_ON_DIVIDEND', '3.75'),
+        ], 'test-file')
+
+        const exported = Papa.parse<Record<string, string>>(buildTransactionsCSV(original), {
+          header: true,
+          skipEmptyLines: true,
+        }).data
+        const reimported = normalizeGenericTransactions(exported, 'reimport')
+
+        expect(reimported.map(tx => tx.total)).toEqual([-3.75, 3.75])
+      })
     })
 
     it('should normalize a STOCK_SPLIT transaction with split_ratio', () => {

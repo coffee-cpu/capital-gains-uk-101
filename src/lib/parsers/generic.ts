@@ -36,7 +36,33 @@ export function normalizeGenericTransactions(
     }
   }
 
-  return transactions
+  return normalizeWithholdingSigns(transactions)
+}
+
+const isWithholdingTax = (tx: GenericTransaction): boolean =>
+  tx.type === TransactionType.TAX_ON_DIVIDEND || tx.type === TransactionType.TAX_ON_INTEREST
+
+/**
+ * Bring withholding-tax rows to the signed convention (negative = tax
+ * withheld, positive = refunded).
+ *
+ * Files exported by current versions already use it, so a negative tax row
+ * means the file's signs can be trusted as written (refunds stay positive).
+ * A file with no negative tax rows is an older export, which stored
+ * withholding as a positive amount, or hand-entered tax; there every amount
+ * is read as tax withheld.
+ */
+function normalizeWithholdingSigns(transactions: GenericTransaction[]): GenericTransaction[] {
+  const usesSignedConvention = transactions.some(
+    tx => isWithholdingTax(tx) && tx.total !== null && tx.total < 0
+  )
+  if (usesSignedConvention) {
+    return transactions
+  }
+
+  return transactions.map(tx =>
+    isWithholdingTax(tx) && tx.total !== null ? { ...tx, total: -Math.abs(tx.total) } : tx
+  )
 }
 
 /**
@@ -67,13 +93,7 @@ function normalizeGenericRow(
   const name = row['name']?.trim() || null
   const quantity = row['quantity'] ? (isNaN(parseFloat(row['quantity'])) ? null : parseFloat(row['quantity'])) : null
   const price = row['price'] ? (isNaN(parseFloat(row['price'])) ? null : parseFloat(row['price'])) : null
-  const parsedTotal = row['total'] ? (isNaN(parseFloat(row['total'])) ? null : parseFloat(row['total'])) : null
-  // Withholding-tax rows are signed cash movements (negative = tax withheld).
-  // Generic CSVs can't be trusted on sign: files exported before that
-  // convention hold positive amounts, and hand-entered tax is often positive.
-  // Treat any amount as tax withheld; refunds aren't expressible here.
-  const isWithholdingTax = type === TransactionType.TAX_ON_DIVIDEND || type === TransactionType.TAX_ON_INTEREST
-  const total = isWithholdingTax && parsedTotal !== null ? -Math.abs(parsedTotal) : parsedTotal
+  const total = row['total'] ? (isNaN(parseFloat(row['total'])) ? null : parseFloat(row['total'])) : null
   const fee = row['fee'] ? (isNaN(parseFloat(row['fee'])) ? null : parseFloat(row['fee'])) : null
   const notes = row['notes']?.trim() || null
   const ratio = row['split_ratio']?.trim() || null

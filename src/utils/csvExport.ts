@@ -9,6 +9,26 @@ export function exportTransactionsToCSV(
   transactions: GenericTransaction[],
   filename: string = 'transactions-export.csv'
 ): void {
+  const csvContent = buildTransactionsCSV(transactions)
+
+  // Create blob and trigger download
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+  const link = document.createElement('a')
+  const url = URL.createObjectURL(blob)
+
+  link.setAttribute('href', url)
+  link.setAttribute('download', filename)
+  link.style.visibility = 'hidden'
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+}
+
+/**
+ * Build Generic CSV content for transactions (oldest first)
+ */
+export function buildTransactionsCSV(transactions: GenericTransaction[]): string {
   // Define CSV headers matching Generic CSV format
   const headers = [
     'date',
@@ -45,23 +65,10 @@ export function exportTransactionsToCSV(
   })
 
   // Combine headers and rows
-  const csvContent = [
+  return [
     headers.join(','),
     ...rows.map(row => row.map(escapeCSVField).join(','))
   ].join('\n')
-
-  // Create blob and trigger download
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-  const link = document.createElement('a')
-  const url = URL.createObjectURL(blob)
-
-  link.setAttribute('href', url)
-  link.setAttribute('download', filename)
-  link.style.visibility = 'hidden'
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-  URL.revokeObjectURL(url)
 }
 
 /**
