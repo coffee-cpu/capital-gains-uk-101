@@ -65,8 +65,7 @@ const SIMILAR_TOOLS: SimilarTool[] = [
     tags: ['Paid', 'Web'],
     description:
       'Portfolio tracking platform with a UK CGT calculator that applies the matching rules and produces SA108 figures and Section 104 pool ledgers. Subscription-based, with a free trial.',
-    processing: 'Account-based web platform',
-    input: 'Broker import',
+    input: 'Account-based; broker import',
   },
   {
     name: 'BittyTax',
