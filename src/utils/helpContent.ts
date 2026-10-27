@@ -327,7 +327,7 @@ The allowance has been significantly reduced in recent years.`,
 - Dividends are not subject to CGT - they have their own tax rules
 - You receive a dividend allowance each tax year
 - Dividends above the allowance are taxed at dividend tax rates
-- These rates are lower than the matching income tax rates (but not lower than CGT rates)
+- These rates are lower than the matching income tax rates
 
 **Dividend Allowance** (tax-free threshold):
 
