@@ -341,9 +341,8 @@ function getAnnualExemptAmount(taxYear: string): number {
  * Source: HMRC Tax on dividends
  * https://www.gov.uk/tax-on-dividends
  *
- * Note: Dividend tax is separate from capital gains tax.
- * Dividends above the allowance may be subject to dividend tax rates
- * (8.75% basic, 33.75% higher, 39.35% additional rate).
+ * Note: Dividend tax is separate from capital gains tax. The app doesn't
+ * calculate it; the rates by tax year are listed in the help text.
  */
 function getDividendAllowance(taxYear: string): number {
   // Tax year format: "YYYY/YY" e.g., "2023/24"
