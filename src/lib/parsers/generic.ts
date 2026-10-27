@@ -67,7 +67,13 @@ function normalizeGenericRow(
   const name = row['name']?.trim() || null
   const quantity = row['quantity'] ? (isNaN(parseFloat(row['quantity'])) ? null : parseFloat(row['quantity'])) : null
   const price = row['price'] ? (isNaN(parseFloat(row['price'])) ? null : parseFloat(row['price'])) : null
-  const total = row['total'] ? (isNaN(parseFloat(row['total'])) ? null : parseFloat(row['total'])) : null
+  const parsedTotal = row['total'] ? (isNaN(parseFloat(row['total'])) ? null : parseFloat(row['total'])) : null
+  // Withholding-tax rows are signed cash movements (negative = tax withheld).
+  // Generic CSVs can't be trusted on sign: files exported before that
+  // convention hold positive amounts, and hand-entered tax is often positive.
+  // Treat any amount as tax withheld; refunds aren't expressible here.
+  const isWithholdingTax = type === TransactionType.TAX_ON_DIVIDEND || type === TransactionType.TAX_ON_INTEREST
+  const total = isWithholdingTax && parsedTotal !== null ? -Math.abs(parsedTotal) : parsedTotal
   const fee = row['fee'] ? (isNaN(parseFloat(row['fee'])) ? null : parseFloat(row['fee'])) : null
   const notes = row['notes']?.trim() || null
   const ratio = row['split_ratio']?.trim() || null

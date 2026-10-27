@@ -83,6 +83,26 @@ describe('Generic CSV Parser', () => {
       expect(result[0].notes).toBe('Quarterly dividend')
     })
 
+    it('should read TAX_ON_DIVIDEND/TAX_ON_INTEREST totals as tax withheld whatever the sign', () => {
+      const taxRow = (type: string, total: string) => ({
+        date: '2024-09-29',
+        type,
+        symbol: type === 'TAX_ON_INTEREST' ? '' : 'AAPL',
+        currency: 'USD',
+        total,
+      })
+      const rows = [
+        taxRow('TAX_ON_DIVIDEND', '3.75'),    // positive: older exports, hand-entered
+        taxRow('TAX_ON_DIVIDEND', '-3.75'),   // negative: current exports
+        taxRow('TAX_ON_INTEREST', '0.50'),
+      ]
+
+      const result = normalizeGenericTransactions(rows, 'test-file')
+
+      // Stored with the engine's convention: negative = tax withheld
+      expect(result.map(tx => tx.total)).toEqual([-3.75, -3.75, -0.5])
+    })
+
     it('should normalize a STOCK_SPLIT transaction with split_ratio', () => {
       const rows = [
         {
