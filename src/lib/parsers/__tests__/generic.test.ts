@@ -94,22 +94,24 @@ describe('Generic CSV Parser', () => {
         total,
       })
 
-      it('reads every amount as tax withheld in a file with no negative tax rows', () => {
-        // Older exports stored withholding as positive; hand-entered tax often is too
+      it('reads unmarked amounts as tax withheld, including mixed older exports', () => {
+        // Exports made before tax_sign existed held IB withholding as negative
+        // and Schwab withholding as positive, side by side in one file
         const rows = [
-          taxRow('TAX_ON_DIVIDEND', '3.75'),
-          taxRow('TAX_ON_INTEREST', '0.50'),
+          taxRow('TAX_ON_DIVIDEND', '-3.75'),  // IB Foreign Tax Withholding
+          taxRow('TAX_ON_DIVIDEND', '3.75'),   // Schwab NRA Tax Adj (old absolute value)
+          taxRow('TAX_ON_INTEREST', '0.50'),   // hand-entered
         ]
 
         const result = normalizeGenericTransactions(rows, 'test-file')
 
-        expect(result.map(tx => tx.total)).toEqual([-3.75, -0.5])
+        expect(result.map(tx => tx.total)).toEqual([-3.75, -3.75, -0.5])
       })
 
-      it('keeps signs as written once the file uses the signed convention', () => {
+      it('keeps the sign of rows marked tax_sign=signed', () => {
         const rows = [
-          taxRow('TAX_ON_DIVIDEND', '-3.75'),  // tax withheld
-          taxRow('TAX_ON_DIVIDEND', '3.75'),   // refund of that tax
+          { ...taxRow('TAX_ON_DIVIDEND', '-3.75'), tax_sign: 'signed' },  // tax withheld
+          { ...taxRow('TAX_ON_DIVIDEND', '3.75'), tax_sign: 'signed' },   // refund of that tax
         ]
 
         const result = normalizeGenericTransactions(rows, 'test-file')
@@ -119,8 +121,8 @@ describe('Generic CSV Parser', () => {
 
       it('round-trips a refund through export and re-import', () => {
         const original = normalizeGenericTransactions([
-          taxRow('TAX_ON_DIVIDEND', '-3.75'),
-          taxRow('TAX_ON_DIVIDEND', '3.75'),
+          { ...taxRow('TAX_ON_DIVIDEND', '-3.75'), tax_sign: 'signed' },
+          { ...taxRow('TAX_ON_DIVIDEND', '3.75'), tax_sign: 'signed' },
         ], 'test-file')
 
         const exported = Papa.parse<Record<string, string>>(buildTransactionsCSV(original), {

@@ -113,6 +113,14 @@ export const TransactionType = {
 } as const
 
 /**
+ * Withholding-tax rows. Their total is the signed cash movement:
+ * negative when tax is withheld, positive when it is refunded.
+ */
+export function isWithholdingTaxType(type: string): boolean {
+  return type === TransactionType.TAX_ON_DIVIDEND || type === TransactionType.TAX_ON_INTEREST
+}
+
+/**
  * Gain group type enum
  */
 export const GainGroup = {

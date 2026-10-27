@@ -1,4 +1,4 @@
-import { GenericTransaction } from '../types/transaction'
+import { GenericTransaction, isWithholdingTaxType } from '../types/transaction'
 
 /**
  * Export transactions to Generic CSV format
@@ -40,7 +40,10 @@ export function buildTransactionsCSV(transactions: GenericTransaction[]): string
     'price',
     'total',
     'fee',
-    'notes'
+    'notes',
+    // Marks tax rows written in the signed convention (negative = tax
+    // withheld, positive = refund) so re-import can trust their sign
+    'tax_sign'
   ]
 
   // Sort transactions by date (oldest first)
@@ -60,7 +63,8 @@ export function buildTransactionsCSV(transactions: GenericTransaction[]): string
       tx.price !== null ? tx.price.toString() : '',
       tx.total !== null ? tx.total.toString() : '',
       tx.fee !== null ? tx.fee.toString() : '',
-      tx.notes || ''
+      tx.notes || '',
+      isWithholdingTaxType(tx.type) ? 'signed' : ''
     ]
   })
 
