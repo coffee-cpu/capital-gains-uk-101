@@ -221,7 +221,10 @@ function generateTaxYearSummaries(
 
     // Withholding tax from two sources:
     // 1. withholdingTax_gbp on DIVIDEND (IB/Freetrade set this directly)
-    // 2. TAX_ON_DIVIDEND transactions (Schwab NRA Tax Adj emitted as separate rows)
+    // 2. TAX_ON_DIVIDEND transactions (Schwab NRA Tax Adj, IB Foreign Tax
+    //    Withholding). Brokers sign these differently (Schwab stored as a
+    //    positive amount, IB as a negative cash movement), so every row
+    //    counts as tax withheld by its absolute value.
     const dividendWithholdingFromIncome = yearDividends.reduce(
       (sum, tx) => sum + (tx.withholdingTax_gbp ?? 0),
       0
@@ -230,7 +233,7 @@ function generateTaxYearSummaries(
       tx => tx.tax_year === taxYear && tx.type === 'TAX_ON_DIVIDEND'
     )
     const dividendWithholdingFromTax = yearTaxOnDividend.reduce(
-      (sum, tx) => sum + (tx.value_gbp ?? 0),
+      (sum, tx) => sum + Math.abs(tx.value_gbp ?? 0),
       0
     )
     const totalWithholdingTaxGbp = dividendWithholdingFromIncome + dividendWithholdingFromTax
@@ -255,8 +258,9 @@ function generateTaxYearSummaries(
     const yearTaxOnInterest = transactions.filter(
       tx => tx.tax_year === taxYear && tx.type === 'TAX_ON_INTEREST'
     )
+    // Same as TAX_ON_DIVIDEND: any sign counts as tax withheld
     const interestWithholdingFromTax = yearTaxOnInterest.reduce(
-      (sum, tx) => sum + (tx.value_gbp ?? 0),
+      (sum, tx) => sum + Math.abs(tx.value_gbp ?? 0),
       0
     )
     const interestWithholdingTaxGbp = interestWithholdingFromIncome + interestWithholdingFromTax
