@@ -1,6 +1,84 @@
 import { BuyMeACoffee } from './BuyMeACoffee'
 import { CodingStats } from './CodingStats'
 
+type ToolTag = 'Free' | 'Paid' | 'Open source' | 'Command line' | 'Web' | 'Crypto'
+
+const TAG_STYLES: Record<ToolTag, string> = {
+  Free: 'bg-green-100 text-green-800',
+  Paid: 'bg-orange-100 text-orange-800',
+  'Open source': 'bg-blue-100 text-blue-800',
+  'Command line': 'bg-gray-100 text-gray-800',
+  Web: 'bg-gray-100 text-gray-800',
+  Crypto: 'bg-purple-100 text-purple-800',
+}
+
+interface SimilarTool {
+  name: string
+  url: string
+  tags: ToolTag[]
+  description: string
+  /** Where transaction data is processed — only stated when verified */
+  processing?: string
+  input: string
+}
+
+const SIMILAR_TOOLS: SimilarTool[] = [
+  {
+    name: 'cgt-calc',
+    url: 'https://github.com/KapJI/capital-gains-calculator',
+    tags: ['Free', 'Open source', 'Command line'],
+    description:
+      'Python command-line tool that calculates UK CGT from broker exports and generates a detailed PDF report.',
+    processing: 'Runs on your computer',
+    input: 'Broker exports (Interactive Brokers, Schwab, Trading 212, Freetrade, Vanguard and more)',
+  },
+  {
+    name: 'cgtcalc',
+    url: 'https://cgtcalc.galloway.me.uk/',
+    tags: ['Free', 'Open source', 'Web'],
+    description:
+      'UK capital gains calculator written in Swift, with a web version that shows a drill-down of each disposal\'s matching and gain/loss maths.',
+    processing: 'Web version calculates on their server (it says input is not stored); can also be run locally',
+    input: 'Plain-text transaction format',
+  },
+  {
+    name: 'CGTCalculator',
+    url: 'https://www.cgtcalculator.com/',
+    tags: ['Free', 'Web'],
+    description:
+      'Long-running online calculator for UK share and crypto trades that implements the HMRC matching rules, including the 30-day rule.',
+    processing: 'Calculates on their server',
+    input: 'Simple text format, with converters for some broker exports',
+  },
+  {
+    name: 'TaxFly CGT Share Matching Calculator',
+    url: 'https://www.taxfly.co.uk/cgt-share-matching-calculator',
+    tags: ['Free', 'Web'],
+    description:
+      'Quick calculator for a single share or coin that applies the same-day, 30-day and Section 104 rules.',
+    processing: 'Calculates in your browser',
+    input: 'Manual entry',
+  },
+  {
+    name: 'AllInvestView',
+    url: 'https://www.allinvestview.com/capital-gains-tax-calculator-shares-uk/',
+    tags: ['Paid', 'Web'],
+    description:
+      'Portfolio tracking platform with a UK CGT calculator that applies the matching rules and produces SA108 figures and Section 104 pool ledgers. Subscription-based, with a free trial.',
+    processing: 'Account-based web platform',
+    input: 'Broker import',
+  },
+  {
+    name: 'BittyTax',
+    url: 'https://github.com/BittyTax/BittyTax',
+    tags: ['Free', 'Open source', 'Command line', 'Crypto'],
+    description:
+      'Open-source cryptoasset tax calculator for UK HMRC rules (same-day, bed and breakfast, Section 104 pool).',
+    processing: 'Runs on your computer',
+    input: 'Importers for many wallets and exchanges',
+  },
+]
+
 export function About() {
   return (
     <div className="min-h-screen bg-gray-50">
@@ -391,6 +469,63 @@ export function About() {
                   and CGT calculations as a broker import.
                 </p>
               </div>
+            </div>
+          </section>
+
+          {/* Other Similar Tools */}
+          <section className="bg-white shadow rounded-lg p-6">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">Other Similar Tools</h2>
+            <div className="space-y-4 text-gray-700">
+              <p>
+                Looking for a second opinion? These tools also apply HMRC's share matching rules. Cross-checking
+                your figures with another calculator is a good way to catch mistakes.
+              </p>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h3 className="text-sm font-medium text-blue-900 mb-1">How this tool fits in</h3>
+                <p className="text-sm text-blue-800">
+                  Capital Gains Tax Visualiser runs <strong>entirely in your browser</strong> — your transactions
+                  are never uploaded. It imports exports from many brokers directly, handles FX conversion and
+                  stock splits automatically, and is <strong>free and open source</strong>.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                {SIMILAR_TOOLS.map((tool) => (
+                  <div key={tool.name} className="border border-gray-200 rounded-lg p-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="font-medium text-gray-900">
+                        <a
+                          href={tool.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline"
+                        >
+                          {tool.name}
+                        </a>
+                      </h3>
+                      {tool.tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className={`inline-block px-2 py-0.5 text-xs font-medium rounded ${TAG_STYLES[tag]}`}
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                    <p className="mt-2 text-sm text-gray-700">{tool.description}</p>
+                    <p className="mt-1 text-xs text-gray-500">
+                      {tool.processing && <>{tool.processing} · </>}
+                      {tool.input}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              <p className="text-xs text-gray-500">
+                We are not affiliated with any of these tools and can't vouch for their accuracy. Pricing and
+                features may change — check each tool's website for current details.
+              </p>
             </div>
           </section>
 
