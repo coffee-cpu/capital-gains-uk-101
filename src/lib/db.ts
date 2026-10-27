@@ -86,6 +86,27 @@ export class CGTDatabase extends Dexie {
       settings: 'key',
       split_data_cache: 'year',
     })
+
+    // Version 5: withholding-tax rows use the signed convention (negative =
+    // tax withheld, positive = refund). Before it, Schwab stored NRA Tax Adj
+    // as an absolute value and Generic CSV stored totals as written, and
+    // both were read as tax withheld; making them negative keeps those
+    // figures. Interactive Brokers already stored signed amounts.
+    this.version(5).stores({
+      transactions: 'id, source, symbol, date, type',
+      fx_rates: 'id, date, currency, fxSource',
+      imported_files: 'fileId, filename, importedAt',
+      settings: 'key',
+      split_data_cache: 'year',
+    }).upgrade(tx =>
+      tx.table('transactions')
+        .where('type').anyOf('TAX_ON_DIVIDEND', 'TAX_ON_INTEREST')
+        .modify((transaction: GenericTransaction) => {
+          if (transaction.source !== 'Interactive Brokers' && transaction.total !== null) {
+            transaction.total = -Math.abs(transaction.total)
+          }
+        })
+    )
   }
 }
 
