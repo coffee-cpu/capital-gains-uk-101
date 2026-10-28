@@ -144,7 +144,8 @@ same inputs. Add a CI job: `npm run build:cli` plus a smoke test.
    link to the guide. Add the new pages to `public/sitemap.xml`, and add a README
    section.
 4. **Publish to npm, automatically on tag.** Copy
-   `vibe-coding-stats/.github/workflows/publish.yml`: trigger on `v*.*.*` tags,
+   `vibe-coding-stats/.github/workflows/publish.yml`: trigger on `cli-v*.*.*` tags
+   (prefixed so CLI releases are not confused with web app versions),
    use npm trusted publishing (OIDC, `id-token: write`, no stored token),
    fail if the tag doesn't match `packages/cli/package.json`'s version, run the
    tests and build, then `npm publish -w packages/cli --provenance --access public`.

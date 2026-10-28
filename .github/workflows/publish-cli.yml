@@ -1,0 +1,55 @@
+name: Publish CLI to npm
+
+# Publishes packages/cli (cgt-visualiser) when a tag like cli-v0.1.0 is pushed.
+# The tag version must match packages/cli/package.json. Uses npm trusted
+# publishing (OIDC), so no npm token is stored in the repository.
+
+on:
+  push:
+    tags:
+      - 'cli-v*.*.*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write  # Required for npm trusted publishing
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+
+      - name: Install npm with OIDC support
+        run: npm install -g npm@latest
+
+      - run: npm ci
+
+      - name: Verify version matches tag
+        run: |
+          TAG_VERSION=${GITHUB_REF#refs/tags/cli-v}
+          PACKAGE_VERSION=$(node -p "require('./packages/cli/package.json').version")
+          if [ "$TAG_VERSION" != "$PACKAGE_VERSION" ]; then
+            echo "Error: Tag version ($TAG_VERSION) does not match packages/cli/package.json version ($PACKAGE_VERSION)"
+            exit 1
+          fi
+
+      - run: npm test
+
+      - run: npm run build:cli
+
+      - name: CLI smoke test
+        run: |
+          node packages/cli/dist/cli.js calculate e2e/fixtures/hmrc-hs284-example3.csv \
+            --tax-year 2024/25 --offline --no-auto-splits --no-cache --strict --format json > cli-output.json
+          node -e "
+            const r = require('./cli-output.json')
+            const net = r.taxYears[0].netGainOrLossGbp
+            if (net !== 629.67) { console.error('Expected net gain 629.67, got', net); process.exit(1) }
+          "
+
+      - run: npm publish -w packages/cli --provenance --access public

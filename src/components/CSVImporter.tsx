@@ -181,6 +181,17 @@ export function CSVImporter() {
         <div>
           <h2 className="text-2xl font-semibold text-gray-900">Import Transactions</h2>
           <p className="text-xs text-gray-500 mt-1">All processing happens locally in your browser — your data never leaves your device</p>
+          <p className="text-xs text-gray-500 mt-1">
+            Prefer the terminal or an AI agent?{' '}
+            <a
+              href="https://github.com/coffee-cpu/capital-gains-uk-101/tree/main/packages/cli#readme"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:underline"
+            >
+              Use the command-line tool
+            </a>
+          </p>
         </div>
         <button
           onClick={() => setShowImportInfo(!showImportInfo)}

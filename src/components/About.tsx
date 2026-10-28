@@ -471,6 +471,54 @@ export function About() {
             </div>
           </section>
 
+          {/* Command Line & AI Agents */}
+          <section className="bg-white shadow rounded-lg p-6">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">Use from the Command Line or with AI Agents</h2>
+            <div className="space-y-4 text-gray-700">
+              <p>
+                The same calculation engine is available as a command-line tool, <strong>cgt-visualiser</strong>.
+                It runs on your own computer, so your transactions stay private, and it gives AI agents such as
+                Claude Code, Codex or Cursor a reliable way to work out your capital gains instead of attempting
+                the HMRC matching rules themselves.
+              </p>
+              <pre className="bg-gray-900 text-gray-100 text-sm rounded-lg p-4 overflow-x-auto">
+                <code>npx cgt-visualiser calculate my-broker-export.csv --tax-year 2025/26</code>
+              </pre>
+              <ul className="list-disc list-inside space-y-2 ml-4">
+                <li><strong>For people:</strong> readable summaries per tax year, or CSV for spreadsheets. Requires Node.js 20 or later.</li>
+                <li><strong>For AI agents:</strong> versioned JSON output with SA108 figures and coded warnings (for example, sales with no recorded purchase).</li>
+              </ul>
+              <p className="text-sm">
+                <a
+                  href="/agents.md"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline font-semibold"
+                >
+                  Agent guide
+                </a>
+                {' · '}
+                <a
+                  href="https://github.com/coffee-cpu/capital-gains-uk-101/tree/main/packages/cli#readme"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline"
+                >
+                  CLI documentation
+                </a>
+                {' · '}
+                <a
+                  href="https://www.npmjs.com/package/cgt-visualiser"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline"
+                >
+                  npm package
+                </a>
+              </p>
+            </div>
+          </section>
+
           {/* Other Similar Tools */}
           <section className="bg-white shadow rounded-lg p-6">
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">Other Similar Tools</h2>

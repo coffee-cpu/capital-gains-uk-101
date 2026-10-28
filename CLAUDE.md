@@ -15,6 +15,7 @@ The app imports CSV files from various brokers, normalizes them to a unified for
 npm run dev              # Start dev server on http://localhost:3000
 npm run build            # TypeScript compile + Vite build
 npm run preview          # Preview production build
+npm run build:cli        # Typecheck and bundle the CLI (packages/cli) to packages/cli/dist/cli.js
 ```
 
 **IMPORTANT - Auto-start Dev Server**: When starting work on this project (especially in a new session), **automatically start the dev server in the background** using the Bash tool with `run_in_background: true`:
@@ -160,6 +161,10 @@ Key directories:
 - `src/components/` - React components
 - `e2e/` - Playwright E2E tests
 - `docs/` - Technical specifications
+- `packages/cli/` - `cgt-visualiser` command-line tool (npm workspace). It imports the shared
+  engine from `src/lib/` and must not import browser-only code (Dexie, React, Zustand). Published
+  to npm by pushing a `cli-v<version>` tag (see `.github/workflows/publish-cli.yml`)
+- `public/llms.txt`, `public/agents.md` - Instructions for AI agents (keep in sync with the CLI)
 
 ## Development Guidelines
 
