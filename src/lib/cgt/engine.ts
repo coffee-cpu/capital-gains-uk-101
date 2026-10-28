@@ -8,6 +8,7 @@ import { section104Stage } from './section104Pool'
 import { getTaxYearBounds } from '../../utils/taxYear'
 import { getEffectiveQuantity, isAcquisition, isDisposal, calculateNetProceeds, QUANTITY_EPSILON } from './utils'
 import { calculateTaxYearFeatures } from './taxYearFeatures'
+import { getAnnualExemptAmount, getDividendAllowance } from './allowances'
 
 /**
  * CGT Calculation Engine
@@ -310,52 +311,6 @@ function generateTaxYearSummaries(
 
   // Sort by tax year (most recent first)
   return summaries.sort((a, b) => b.taxYear.localeCompare(a.taxYear))
-}
-
-/**
- * Get the annual exempt amount for a tax year
- *
- * Source: HMRC Capital Gains Tax annual exempt amounts
- * https://www.gov.uk/government/publications/rates-and-allowances-capital-gains-tax/capital-gains-tax-rates-and-annual-tax-free-allowances
- */
-function getAnnualExemptAmount(taxYear: string): number {
-  // Tax year format: "YYYY/YY" e.g., "2023/24"
-  const startYear = parseInt(taxYear.split('/')[0])
-
-  // Historical annual exempt amounts (individuals)
-  if (startYear >= 2024) return 3000      // 2024/25 onwards
-  if (startYear === 2023) return 6000     // 2023/24
-  if (startYear >= 2020) return 12300     // 2020/21 to 2022/23
-  if (startYear === 2019) return 12000    // 2019/20
-  if (startYear === 2018) return 11700    // 2018/19
-  if (startYear === 2017) return 11300    // 2017/18
-  if (startYear >= 2015) return 11100     // 2015/16 to 2016/17
-
-  // Default for older years (approximate)
-  return 11000
-}
-
-/**
- * Get the dividend allowance for a tax year
- *
- * Source: HMRC Tax on dividends
- * https://www.gov.uk/tax-on-dividends
- *
- * Note: Dividend tax is separate from capital gains tax. The app doesn't
- * calculate it; the rates by tax year are listed in the help text.
- */
-function getDividendAllowance(taxYear: string): number {
-  // Tax year format: "YYYY/YY" e.g., "2023/24"
-  const startYear = parseInt(taxYear.split('/')[0])
-
-  // Historical dividend allowances
-  if (startYear >= 2024) return 500       // 2024/25 onwards
-  if (startYear === 2023) return 1000     // 2023/24
-  if (startYear >= 2018) return 2000      // 2018/19 to 2022/23
-  if (startYear >= 2016) return 5000      // 2016/17 to 2017/18
-
-  // Default for older years (pre-dividend allowance era)
-  return 0
 }
 
 /**

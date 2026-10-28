@@ -19,12 +19,13 @@
 
 import type { TaxYearSummary, DisposalRecord } from '../../../types/cgt'
 import type { TaxYearFeature, TaxYearFeatureData } from './types'
+import { getAnnualExemptAmount } from '../allowances'
 
 /** The date when CGT rates changed (inclusive - disposals ON this date use new rates) */
 export const CGT_RATE_CHANGE_DATE = '2024-10-30'
 
 /** Annual Exempt Amount for 2024/25 tax year */
-export const AEA_2024_25 = 3000
+export const AEA_2024_25 = getAnnualExemptAmount('2024/25')
 
 /** CGT rates before and after the change */
 export const CGT_RATES = {

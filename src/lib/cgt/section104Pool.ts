@@ -2,13 +2,12 @@ import { EnrichedTransaction, TransactionType } from '../../types/transaction'
 import { Section104Pool, MatchingResult } from '../../types/cgt'
 import { MatchingStage } from './pipeline'
 import {
-  getEffectivePrice,
-  getFeePerUnit,
   isAcquisition,
   isDisposal,
   groupBySymbol,
   MatchedQuantityTracker,
   calculateCostBasis,
+  calculateNetProceeds,
   QUANTITY_EPSILON,
 } from './utils'
 
@@ -143,9 +142,8 @@ function matchAgainstPool(
     pool.averageCostGbp = pool.quantity > 0 ? pool.totalCostGbp / pool.quantity : 0
   }
 
-  // Calculate proceeds (including selling fees, use split-adjusted price if available)
-  const proceedsPerShare = getEffectivePrice(transaction) - getFeePerUnit(transaction)
-  const proceeds = proceedsPerShare * quantityToMatch
+  // Net of selling fees, split-adjusted and scaled by contract size for options
+  const proceeds = calculateNetProceeds(transaction, quantityToMatch)
 
   // Record in history only if we matched something
   if (quantityToMatch > 0) {
