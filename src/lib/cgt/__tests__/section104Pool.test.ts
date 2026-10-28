@@ -501,6 +501,12 @@ describe('Section 104 Pool', () => {
       // Total cost after buys: (20 + 1/200)*2*100 + (25 + 1.5/300)*3*100 = 4001 + 7501.5 = 11502.5
       // After selling 4: remaining cost = 11502.5 * (1/5) = 2300.5
       expect(pool.history).toHaveLength(3) // 2 buys + 1 sell
+
+      // Sell proceeds in the history use the contract multiplier too:
+      // (30 - 2/400) * 4 * 100 = 11998
+      const sellEntry = pool.history[2]
+      expect(sellEntry.type).toBe('SELL')
+      expect(sellEntry.costOrProceeds).toBeCloseTo(11998, 6)
     })
   })
 })
