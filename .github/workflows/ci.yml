@@ -38,6 +38,21 @@ jobs:
       - name: Unit tests
         run: npm test
 
+      - name: Build CLI
+        run: npm run build:cli
+
+      - name: CLI smoke test
+        # Runs the bundled binary on the HMRC HS284 example 3 fixture (GBP only, no network)
+        run: |
+          node packages/cli/dist/cli.js calculate e2e/fixtures/hmrc-hs284-example3.csv \
+            --tax-year 2024/25 --offline --no-auto-splits --no-cache --strict --format json > cli-output.json
+          node -e "
+            const r = require('./cli-output.json')
+            const net = r.taxYears[0].netGainOrLossGbp
+            if (net !== 629.67) { console.error('Expected net gain 629.67, got', net); process.exit(1) }
+            console.log('CLI smoke test passed: net gain', net)
+          "
+
   e2e:
     name: E2E tests
     needs: build-and-unit
