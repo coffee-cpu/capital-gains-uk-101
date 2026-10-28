@@ -227,9 +227,10 @@ Always store dates as ISO 8601: `YYYY-MM-DD`. Parsers must convert from broker-s
 5. ✅ **CLI** (when `packages/cli` or the shared engine changes): Run `npm run build:cli`
 
 **Pull Request Workflow**:
-- Work on a feature branch and open a pull request. **No approval is needed** to commit, push the
-  branch, open the PR, or watch it.
-- Never commit or push directly to `main`. Merging is the user's decision.
+- **Never commit or push directly to `main`**, and never merge PRs yourself. All changes reach
+  `main` through a pull request that the user merges.
+- On a feature branch, **no approval is needed** to commit, push the branch, open the PR, or
+  watch it.
 - Watch every PR you open: fix CI failures, respond to review comments (fix them, or reply
   explaining why not), and keep the branch mergeable with `main`.
 - Only push once the checklist above passes. Running `npm run build` is **mandatory** - it catches
