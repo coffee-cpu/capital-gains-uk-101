@@ -8,6 +8,7 @@ import { section104Stage } from './section104Pool'
 import { getTaxYearBounds } from '../../utils/taxYear'
 import { getEffectiveQuantity, isAcquisition, isDisposal, calculateNetProceeds, QUANTITY_EPSILON } from './utils'
 import { calculateTaxYearFeatures } from './taxYearFeatures/registry'
+import { getAnnualExemptAmount, getDividendAllowance } from './allowances'
 
 /**
  * CGT Calculation Engine
@@ -221,7 +222,8 @@ function generateTaxYearSummaries(
 
     // Withholding tax from two sources:
     // 1. withholdingTax_gbp on DIVIDEND (IB/Freetrade set this directly)
-    // 2. TAX_ON_DIVIDEND transactions (Schwab NRA Tax Adj emitted as separate rows)
+    // 2. TAX_ON_DIVIDEND transactions (Schwab NRA Tax Adj, IB Foreign Tax
+    //    Withholding), counted via withheldAmountGbp
     const dividendWithholdingFromIncome = yearDividends.reduce(
       (sum, tx) => sum + (tx.withholdingTax_gbp ?? 0),
       0
@@ -230,7 +232,7 @@ function generateTaxYearSummaries(
       tx => tx.tax_year === taxYear && tx.type === 'TAX_ON_DIVIDEND'
     )
     const dividendWithholdingFromTax = yearTaxOnDividend.reduce(
-      (sum, tx) => sum + (tx.value_gbp ?? 0),
+      (sum, tx) => sum + withheldAmountGbp(tx),
       0
     )
     const totalWithholdingTaxGbp = dividendWithholdingFromIncome + dividendWithholdingFromTax
@@ -255,8 +257,9 @@ function generateTaxYearSummaries(
     const yearTaxOnInterest = transactions.filter(
       tx => tx.tax_year === taxYear && tx.type === 'TAX_ON_INTEREST'
     )
+    // Same sign handling as TAX_ON_DIVIDEND
     const interestWithholdingFromTax = yearTaxOnInterest.reduce(
-      (sum, tx) => sum + (tx.value_gbp ?? 0),
+      (sum, tx) => sum + withheldAmountGbp(tx),
       0
     )
     const interestWithholdingTaxGbp = interestWithholdingFromIncome + interestWithholdingFromTax
@@ -313,50 +316,16 @@ function generateTaxYearSummaries(
 }
 
 /**
- * Get the annual exempt amount for a tax year
+ * Tax withheld by a TAX_ON_DIVIDEND or TAX_ON_INTEREST row, in GBP.
  *
- * Source: HMRC Capital Gains Tax annual exempt amounts
- * https://www.gov.uk/government/publications/rates-and-allowances-capital-gains-tax/capital-gains-tax-rates-and-annual-tax-free-allowances
+ * Interactive Brokers keeps the cash-movement sign: negative is tax withheld,
+ * positive is a reversal of earlier withholding. Schwab's parser already
+ * stores withholding as a positive amount, so for other sources any sign
+ * counts as tax withheld.
  */
-function getAnnualExemptAmount(taxYear: string): number {
-  // Tax year format: "YYYY/YY" e.g., "2023/24"
-  const startYear = parseInt(taxYear.split('/')[0])
-
-  // Historical annual exempt amounts (individuals)
-  if (startYear >= 2024) return 3000      // 2024/25 onwards
-  if (startYear === 2023) return 6000     // 2023/24
-  if (startYear >= 2020) return 12300     // 2020/21 to 2022/23
-  if (startYear === 2019) return 12000    // 2019/20
-  if (startYear === 2018) return 11700    // 2018/19
-  if (startYear === 2017) return 11300    // 2017/18
-  if (startYear >= 2015) return 11100     // 2015/16 to 2016/17
-
-  // Default for older years (approximate)
-  return 11000
-}
-
-/**
- * Get the dividend allowance for a tax year
- *
- * Source: HMRC Tax on dividends
- * https://www.gov.uk/tax-on-dividends
- *
- * Note: Dividend tax is separate from capital gains tax.
- * Dividends above the allowance may be subject to dividend tax rates
- * (8.75% basic, 33.75% higher, 39.35% additional rate).
- */
-function getDividendAllowance(taxYear: string): number {
-  // Tax year format: "YYYY/YY" e.g., "2023/24"
-  const startYear = parseInt(taxYear.split('/')[0])
-
-  // Historical dividend allowances
-  if (startYear >= 2024) return 500       // 2024/25 onwards
-  if (startYear === 2023) return 1000     // 2023/24
-  if (startYear >= 2018) return 2000      // 2018/19 to 2022/23
-  if (startYear >= 2016) return 5000      // 2016/17 to 2017/18
-
-  // Default for older years (pre-dividend allowance era)
-  return 0
+function withheldAmountGbp(tx: EnrichedTransaction): number {
+  const value = tx.value_gbp ?? 0
+  return tx.source === 'Interactive Brokers' ? -value : Math.abs(value)
 }
 
 /**
