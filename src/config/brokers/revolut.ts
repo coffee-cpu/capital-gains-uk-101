@@ -22,7 +22,7 @@ export const revolutDefinition: BrokerDefinition = {
     ],
     notes: [
       'The statement includes trades, dividends, cash top-ups and withdrawals for the whole period.',
-      'If your app only offers Excel, choose Excel and save the file as CSV (comma-separated) before uploading.',
+      'Use the CSV option: files converted from Revolut\'s Excel export may have dates in a different format and won\'t import correctly. If CSV isn\'t offered, update the app.',
     ],
   },
   exampleFile: '/examples/revolut-example.csv',
