@@ -7,7 +7,7 @@ import { thirtyDayStage } from './thirtyDayMatcher'
 import { section104Stage } from './section104Pool'
 import { getTaxYearBounds } from '../../utils/taxYear'
 import { getEffectiveQuantity, isAcquisition, isDisposal, calculateNetProceeds, QUANTITY_EPSILON } from './utils'
-import { calculateTaxYearFeatures } from './taxYearFeatures'
+import { calculateTaxYearFeatures } from './taxYearFeatures/registry'
 import { getAnnualExemptAmount, getDividendAllowance } from './allowances'
 
 /**

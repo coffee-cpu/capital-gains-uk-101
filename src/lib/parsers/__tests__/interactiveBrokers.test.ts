@@ -2,15 +2,6 @@ import { describe, it, expect } from 'vitest'
 import { normalizeInteractiveBrokersTransactions, preprocessInteractiveBrokersCSV } from '../interactiveBrokers'
 import { TransactionType } from '../../../types/transaction'
 
-async function readFileAsText(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(reader.result as string)
-    reader.onerror = () => reject(new Error('Failed to read file'))
-    reader.readAsText(file)
-  })
-}
-
 // Helper to create IB CSV row format (after preprocessing by preprocessInteractiveBrokersCSV)
 // Preprocessed format has columns: Section, RowType, Date, Account, Description, Transaction Type, Symbol, Quantity, Price, Gross Amount, Commission, Net Amount
 const createIBRow = (data: {
@@ -977,7 +968,7 @@ describe('Interactive Brokers Parser', () => {
   })
 
   describe('preprocessInteractiveBrokersCSV', () => {
-    it('should pad Summary rows to match the legacy 10-field Transaction History header', async () => {
+    it('should pad Summary rows to match the legacy 10-field Transaction History header', () => {
       // Older IB exports: 10 TH fields → 12 total after Section,RowType prepend
       const csv = [
         'Statement,Header,Field Name,Field Value',
@@ -988,8 +979,7 @@ describe('Interactive Brokers Parser', () => {
         'Transaction History,Data,2024-09-27,U1234567,VANG,Buy,VUSD,100.0,108.75,-8132.00,-4.49,-8136.49',
       ].join('\n')
 
-      const file = new File([csv], 'ib-old.csv', { type: 'text/csv' })
-      const out = await readFileAsText(await preprocessInteractiveBrokersCSV(file))
+      const out = preprocessInteractiveBrokersCSV(csv)
       const lines = out.split('\n')
 
       const headerFields = lines[0].split(',').length
@@ -998,7 +988,7 @@ describe('Interactive Brokers Parser', () => {
       expect(summaryLine.split(',').length).toBe(headerFields)
     })
 
-    it('should pad Summary rows to match the new 11-field Transaction History header', async () => {
+    it('should pad Summary rows to match the new 11-field Transaction History header', () => {
       // Newer IB exports add an extra TH field (e.g. Code) → 13 total after prepend
       const csv = [
         'Statement,Header,Field Name,Field Value',
@@ -1009,8 +999,7 @@ describe('Interactive Brokers Parser', () => {
         'Transaction History,Data,2024-09-27,U1234567,VANG,Buy,VUSD,100.0,108.75,-8132.00,-4.49,-8136.49,O',
       ].join('\n')
 
-      const file = new File([csv], 'ib-new.csv', { type: 'text/csv' })
-      const out = await readFileAsText(await preprocessInteractiveBrokersCSV(file))
+      const out = preprocessInteractiveBrokersCSV(csv)
       const lines = out.split('\n')
 
       const headerFields = lines[0].split(',').length

@@ -1,15 +1,14 @@
 import { GenericTransaction, TransactionType } from '../../types/transaction'
 import { RawCSVRow } from '../../types/broker'
-import { CSVPreprocessor, readFileHead } from './fileUtils'
+import { CSVPreprocessor } from './fileUtils'
 
 /**
  * Raw-file preprocessor for Interactive Brokers' multi-section CSV format.
  * Registered in `csvParser.ts`.
  */
 export const ibCSVPreprocessor: CSVPreprocessor = {
-  async matches(file: File): Promise<boolean> {
-    const text = await readFileHead(file, 2000)
-    if (!text) return false
+  matches(content: string): boolean {
+    const text = content.slice(0, 2000)
     const hasStatement = text.includes('Statement,Header,') || text.includes('Statement,Data,')
     const hasTransactionHistory =
       text.includes('Transaction History,Header,') || text.includes('Transaction History,Data,')
@@ -30,83 +29,68 @@ export const ibCSVPreprocessor: CSVPreprocessor = {
  * then include Summary data rows (padded to match the header width so base currency can be
  * extracted downstream) alongside Transaction History data rows.
  */
-export async function preprocessInteractiveBrokersCSV(file: File): Promise<File> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const text = e.target?.result as string
-      if (!text) {
-        reject(new Error('Failed to read file'))
-        return
-      }
+export function preprocessInteractiveBrokersCSV(text: string): string {
+  if (!text) {
+    throw new Error('Failed to read file')
+  }
 
-      const lines = text.split('\n')
-      let headerRow: string | null = null
-      const summaryDataRows: Array<{ sectionName: string; rowType: string; restOfLine: string }> = []
-      const transactionRows: string[] = []
+  const lines = text.split('\n')
+  let headerRow: string | null = null
+  const summaryDataRows: Array<{ sectionName: string; rowType: string; restOfLine: string }> = []
+  const transactionRows: string[] = []
 
-      for (const line of lines) {
-        if (!line.trim()) continue
+  for (const line of lines) {
+    if (!line.trim()) continue
 
-        // Parse the line to extract section name and row type
-        // Use a simple regex since we just need the first two columns
-        const match = line.match(/^([^,]+),([^,]+),(.*)$/)
-        if (!match) {
-          continue
-        }
-
-        const sectionName = match[1]
-        const rowType = match[2]
-        const restOfLine = match[3]
-
-        if (rowType === 'Header') {
-          // Store the header for Transaction History section
-          if (sectionName === 'Transaction History') {
-            // Create header row with Section and RowType columns prepended
-            headerRow = `Section,RowType,${restOfLine}`
-          }
-        } else if (rowType === 'Data') {
-          // Collect data rows for Transaction History section
-          if (sectionName === 'Transaction History') {
-            transactionRows.push(`${sectionName},${rowType},${restOfLine}`)
-          } else if (sectionName === 'Summary') {
-            // Defer padding until we've seen the TH header (field count varies by IB export version)
-            summaryDataRows.push({ sectionName, rowType, restOfLine })
-          }
-        }
-      }
-
-      if (!headerRow) {
-        reject(new Error('Could not find Transaction History header in Interactive Brokers CSV'))
-        return
-      }
-
-      // Pad Summary rows to match the TH header width so PapaParse accepts both
-      // old (10 TH fields) and new (11+ TH fields) IB export formats.
-      const headerFieldCount = headerRow.split(',').length
-      const summaryRows = summaryDataRows.map(({ sectionName, rowType, restOfLine }) => {
-        const baseRow = `${sectionName},${rowType},${restOfLine}`
-        const paddingCount = Math.max(0, headerFieldCount - baseRow.split(',').length)
-        return baseRow + ','.repeat(paddingCount)
-      })
-
-      // Build the final CSV with header FIRST, then Summary rows, then Transaction History rows
-      const processedRows = [headerRow, ...summaryRows, ...transactionRows]
-
-      if (processedRows.length <= 1) {
-        reject(new Error('Could not find Transaction History data in Interactive Brokers CSV'))
-        return
-      }
-
-      const processedCsv = processedRows.join('\n')
-      const processedFile = new File([processedCsv], file.name, { type: file.type })
-      resolve(processedFile)
+    // Parse the line to extract section name and row type
+    // Use a simple regex since we just need the first two columns
+    const match = line.match(/^([^,]+),([^,]+),(.*)$/)
+    if (!match) {
+      continue
     }
-    reader.onerror = () => {
-      reject(new Error('Failed to read file'))
+
+    const sectionName = match[1]
+    const rowType = match[2]
+    const restOfLine = match[3]
+
+    if (rowType === 'Header') {
+      // Store the header for Transaction History section
+      if (sectionName === 'Transaction History') {
+        // Create header row with Section and RowType columns prepended
+        headerRow = `Section,RowType,${restOfLine}`
+      }
+    } else if (rowType === 'Data') {
+      // Collect data rows for Transaction History section
+      if (sectionName === 'Transaction History') {
+        transactionRows.push(`${sectionName},${rowType},${restOfLine}`)
+      } else if (sectionName === 'Summary') {
+        // Defer padding until we've seen the TH header (field count varies by IB export version)
+        summaryDataRows.push({ sectionName, rowType, restOfLine })
+      }
     }
-    reader.readAsText(file)
+  }
+
+  if (!headerRow) {
+    throw new Error('Could not find Transaction History header in Interactive Brokers CSV')
+  }
+
+  // Pad Summary rows to match the TH header width so PapaParse accepts both
+  // old (10 TH fields) and new (11+ TH fields) IB export formats.
+  const headerFieldCount = headerRow.split(',').length
+  const summaryRows = summaryDataRows.map(({ sectionName, rowType, restOfLine }) => {
+    const baseRow = `${sectionName},${rowType},${restOfLine}`
+    const paddingCount = Math.max(0, headerFieldCount - baseRow.split(',').length)
+    return baseRow + ','.repeat(paddingCount)
   })
+
+  // Build the final CSV with header FIRST, then Summary rows, then Transaction History rows
+  const processedRows = [headerRow, ...summaryRows, ...transactionRows]
+
+  if (processedRows.length <= 1) {
+    throw new Error('Could not find Transaction History data in Interactive Brokers CSV')
+  }
+
+  return processedRows.join('\n')
 }
 
 /**

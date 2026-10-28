@@ -1,18 +1,8 @@
 import Dexie, { Table } from 'dexie'
 import { GenericTransaction } from '../types/transaction'
-import { FXSource } from '../types/fxSource'
+import { FXRate, CachedSplitYear, setCacheBackends } from './cache'
 
-/**
- * FX Rate cache entry
- */
-export interface FXRate {
-  id: string // Composite key: source-date-currency (e.g., 'HMRC_MONTHLY-2025-05-USD')
-  date: string // Date key (format varies by source: YYYY-MM, YYYY, or YYYY-MM-DD)
-  currency: string // e.g. 'USD'
-  rate: number // GBP conversion rate
-  source: string // e.g. 'HMRC Monthly Exchange Rates'
-  fxSource?: FXSource // Which FX source this rate belongs to (optional for backward compat)
-}
+export type { FXRate, CachedSplitYear }
 
 /**
  * Imported file metadata
@@ -23,15 +13,6 @@ export interface ImportedFile {
   broker: string // Detected broker type (e.g., 'Charles Schwab')
   transactionCount: number // Number of transactions imported from this file
   importedAt: string // ISO timestamp when file was imported
-}
-
-/**
- * Cached stock split year data from external sources (e.g., jsDelivr CDN)
- */
-export interface CachedSplitYear {
-  year: number // Primary key: the year (e.g., 2024)
-  data: string // JSON-encoded split data for the year
-  fetchedAt: string // ISO timestamp of when data was fetched
 }
 
 /**
@@ -90,6 +71,17 @@ export class CGTDatabase extends Dexie {
 }
 
 export const db = new CGTDatabase()
+
+/**
+ * Persist fetched FX rates and stock split data in IndexedDB.
+ * Called once at app startup; without it, core code falls back to in-memory caches.
+ */
+export function registerIndexedDBCaches(): void {
+  setCacheBackends({
+    fxRates: db.fx_rates,
+    splitData: db.split_data_cache,
+  })
+}
 
 /**
  * Ensure the database can be opened and upgraded successfully.

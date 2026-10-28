@@ -1,5 +1,5 @@
 import { FXProvider, FXRateResult, FXSource, FXSourceAttributions } from '../../../types/fxSource'
-import { db } from '../../db'
+import { getFxRateCache } from '../../cache'
 
 /**
  * Abstract base class for FX providers
@@ -22,8 +22,8 @@ export abstract class BaseFXProvider implements FXProvider {
 
     const cacheKey = this.getCacheKey(date, currency)
 
-    // Check IndexedDB cache first
-    const cached = await db.fx_rates.get(cacheKey)
+    // Check cache first
+    const cached = await getFxRateCache().get(cacheKey)
     if (cached) {
       return this.createResult(cached.rate, date, currency)
     }
@@ -69,7 +69,7 @@ export abstract class BaseFXProvider implements FXProvider {
   }
 
   /**
-   * Cache the rate in IndexedDB
+   * Cache the rate
    */
   protected async cacheRate(
     cacheKey: string,
@@ -77,7 +77,7 @@ export abstract class BaseFXProvider implements FXProvider {
     currency: string,
     rate: number
   ): Promise<void> {
-    await db.fx_rates.put({
+    await getFxRateCache().put({
       id: cacheKey,
       date: this.getDateKey(date),
       currency,

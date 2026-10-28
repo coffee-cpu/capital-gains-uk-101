@@ -15,36 +15,28 @@ const PREPROCESSORS: readonly CSVPreprocessor[] = [
 ]
 
 /**
- * Parse CSV file into raw rows
+ * Parse CSV text into raw rows
  */
-export async function parseCSV(file: File): Promise<RawCSVRow[]> {
-  return new Promise((resolve, reject) => {
-    Papa.parse<RawCSVRow>(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: (results) => {
-        if (results.errors.length > 0) {
-          reject(new Error(`CSV parsing errors: ${results.errors.map(e => e.message).join(', ')}`))
-        } else {
-          resolve(results.data)
-        }
-      },
-      error: (error) => {
-        reject(error)
-      },
-    })
+export function parseCSVText(text: string): RawCSVRow[] {
+  const results = Papa.parse<RawCSVRow>(text, {
+    header: true,
+    skipEmptyLines: true,
   })
+  if (results.errors.length > 0) {
+    throw new Error(`CSV parsing errors: ${results.errors.map(e => e.message).join(', ')}`)
+  }
+  return results.data
 }
 
 /**
  * Dispatch raw-file preprocessing to the first registered preprocessor that matches.
- * Returns the original file unchanged if none apply.
+ * Returns the original text unchanged if none apply.
  */
-export async function preprocessCSVFile(file: File): Promise<File> {
+export function preprocessCSVText(text: string): string {
   for (const preprocessor of PREPROCESSORS) {
-    if (await preprocessor.matches(file)) {
-      return preprocessor.apply(file)
+    if (preprocessor.matches(text)) {
+      return preprocessor.apply(text)
     }
   }
-  return file
+  return text
 }

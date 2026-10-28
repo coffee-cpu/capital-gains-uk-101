@@ -1,5 +1,5 @@
 import { FXSource } from '../../../types/fxSource'
-import { db } from '../../db'
+import { getFxRateCache } from '../../cache'
 import { BaseFXProvider } from './base'
 
 /**
@@ -190,7 +190,7 @@ export class DailySpotProvider extends BaseFXProvider {
       // Check if ANY currency is uncached for this date
       for (const currency of currencies) {
         const cacheKey = this.getCacheKey(dateStr, currency)
-        const cached = await db.fx_rates.get(cacheKey)
+        const cached = await getFxRateCache().get(cacheKey)
         if (!cached) {
           dates.push(dateStr)
           break // Only need to add the date once
@@ -274,7 +274,7 @@ export class DailySpotProvider extends BaseFXProvider {
 
     // Bulk insert for efficiency
     if (entries.length > 0) {
-      await db.fx_rates.bulkPut(entries)
+      await getFxRateCache().bulkPut(entries)
     }
   }
 }
