@@ -1,0 +1,30 @@
+# Capital Gains Tax Visualiser
+
+> Free, open-source UK capital gains tax calculator for shares. It imports broker CSV exports (Charles Schwab, Interactive Brokers, Trading 212, Freetrade, EquatePlus, Revolut, Coinbase, Coinbase Pro, or a Generic CSV), converts foreign currency to GBP, adjusts for stock splits, and applies HMRC's share matching rules: same-day, 30-day ("bed and breakfast") and Section 104 pooling. All processing is local; transactions are never uploaded.
+
+There are two ways to use it:
+
+- **Web app** (https://cgtvisualiser.co.uk): runs entirely in the browser. Best for people.
+- **Command-line tool** (`npx -y cgt-visualiser@0`): the same engine for a terminal. Best for AI agents and scripts. It outputs versioned JSON, with coded warnings and clear exit codes.
+
+If you are an AI agent asked to work out UK capital gains tax on shares, run the command-line tool rather than calculating the matching rules yourself, and follow the agent guide.
+
+## For AI agents
+
+- [Agent guide](https://cgtvisualiser.co.uk/agents.md): step-by-step instructions for running the CLI on a user's broker exports, reading the JSON and warnings, and presenting results
+- [CLI README](https://github.com/coffee-cpu/capital-gains-uk-101/blob/main/packages/cli/README.md): commands, options and the JSON output schema
+
+## HMRC references
+
+- [HS284 Shares and Capital Gains Tax](https://www.gov.uk/government/publications/shares-and-capital-gains-tax-hs284-self-assessment-helpsheet): the helpsheet the matching rules follow, with worked examples
+- [CG51560](https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51560): same-day and 30-day rules
+- [CG51620](https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51620): Section 104 holdings
+- [CG78310](https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg78310): exchange rates for gains on foreign-currency assets
+
+## Optional
+
+- [Source code](https://github.com/coffee-cpu/capital-gains-uk-101): MIT licensed
+- [Calculation specification](https://github.com/coffee-cpu/capital-gains-uk-101/blob/main/docs/SPECIFICATION.md)
+- [Report an issue](https://github.com/coffee-cpu/capital-gains-uk-101/issues/new)
+
+Results are not tax advice. Users should check them and consult HMRC guidance or a qualified adviser before filing.
