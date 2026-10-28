@@ -115,7 +115,7 @@ npx cgt-visualiser calculate my-broker-export.csv --tax-year 2025/26
 - [Agent guide](public/agents.md), served at https://cgtvisualiser.co.uk/agents.md: step-by-step instructions for AI agents
 - [`llms.txt`](public/llms.txt), served at https://cgtvisualiser.co.uk/llms.txt
 
-The CLI lives in the `packages/cli` npm workspace. Build it with `npm run build:cli`. To release it, set the version in `packages/cli/package.json` and push a matching `cli-v<version>` tag (e.g. `cli-v0.1.0`); the `Publish CLI to npm` workflow tests, builds and publishes it.
+The CLI lives in the `packages/cli` npm workspace. Build it with `npm run build:cli`. To release it, set the version in `packages/cli/package.json` and push a matching `cli-v<version>` tag (e.g. `cli-v0.1.0`); the `Publish CLI to npm` workflow tests, builds and publishes it. See [docs/RELEASING_CLI.md](docs/RELEASING_CLI.md), including the one-time npm setup.
 
 ## Tech Stack
 
