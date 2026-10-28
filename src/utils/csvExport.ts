@@ -1,7 +1,7 @@
 import { GenericTransaction } from '../types/transaction'
 
 /**
- * Export transactions to Generic CSV format
+ * Export transactions to Generic CSV format and trigger a browser download
  * @param transactions Array of transactions to export
  * @param filename Optional filename (defaults to transactions-export.csv)
  */
@@ -9,6 +9,26 @@ export function exportTransactionsToCSV(
   transactions: GenericTransaction[],
   filename: string = 'transactions-export.csv'
 ): void {
+  const csvContent = transactionsToGenericCSV(transactions)
+
+  // Create blob and trigger download
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+  const link = document.createElement('a')
+  const url = URL.createObjectURL(blob)
+
+  link.setAttribute('href', url)
+  link.setAttribute('download', filename)
+  link.style.visibility = 'hidden'
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+}
+
+/**
+ * Serialise transactions as Generic CSV text (oldest first)
+ */
+export function transactionsToGenericCSV(transactions: GenericTransaction[]): string {
   // Define CSV headers matching Generic CSV format
   const headers = [
     'date',
@@ -20,7 +40,8 @@ export function exportTransactionsToCSV(
     'price',
     'total',
     'fee',
-    'notes'
+    'notes',
+    'split_ratio'
   ]
 
   // Sort transactions by date (oldest first)
@@ -40,28 +61,16 @@ export function exportTransactionsToCSV(
       tx.price !== null ? tx.price.toString() : '',
       tx.total !== null ? tx.total.toString() : '',
       tx.fee !== null ? tx.fee.toString() : '',
-      tx.notes || ''
+      tx.notes || '',
+      tx.ratio || ''
     ]
   })
 
   // Combine headers and rows
-  const csvContent = [
+  return [
     headers.join(','),
     ...rows.map(row => row.map(escapeCSVField).join(','))
   ].join('\n')
-
-  // Create blob and trigger download
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-  const link = document.createElement('a')
-  const url = URL.createObjectURL(blob)
-
-  link.setAttribute('href', url)
-  link.setAttribute('download', filename)
-  link.style.visibility = 'hidden'
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-  URL.revokeObjectURL(url)
 }
 
 /**

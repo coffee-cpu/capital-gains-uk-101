@@ -76,8 +76,8 @@ Already portable: `detectBroker`, all broker parsers (`rows -> GenericTransactio
   `"workspaces": ["packages/*"]`.
 - The CLI imports the shared engine from `../../src/lib` and is bundled with
   esbuild into `packages/cli/dist/cli.js`. Bundling keeps the install small and
-  avoids shipping React, Dexie and so on. Runtime dependencies are only what the
-  engine needs: `papaparse` and `zod`.
+  avoids shipping React, Dexie and so on. `papaparse` and `zod` are bundled in
+  too, so the published package has no runtime dependencies.
 - Argument parsing uses `node:util` `parseArgs`, so no extra dependency is
   needed. Minimum Node version is 20, for global `fetch`.
 - The npm name `cgt-visualiser` is currently free (checked 2026-10-27).

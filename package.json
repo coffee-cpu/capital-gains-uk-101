@@ -7,6 +7,9 @@
     "doc": "docs"
   },
   "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
@@ -18,7 +21,8 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:all": "npm run test && npm run test:e2e",
-    "lint": "eslint src e2e"
+    "lint": "eslint src e2e packages/cli/src",
+    "build:cli": "npm run build -w packages/cli"
   },
   "repository": {
     "type": "git",
