@@ -12,7 +12,18 @@ export const revolutDefinition: BrokerDefinition = {
   },
   parser: normalizeRevolutTransactions,
   instructions: {
-    steps: [],
+    steps: [
+      'Open the Revolut app and go to the Invest tab',
+      'Tap More → Documents',
+      'Choose Brokerage account (shown as Stocks in some app versions)',
+      'Select Account statement (not Profit and Loss)',
+      'Choose CSV format and period "All time", then tap Get statement',
+      'Save or share the CSV file to your device',
+    ],
+    notes: [
+      'The statement includes trades, dividends, cash top-ups and withdrawals for the whole period.',
+      'If your app only offers Excel, choose Excel and save the file as CSV (comma-separated) before uploading.',
+    ],
   },
   exampleFile: '/examples/revolut-example.csv',
   helpLinks: [
