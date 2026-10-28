@@ -224,14 +224,18 @@ Always store dates as ISO 8601: `YYYY-MM-DD`. Parsers must convert from broker-s
 2. ✅ **Lint**: Run `npm run lint` - catches hook violations and other issues the compiler misses
 3. ✅ **Unit tests**: Run `npm test` - verifies logic correctness
 4. ✅ **E2E tests** (when applicable): Run `npm run test:e2e` - catches integration issues when UI changes are involved
-5. ✅ **User approval**: Ask user to validate changes
+5. ✅ **CLI** (when `packages/cli` or the shared engine changes): Run `npm run build:cli`
 
-**Important Guidelines**:
-- **ALWAYS ask the user to validate changes before committing**
-- Never commit code without explicit user approval
-- Show a summary of changes and ask: "Should I commit and push these changes?"
-- Only proceed with `git commit` and `git push` after receiving confirmation
-- Running `npm run build` is **mandatory** - it catches TypeScript errors that unit tests alone won't detect
+**Pull Request Workflow**:
+- **Never commit or push directly to `main`**, and never merge PRs yourself. All changes reach
+  `main` through a pull request that the user merges.
+- On a feature branch, **no approval is needed** to commit, push the branch, open the PR, or
+  watch it.
+- Watch every PR you open: fix CI failures, respond to review comments (fix them, or reply
+  explaining why not), and keep the branch mergeable with `main`.
+- Only push once the checklist above passes. Running `npm run build` is **mandatory** - it catches
+  TypeScript errors that unit tests alone won't detect.
+- Summarise what changed and what was tested in the PR description.
 
 ### Testing Strategy
 - **Unit tests**: All parsers, detector logic, utility functions
