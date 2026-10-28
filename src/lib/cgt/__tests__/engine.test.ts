@@ -1111,7 +1111,7 @@ describe('CGT Engine - dividend and interest withholding tax', () => {
     }
   }
 
-  it('counts a negative tax row (Interactive Brokers) as tax withheld', () => {
+  it('counts a negative tax row from a non-IB source as tax withheld', () => {
     const summary = calculateCGT([
       row('div', 'DIVIDEND', 25),
       row('tax', 'TAX_ON_DIVIDEND', -3.75),
@@ -1131,7 +1131,7 @@ describe('CGT Engine - dividend and interest withholding tax', () => {
     expect(summary.totalDividendsGbp).toBeCloseTo(21.25, 6)
   })
 
-  it('counts interest withholding the same way, whatever the sign', () => {
+  it('counts non-IB interest withholding the same way, whatever the sign', () => {
     const summary = calculateCGT([
       row('int', 'INTEREST', 10),
       row('tax-ib', 'TAX_ON_INTEREST', -2),
@@ -1142,26 +1142,24 @@ describe('CGT Engine - dividend and interest withholding tax', () => {
     expect(summary.totalInterestGbp).toBeCloseTo(7, 6)
   })
 
-  it('never reports net dividends above gross for Interactive Brokers withholding', () => {
-    const ibRow = (type: string, description: string, amount: string) => ({
-      'Section': 'Transaction History',
-      'RowType': 'Data',
-      'Date': '2024-09-29',
-      'Account': 'U1234567',
-      'Description': description,
-      'Transaction Type': type,
-      'Symbol': 'AAPL',
-      'Quantity': '-',
-      'Price': '-',
-      'Gross Amount ': amount,
-      'Commission': '-',
-      'Net Amount': amount,
-    })
-    const parsed = normalizeInteractiveBrokersTransactions([
-      ibRow('Dividend', 'AAPL Cash Dividend USD 0.25 per Share', '25.00'),
-      ibRow('Foreign Tax Withholding', 'AAPL US Tax', '-3.75'),
-    ], 'ib-file')
-    const enriched = parsed.map(tx => ({
+  const ibRow = (type: string, description: string, amount: string) => ({
+    'Section': 'Transaction History',
+    'RowType': 'Data',
+    'Date': '2024-09-29',
+    'Account': 'U1234567',
+    'Description': description,
+    'Transaction Type': type,
+    'Symbol': 'AAPL',
+    'Quantity': '-',
+    'Price': '-',
+    'Gross Amount ': amount,
+    'Commission': '-',
+    'Net Amount': amount,
+  })
+
+  // Parses IB rows and enriches them as native GBP
+  function parseIB(rows: Record<string, string>[]): EnrichedTransaction[] {
+    return normalizeInteractiveBrokersTransactions(rows, 'ib-file').map(tx => ({
       ...tx,
       fx_rate: 1,
       price_gbp: tx.price,
@@ -1173,11 +1171,30 @@ describe('CGT Engine - dividend and interest withholding tax', () => {
       fx_error: null,
       tax_year: getTaxYear(tx.date),
     })) as EnrichedTransaction[]
+  }
 
-    const summary = calculateCGT(enriched).taxYearSummaries[0]
+  it('never reports net dividends above gross for Interactive Brokers withholding', () => {
+    const summary = calculateCGT(parseIB([
+      ibRow('Dividend', 'AAPL Cash Dividend USD 0.25 per Share', '25.00'),
+      ibRow('Foreign Tax Withholding', 'AAPL US Tax', '-3.75'),
+    ])).taxYearSummaries[0]
 
     expect(summary.totalWithholdingTaxGbp).toBeCloseTo(3.75, 6)
     expect(summary.totalDividendsGbp).toBeCloseTo(21.25, 6)
     expect(summary.totalDividendsGbp).toBeLessThanOrEqual(summary.grossDividendsGbp)
+  })
+
+  it('nets an Interactive Brokers withholding reversal against the original', () => {
+    // IB reverses withholding with a positive row, then re-withholds the
+    // corrected amount
+    const summary = calculateCGT(parseIB([
+      ibRow('Dividend', 'AAPL Cash Dividend USD 0.25 per Share', '25.00'),
+      ibRow('Foreign Tax Withholding', 'AAPL US Tax', '-3.75'),
+      ibRow('Foreign Tax Withholding', 'AAPL US Tax', '3.75'),
+      ibRow('Foreign Tax Withholding', 'AAPL US Tax', '-3.00'),
+    ])).taxYearSummaries[0]
+
+    expect(summary.totalWithholdingTaxGbp).toBeCloseTo(3, 6)
+    expect(summary.totalDividendsGbp).toBeCloseTo(22, 6)
   })
 })

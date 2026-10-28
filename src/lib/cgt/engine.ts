@@ -222,9 +222,7 @@ function generateTaxYearSummaries(
     // Withholding tax from two sources:
     // 1. withholdingTax_gbp on DIVIDEND (IB/Freetrade set this directly)
     // 2. TAX_ON_DIVIDEND transactions (Schwab NRA Tax Adj, IB Foreign Tax
-    //    Withholding). Brokers sign these differently (Schwab stored as a
-    //    positive amount, IB as a negative cash movement), so every row
-    //    counts as tax withheld by its absolute value.
+    //    Withholding), counted via withheldAmountGbp
     const dividendWithholdingFromIncome = yearDividends.reduce(
       (sum, tx) => sum + (tx.withholdingTax_gbp ?? 0),
       0
@@ -233,7 +231,7 @@ function generateTaxYearSummaries(
       tx => tx.tax_year === taxYear && tx.type === 'TAX_ON_DIVIDEND'
     )
     const dividendWithholdingFromTax = yearTaxOnDividend.reduce(
-      (sum, tx) => sum + Math.abs(tx.value_gbp ?? 0),
+      (sum, tx) => sum + withheldAmountGbp(tx),
       0
     )
     const totalWithholdingTaxGbp = dividendWithholdingFromIncome + dividendWithholdingFromTax
@@ -258,9 +256,9 @@ function generateTaxYearSummaries(
     const yearTaxOnInterest = transactions.filter(
       tx => tx.tax_year === taxYear && tx.type === 'TAX_ON_INTEREST'
     )
-    // Same as TAX_ON_DIVIDEND: any sign counts as tax withheld
+    // Same sign handling as TAX_ON_DIVIDEND
     const interestWithholdingFromTax = yearTaxOnInterest.reduce(
-      (sum, tx) => sum + Math.abs(tx.value_gbp ?? 0),
+      (sum, tx) => sum + withheldAmountGbp(tx),
       0
     )
     const interestWithholdingTaxGbp = interestWithholdingFromIncome + interestWithholdingFromTax
@@ -314,6 +312,19 @@ function generateTaxYearSummaries(
 
   // Sort by tax year (most recent first)
   return summaries.sort((a, b) => b.taxYear.localeCompare(a.taxYear))
+}
+
+/**
+ * Tax withheld by a TAX_ON_DIVIDEND or TAX_ON_INTEREST row, in GBP.
+ *
+ * Interactive Brokers keeps the cash-movement sign: negative is tax withheld,
+ * positive is a reversal of earlier withholding. Schwab's parser already
+ * stores withholding as a positive amount, so for other sources any sign
+ * counts as tax withheld.
+ */
+function withheldAmountGbp(tx: EnrichedTransaction): number {
+  const value = tx.value_gbp ?? 0
+  return tx.source === 'Interactive Brokers' ? -value : Math.abs(value)
 }
 
 /**
