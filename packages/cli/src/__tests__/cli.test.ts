@@ -5,6 +5,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { main, CliIO } from '../cli'
 import { calculate } from '../commands/calculate'
+import { normalize } from '../commands/normalize'
+import { CliError } from '../meta'
 import { readInputFiles } from '../inputs'
 import { money, CalculateReport } from '../report'
 import { createFileCacheBackends } from '../fileCache'
@@ -160,6 +162,19 @@ describe('cgt-visualiser CLI', () => {
       expect(report.taxYears.find(y => y.taxYear === '2024/25')!.netGainOrLossGbp).toBe(629.67)
     })
 
+    it('warns when stock split data is unavailable, and exits 3 with --strict', async () => {
+      const args = ['calculate', fixture('hmrc-hs284-example3.csv'), '--offline', '--no-cache']
+
+      const { code, stdout } = await run(args)
+      const strict = await run([...args, '--strict'])
+      const warning = (JSON.parse(stdout) as CalculateReport).warnings.find(w => w.code === 'SPLIT_DATA_UNAVAILABLE')
+
+      expect(code).toBe(0)
+      expect(strict.code).toBe(3)
+      expect(warning!.message).toContain('2016')
+      expect(warning!.message).toContain('--offline')
+    })
+
     it('warns when the requested tax year has no transactions', async () => {
       const { stdout } = await run(['calculate', fixture('hmrc-hs284-example3.csv'), '--tax-year', '2010/11', ...OFFLINE])
       const report: CalculateReport = JSON.parse(stdout)
@@ -198,6 +213,54 @@ describe('cgt-visualiser CLI', () => {
   })
 
   describe('normalize', () => {
+    const cgtTotals = (report: CalculateReport) =>
+      report.taxYears.map(y => [y.taxYear, y.disposals, y.proceedsGbp, y.allowableCostsGbp, y.gainsGbp, y.lossesGbp, y.netGainOrLossGbp])
+    const options = { taxYear: null, fxSource: 'HMRC_MONTHLY' as const, autoSplits: false, offline: true, details: false }
+
+    // normalize → calculate must give the same gains as calculate on the originals,
+    // or normalize must refuse to write a file
+    it.each(readdirSync(FIXTURES).filter(f => f.endsWith('.csv')))('%s round-trips or is refused', async name => {
+      useConstantRates()
+      const files = await readInputFiles([fixture(name)])
+      const original = await calculate(files, options)
+
+      let csv: string
+      try {
+        csv = normalize(files).csv
+      } catch (error) {
+        expect(error).toBeInstanceOf(CliError)
+        expect((error as CliError).message).toContain('options or short sells')
+        const { transactions } = importCSVText(files[0].text, files[0].fileId)
+        expect(transactions.some(tx => tx.is_short_sell || tx.option_type)).toBe(true)
+        return
+      }
+      const roundTrip = await calculate([{ path: 'generic.csv', name: 'generic.csv', text: csv, fileId: 'generic' }], options)
+
+      expect(cgtTotals(roundTrip)).toEqual(cgtTotals(original))
+    })
+
+    it('keeps broker stock split ratios', () => {
+      const csv = [
+        'date,type,symbol,currency,quantity,price,total,fee,split_ratio',
+        '2024-01-02,BUY,NVDA,USD,10,500,5000,0,',
+        '2024-06-10,STOCK_SPLIT,NVDA,USD,,,,,10:1',
+      ].join('\n')
+
+      const { csv: out } = normalize([{ path: 'in.csv', name: 'in.csv', text: csv, fileId: 'in' }])
+
+      expect(out.split('\n')[0]).toContain('split_ratio')
+      expect(out).toMatch(/STOCK_SPLIT,NVDA,.*,10:1/)
+    })
+
+    it('skips a file passed twice', async () => {
+      const out = join(tmp, 'generic.csv')
+
+      const { stderr } = await run(['normalize', fixture('hmrc-hs284-example3.csv'), fixture('hmrc-hs284-example3.csv'), '-o', out])
+
+      expect(stderr).toContain('Skipped')
+      expect(readFileSync(out, 'utf-8').trim().split('\n')).toHaveLength(5)
+    })
+
     it('writes a Generic CSV that calculates to the same result', async () => {
       const out = join(tmp, 'generic.csv')
 

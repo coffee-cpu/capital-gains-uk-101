@@ -17,7 +17,7 @@ Requires Node.js 20 or later.
 | `calculate <files...>` | Calculate gains and losses for every tax year, or one year with `--tax-year 2025/26` |
 | `detect <files...>` | Show which broker format each file is, without calculating |
 | `brokers` | List supported brokers and how to export the right file from each |
-| `normalize <files...> -o out.csv` | Convert exports into one Generic CSV that you can edit (fix or add rows), then pass to `calculate` |
+| `normalize <files...> -o out.csv` | Convert exports into one Generic CSV that you can edit (fix or add rows), then pass to `calculate`. It refuses files with options or short sells, which the Generic CSV format can't represent |
 
 Run `cgt-visualiser --help` for all options. The main options are:
 
@@ -49,7 +49,7 @@ The output is versioned with `schemaVersion: 1`. New fields may be added within 
 | `taxYears[].rateChange2024` | 2024/25 only: gains and losses before and after the 30 October 2024 rate change, and whether an adjustment is required |
 | `disposals[]` | One row per disposal: date, symbol, split-adjusted quantity, proceeds, cost, gain or loss, matching rules used, and an `incomplete` flag. `--details` adds the full audit trail |
 | `section104Pools[]` | Holdings remaining after the last imported transaction |
-| `warnings[]` | Problems to resolve, each with a `code` and the affected `transactionIds`. Codes: `FX_RATE_MISSING`, `INCOMPLETE_DISPOSAL` (sales with no recorded purchase, often because the history starts too late), `UNKNOWN_TRANSACTION_TYPE`, `DUPLICATE_FILE`, `TAX_YEAR_NOT_FOUND` |
+| `warnings[]` | Problems to resolve, each with a `code` and the affected `transactionIds`. Codes: `FX_RATE_MISSING`, `INCOMPLETE_DISPOSAL` (sales with no recorded purchase, often because the history starts too late), `SPLIT_DATA_UNAVAILABLE` (stock split data couldn't be fetched, so unrecorded splits weren't applied), `UNKNOWN_TRANSACTION_TYPE`, `DUPLICATE_FILE`, `TAX_YEAR_NOT_FOUND`. With `--tax-year`, `FX_RATE_MISSING` and `UNKNOWN_TRANSACTION_TYPE` still cover every year, because an earlier problem changes the Section 104 pool cost used later |
 
 All amounts are in GBP and rounded to the penny.
 

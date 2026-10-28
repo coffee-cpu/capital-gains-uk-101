@@ -205,8 +205,11 @@ export async function main(argv: string[], io: CliIO): Promise<ExitCodeValue> {
         if (values.output === undefined) {
           throw new CliError('normalize needs -o <file> for the Generic CSV output.')
         }
-        const { csv, transactions } = normalize(await readInputFiles(paths))
+        const { csv, transactions, skippedFiles } = normalize(await readInputFiles(paths))
         await emit(csv)
+        for (const skipped of skippedFiles) {
+          io.stderr(`Skipped "${skipped}": same name and size as an earlier input\n`)
+        }
         io.stderr(`Wrote ${transactions} transactions to ${values.output}\n`)
         return ExitCode.OK
       }

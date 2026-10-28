@@ -21,6 +21,7 @@ export interface ReportWarning {
     | 'UNKNOWN_TRANSACTION_TYPE'
     | 'DUPLICATE_FILE'
     | 'TAX_YEAR_NOT_FOUND'
+    | 'SPLIT_DATA_UNAVAILABLE'
   message: string
   transactionIds?: string[]
 }

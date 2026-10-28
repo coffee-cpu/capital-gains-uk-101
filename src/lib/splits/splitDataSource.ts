@@ -57,9 +57,14 @@ const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000
  * - Caches responses (IndexedDB in the browser, see `cache.ts`) with a 7-day TTL
  * - On network failure, falls back to stale cache if available
  * - 404s (year file doesn't exist) are handled silently
+ * - Years that could be neither fetched nor read from cache are recorded in
+ *   `unavailableYears`, so callers can report that splits may be missing
  */
 export class JsDelivrSplitSource implements SplitDataSource {
   private readonly baseUrl = 'https://cdn.jsdelivr.net/gh/coffee-cpu/stock-splits-data@main/data'
+
+  /** Years whose split data could not be fetched and had no cached copy */
+  readonly unavailableYears = new Set<number>()
 
   async fetchSplitsForYears(years: number[]): Promise<SplitRecord[]> {
     const results = await Promise.all(
@@ -103,6 +108,7 @@ export class JsDelivrSplitSource implements SplitDataSource {
       if (cached) {
         return this.parseCdnData(cached.data)
       }
+      this.unavailableYears.add(year)
       return []
     }
   }

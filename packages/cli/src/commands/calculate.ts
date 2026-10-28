@@ -1,5 +1,6 @@
 import { importCSVText } from '../../../../src/lib/import'
 import { runPipeline } from '../../../../src/lib/pipeline'
+import { JsDelivrSplitSource } from '../../../../src/lib/splits/splitDataSource'
 import { FXSource } from '../../../../src/types/fxSource'
 import { GenericTransaction } from '../../../../src/types/transaction'
 import { InputFile } from '../inputs'
@@ -46,10 +47,25 @@ export async function calculate(files: InputFile[], options: CalculateOptions): 
     transactions.push(...imported.transactions)
   }
 
+  const splitSource = new JsDelivrSplitSource()
   const result = await runPipeline(transactions, {
     fxSource: options.fxSource,
     autoSplits: options.autoSplits,
+    splitSource,
   })
+
+  // Missing split data can't be detected from the result: report it explicitly
+  if (splitSource.unavailableYears.size > 0) {
+    const years = [...splitSource.unavailableYears].sort((a, b) => a - b)
+    warnings.push({
+      code: 'SPLIT_DATA_UNAVAILABLE',
+      message:
+        `Stock split data for ${years.join(', ')} could not be fetched and was not cached` +
+        `${options.offline ? ' (--offline)' : ''}. Splits not recorded in your broker files ` +
+        'were not applied, so quantities and costs for any share that split may be wrong. ' +
+        'Run once online to cache the data, or add STOCK_SPLIT rows yourself.',
+    })
+  }
 
   return buildCalculateReport(result, { ...options, inputs, warnings })
 }

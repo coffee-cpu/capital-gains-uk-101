@@ -40,7 +40,8 @@ export function transactionsToGenericCSV(transactions: GenericTransaction[]): st
     'price',
     'total',
     'fee',
-    'notes'
+    'notes',
+    'split_ratio'
   ]
 
   // Sort transactions by date (oldest first)
@@ -60,7 +61,8 @@ export function transactionsToGenericCSV(transactions: GenericTransaction[]): st
       tx.price !== null ? tx.price.toString() : '',
       tx.total !== null ? tx.total.toString() : '',
       tx.fee !== null ? tx.fee.toString() : '',
-      tx.notes || ''
+      tx.notes || '',
+      tx.ratio || ''
     ]
   })
 
