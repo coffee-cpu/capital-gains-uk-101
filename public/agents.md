@@ -113,6 +113,12 @@ npx -y cgt-visualiser@0 normalize statement1.csv -o transactions.csv
 npx -y cgt-visualiser@0 calculate transactions.csv --format json
 ```
 
+After editing, check that no row was dropped. Rows with a missing date, or a `type` that isn't recognised, are **skipped without a warning**, so a mistyped `SELL` would quietly remove a sale and understate the gain. Run `detect` and compare the count with the number of data rows in the file (lines minus the header):
+
+```bash
+npx -y cgt-visualiser@0 detect transactions.csv --format json   # "transactions" must equal the data row count
+```
+
 `normalize` refuses files containing options or short sells, because Generic CSV can't represent them. For those, keep calculating from the original files.
 
 ## 6. Present the result

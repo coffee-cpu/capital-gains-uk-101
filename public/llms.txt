@@ -5,7 +5,7 @@
 There are two ways to use it:
 
 - **Web app** (https://cgtvisualiser.co.uk): runs entirely in the browser. Best for people.
-- **Command-line tool** (`npx cgt-visualiser`): the same engine for a terminal. Best for AI agents and scripts. It outputs versioned JSON, with coded warnings and clear exit codes.
+- **Command-line tool** (`npx -y cgt-visualiser@0`): the same engine for a terminal. Best for AI agents and scripts. It outputs versioned JSON, with coded warnings and clear exit codes.
 
 If you are an AI agent asked to work out UK capital gains tax on shares, run the command-line tool rather than calculating the matching rules yourself, and follow the agent guide.
 
