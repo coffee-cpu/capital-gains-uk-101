@@ -83,7 +83,7 @@ git push origin cli-v0.1.0
 Watch the **Publish CLI to npm** run in the repository's Actions tab. When it succeeds, npm reports "Your package is being processed and may take a few minutes to become available". For 0.1.0 it took about 90 seconds before `npm view cgt-visualiser@0.1.0 version` returned the version. After that, https://www.npmjs.com/package/cgt-visualiser shows 0.1.0 with a provenance badge. Check that it runs:
 
 ```bash
-npx -y cgt-visualiser@0 --version   # prints 0.1.0
+npx -y cgt-visualiser@latest --version   # prints 0.1.0
 ```
 
 ### 5. Retire the placeholder
@@ -110,12 +110,15 @@ On https://www.npmjs.com/package/cgt-visualiser → **Settings** → **Publishin
 
 The workflow fails before publishing if the tag doesn't match `packages/cli/package.json`.
 
-If you change the JSON output in a breaking way, bump `SCHEMA_VERSION` in `packages/cli/src/report.ts`, update `public/agents.md`, and release a new major version. The agent guide pins `cgt-visualiser@0`.
+If you change the JSON output in a breaking way, bump `SCHEMA_VERSION` in `packages/cli/src/report.ts`, update `public/agents.md`, and release a new major version.
+
+The agent guide (`public/agents.md`), `public/llms.txt` and `index.html` use `cgt-visualiser@latest`, so a new release reaches agents straight away, including a new major version. They are protected from breaking changes by the `schemaVersion` check in the agent guide, not by the version range. Don't switch them to a range such as `@0`: npx caches each install under the exact spec it was given and keeps reusing a cached version that still satisfies the range, so someone who ran `@0` once would stay on that version indefinitely. `@latest` is checked against the registry on every run.
 
 ## Troubleshooting
 
 - **`EOTP`: "This operation requires a one-time password":** the command ran somewhere npm couldn't prompt for 2FA (for example, a non-interactive shell). Run it in a regular terminal, or pass `--otp=<code>` if you use an authenticator app.
 - **The workflow succeeded but `npm view` doesn't show the new version yet:** npm is still processing it. Wait a few minutes.
+- **`npx cgt-visualiser@0` (or another range) runs an old version:** npx is reusing a cached install. Use `@latest` or an exact version, or clear the cache with `npx clear-npx-cache`.
 - **The publish step fails with an authentication error (401, 403 or 404):** the trusted publisher fields don't exactly match. Check them with `npm trust list cgt-visualiser`. Also check the publisher hasn't expired: it expires if not used within 2 days of being created.
 - **"Tag version does not match":** the tag and `packages/cli/package.json` disagree. Delete the tag (`git push --delete origin cli-vX.Y.Z` and `git tag -d cli-vX.Y.Z`), fix the version, and tag again.
 - **"cannot publish over the previously published version":** that version is already on npm. Bump the version and tag again.
