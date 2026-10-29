@@ -1,6 +1,7 @@
 import { describeSkippedRows, importCSVText } from '../../../../src/lib/import'
 import { runPipeline } from '../../../../src/lib/pipeline'
 import { JsDelivrSplitSource } from '../../../../src/lib/splits/splitDataSource'
+import { CGTCalculationResult } from '../../../../src/types/cgt'
 import { FXSource } from '../../../../src/types/fxSource'
 import { GenericTransaction } from '../../../../src/types/transaction'
 import { InputFile } from '../inputs'
@@ -20,6 +21,14 @@ export interface CalculateOptions {
  * build the JSON report.
  */
 export async function calculate(files: InputFile[], options: CalculateOptions): Promise<CalculateReport> {
+  return (await calculateWithResult(files, options)).report
+}
+
+/** Like `calculate`, but also returns the engine's raw result (used for the PDF report) */
+export async function calculateWithResult(
+  files: InputFile[],
+  options: CalculateOptions
+): Promise<{ report: CalculateReport; result: CGTCalculationResult | null }> {
   const inputs: ReportInput[] = []
   const warnings: ReportWarning[] = []
   const transactions: GenericTransaction[] = []
@@ -75,5 +84,5 @@ export async function calculate(files: InputFile[], options: CalculateOptions): 
     })
   }
 
-  return buildCalculateReport(result, { ...options, inputs, warnings })
+  return { report: buildCalculateReport(result, { ...options, inputs, warnings }), result }
 }
