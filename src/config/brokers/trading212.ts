@@ -51,12 +51,16 @@ export const trading212Definition: BrokerDefinition = {
   instructions: {
     steps: [
       'Log into Trading 212 app or website',
-      'Go to Menu → History',
+      'Open the Menu and select the Invest account tab at the top (not Stocks ISA)',
+      'Go to History',
       'Tap the export button',
-      'Select timeframe (max 1 year) and data types',
+      'Select timeframe (max 1 year) and include Orders, Dividends and Transactions',
       'Download the CSV file when ready',
     ],
-    notes: ['Trading 212 limits downloads to 1 year. For longer history, download year by year and upload multiple files.'],
+    notes: [
+      'Trading 212 limits downloads to 1 year. For longer history, download year by year and upload multiple files.',
+      'Each export covers one account. Import only your Invest account: Stocks ISA gains are free of Capital Gains Tax, and the ISA export looks the same, so the app can\'t tell them apart.',
+    ],
   },
   exampleFile: '/examples/trading212-example.csv',
   enabled: true,
