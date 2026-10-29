@@ -218,7 +218,8 @@ export function CSVImporter() {
             <div className="ml-3">
               <h3 className="text-sm font-medium text-blue-800">What to import</h3>
               <div className="mt-2 text-sm text-blue-700 space-y-2">
-                <p>You need to provide the transaction history for <strong>each of your accounts</strong>.</p>
+                <p>You need to provide the transaction history for <strong>each of your taxable accounts</strong>.</p>
+                <p>Leave out ISAs and pensions (SIPPs): gains in those accounts are free of Capital Gains Tax.</p>
                 <p>The history should include <strong>ALL transactions</strong> since you first acquired any shares owned during the relevant tax years (even if they were acquired in previous years).</p>
                 <p className="text-blue-600 bg-blue-100 p-2 rounded">
                   <strong>Why historical data?</strong> To calculate your gain/loss, we need to know the original purchase price (cost basis) of shares you sold. This requires transaction history from when you first bought them, which may be years ago.

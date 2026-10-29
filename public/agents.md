@@ -10,7 +10,9 @@ Requirements: Node.js 20 or later, and a shell.
 
 ## 1. Get the right files from the user
 
-You need the user's **complete transaction history** for each account: every purchase back to when they first bought the shares, not just the current tax year. Without the purchases, sales can't be matched to their costs, and the tool reports `INCOMPLETE_DISPOSAL`.
+You need the user's **complete transaction history** for each taxable account: every purchase back to when they first bought the shares, not just the current tax year. Without the purchases, sales can't be matched to their costs, and the tool reports `INCOMPLETE_DISPOSAL`.
+
+Leave out ISA and pension (SIPP) accounts: their gains are free of CGT. Exports from the same broker look identical for both kinds of account (for example, Trading 212's Invest and Stocks ISA exports), so the tool can't tell them apart. Ask the user which account each file comes from.
 
 To see which brokers are supported and how to export the right file from each:
 

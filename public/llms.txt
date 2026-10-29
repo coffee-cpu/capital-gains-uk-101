@@ -9,6 +9,8 @@ There are two ways to use it:
 
 If you are an AI agent asked to work out UK capital gains tax on shares, run the command-line tool rather than calculating the matching rules yourself, and follow the agent guide. If you can't run commands, guide the user to load their broker exports in the web app and use its Export PDF button.
 
+Only include taxable (general investment) accounts. Gains in ISAs and pensions (SIPPs) are free of CGT, and their exports often look identical to taxable ones, so ask the user which account each file comes from.
+
 ## For AI agents
 
 - [Agent guide](https://cgtvisualiser.co.uk/agents.md): step-by-step instructions for running the CLI on a user's broker exports, reading the JSON and warnings, and presenting results
