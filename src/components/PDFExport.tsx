@@ -2,6 +2,9 @@ import type { TaxYearSummary, DisposalRecord } from '../types/cgt'
 import type { EnrichedTransaction } from '../types/transaction'
 import { renderAllFeaturePDFSections } from '../lib/cgt/taxYearFeatures'
 
+type PdfLibrary = typeof import('@react-pdf/renderer')
+type PdfStyles = ReturnType<typeof createStyles>
+
 /**
  * Lazy-load @react-pdf/renderer to avoid including it in the main bundle.
  * This module is only loaded when the user clicks the Export PDF button.
@@ -12,7 +15,7 @@ async function loadPdfLibrary() {
 }
 
 // Create styles factory (will be called after loading the library)
-function createStyles(StyleSheet: any) {
+function createStyles(StyleSheet: PdfLibrary['StyleSheet']) {
   return StyleSheet.create({
   page: {
     padding: 40,
@@ -160,7 +163,13 @@ interface PDFDocumentProps {
   includeTransactions?: boolean
 }
 
-function createCGTReportDocument(Document: any, Page: any, Text: any, View: any, styles: any) {
+function createCGTReportDocument(
+  Document: PdfLibrary['Document'],
+  Page: PdfLibrary['Page'],
+  Text: PdfLibrary['Text'],
+  View: PdfLibrary['View'],
+  styles: PdfStyles
+) {
   return ({ taxYearSummary, disposals, transactions, includeTransactions }: PDFDocumentProps) => {
     const formatCurrency = (value: number) => `£${value.toFixed(2)}`
     const formatDate = (date: string) => new Date(date).toLocaleDateString('en-GB')
