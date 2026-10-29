@@ -4,11 +4,15 @@ Releases are published to npm by `.github/workflows/publish-cli.yml` when a `cli
 
 ## One-time setup (first release only)
 
+This was completed for 0.1.0 in October 2026. It is kept here in case the package ever has to be set up again.
+
 Trusted publishing can only be configured for a package that already exists on npm, so the first release starts with a manual placeholder publish.
 
 You need:
 - an npm account with **two-factor authentication enabled** (required by `npm trust`);
-- Node.js 22.14 or later, and npm 11.15.0 or later (`npm install -g npm@latest`; check with `npm -v`).
+- Node.js 22.14 or later, and npm 11.15.0 or later (`npm install -g npm@latest`; check with `npm -v`). Only `npm trust` needs npm 11; if you set up the trusted publisher on the website instead, an older npm is fine.
+
+Run the npm commands below in a regular interactive terminal. If your 2FA uses a security key or passkey, npm prints an "Authenticate your account at" link and waits for you to confirm in the browser. If it uses an authenticator app, npm asks for a code. A non-interactive shell can do neither, so the command fails with `EOTP`.
 
 ### 1. Log in
 
@@ -33,7 +37,9 @@ EOF
 npm publish --access public
 ```
 
-npm asks for a one-time password from your authenticator app.
+npm asks you to confirm with 2FA (see above).
+
+npm may also create a stub version called `0.0.0-stage` ("Temporary package placeholder for staged publishing"), and `0.0.0` itself can take a while to appear in `npm view cgt-visualiser versions`. Either way the package name now exists, which is all step 3 needs.
 
 ### 3. Trust this repository's publish workflow
 
@@ -74,7 +80,7 @@ git tag cli-v0.1.0
 git push origin cli-v0.1.0
 ```
 
-Watch the **Publish CLI to npm** run in the repository's Actions tab. When it succeeds, https://www.npmjs.com/package/cgt-visualiser shows 0.1.0 with a provenance badge. Check that it runs:
+Watch the **Publish CLI to npm** run in the repository's Actions tab. When it succeeds, npm reports "Your package is being processed and may take a few minutes to become available". For 0.1.0 it took about 90 seconds before `npm view cgt-visualiser@0.1.0 version` returned the version. After that, https://www.npmjs.com/package/cgt-visualiser shows 0.1.0 with a provenance badge. Check that it runs:
 
 ```bash
 npx -y cgt-visualiser@0 --version   # prints 0.1.0
@@ -84,6 +90,7 @@ npx -y cgt-visualiser@0 --version   # prints 0.1.0
 
 ```bash
 npm deprecate cgt-visualiser@0.0.0 "Placeholder. Use 0.1.0 or later."
+npm deprecate cgt-visualiser@0.0.0-stage "Placeholder. Use 0.1.0 or later."   # if npm created the stub
 ```
 
 ### 6. Optional: block token-based publishing
@@ -107,6 +114,8 @@ If you change the JSON output in a breaking way, bump `SCHEMA_VERSION` in `packa
 
 ## Troubleshooting
 
+- **`EOTP`: "This operation requires a one-time password":** the command ran somewhere npm couldn't prompt for 2FA (for example, a non-interactive shell). Run it in a regular terminal, or pass `--otp=<code>` if you use an authenticator app.
+- **The workflow succeeded but `npm view` doesn't show the new version yet:** npm is still processing it. Wait a few minutes.
 - **The publish step fails with an authentication error (401, 403 or 404):** the trusted publisher fields don't exactly match. Check them with `npm trust list cgt-visualiser`. Also check the publisher hasn't expired: it expires if not used within 2 days of being created.
 - **"Tag version does not match":** the tag and `packages/cli/package.json` disagree. Delete the tag (`git push --delete origin cli-vX.Y.Z` and `git tag -d cli-vX.Y.Z`), fix the version, and tag again.
 - **"cannot publish over the previously published version":** that version is already on npm. Bump the version and tag again.
