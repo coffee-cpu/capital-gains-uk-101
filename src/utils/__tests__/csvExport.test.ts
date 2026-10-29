@@ -1,15 +1,15 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach, type MockInstance } from 'vitest'
 import { exportTransactionsToCSV } from '../csvExport'
 import { GenericTransaction } from '../../types/transaction'
 
 describe('csvExport', () => {
   // Mock document methods
   let mockLink: HTMLAnchorElement
-  let createElementSpy: any
-  let appendChildSpy: any
-  let removeChildSpy: any
-  let createObjectURLSpy: any
-  let revokeObjectURLSpy: any
+  let createElementSpy: MockInstance
+  let appendChildSpy: MockInstance
+  let removeChildSpy: MockInstance
+  let createObjectURLSpy: MockInstance
+  let revokeObjectURLSpy: MockInstance
 
   beforeEach(() => {
     // Create a mock link element

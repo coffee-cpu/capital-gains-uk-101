@@ -9,13 +9,13 @@ import { renderAllFeaturePDFSections } from '../cgt/taxYearFeatures/pdfRenderers
  * The @react-pdf/renderer module is passed in rather than imported, so the web
  * app can keep lazy-loading it while the CLI bundles it.
  */
-export type ReactPdfLibrary = Pick<
-  typeof import('@react-pdf/renderer'),
-  'Document' | 'Page' | 'Text' | 'View' | 'StyleSheet'
->
+type PdfLibrary = typeof import('@react-pdf/renderer')
+type PdfStyles = ReturnType<typeof createStyles>
+
+export type ReactPdfLibrary = Pick<PdfLibrary, 'Document' | 'Page' | 'Text' | 'View' | 'StyleSheet'>
 
 // Create styles factory (will be called after loading the library)
-function createStyles(StyleSheet: any) {
+function createStyles(StyleSheet: PdfLibrary['StyleSheet']) {
   return StyleSheet.create({
   page: {
     padding: 40,
@@ -171,7 +171,13 @@ export function formatReportDate(date: string): string {
   return new Date(date).toLocaleDateString('en-GB', { timeZone: 'UTC' })
 }
 
-function createCGTReportDocument(Document: any, Page: any, Text: any, View: any, styles: any) {
+function createCGTReportDocument(
+  Document: PdfLibrary['Document'],
+  Page: PdfLibrary['Page'],
+  Text: PdfLibrary['Text'],
+  View: PdfLibrary['View'],
+  styles: PdfStyles
+) {
   return ({ taxYearSummary, disposals, transactions, includeTransactions }: PDFDocumentProps) => {
     const formatCurrency = (value: number) => `£${value.toFixed(2)}`
     const formatDate = formatReportDate

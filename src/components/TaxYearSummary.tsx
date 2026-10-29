@@ -1,4 +1,5 @@
 import { useTransactionStore } from '../stores/transactionStore'
+import type { EnrichedTransaction } from '../types/transaction'
 import { useState } from 'react'
 import { DisposalRecords } from './DisposalRecords'
 import { Tooltip } from './Tooltip'
@@ -6,7 +7,7 @@ import { ExportPDFButton } from './ExportPDFButton'
 import { BuyMeACoffee } from './BuyMeACoffee'
 import { TaxYearFeaturesRenderer } from './taxYearFeatures'
 
-function BuyOnlyInfoBanner({ transactions }: { transactions: any[] }) {
+function BuyOnlyInfoBanner({ transactions }: { transactions: EnrichedTransaction[] }) {
   // Check if any transactions are from Schwab Equity Awards
   const hasSchwabEquityAwards = transactions.some(
     tx => tx.source === 'Charles Schwab Equity Awards'

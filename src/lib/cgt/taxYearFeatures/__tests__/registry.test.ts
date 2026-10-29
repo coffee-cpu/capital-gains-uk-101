@@ -7,7 +7,8 @@ import {
   getAllFeatureIds,
 } from '../registry'
 import { cgtRateChange2024Feature } from '../cgtRateChange2024'
-import type { TaxYearSummary } from '../../../../types/cgt'
+import type { TaxYearSummary, DisposalRecord } from '../../../../types/cgt'
+import type { CGTRateChange2024Data } from '../cgtRateChange2024'
 
 /**
  * Helper to create a minimal tax year summary for testing
@@ -135,8 +136,8 @@ describe('Tax Year Features Registry', () => {
         isIncomplete: false,
       }
 
-      const features = calculateTaxYearFeatures(summary, [disposal as any])
-      const rateChangeData = features['cgt-rate-change-2024'] as any
+      const features = calculateTaxYearFeatures(summary, [disposal as unknown as DisposalRecord])
+      const rateChangeData = features['cgt-rate-change-2024'] as CGTRateChange2024Data
 
       expect(rateChangeData.disposalCountAfterRateChange).toBe(1)
       expect(rateChangeData.gainsAfterRateChange).toBe(5000)

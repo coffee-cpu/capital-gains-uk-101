@@ -5,6 +5,7 @@ import { Tooltip } from './Tooltip'
 import { FXSourceSelector } from './FXSourceSelector'
 import { AutoSplitsToggle } from './AutoSplitsToggle'
 import { exportTransactionsToCSV } from '../utils/csvExport'
+import type { HelpContext } from '../utils/helpContent'
 import { isAcquisition, isDisposal, getUnitLabel } from '../lib/cgt/utils'
 
 // Helper to get currency symbol
@@ -50,7 +51,7 @@ export function TransactionList() {
   const section104Pools = getSection104Pools()
 
   // Helper to get help context for a badge label
-  const getContextForBadge = (label: string) => {
+  const getContextForBadge = (label: string): HelpContext => {
     if (label === 'Same Day') return 'same-day'
     if (label === '30-Day') return '30-day'
     if (label === 'Section 104') return 'section104'
@@ -62,7 +63,7 @@ export function TransactionList() {
   const handleBadgeClick = (e: React.MouseEvent, badgeLabel: string) => {
     e.stopPropagation() // Prevent click from bubbling to document (which would close the panel)
     const context = getContextForBadge(badgeLabel)
-    toggleHelpPanelWithContext(context as any)
+    toggleHelpPanelWithContext(context)
   }
 
   // Helper to find disposal record for a transaction
@@ -705,7 +706,7 @@ export function TransactionList() {
                         }`}
                         onClick={tx.type === 'STOCK_SPLIT' ? (e) => {
                           e.stopPropagation()
-                          toggleHelpPanelWithContext('stock-split' as any)
+                          toggleHelpPanelWithContext('stock-split')
                         } : undefined}
                       >
                         {tx.type}

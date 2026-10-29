@@ -11,6 +11,7 @@
  */
 
 import type { TaxYearSummary, DisposalRecord } from '../../../types/cgt'
+import type { Styles, Text, View } from '@react-pdf/renderer'
 
 /**
  * Base interface for tax year feature data.
@@ -27,11 +28,11 @@ export interface TaxYearFeatureData {
  */
 export interface PDFRenderContext {
   /** react-pdf Text component */
-  Text: any
+  Text: typeof Text
   /** react-pdf View component */
-  View: any
+  View: typeof View
   /** Shared styles for the PDF document */
-  styles: any
+  styles: Styles
   /** Currency formatter */
   formatCurrency: (value: number) => string
 }
