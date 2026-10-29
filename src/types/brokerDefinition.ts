@@ -29,7 +29,10 @@ export type ParserFunction = (
  * (summary lines, cash movements) don't report those.
  */
 export interface SkippedRow {
-  /** 1-based position among the file's data rows (the header is not counted) */
+  /**
+   * Row number as shown in a spreadsheet, with the header as row 1. Completely
+   * empty lines are removed before parsing, so rows after one are reported one lower.
+   */
   row: number
   reason: string
 }

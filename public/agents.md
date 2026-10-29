@@ -114,7 +114,7 @@ npx -y cgt-visualiser@0 normalize statement1.csv -o transactions.csv
 npx -y cgt-visualiser@0 calculate transactions.csv --format json
 ```
 
-After editing, check that no row was dropped. Rows with a missing date, or a `type` that isn't recognised, are left out, so a mistyped `SELL` would remove a sale and understate the gain. From version 0.2.0 these rows are reported as `SKIPPED_ROWS` warnings and in `detect`'s `skippedRows`. With any version, you can also run `detect` and compare the count with the number of data rows in the file (lines minus the header):
+After editing, check that no row was dropped. Rows with a missing date, or a `type` that isn't recognised, are left out, so a mistyped `SELL` would remove a sale and understate the gain. From version 0.2.0 these rows are reported as `SKIPPED_ROWS` warnings and in `detect`'s `skippedRows`, using the row number a spreadsheet shows (the header is row 1). With any version, you can also run `detect` and compare the count with the number of data rows in the file (lines minus the header):
 
 ```bash
 npx -y cgt-visualiser@0 detect transactions.csv --format json   # "transactions" must equal the data row count

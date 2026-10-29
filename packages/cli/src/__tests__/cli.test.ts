@@ -185,7 +185,7 @@ describe('cgt-visualiser CLI', () => {
 
       expect(code).toBe(0)
       expect(strict.code).toBe(3)
-      expect(warning!.message).toContain('row 2: unrecognised type "SEL"')
+      expect(warning!.message).toContain('row 3: unrecognised type "SEL"')
     })
 
     it('warns when the requested tax year has no transactions', async () => {
@@ -295,7 +295,7 @@ describe('cgt-visualiser CLI', () => {
 
       expect(code).toBe(0)
       expect(stderr).toContain('Warning:')
-      expect(stderr).toContain('row 2: unrecognised type "SEL"')
+      expect(stderr).toContain('row 3: unrecognised type "SEL"')
     })
 
     it('requires an output file', async () => {
@@ -328,7 +328,7 @@ describe('cgt-visualiser CLI', () => {
       expect(code).toBe(0)
       expect(JSON.parse(stdout)[0]).toMatchObject({
         transactions: 1,
-        skippedRows: [{ row: 2, reason: 'unrecognised type "SEL"' }],
+        skippedRows: [{ row: 3, reason: 'unrecognised type "SEL"' }],
       })
     })
 

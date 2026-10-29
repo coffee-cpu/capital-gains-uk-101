@@ -68,8 +68,8 @@ describe('importCSVText', () => {
 
     expect(result.transactions).toHaveLength(1)
     expect(result.skippedRows).toEqual([
-      { row: 2, reason: 'unrecognised type "SEL"' },
-      { row: 3, reason: 'missing date' },
+      { row: 3, reason: 'unrecognised type "SEL"' },
+      { row: 4, reason: 'missing date' },
     ])
   })
 
@@ -96,7 +96,7 @@ describe('importCSVText', () => {
   it('explains why when every row is skipped', () => {
     const csv = 'date,type,symbol,currency,quantity,price,total,fee\n2024-06-03,SEL,VOD,GBP,100,2,200,0'
 
-    expect(() => importCSVText(csv, 'all-bad')).toThrow('No valid transactions found in CSV (row 1: unrecognised type "SEL")')
+    expect(() => importCSVText(csv, 'all-bad')).toThrow('No valid transactions found in CSV (row 2: unrecognised type "SEL")')
   })
 
   it('summarises long lists of skipped rows', () => {

@@ -37,7 +37,8 @@ export function normalizeGenericTransactions(
 
     const normalized = normalizeGenericRow(row, fileId, rowIndex)
     if (typeof normalized === 'string') {
-      skippedRows?.push({ row: index + 1, reason: normalized })
+      // +2: spreadsheet row number (rows are 1-based and the header is row 1)
+      skippedRows?.push({ row: index + 2, reason: normalized })
     } else {
       transactions.push(normalized)
       rowIndex++

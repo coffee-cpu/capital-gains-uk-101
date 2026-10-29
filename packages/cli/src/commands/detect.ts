@@ -11,7 +11,7 @@ export interface DetectResult {
   broker: BrokerType
   confidence: number
   transactions: number
-  /** Data rows the parser couldn't read and left out */
+  /** Rows the parser couldn't read and left out (spreadsheet row numbers, header = row 1) */
   skippedRows: SkippedRow[]
   error?: string
 }
