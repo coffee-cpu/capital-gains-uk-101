@@ -1,4 +1,5 @@
-import { importCSVText, MIN_DETECTION_CONFIDENCE } from '../../../../src/lib/import'
+import { describeSkippedRows, importCSVText, MIN_DETECTION_CONFIDENCE } from '../../../../src/lib/import'
+import { SkippedRow } from '../../../../src/types/brokerDefinition'
 import { parseCSVText, preprocessCSVText } from '../../../../src/lib/csvParser'
 import { detectBroker } from '../../../../src/lib/brokerDetector'
 import { BrokerType } from '../../../../src/types/broker'
@@ -10,6 +11,8 @@ export interface DetectResult {
   broker: BrokerType
   confidence: number
   transactions: number
+  /** Rows the parser couldn't read and left out (spreadsheet row numbers, header = row 1) */
+  skippedRows: SkippedRow[]
   error?: string
 }
 
@@ -24,6 +27,7 @@ export function detect(files: InputFile[]): DetectResult[] {
         broker: imported.broker,
         confidence: imported.confidence,
         transactions: imported.transactions.length,
+        skippedRows: imported.skippedRows,
       }
     } catch (error) {
       return {
@@ -31,6 +35,7 @@ export function detect(files: InputFile[]): DetectResult[] {
         recognised: false,
         ...bestGuess(file.text),
         transactions: 0,
+        skippedRows: [],
         error: error instanceof Error ? error.message : String(error),
       }
     }
@@ -52,7 +57,8 @@ function bestGuess(text: string): { broker: BrokerType; confidence: number } {
 export function formatDetectText(results: DetectResult[]): string {
   return results.map(r =>
     r.recognised
-      ? `${r.file}: ${r.broker} (${r.transactions} transactions)`
+      ? `${r.file}: ${r.broker} (${r.transactions} transactions)` +
+        (r.skippedRows.length > 0 ? `; ${r.skippedRows.length} row(s) skipped: ${describeSkippedRows(r.skippedRows, 5)}` : '')
       : `${r.file}: not recognised — ${r.error}`
   ).join('\n') + '\n'
 }

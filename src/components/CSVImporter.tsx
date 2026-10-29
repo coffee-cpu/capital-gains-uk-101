@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { createFileId, importCSVText } from '../lib/import'
+import { createFileId, describeSkippedRows, importCSVText } from '../lib/import'
 import { readFileAsText } from '../lib/parsers/fileUtils'
 import { useTransactionStore } from '../stores/transactionStore'
 import { useSettingsStore } from '../stores/settingsStore'
@@ -46,7 +46,7 @@ export function CSVImporter() {
 
       // Preprocess, parse, detect broker format and normalize to GenericTransaction
       const text = await readFileAsText(file)
-      const { broker, transactions: parsed } = importCSVText(text, fileId)
+      const { broker, transactions: parsed, skippedRows } = importCSVText(text, fileId)
 
       // Add import timestamp
       const importedAt = new Date().toISOString()
@@ -65,7 +65,10 @@ export function CSVImporter() {
 
       return {
         success: true,
-        message: `"${file.name}": ${transactions.length} transactions from ${broker}`,
+        message: `"${file.name}": ${transactions.length} transactions from ${broker}` +
+          (skippedRows.length > 0
+            ? ` — ${skippedRows.length} row(s) skipped (${describeSkippedRows(skippedRows)})`
+            : ''),
         count: transactions.length
       }
     } catch (err) {

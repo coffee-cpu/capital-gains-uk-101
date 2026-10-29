@@ -1,4 +1,4 @@
-import { importCSVText } from '../../../../src/lib/import'
+import { describeSkippedRows, importCSVText } from '../../../../src/lib/import'
 import { transactionsToGenericCSV } from '../../../../src/utils/csvExport'
 import { deduplicateTransactions } from '../../../../src/utils/deduplication'
 import { GenericTransaction } from '../../../../src/types/transaction'
@@ -18,10 +18,17 @@ function hasFieldsGenericCSVCannotHold(tx: GenericTransaction): boolean {
  * Stock Plan Activity covered by Equity Awards removed, ignored rows dropped)
  * so the Generic CSV calculates to the same capital gains.
  */
-export function normalize(files: InputFile[]): { csv: string; transactions: number; skippedFiles: string[] } {
+export function normalize(files: InputFile[]): {
+  csv: string
+  transactions: number
+  skippedFiles: string[]
+  /** One message per file whose rows couldn't all be read */
+  skippedRowMessages: string[]
+} {
   const transactions: GenericTransaction[] = []
   const seenFileIds = new Set<string>()
   const skippedFiles: string[] = []
+  const skippedRowMessages: string[] = []
 
   for (const file of files) {
     if (seenFileIds.has(file.fileId)) {
@@ -30,7 +37,14 @@ export function normalize(files: InputFile[]): { csv: string; transactions: numb
     }
     seenFileIds.add(file.fileId)
     try {
-      transactions.push(...importCSVText(file.text, file.fileId).transactions)
+      const imported = importCSVText(file.text, file.fileId)
+      transactions.push(...imported.transactions)
+      if (imported.skippedRows.length > 0) {
+        skippedRowMessages.push(
+          `"${file.path}": ${imported.skippedRows.length} row(s) could not be read and were left out ` +
+          `(${describeSkippedRows(imported.skippedRows, 5)})`
+        )
+      }
     } catch (error) {
       const reason = error instanceof Error ? error.message : String(error)
       throw new CliError(`"${file.path}": ${reason}`, ExitCode.INPUT)
@@ -48,5 +62,5 @@ export function normalize(files: InputFile[]): { csv: string; transactions: numb
   }
 
   const kept = deduplicateTransactions(transactions).filter(tx => !tx.ignored)
-  return { csv: transactionsToGenericCSV(kept) + '\n', transactions: kept.length, skippedFiles }
+  return { csv: transactionsToGenericCSV(kept) + '\n', transactions: kept.length, skippedFiles, skippedRowMessages }
 }

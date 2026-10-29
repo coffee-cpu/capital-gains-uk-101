@@ -59,7 +59,8 @@ export const interactiveBrokersDefinition: BrokerDefinition = {
     priority: 5, // Check early since it has unique multi-section format
     customDetector: detectInteractiveBrokers,
   },
-  parser: normalizeInteractiveBrokersTransactions,
+  // Wrapped: the parser's own third parameter is a reference date, not the skipped-rows list
+  parser: (rows, fileId) => normalizeInteractiveBrokersTransactions(rows, fileId),
   instructions: {
     steps: [
       'Log into Client Portal → Performance & Reports → Transaction History',

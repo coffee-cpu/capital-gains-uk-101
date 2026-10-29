@@ -19,8 +19,23 @@ import { GenericTransaction } from './transaction'
  */
 export type ParserFunction = (
   rows: RawCSVRow[],
-  fileId: string
+  fileId: string,
+  skippedRows?: SkippedRow[]
 ) => GenericTransaction[]
+
+/**
+ * A data row a parser dropped because it couldn't be interpreted, reported so
+ * users don't silently lose transactions. Parsers that skip rows by design
+ * (summary lines, cash movements) don't report those.
+ */
+export interface SkippedRow {
+  /**
+   * Row number as shown in a spreadsheet, with the header as row 1. Completely
+   * empty lines are removed before parsing, so rows after one are reported one lower.
+   */
+  row: number
+  reason: string
+}
 
 /**
  * UI instructions for downloading CSV from a broker

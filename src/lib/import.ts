@@ -4,6 +4,7 @@ import { getParser } from './parsers/parserRegistry'
 import { normalizeTransactionSymbols } from '../utils/symbolNormalization'
 import { BrokerType } from '../types/broker'
 import { GenericTransaction } from '../types/transaction'
+import { SkippedRow } from '../types/brokerDefinition'
 
 /** Minimum detection confidence required to accept a file's broker format */
 export const MIN_DETECTION_CONFIDENCE = 0.8
@@ -12,6 +13,15 @@ export interface CSVImportResult {
   broker: BrokerType
   confidence: number
   transactions: GenericTransaction[]
+  /** Rows the parser couldn't interpret and dropped (reported by the Generic CSV parser) */
+  skippedRows: SkippedRow[]
+}
+
+/** Short description of skipped rows for messages, e.g. 'row 3: unrecognised type "SEL"' */
+export function describeSkippedRows(skippedRows: SkippedRow[], limit = 3): string {
+  const shown = skippedRows.slice(0, limit).map(s => `row ${s.row}: ${s.reason}`)
+  const more = skippedRows.length > limit ? `, and ${skippedRows.length - limit} more` : ''
+  return shown.join('; ') + more
 }
 
 /**
@@ -48,9 +58,11 @@ export function importCSVText(text: string, fileId: string): CSVImportResult {
     throw new Error(`Unsupported broker: ${detection.broker}`)
   }
 
-  const transactions = parser(rawRows, fileId)
+  const skippedRows: SkippedRow[] = []
+  const transactions = parser(rawRows, fileId, skippedRows)
   if (transactions.length === 0) {
-    throw new Error('No valid transactions found in CSV')
+    const detail = skippedRows.length > 0 ? ` (${describeSkippedRows(skippedRows)})` : ''
+    throw new Error(`No valid transactions found in CSV${detail}`)
   }
 
   return {
@@ -58,5 +70,6 @@ export function importCSVText(text: string, fileId: string): CSVImportResult {
     confidence: detection.confidence,
     // Apply symbol normalization (e.g., FB -> META)
     transactions: normalizeTransactionSymbols(transactions),
+    skippedRows,
   }
 }

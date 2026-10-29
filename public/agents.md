@@ -24,7 +24,7 @@ If a broker isn't supported, the user can provide a Generic CSV with these colum
 npx -y cgt-visualiser@0 detect statement1.csv statement2.csv --format json
 ```
 
-Each entry has `recognised`, `broker` and `transactions`. Exit code `2` means at least one file wasn't recognised. If that happens, ask the user for the correct export rather than editing the file yourself.
+Each entry has `recognised`, `broker`, `transactions` and (from version 0.2.0) `skippedRows`. Exit code `2` means at least one file wasn't recognised. If that happens, ask the user for the correct export rather than editing the file yourself.
 
 ## 3. Calculate
 
@@ -101,6 +101,7 @@ Every warning has a `code`, a `message` and usually `transactionIds`. Don't pres
 | `INCOMPLETE_DISPOSAL` | A sale has no recorded purchase for some of the shares, so part of its cost is missing and the gain is overstated | Ask for earlier history, or for transfers in (with the original cost) |
 | `FX_RATE_MISSING` | No GBP exchange rate could be found, so GBP values are missing | Re-run with network access. If it persists, report the currency and dates to the user |
 | `SPLIT_DATA_UNAVAILABLE` | Stock split data couldn't be fetched, so splits missing from the broker file weren't applied | Re-run with network access |
+| `SKIPPED_ROWS` (0.2.0+) | Some rows of a file couldn't be read (for example a missing date or an unrecognised `type` in a Generic CSV) and were left out | Show the user the listed rows and fix them before trusting the totals |
 | `UNKNOWN_TRANSACTION_TYPE` | Some rows weren't recognised and were left out | Show the user the affected rows and ask what they are |
 | `DUPLICATE_FILE` | The same file was passed twice and was used once | Usually nothing |
 | `TAX_YEAR_NOT_FOUND` | No transactions in the requested tax year | Check the year, and that the history covers it |
@@ -113,7 +114,7 @@ npx -y cgt-visualiser@0 normalize statement1.csv -o transactions.csv
 npx -y cgt-visualiser@0 calculate transactions.csv --format json
 ```
 
-After editing, check that no row was dropped. Rows with a missing date, or a `type` that isn't recognised, are **skipped without a warning**, so a mistyped `SELL` would quietly remove a sale and understate the gain. Run `detect` and compare the count with the number of data rows in the file (lines minus the header):
+After editing, check that no row was dropped. Rows with a missing date, or a `type` that isn't recognised, are left out, so a mistyped `SELL` would remove a sale and understate the gain. From version 0.2.0 these rows are reported as `SKIPPED_ROWS` warnings and in `detect`'s `skippedRows`, using the row number a spreadsheet shows (the header is row 1). With any version, you can also run `detect` and compare the count with the number of data rows in the file (lines minus the header):
 
 ```bash
 npx -y cgt-visualiser@0 detect transactions.csv --format json   # "transactions" must equal the data row count

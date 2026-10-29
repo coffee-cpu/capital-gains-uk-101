@@ -1,4 +1,4 @@
-import { importCSVText } from '../../../../src/lib/import'
+import { describeSkippedRows, importCSVText } from '../../../../src/lib/import'
 import { runPipeline } from '../../../../src/lib/pipeline'
 import { JsDelivrSplitSource } from '../../../../src/lib/splits/splitDataSource'
 import { FXSource } from '../../../../src/types/fxSource'
@@ -45,6 +45,14 @@ export async function calculate(files: InputFile[], options: CalculateOptions): 
     }
     inputs.push({ file: file.path, broker: imported.broker, transactions: imported.transactions.length })
     transactions.push(...imported.transactions)
+    if (imported.skippedRows.length > 0) {
+      warnings.push({
+        code: 'SKIPPED_ROWS',
+        message:
+          `"${file.path}": ${imported.skippedRows.length} row(s) could not be read and were left out ` +
+          `(${describeSkippedRows(imported.skippedRows, 5)}). Fix them and run again, or the totals will be wrong.`,
+      })
+    }
   }
 
   const splitSource = new JsDelivrSplitSource()

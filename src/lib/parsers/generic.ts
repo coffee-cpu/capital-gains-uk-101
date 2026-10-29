@@ -1,5 +1,6 @@
 import { GenericTransaction, TransactionType } from '../../types/transaction'
 import { RawCSVRow } from '../../types/broker'
+import { SkippedRow } from '../../types/brokerDefinition'
 
 /**
  * Expected CSV columns for generic format:
@@ -20,47 +21,59 @@ import { RawCSVRow } from '../../types/broker'
  * Normalize generic CSV rows in our standard format
  * @param rows Raw CSV rows
  * @param fileId Unique identifier for this file
+ * @param skippedRows If given, receives every row that was dropped and why
  */
 export function normalizeGenericTransactions(
   rows: RawCSVRow[],
-  fileId: string
+  fileId: string,
+  skippedRows?: SkippedRow[]
 ): GenericTransaction[] {
   const transactions: GenericTransaction[] = []
   let rowIndex = 1
 
-  for (const row of rows) {
+  rows.forEach((row, index) => {
+    // Spreadsheets save blank rows as ",,,,": nothing was lost, so don't report them
+    if (Object.values(row).every(value => !value?.trim())) return
+
     const normalized = normalizeGenericRow(row, fileId, rowIndex)
-    if (normalized) {
+    if (typeof normalized === 'string') {
+      // +2: spreadsheet row number (rows are 1-based and the header is row 1)
+      skippedRows?.push({ row: index + 2, reason: normalized })
+    } else {
       transactions.push(normalized)
       rowIndex++
     }
-  }
+  })
 
   return transactions
 }
 
 /**
  * Normalize a single generic row
+ * @returns The transaction, or the reason the row was skipped
  */
 function normalizeGenericRow(
   row: RawCSVRow,
   fileId: string,
   rowIndex: number
-): GenericTransaction | null {
+): GenericTransaction | string {
   // Required fields
   const symbol = row['symbol']?.trim() || ''
   const dateStr = row['date']?.trim()
   const typeStr = row['type']?.trim()
   const currency = row['currency']?.trim() || 'USD'
 
-  if (!dateStr || !typeStr) {
-    return null // Skip rows with missing required fields
+  if (!dateStr) {
+    return 'missing date'
+  }
+  if (!typeStr) {
+    return 'missing type'
   }
 
   // Validate transaction type
   const type = parseGenericType(typeStr)
   if (!type) {
-    return null
+    return `unrecognised type "${typeStr}"`
   }
 
   // Optional fields
