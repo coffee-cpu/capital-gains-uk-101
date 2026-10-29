@@ -162,8 +162,10 @@ Key directories:
 - `e2e/` - Playwright E2E tests
 - `docs/` - Technical specifications
 - `packages/cli/` - `cgt-visualiser` command-line tool (npm workspace). It imports the shared
-  engine from `src/lib/` and must not import browser-only code (Dexie, React, Zustand). Published
-  to npm by pushing a `cli-v<version>` tag (see `.github/workflows/publish-cli.yml`)
+  engine from `src/lib/` and must not import browser-only code (Dexie, React, Zustand). The one
+  exception is the PDF report document (`src/lib/pdf/`, React and @react-pdf/renderer), which the
+  CLI loads only for `--format pdf`. Published to npm by pushing a `cli-v<version>` tag (see
+  `.github/workflows/publish-cli.yml`)
 - `public/llms.txt`, `public/agents.md` - Instructions for AI agents (keep in sync with the CLI)
 
 ## Development Guidelines

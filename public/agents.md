@@ -6,6 +6,8 @@ This guide is for AI agents (Claude Code, Codex, Cursor, Gemini CLI and similar)
 
 Requirements: Node.js 20 or later, and a shell.
 
+**If you can't run commands** (for example in a chat app without a code environment), don't calculate it yourself either. Guide the user through the web app instead: they export their files (step 1), load them at https://cgtvisualiser.co.uk, check any warnings it shows, then click **Export PDF** for the tax year. The web app runs in their browser, so their files aren't uploaded anywhere.
+
 ## 1. Get the right files from the user
 
 You need the user's **complete transaction history** for each taxable account: every purchase back to when they first bought the shares, not just the current tax year. Without the purchases, sales can't be matched to their costs, and the tool reports `INCOMPLETE_DISPOSAL`.
@@ -124,7 +126,18 @@ npx -y cgt-visualiser@0 detect transactions.csv --format json   # "transactions"
 
 `normalize` refuses files containing options or short sells, because Generic CSV can't represent them. For those, keep calculating from the original files.
 
-## 6. Present the result
+## 6. Create a PDF report (optional)
+
+If the user wants a report to keep with their tax records, write a PDF for one tax year (version 0.3.0 and later). It is the same report as the web app's **Export PDF** button: the summary, every disposal with how it was matched, and the calculation.
+
+```bash
+npx -y cgt-visualiser@0 calculate statement1.csv statement2.csv --tax-year 2025/26 --format pdf -o CGT-Report-2025-26.pdf
+```
+
+- `--tax-year` and `-o` are required. Add `--include-transactions` to append every transaction up to the end of the tax year.
+- Warnings go to stderr. Deal with them (step 5) before giving the user the PDF.
+
+## 7. Present the result
 
 - Lead with the tax year's net gain or loss, the taxable gain, and the SA108 figures. Then list the disposals.
 - State any warnings, and any assumptions you made.

@@ -52,6 +52,10 @@ jobs:
             if (net !== 629.67) { console.error('Expected net gain 629.67, got', net); process.exit(1) }
             console.log('CLI smoke test passed: net gain', net)
           "
+          # The PDF renderer is bundled too: check it runs from the built file
+          node packages/cli/dist/cli.js calculate e2e/fixtures/hmrc-hs284-example3.csv \
+            --tax-year 2024/25 --offline --no-auto-splits --no-cache --strict --format pdf -o cli-report.pdf
+          head -c 5 cli-report.pdf | grep -q '%PDF-' || { echo 'Expected a PDF file'; exit 1; }
 
   e2e:
     name: E2E tests

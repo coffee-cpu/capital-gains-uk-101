@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { realpathSync } from 'node:fs'
 import { setCacheBackends, createMemoryCacheBackends } from '../../../src/lib/cache'
 import { DEFAULT_FX_SOURCE, FXSource } from '../../../src/types/fxSource'
-import { calculate } from './commands/calculate'
+import { calculateWithResult } from './commands/calculate'
 import { detect, formatDetectText } from './commands/detect'
 import { listBrokers, formatBrokersText } from './commands/brokers'
 import { normalize } from './commands/normalize'
@@ -37,10 +37,13 @@ calculate options:
   --no-auto-splits      Don't fetch stock split data (broker-provided splits still apply)
   --offline             No network access: use cached exchange rates only
   --strict              Exit with code 3 if there are warnings
+  --include-transactions  PDF: add a list of all transactions up to the year end
 
 Common options:
-  --format <fmt>        text, json (calculate also: csv). Default: text in a
-                        terminal, json when output is piped
+  --format <fmt>        text, json (calculate also: csv, pdf). Default: text in
+                        a terminal, json when output is piped. pdf writes the
+                        same report as the web app's Export PDF button and
+                        needs --tax-year and -o <file.pdf>
   --no-cache            Don't read or write the cache (${defaultCacheDir()})
   -o, --output <file>   Write output to a file instead of stdout
   --verbose             Show diagnostic logging on stderr
@@ -64,7 +67,7 @@ export interface CliIO {
   env?: NodeJS.ProcessEnv
 }
 
-type Format = 'text' | 'json' | 'csv'
+type Format = 'text' | 'json' | 'csv' | 'pdf'
 
 function parseFormat(value: string | undefined, isTTY: boolean, allowed: Format[]): Format {
   if (value === undefined) return isTTY ? 'text' : 'json'
@@ -126,6 +129,7 @@ export async function main(argv: string[], io: CliIO): Promise<ExitCodeValue> {
         'no-auto-splits': { type: 'boolean', default: false },
         offline: { type: 'boolean', default: false },
         strict: { type: 'boolean', default: false },
+        'include-transactions': { type: 'boolean', default: false },
         format: { type: 'string' },
         'no-cache': { type: 'boolean', default: false },
         output: { type: 'string', short: 'o' },
@@ -164,7 +168,13 @@ export async function main(argv: string[], io: CliIO): Promise<ExitCodeValue> {
           offline: values.offline,
           details: values.details,
         }
-        const format = parseFormat(values.format, isTTY, ['text', 'json', 'csv'])
+        const format = parseFormat(values.format, isTTY, ['text', 'json', 'csv', 'pdf'])
+        if (format === 'pdf' && (options.taxYear === null || values.output === undefined)) {
+          throw new CliError('--format pdf needs --tax-year <YYYY/YY> and -o <file.pdf> (the report covers one tax year).')
+        }
+        if (values['include-transactions'] && format !== 'pdf') {
+          io.stderr('Note: --include-transactions only applies to --format pdf.\n')
+        }
         const files = await readInputFiles(paths)
 
         if (values['no-cache']) {
@@ -177,11 +187,18 @@ export async function main(argv: string[], io: CliIO): Promise<ExitCodeValue> {
           globalThis.fetch = () => Promise.reject(new Error('network access is disabled (--offline)'))
         }
 
-        const report = await calculate(files, options)
-        await emit(
-          format === 'json' ? json(report) : format === 'csv' ? formatDisposalsCsv(report) : formatCalculateText(report)
-        )
-        if (format === 'csv' && report.warnings.length > 0) {
+        const { report, result } = await calculateWithResult(files, options)
+        if (format === 'pdf') {
+          // Loaded on demand: the PDF renderer is most of the bundle
+          const { renderPdfReport } = await import('./commands/pdf')
+          await writeFile(values.output!, await renderPdfReport(result, options.taxYear!, values['include-transactions']))
+          io.stderr(`Wrote the ${options.taxYear} report to ${values.output}\n`)
+        } else {
+          await emit(
+            format === 'json' ? json(report) : format === 'csv' ? formatDisposalsCsv(report) : formatCalculateText(report)
+          )
+        }
+        if ((format === 'csv' || format === 'pdf') && report.warnings.length > 0) {
           io.stderr(report.warnings.map(w => `warning [${w.code}]: ${w.message}\n`).join(''))
         }
         return values.strict && report.warnings.length > 0 ? ExitCode.WARNINGS : ExitCode.OK

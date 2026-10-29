@@ -128,6 +128,36 @@ describe('cgt-visualiser CLI', () => {
       expect(csv.stdout.trim().split('\n')).toHaveLength(3)
     })
 
+    it('writes the same PDF report as the web app with --format pdf', async () => {
+      const out = join(tmp, 'report.pdf')
+      const args = ['calculate', fixture('hmrc-hs284-example3.csv'), '--tax-year', '2024/25', '--format', 'pdf', ...OFFLINE]
+
+      const { code, stdout, stderr } = await run([...args, '-o', out])
+      const pdf = readFileSync(out)
+
+      expect(code).toBe(0)
+      expect(stdout).toBe('')
+      expect(stderr).toContain(`Wrote the 2024/25 report to ${out}`)
+      expect(pdf.subarray(0, 5).toString()).toBe('%PDF-')
+      expect(pdf.length).toBeGreaterThan(2000)
+
+      const withTransactions = join(tmp, 'with-transactions.pdf')
+      await run([...args, '-o', withTransactions, '--include-transactions'])
+      expect(readFileSync(withTransactions).length).toBeGreaterThan(pdf.length)
+    })
+
+    it('needs --tax-year and -o for --format pdf, and names the years with data', async () => {
+      const file = fixture('hmrc-hs284-example3.csv')
+
+      const missing = await run(['calculate', file, '--format', 'pdf', '-o', join(tmp, 'r.pdf'), ...OFFLINE])
+      expect(missing.code).toBe(1)
+      expect(missing.stderr).toContain('--format pdf needs --tax-year')
+
+      const noData = await run(['calculate', file, '--format', 'pdf', '--tax-year', '2010/11', '-o', join(tmp, 'r.pdf'), ...OFFLINE])
+      expect(noData.code).toBe(1)
+      expect(noData.stderr).toContain('Tax years with data: 2016/17, 2019/20, 2024/25')
+    })
+
     it('warns about incomplete disposals and exits 3 with --strict', async () => {
       const file = join(tmp, 'sell-only.csv')
       writeFileSync(file, 'date,type,symbol,currency,quantity,price,total,fee\n2024-06-03,SELL,VOD,GBP,100,0.70,70,0\n')
