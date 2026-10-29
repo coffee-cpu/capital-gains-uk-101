@@ -163,10 +163,18 @@ export interface PDFDocumentProps {
   includeTransactions?: boolean
 }
 
+/**
+ * Format an ISO date (YYYY-MM-DD) as DD/MM/YYYY. Date parses it as UTC midnight,
+ * so it is formatted in UTC too; local time would print a day early west of UTC.
+ */
+export function formatReportDate(date: string): string {
+  return new Date(date).toLocaleDateString('en-GB', { timeZone: 'UTC' })
+}
+
 function createCGTReportDocument(Document: any, Page: any, Text: any, View: any, styles: any) {
   return ({ taxYearSummary, disposals, transactions, includeTransactions }: PDFDocumentProps) => {
     const formatCurrency = (value: number) => `£${value.toFixed(2)}`
-    const formatDate = (date: string) => new Date(date).toLocaleDateString('en-GB')
+    const formatDate = formatReportDate
 
     // Filter transactions up to and including the tax year end date
     const filteredTransactions = includeTransactions

@@ -172,6 +172,9 @@ export async function main(argv: string[], io: CliIO): Promise<ExitCodeValue> {
         if (format === 'pdf' && (options.taxYear === null || values.output === undefined)) {
           throw new CliError('--format pdf needs --tax-year <YYYY/YY> and -o <file.pdf> (the report covers one tax year).')
         }
+        if (values['include-transactions'] && format !== 'pdf') {
+          io.stderr('Note: --include-transactions only applies to --format pdf.\n')
+        }
         const files = await readInputFiles(paths)
 
         if (values['no-cache']) {
