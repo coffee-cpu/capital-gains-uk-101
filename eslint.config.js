@@ -16,7 +16,7 @@ export default tseslint.config(
       // tsc already enforces noUnusedLocals/noUnusedParameters; keep ESLint
       // focused on what the compiler can't catch
       '@typescript-eslint/no-unused-vars': 'off',
-      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-explicit-any': 'error',
     },
   }
 )

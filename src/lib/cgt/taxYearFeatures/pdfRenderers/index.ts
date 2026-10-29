@@ -10,14 +10,15 @@
  * 2. Import and add it to the PDF_RENDERERS map below
  */
 
-import type { PDFRenderContext, FeaturePDFRenderer, TaxYearFeaturesMap } from '../types'
+import type { PDFRenderContext, FeaturePDFRenderer, TaxYearFeatureData, TaxYearFeaturesMap } from '../types'
 import { renderCGTRateChange2024PDF } from './cgtRateChange2024PDF'
 
 /**
  * Registry mapping feature IDs to their PDF renderer functions.
  */
-const PDF_RENDERERS: Record<string, FeaturePDFRenderer<any>> = {
-  'cgt-rate-change-2024': renderCGTRateChange2024PDF,
+// Each renderer is keyed by the ID of the feature whose data it receives
+const PDF_RENDERERS: Record<string, FeaturePDFRenderer<TaxYearFeatureData>> = {
+  'cgt-rate-change-2024': renderCGTRateChange2024PDF as FeaturePDFRenderer<TaxYearFeatureData>,
   // Future features can be added here, e.g.:
   // 'cgt-rate-change-2028': renderCGTRateChange2028PDF,
 }
