@@ -264,10 +264,15 @@ describe('Generic CSV Parser', () => {
         },
       ]
 
-      const result = normalizeGenericTransactions(rows, 'test-file')
+      const skippedRows: { row: number; reason: string }[] = []
+      const result = normalizeGenericTransactions(rows, 'test-file', skippedRows)
 
       expect(result).toHaveLength(1) // Only the last row is valid
       expect(result[0].id).toBe('test-file-1')
+      expect(skippedRows).toEqual([
+        { row: 1, reason: 'missing date' },
+        { row: 2, reason: 'missing type' },
+      ])
     })
 
     it('should handle invalid transaction types', () => {
@@ -287,9 +292,11 @@ describe('Generic CSV Parser', () => {
         },
       ]
 
-      const result = normalizeGenericTransactions(rows, 'test-file')
+      const skippedRows: { row: number; reason: string }[] = []
+      const result = normalizeGenericTransactions(rows, 'test-file', skippedRows)
 
       expect(result).toHaveLength(0)
+      expect(skippedRows).toEqual([{ row: 1, reason: 'unrecognised type "INVALID_TYPE"' }])
     })
 
     it('should handle case-insensitive transaction types', () => {

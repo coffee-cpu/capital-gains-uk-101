@@ -22,6 +22,7 @@ export interface ReportWarning {
     | 'DUPLICATE_FILE'
     | 'TAX_YEAR_NOT_FOUND'
     | 'SPLIT_DATA_UNAVAILABLE'
+    | 'SKIPPED_ROWS'
   message: string
   transactionIds?: string[]
 }

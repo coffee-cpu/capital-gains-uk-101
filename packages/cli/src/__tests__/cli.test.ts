@@ -175,6 +175,19 @@ describe('cgt-visualiser CLI', () => {
       expect(warning!.message).toContain('--offline')
     })
 
+    it('warns about rows it could not read, and exits 3 with --strict', async () => {
+      const file = join(tmp, 'typo.csv')
+      writeFileSync(file, 'date,type,symbol,currency,quantity,price,total,fee\n2024-01-02,BUY,VOD,GBP,100,1,100,0\n2024-06-03,SEL,VOD,GBP,100,2,200,0\n')
+
+      const { code, stdout } = await run(['calculate', file, ...OFFLINE])
+      const strict = await run(['calculate', file, '--strict', ...OFFLINE])
+      const warning = (JSON.parse(stdout) as CalculateReport).warnings.find(w => w.code === 'SKIPPED_ROWS')
+
+      expect(code).toBe(0)
+      expect(strict.code).toBe(3)
+      expect(warning!.message).toContain('row 2: unrecognised type "SEL"')
+    })
+
     it('warns when the requested tax year has no transactions', async () => {
       const { stdout } = await run(['calculate', fixture('hmrc-hs284-example3.csv'), '--tax-year', '2010/11', ...OFFLINE])
       const report: CalculateReport = JSON.parse(stdout)
@@ -273,6 +286,18 @@ describe('cgt-visualiser CLI', () => {
       expect(roundTrip.taxYears).toEqual(original.taxYears)
     })
 
+    it('warns on stderr about rows it could not read', async () => {
+      const file = join(tmp, 'typo.csv')
+      const out = join(tmp, 'generic.csv')
+      writeFileSync(file, 'date,type,symbol,currency,quantity,price,total,fee\n2024-01-02,BUY,VOD,GBP,100,1,100,0\n2024-06-03,SEL,VOD,GBP,100,2,200,0\n')
+
+      const { code, stderr } = await run(['normalize', file, '-o', out])
+
+      expect(code).toBe(0)
+      expect(stderr).toContain('Warning:')
+      expect(stderr).toContain('row 2: unrecognised type "SEL"')
+    })
+
     it('requires an output file', async () => {
       const { code, stderr } = await run(['normalize', fixture('hmrc-hs284-example3.csv')])
 
@@ -290,8 +315,21 @@ describe('cgt-visualiser CLI', () => {
       const results = JSON.parse(stdout)
 
       expect(code).toBe(2)
-      expect(results[0]).toMatchObject({ recognised: true, broker: 'Charles Schwab', transactions: 10 })
+      expect(results[0]).toMatchObject({ recognised: true, broker: 'Charles Schwab', transactions: 10, skippedRows: [] })
       expect(results[1]).toMatchObject({ recognised: false, broker: 'Unknown' })
+    })
+
+    it('lists rows a file had to skip', async () => {
+      const file = join(tmp, 'typo.csv')
+      writeFileSync(file, 'date,type,symbol,currency,quantity,price,total,fee\n2024-01-02,BUY,VOD,GBP,100,1,100,0\n2024-06-03,SEL,VOD,GBP,100,2,200,0\n')
+
+      const { code, stdout } = await run(['detect', file])
+
+      expect(code).toBe(0)
+      expect(JSON.parse(stdout)[0]).toMatchObject({
+        transactions: 1,
+        skippedRows: [{ row: 2, reason: 'unrecognised type "SEL"' }],
+      })
     })
 
     it('lists every enabled broker with its export instructions', async () => {

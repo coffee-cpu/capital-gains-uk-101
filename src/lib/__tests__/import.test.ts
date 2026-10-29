@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { createFileId, importCSVText } from '../import'
+import { createFileId, describeSkippedRows, importCSVText } from '../import'
 import { getEnabledBrokerDefinitions } from '../../config/brokers'
 import { BrokerType } from '../../types/broker'
 
@@ -54,6 +54,41 @@ describe('importCSVText', () => {
 
     expect(result.broker).toBe(BrokerType.GENERIC)
     expect(result.transactions[0].symbol).toBe('META')
+  })
+
+  it('reports Generic CSV rows that could not be read', () => {
+    const csv = [
+      'date,type,symbol,currency,quantity,price,total,fee',
+      '2024-01-02,BUY,VOD,GBP,100,1,100,0',
+      '2024-06-03,SEL,VOD,GBP,100,2,200,0',
+      ',SELL,VOD,GBP,50,2,100,0',
+    ].join('\n')
+
+    const result = importCSVText(csv, 'typo')
+
+    expect(result.transactions).toHaveLength(1)
+    expect(result.skippedRows).toEqual([
+      { row: 2, reason: 'unrecognised type "SEL"' },
+      { row: 3, reason: 'missing date' },
+    ])
+  })
+
+  it('reports no skipped rows for a clean file', () => {
+    const result = importCSVText(readExample('/examples/generic-example.csv'), 'clean')
+
+    expect(result.skippedRows).toEqual([])
+  })
+
+  it('explains why when every row is skipped', () => {
+    const csv = 'date,type,symbol,currency,quantity,price,total,fee\n2024-06-03,SEL,VOD,GBP,100,2,200,0'
+
+    expect(() => importCSVText(csv, 'all-bad')).toThrow('No valid transactions found in CSV (row 1: unrecognised type "SEL")')
+  })
+
+  it('summarises long lists of skipped rows', () => {
+    const rows = [1, 2, 3, 4, 5].map(row => ({ row, reason: 'missing date' }))
+
+    expect(describeSkippedRows(rows)).toBe('row 1: missing date; row 2: missing date; row 3: missing date, and 2 more')
   })
 
   it('throws when the format cannot be detected', () => {
