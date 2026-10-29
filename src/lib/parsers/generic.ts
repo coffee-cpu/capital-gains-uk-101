@@ -32,6 +32,9 @@ export function normalizeGenericTransactions(
   let rowIndex = 1
 
   rows.forEach((row, index) => {
+    // Spreadsheets save blank rows as ",,,,": nothing was lost, so don't report them
+    if (Object.values(row).every(value => !value?.trim())) return
+
     const normalized = normalizeGenericRow(row, fileId, rowIndex)
     if (typeof normalized === 'string') {
       skippedRows?.push({ row: index + 1, reason: normalized })

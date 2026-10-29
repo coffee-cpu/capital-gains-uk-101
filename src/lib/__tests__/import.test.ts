@@ -73,6 +73,20 @@ describe('importCSVText', () => {
     ])
   })
 
+  it('ignores blank spreadsheet rows such as ",,,,"', () => {
+    const csv = [
+      'date,type,symbol,currency,quantity,price,total,fee',
+      '2024-01-02,BUY,VOD,GBP,100,1,100,0',
+      ',,,,,,,',
+      ' , , ,,,,,',
+    ].join('\n')
+
+    const result = importCSVText(csv, 'blank-rows')
+
+    expect(result.transactions).toHaveLength(1)
+    expect(result.skippedRows).toEqual([])
+  })
+
   it('reports no skipped rows for a clean file', () => {
     const result = importCSVText(readExample('/examples/generic-example.csv'), 'clean')
 
