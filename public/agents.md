@@ -17,7 +17,7 @@ Leave out ISA and pension (SIPP) accounts: their gains are free of CGT. Exports 
 To see which brokers are supported and how to export the right file from each:
 
 ```bash
-npx -y cgt-visualiser@0 brokers
+npx -y cgt-visualiser@latest brokers
 ```
 
 If a broker isn't supported, the user can provide a Generic CSV with these columns: `date,type,symbol,currency,quantity,price,total,fee`, plus optional `name`, `notes` and `split_ratio`. Dates must be `YYYY-MM-DD`. The type must be one of `BUY`, `SELL`, `DIVIDEND`, `INTEREST`, `FEE`, `TAX`, `TRANSFER` or `STOCK_SPLIT`.
@@ -25,7 +25,7 @@ If a broker isn't supported, the user can provide a Generic CSV with these colum
 ## 2. Check the files are recognised
 
 ```bash
-npx -y cgt-visualiser@0 detect statement1.csv statement2.csv --format json
+npx -y cgt-visualiser@latest detect statement1.csv statement2.csv --format json
 ```
 
 Each entry has `recognised`, `broker`, `transactions` and (from version 0.2.0) `skippedRows`. Exit code `2` means at least one file wasn't recognised. If that happens, ask the user for the correct export rather than editing the file yourself.
@@ -33,7 +33,7 @@ Each entry has `recognised`, `broker`, `transactions` and (from version 0.2.0) `
 ## 3. Calculate
 
 ```bash
-npx -y cgt-visualiser@0 calculate statement1.csv statement2.csv --tax-year 2025/26 --format json
+npx -y cgt-visualiser@latest calculate statement1.csv statement2.csv --tax-year 2025/26 --format json
 ```
 
 - Pass **all** the user's files in a single call. Matching works across accounts.
@@ -113,15 +113,15 @@ Every warning has a `code`, a `message` and usually `transactionIds`. Don't pres
 To fix or add transactions (for example a purchase from before the export starts), convert the files to a Generic CSV, edit it, and calculate from the edited file:
 
 ```bash
-npx -y cgt-visualiser@0 normalize statement1.csv -o transactions.csv
+npx -y cgt-visualiser@latest normalize statement1.csv -o transactions.csv
 # edit transactions.csv, then:
-npx -y cgt-visualiser@0 calculate transactions.csv --format json
+npx -y cgt-visualiser@latest calculate transactions.csv --format json
 ```
 
 After editing, check that no row was dropped. Rows with a missing date, or a `type` that isn't recognised, are left out, so a mistyped `SELL` would remove a sale and understate the gain. From version 0.2.0 these rows are reported as `SKIPPED_ROWS` warnings and in `detect`'s `skippedRows`, using the row number a spreadsheet shows (the header is row 1). With any version, you can also run `detect` and compare the count with the number of data rows in the file (lines minus the header):
 
 ```bash
-npx -y cgt-visualiser@0 detect transactions.csv --format json   # "transactions" must equal the data row count
+npx -y cgt-visualiser@latest detect transactions.csv --format json   # "transactions" must equal the data row count
 ```
 
 `normalize` refuses files containing options or short sells, because Generic CSV can't represent them. For those, keep calculating from the original files.
@@ -131,7 +131,7 @@ npx -y cgt-visualiser@0 detect transactions.csv --format json   # "transactions"
 If the user wants a report to keep with their tax records, write a PDF for one tax year (version 0.3.0 and later). It is the same report as the web app's **Export PDF** button: the summary, every disposal with how it was matched, and the calculation.
 
 ```bash
-npx -y cgt-visualiser@0 calculate statement1.csv statement2.csv --tax-year 2025/26 --format pdf -o CGT-Report-2025-26.pdf
+npx -y cgt-visualiser@latest calculate statement1.csv statement2.csv --tax-year 2025/26 --format pdf -o CGT-Report-2025-26.pdf
 ```
 
 - `--tax-year` and `-o` are required. Add `--include-transactions` to append every transaction up to the end of the tax year.
