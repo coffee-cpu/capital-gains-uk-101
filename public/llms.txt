@@ -14,6 +14,7 @@ Only include taxable (general investment) accounts. Gains in ISAs and pensions (
 ## For AI agents
 
 - [Agent guide](https://cgtvisualiser.co.uk/agents.md): step-by-step instructions for running the CLI on a user's broker exports, reading the JSON and warnings, and presenting results
+- [Guides](https://cgtvisualiser.co.uk/guides/): plain HTML guides to HMRC's matching rules (same-day, 30-day, Section 104), stock splits, foreign currency, and how to export from each supported broker
 - [CLI README](https://github.com/coffee-cpu/capital-gains-uk-101/blob/main/packages/cli/README.md): commands, options and the JSON output schema
 
 ## HMRC references
