@@ -39,13 +39,18 @@ function guidePages(): Plugin {
       server.middlewares.use(async (req, res, next) => {
         const path = (req.url ?? '').split('?')[0]
         if (!path.startsWith('/guides') && path !== '/sitemap.xml') return next()
-        // Loaded on each request so edits to src/guides show without a restart
-        const guides = (await server.ssrLoadModule(GUIDES_MODULE)) as GuidesModule
-        const file = path === '/sitemap.xml' ? 'sitemap.xml' : `${path.slice(1).replace(/\/?$/, '/')}index.html`
-        const source = guides.buildGuideSite().files.get(file)
-        if (source === undefined) return next()
-        res.setHeader('Content-Type', file.endsWith('.xml') ? 'application/xml' : 'text/html; charset=utf-8')
-        res.end(source)
+        try {
+          // Loaded on each request so edits to src/guides show without a restart
+          const guides = (await server.ssrLoadModule(GUIDES_MODULE)) as GuidesModule
+          const file = path === '/sitemap.xml' ? 'sitemap.xml' : `${path.slice(1).replace(/\/?$/, '/')}index.html`
+          const source = guides.buildGuideSite().files.get(file)
+          if (source === undefined) return next()
+          res.setHeader('Content-Type', file.endsWith('.xml') ? 'application/xml' : 'text/html; charset=utf-8')
+          res.end(source)
+        } catch (error) {
+          // Connect doesn't catch rejections from async middleware: hand the error to Vite
+          next(error)
+        }
       })
     },
   }
