@@ -167,6 +167,10 @@ Key directories:
   CLI loads only for `--format pdf`. Published to npm by pushing a `cli-v<version>` tag (see
   `.github/workflows/publish-cli.yml`)
 - `public/llms.txt`, `public/agents.md` - Instructions for AI agents (keep in sync with the CLI)
+- `src/guides/` - Static SEO guide pages (`/guides/...`) and `sitemap.xml`, rendered to plain HTML at
+  build time by the `guide-pages` plugin in `vite.config.ts` (also served by the dev server). Broker
+  guides are generated from the broker definitions; worked examples are checked against the engine
+  in `src/guides/__tests__/`. Must not import browser-only code
 
 ## Development Guidelines
 
