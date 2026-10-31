@@ -105,7 +105,7 @@ const sameDay = rulePage({
 <li>All your purchases of a share on one day are treated as a single purchase, and all your sales that day as a single sale (TCGA 1992 section 105(1)).</li>
 <li>The day’s sale is matched with the day’s purchases first, up to the number of shares bought that day.</li>
 <li>Any shares sold beyond that are matched under the <a href="${THIRTY_DAY_PATH}">30-day rule</a>, then from the <a href="${SECTION_104_PATH}">Section 104 pool</a>.</li>
-<li>Shares bought that day but not used for the sale go into the Section 104 pool.</li>
+<li>Shares bought that day but not used for the sale can still be matched with a sale in the previous 30 days under the 30-day rule. Any left over go into the Section 104 pool.</li>
 </ul>
 <p>This often matters for employees with RSUs that are sold on the day they vest (“sell to cover”): the sale is matched with the shares that vested that day.</p>
 
