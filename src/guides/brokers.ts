@@ -88,7 +88,7 @@ ${exportSection(definition)}
 <li>Reads each buy, sell${isCrypto ? '' : ', dividend'} and fee from the ${escapeHtml(name)} export. You can load several files at once, from different years or other brokers.</li>
 <li>Matches each sale with your purchases using the <a href="${SAME_DAY_PATH}">same-day rule</a>, the <a href="${THIRTY_DAY_PATH}">30-day rule</a> and the <a href="${SECTION_104_PATH}">Section 104 pool</a>.</li>
 <li>${currencyText}</li>
-<li>Adjusts for <a href="${STOCK_SPLITS_PATH}">stock splits</a>.</li>
+${isCrypto ? '' : `<li>Adjusts for <a href="${STOCK_SPLITS_PATH}">stock splits</a>.</li>`}
 <li>Shows the gain or loss on every sale, the totals for each tax year, and the figures for your Self Assessment return. You can export them as a PDF.</li>
 </ul>
 ${employeeText}${cryptoText}
