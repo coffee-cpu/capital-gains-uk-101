@@ -416,31 +416,31 @@ function createCGTReportDocument(
               <View style={styles.table}>
                 {/* Table Header */}
                 <View style={styles.tableHeader}>
-                  <Text style={[styles.tableHeaderCell, { width: '12%' }]}>Date</Text>
-                  <Text style={[styles.tableHeaderCell, { width: '10%' }]}>Type</Text>
-                  <Text style={[styles.tableHeaderCell, { width: '15%' }]}>Symbol</Text>
-                  <Text style={[styles.tableHeaderCell, { width: '12%', textAlign: 'right' }]}>Qty</Text>
-                  <Text style={[styles.tableHeaderCell, { width: '15%', textAlign: 'right' }]}>Price (£)</Text>
-                  <Text style={[styles.tableHeaderCell, { width: '18%', textAlign: 'right' }]}>Value (£)</Text>
-                  <Text style={[styles.tableHeaderCell, { width: '18%', textAlign: 'right' }]}>Fee (£)</Text>
+                  <Text style={[styles.tableHeaderCell, { width: '11%' }]}>Date</Text>
+                  <Text style={[styles.tableHeaderCell, { width: '23%' }]}>Type</Text>
+                  <Text style={[styles.tableHeaderCell, { width: '20%' }]}>Symbol</Text>
+                  <Text style={[styles.tableHeaderCell, { width: '9%', textAlign: 'right' }]}>Qty</Text>
+                  <Text style={[styles.tableHeaderCell, { width: '12%', textAlign: 'right' }]}>Price</Text>
+                  <Text style={[styles.tableHeaderCell, { width: '14%', textAlign: 'right' }]}>Value</Text>
+                  <Text style={[styles.tableHeaderCell, { width: '11%', textAlign: 'right' }]}>Fee</Text>
                 </View>
                 {/* Table Rows */}
                 {filteredTransactions.map((tx) => (
                   <View key={tx.id} style={styles.tableRow} wrap={false}>
-                    <Text style={[styles.tableCell, { width: '12%' }]}>{formatDate(tx.date)}</Text>
-                    <Text style={[styles.tableCell, { width: '10%' }]}>{tx.type}</Text>
-                    <Text style={[styles.tableCell, { width: '15%' }]}>{tx.symbol}</Text>
-                    <Text style={[styles.tableCell, { width: '12%', textAlign: 'right' }]}>
+                    <Text style={[styles.tableCell, { width: '11%' }]}>{formatDate(tx.date)}</Text>
+                    <Text style={[styles.tableCell, { width: '23%' }]}>{tx.type}</Text>
+                    <Text style={[styles.tableCell, { width: '20%' }]}>{tx.symbol}</Text>
+                    <Text style={[styles.tableCell, { width: '9%', textAlign: 'right' }]}>
                       {tx.quantity?.toFixed(2) ?? '-'}
                     </Text>
-                    <Text style={[styles.tableCell, { width: '15%', textAlign: 'right' }]}>
-                      {tx.price_gbp?.toFixed(2) ?? '-'}
+                    <Text style={[styles.tableCell, { width: '12%', textAlign: 'right' }]}>
+                      {tx.price_gbp != null ? formatCurrency(tx.price_gbp) : '-'}
                     </Text>
-                    <Text style={[styles.tableCell, { width: '18%', textAlign: 'right' }]}>
-                      {tx.value_gbp?.toFixed(2) ?? '-'}
+                    <Text style={[styles.tableCell, { width: '14%', textAlign: 'right' }]}>
+                      {tx.value_gbp != null ? formatCurrency(tx.value_gbp) : '-'}
                     </Text>
-                    <Text style={[styles.tableCell, { width: '18%', textAlign: 'right' }]}>
-                      {tx.fee_gbp?.toFixed(2) ?? '-'}
+                    <Text style={[styles.tableCell, { width: '11%', textAlign: 'right' }]}>
+                      {tx.fee_gbp != null ? formatCurrency(tx.fee_gbp) : '-'}
                     </Text>
                   </View>
                 ))}

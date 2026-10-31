@@ -7,6 +7,7 @@ import { AutoSplitsToggle } from './AutoSplitsToggle'
 import { exportTransactionsToCSV } from '../utils/csvExport'
 import type { HelpContext } from '../utils/helpContent'
 import { isAcquisition, isDisposal, getUnitLabel } from '../lib/cgt/utils'
+import { formatGbp } from '../utils/currency'
 
 // Helper to get currency symbol
 function getCurrencySymbol(currency: string): string {
@@ -492,9 +493,9 @@ export function TransactionList() {
                         if (hasSplit && tx.split_multiplier) {
                           // quantityMatched is split-adjusted, calculate original
                           const originalMatched = quantityMatched / tx.split_multiplier
-                          tooltip = `Section 104: Matched ${originalMatched.toFixed(2)} ${getUnitLabel(tx)} (${quantityMatched.toFixed(2)} split-adjusted) at average cost £${avgCost.toFixed(2)}/${getUnitLabel(tx, false)} from pooled holdings`
+                          tooltip = `Section 104: Matched ${originalMatched.toFixed(2)} ${getUnitLabel(tx)} (${quantityMatched.toFixed(2)} split-adjusted) at average cost ${formatGbp(avgCost)}/${getUnitLabel(tx, false)} from pooled holdings`
                         } else {
-                          tooltip = `Section 104: Matched ${quantityMatched.toFixed(2)} ${getUnitLabel(tx)} at average cost £${avgCost.toFixed(2)}/${getUnitLabel(tx, false)} from pooled holdings`
+                          tooltip = `Section 104: Matched ${quantityMatched.toFixed(2)} ${getUnitLabel(tx)} at average cost ${formatGbp(avgCost)}/${getUnitLabel(tx, false)} from pooled holdings`
                         }
 
                         badges.push({
@@ -579,9 +580,9 @@ export function TransactionList() {
                     if (poolDetails) {
                       if (hasSplit && tx.split_multiplier) {
                         const originalRemaining = remainingQty / tx.split_multiplier
-                        tooltip = `Section 104: ${originalRemaining.toFixed(2)} ${getUnitLabel(tx)} (${remainingQty.toFixed(2)} split-adjusted) added to pool (new balance: ${poolDetails.quantity.toFixed(2)} split-adjusted ${getUnitLabel(tx)} at £${poolDetails.averageCost.toFixed(2)}/${getUnitLabel(tx, false)} average cost)`
+                        tooltip = `Section 104: ${originalRemaining.toFixed(2)} ${getUnitLabel(tx)} (${remainingQty.toFixed(2)} split-adjusted) added to pool (new balance: ${poolDetails.quantity.toFixed(2)} split-adjusted ${getUnitLabel(tx)} at ${formatGbp(poolDetails.averageCost)}/${getUnitLabel(tx, false)} average cost)`
                       } else {
-                        tooltip = `Section 104: ${remainingQty.toFixed(2)} ${getUnitLabel(tx)} added to pool (new balance: ${poolDetails.quantity.toFixed(2)} ${getUnitLabel(tx)} at £${poolDetails.averageCost.toFixed(2)}/${getUnitLabel(tx, false)} average cost)`
+                        tooltip = `Section 104: ${remainingQty.toFixed(2)} ${getUnitLabel(tx)} added to pool (new balance: ${poolDetails.quantity.toFixed(2)} ${getUnitLabel(tx)} at ${formatGbp(poolDetails.averageCost)}/${getUnitLabel(tx, false)} average cost)`
                       }
                       badges.push({
                         className: 'bg-green-100 text-green-800 border-green-300',
@@ -778,19 +779,19 @@ export function TransactionList() {
                         {tx.currency !== 'GBP' ? (
                           <Tooltip content={`FX Rate: ${tx.fx_rate?.toFixed(4) ?? '—'} ${tx.currency}/GBP (${tx.fx_source} - ${formatFxDate(tx.date, tx.fx_source)})`}>
                             <span className="cursor-help border-b border-dotted border-gray-400">
-                              £{tx.price_gbp.toFixed(2)}
+                              {formatGbp(tx.price_gbp)}
                             </span>
                           </Tooltip>
                         ) : (
-                          <span>£{tx.price_gbp.toFixed(2)}</span>
+                          <span>{formatGbp(tx.price_gbp)}</span>
                         )}
                         {tx.split_multiplier && tx.split_multiplier !== 1.0 && tx.split_adjusted_price_gbp !== null && tx.split_adjusted_price_gbp !== undefined && (
-                          <Tooltip content={`Split-adjusted price: £${tx.split_adjusted_price_gbp.toFixed(2)}/${getUnitLabel(tx, false)} (original price ÷ ${tx.split_multiplier})`}>
+                          <Tooltip content={`Split-adjusted price: ${formatGbp(tx.split_adjusted_price_gbp)}/${getUnitLabel(tx, false)} (original price ÷ ${tx.split_multiplier})`}>
                             <div className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 bg-purple-50 text-purple-700 rounded border border-purple-200 cursor-help">
                               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17l-5-5m0 0l5-5m-5 5h12" />
                               </svg>
-                              <span className="font-mono">£{tx.split_adjusted_price_gbp.toFixed(2)}</span>
+                              <span className="font-mono">{formatGbp(tx.split_adjusted_price_gbp)}</span>
                             </div>
                           </Tooltip>
                         )}
@@ -810,11 +811,11 @@ export function TransactionList() {
                     ) : tx.value_gbp !== null && tx.currency !== 'GBP' ? (
                       <Tooltip content={`FX Rate: ${tx.fx_rate?.toFixed(4) ?? '—'} ${tx.currency}/GBP (${tx.fx_source} - ${formatFxDate(tx.date, tx.fx_source)})`}>
                         <span className="cursor-help border-b border-dotted border-gray-400">
-                          £{tx.value_gbp.toFixed(2)}
+                          {formatGbp(tx.value_gbp)}
                         </span>
                       </Tooltip>
                     ) : tx.value_gbp !== null ? (
-                      `£${tx.value_gbp.toFixed(2)}`
+                      `${formatGbp(tx.value_gbp)}`
                     ) : isIncomplete ? (
                       <span className="text-yellow-600 font-medium">Missing</span>
                     ) : (
@@ -830,11 +831,11 @@ export function TransactionList() {
                     ) : tx.fee_gbp !== null && tx.fee_gbp !== 0 && tx.currency !== 'GBP' ? (
                       <Tooltip content={`FX Rate: ${tx.fx_rate?.toFixed(4) ?? '—'} ${tx.currency}/GBP (${tx.fx_source} - ${formatFxDate(tx.date, tx.fx_source)})`}>
                         <span className="cursor-help border-b border-dotted border-gray-400">
-                          £{tx.fee_gbp.toFixed(2)}
+                          {formatGbp(tx.fee_gbp)}
                         </span>
                       </Tooltip>
                     ) : tx.fee_gbp !== null && tx.fee_gbp !== 0 ? (
-                      `£${tx.fee_gbp.toFixed(2)}`
+                      `${formatGbp(tx.fee_gbp)}`
                     ) : (
                       '—'
                     )}

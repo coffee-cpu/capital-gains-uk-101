@@ -195,7 +195,7 @@ function TradeStatsPanel({ stats }: TradeStatsPanelProps) {
                     {formatPercent(stats.bestTrade.gainLossPercent)}
                   </span>
                   <span className="text-green-600 text-xs ml-1">
-                    ({formatCurrency(stats.bestTrade.gainLossGbp)})
+                    {formatCurrency(stats.bestTrade.gainLossGbp)}
                   </span>
                 </div>
               </div>
@@ -216,7 +216,7 @@ function TradeStatsPanel({ stats }: TradeStatsPanelProps) {
                     {formatPercent(stats.worstTrade.gainLossPercent)}
                   </span>
                   <span className="text-red-600 text-xs ml-1">
-                    ({formatCurrency(stats.worstTrade.gainLossGbp)})
+                    {formatCurrency(stats.worstTrade.gainLossGbp)}
                   </span>
                 </div>
               </div>

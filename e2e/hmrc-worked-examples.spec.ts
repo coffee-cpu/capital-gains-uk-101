@@ -66,13 +66,13 @@ test.describe('HMRC HS284 Example 3 - Section 104 holding (Lobster plc)', () => 
   test('matches HMRC gain on the first sale (700 shares)', async ({ page }) => {
     const disposal = await openDisposal(page, 'LOBSTER', '2024-05-15')
     await expect(disposal.getByText('Section 104 Pool').first()).toBeVisible()
-    await expect(disposal).toContainText('Less: Allowable costs:(£2930.67)')
+    await expect(disposal).toContainText('Less: Allowable costs:(£2,930.67)')
     await expect(disposal).toContainText('Gain/(Loss):£329.33')
   })
 
   test('matches HMRC gain on the second sale (400 shares)', async ({ page }) => {
     const disposal = await openDisposal(page, 'LOBSTER', '2025-02-03')
-    await expect(disposal).toContainText('Less: Allowable costs:(£1674.67)')
+    await expect(disposal).toContainText('Less: Allowable costs:(£1,674.67)')
     await expect(disposal).toContainText('Gain/(Loss):£300.33')
   })
 
@@ -110,7 +110,7 @@ test.describe('HMRC HS284 Example 2 - 30-day rule (Mesopotamia plc)', () => {
     const disposal = await openDisposal(page, 'MESOPOTAMIA', '2025-08-30')
     await expect(disposal.getByText('Section 104 Pool')).toBeVisible()
     await expect(disposal).toContainText('3500.00 shares')
-    await expect(disposal).toContainText('Less: Allowable costs:(£4350.00)')
+    await expect(disposal).toContainText('Less: Allowable costs:(£4,350.00)')
   })
 
   test('includes HMRC\'s £100 loss on the 30-day part in the disposal total', async ({ page }) => {
@@ -136,8 +136,8 @@ test.describe('Same-day rule - acquisitions on one day at average cost (TCGA92/S
     const disposal = await openDisposal(page, 'SAMEDAY', '2023-06-01')
     await expect(disposal.getByText('Same Day')).toBeVisible()
     await expect(disposal).toContainText('2023-06-01: 5.00 shares at £100.00 (cost: £500.00)')
-    await expect(disposal).toContainText('2023-06-01: 5.00 shares at £200.00 (cost: £1000.00)')
-    await expect(disposal).toContainText('Less: Allowable costs:(£1500.00)')
+    await expect(disposal).toContainText('2023-06-01: 5.00 shares at £200.00 (cost: £1,000.00)')
+    await expect(disposal).toContainText('Less: Allowable costs:(£1,500.00)')
     await expect(disposal).toContainText('Gain/(Loss):£0.00')
   })
 

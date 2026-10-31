@@ -21,6 +21,7 @@ import {
   getTaxYearBoundaries,
   formatDateLabel,
 } from '../../lib/chartData'
+import { formatGbp } from '../../utils/currency'
 import { EmptyState } from './EmptyState'
 
 interface PoolBreakdownChartProps {
@@ -111,7 +112,7 @@ function PieTooltip({ active, payload }: PieTooltipProps) {
         </div>
         <div className="flex justify-between gap-4">
           <span className="text-gray-500">Avg Cost:</span>
-          <span className="text-gray-900">£{data.averageCostGbp.toFixed(2)}</span>
+          <span className="text-gray-900">{formatGbp(data.averageCostGbp)}</span>
         </div>
         <div className="flex justify-between gap-4 pt-1 border-t border-gray-100">
           <span className="text-gray-500">Portfolio:</span>
