@@ -10,19 +10,10 @@
  */
 
 import type { CGTRateChange2024Data } from '../../lib/cgt/taxYearFeatures'
+import { formatGbp } from '../../utils/currency'
 
 interface CGTRateChange2024PanelProps {
   data: CGTRateChange2024Data
-}
-
-/**
- * Format a number as GBP currency
- */
-function formatGBP(value: number): string {
-  return `£${value.toLocaleString('en-GB', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`
 }
 
 /** HMRC reference URL for CGT rate changes */
@@ -64,10 +55,16 @@ function NoAdjustmentRequiredPanel({ data }: CGTRateChange2024PanelProps) {
             </a>
           </h4>
           <p className="text-xs text-blue-700">
-            {isGainBelowAEA ? (
+            {isGainBelowAEA && data.totalNetGainOrLoss < 0 ? (
               <>
-                Your net gain ({formatGBP(data.totalNetGainOrLoss)}) is below
-                the Annual Exempt Amount ({formatGBP(data.annualExemptAmount)}).
+                You have a net loss of {formatGbp(-data.totalNetGainOrLoss)} for
+                the year, so no CGT adjustment is needed despite the 30 October
+                2024 rate change.
+              </>
+            ) : isGainBelowAEA ? (
+              <>
+                Your net gain ({formatGbp(data.totalNetGainOrLoss)}) is below
+                the Annual Exempt Amount ({formatGbp(data.annualExemptAmount)}).
                 No CGT adjustment is needed despite the 30 October 2024 rate
                 change.
               </>
@@ -170,13 +167,13 @@ function AdjustmentRequiredPanel({ data }: CGTRateChange2024PanelProps) {
                 <div className="flex justify-between items-center pl-3">
                   <span className="text-amber-700">Gains</span>
                   <span className="font-medium text-green-700">
-                    {formatGBP(data.gainsBeforeRateChange)}
+                    {formatGbp(data.gainsBeforeRateChange)}
                   </span>
                 </div>
                 <div className="flex justify-between items-center pl-3">
                   <span className="text-amber-700">Losses</span>
                   <span className="font-medium text-red-700">
-                    ({formatGBP(Math.abs(data.lossesBeforeRateChange))})
+                    ({formatGbp(Math.abs(data.lossesBeforeRateChange))})
                   </span>
                 </div>
                 <div className="flex justify-between items-center pl-3 pb-2">
@@ -188,7 +185,7 @@ function AdjustmentRequiredPanel({ data }: CGTRateChange2024PanelProps) {
                         : 'text-red-700'
                     }`}
                   >
-                    {formatGBP(data.netGainOrLossBeforeRateChange)}
+                    {formatGbp(data.netGainOrLossBeforeRateChange)}
                   </span>
                 </div>
               </>
@@ -212,13 +209,13 @@ function AdjustmentRequiredPanel({ data }: CGTRateChange2024PanelProps) {
             <div className="flex justify-between items-center pl-3">
               <span className="text-amber-700">Gains</span>
               <span className="font-medium text-green-700">
-                {formatGBP(data.gainsAfterRateChange)}
+                {formatGbp(data.gainsAfterRateChange)}
               </span>
             </div>
             <div className="flex justify-between items-center pl-3">
               <span className="text-amber-700">Losses</span>
               <span className="font-medium text-red-700">
-                ({formatGBP(Math.abs(data.lossesAfterRateChange))})
+                ({formatGbp(Math.abs(data.lossesAfterRateChange))})
               </span>
             </div>
             <div className="flex justify-between items-center pl-3">
@@ -230,7 +227,7 @@ function AdjustmentRequiredPanel({ data }: CGTRateChange2024PanelProps) {
                     : 'text-red-700'
                 }`}
               >
-                {formatGBP(data.netGainOrLossAfterRateChange)}
+                {formatGbp(data.netGainOrLossAfterRateChange)}
               </span>
             </div>
           </div>

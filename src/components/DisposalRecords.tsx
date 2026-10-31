@@ -1,6 +1,7 @@
 import { useTransactionStore } from '../stores/transactionStore'
 import { useState } from 'react'
 import { getUnitLabel } from '../lib/cgt/utils'
+import { formatGbp } from '../utils/currency'
 
 const EMPTY_DISPOSALS: never[] = []
 
@@ -262,7 +263,7 @@ export function DisposalRecords({
                       <div className="flex justify-between font-bold border-t border-blue-200 pt-1 mt-1">
                         <span>Gain/(Loss):</span>
                         <span className={isGain ? 'text-green-700' : 'text-red-700'}>
-                          £{disposal.gainOrLossGbp.toFixed(2)}
+                          {formatGbp(disposal.gainOrLossGbp)}
                         </span>
                       </div>
                     </div>

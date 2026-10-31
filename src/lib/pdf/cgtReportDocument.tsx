@@ -1,6 +1,7 @@
 import type { TaxYearSummary, DisposalRecord } from '../../types/cgt'
 import type { EnrichedTransaction } from '../../types/transaction'
 import { renderAllFeaturePDFSections } from '../cgt/taxYearFeatures/pdfRenderers'
+import { formatGbp } from '../../utils/currency'
 
 /**
  * CGT report PDF document, shared by the web app's "Export PDF" button and the
@@ -179,7 +180,7 @@ function createCGTReportDocument(
   styles: PdfStyles
 ) {
   return ({ taxYearSummary, disposals, transactions, includeTransactions }: PDFDocumentProps) => {
-    const formatCurrency = (value: number) => `£${value.toFixed(2)}`
+    const formatCurrency = formatGbp
     const formatDate = formatReportDate
 
     // Filter transactions up to and including the tax year end date

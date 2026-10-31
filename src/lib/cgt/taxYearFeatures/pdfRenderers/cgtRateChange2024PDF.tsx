@@ -154,7 +154,9 @@ function NoAdjustmentRequiredContent({ data, context }: ContentProps): React.Rea
   const { Text, formatCurrency } = context
 
   const message =
-    data.totalNetGainOrLoss <= data.annualExemptAmount
+    data.totalNetGainOrLoss < 0
+      ? `Net loss of ${formatCurrency(-data.totalNetGainOrLoss)} for the year. No CGT adjustment needed.`
+      : data.totalNetGainOrLoss <= data.annualExemptAmount
       ? `Net gain (${formatCurrency(data.totalNetGainOrLoss)}) is below Annual Exempt Amount (${formatCurrency(data.annualExemptAmount)}). No CGT adjustment needed.`
       : `All disposals were before 30 October 2024. No CGT adjustment needed.`
 

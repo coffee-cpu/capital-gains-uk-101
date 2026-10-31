@@ -6,6 +6,7 @@ import { Tooltip } from './Tooltip'
 import { ExportPDFButton } from './ExportPDFButton'
 import { BuyMeACoffee } from './BuyMeACoffee'
 import { TaxYearFeaturesRenderer } from './taxYearFeatures'
+import { formatGbp } from '../utils/currency'
 
 function BuyOnlyInfoBanner({ transactions }: { transactions: EnrichedTransaction[] }) {
   // Check if any transactions are from Schwab Equity Awards
@@ -242,7 +243,7 @@ export function TaxYearSummary() {
               <div className="flex justify-between items-center font-semibold">
                 <span className="text-blue-800">Net Gain/(Loss)</span>
                 <span className={currentSummary.netGainOrLossGbp >= 0 ? 'text-green-700' : 'text-red-700'}>
-                  £{currentSummary.netGainOrLossGbp.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {formatGbp(currentSummary.netGainOrLossGbp)}
                 </span>
               </div>
             </div>
