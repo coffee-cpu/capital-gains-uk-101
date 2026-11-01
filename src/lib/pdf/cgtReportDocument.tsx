@@ -419,9 +419,9 @@ function createCGTReportDocument(
                   <Text style={[styles.tableHeaderCell, { width: '11%' }]}>Date</Text>
                   <Text style={[styles.tableHeaderCell, { width: '23%' }]}>Type</Text>
                   <Text style={[styles.tableHeaderCell, { width: '20%' }]}>Symbol</Text>
-                  <Text style={[styles.tableHeaderCell, { width: '9%', textAlign: 'right' }]}>Qty</Text>
+                  <Text style={[styles.tableHeaderCell, { width: '11%', textAlign: 'right' }]}>Qty</Text>
                   <Text style={[styles.tableHeaderCell, { width: '12%', textAlign: 'right' }]}>Price</Text>
-                  <Text style={[styles.tableHeaderCell, { width: '14%', textAlign: 'right' }]}>Value</Text>
+                  <Text style={[styles.tableHeaderCell, { width: '12%', textAlign: 'right' }]}>Value</Text>
                   <Text style={[styles.tableHeaderCell, { width: '11%', textAlign: 'right' }]}>Fee</Text>
                 </View>
                 {/* Table Rows */}
@@ -430,13 +430,13 @@ function createCGTReportDocument(
                     <Text style={[styles.tableCell, { width: '11%' }]}>{formatDate(tx.date)}</Text>
                     <Text style={[styles.tableCell, { width: '23%' }]}>{tx.type}</Text>
                     <Text style={[styles.tableCell, { width: '20%' }]}>{tx.symbol}</Text>
-                    <Text style={[styles.tableCell, { width: '9%', textAlign: 'right' }]}>
+                    <Text style={[styles.tableCell, { width: '11%', textAlign: 'right' }]}>
                       {tx.quantity?.toFixed(2) ?? '-'}
                     </Text>
                     <Text style={[styles.tableCell, { width: '12%', textAlign: 'right' }]}>
                       {tx.price_gbp != null ? formatCurrency(tx.price_gbp) : '-'}
                     </Text>
-                    <Text style={[styles.tableCell, { width: '14%', textAlign: 'right' }]}>
+                    <Text style={[styles.tableCell, { width: '12%', textAlign: 'right' }]}>
                       {tx.value_gbp != null ? formatCurrency(tx.value_gbp) : '-'}
                     </Text>
                     <Text style={[styles.tableCell, { width: '11%', textAlign: 'right' }]}>
