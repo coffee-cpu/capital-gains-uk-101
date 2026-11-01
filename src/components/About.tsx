@@ -485,7 +485,7 @@ export function About() {
                 <code>npx cgt-visualiser calculate my-broker-export.csv --tax-year 2025/26</code>
               </pre>
               <ul className="list-disc list-inside space-y-2 ml-4">
-                <li><strong>For people:</strong> readable summaries per tax year, or CSV for spreadsheets. Requires Node.js 20 or later.</li>
+                <li><strong>For people:</strong> readable summaries per tax year, or CSV for spreadsheets. Requires Node.js 22 or later.</li>
                 <li><strong>For AI agents:</strong> versioned JSON output with SA108 figures and coded warnings (for example, sales with no recorded purchase).</li>
               </ul>
               <p className="text-sm">

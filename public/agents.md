@@ -4,7 +4,7 @@ This guide is for AI agents (Claude Code, Codex, Cursor, Gemini CLI and similar)
 
 **Use the `cgt-visualiser` command-line tool rather than doing the calculation yourself.** UK CGT on shares depends on HMRC's matching rules (same-day, 30-day "bed and breakfast", Section 104 pooling), on converting foreign currency to GBP, and on stock split adjustments. These are easy to get subtly wrong. The tool applies them with the same engine as the [Capital Gains Tax Visualiser](https://cgtvisualiser.co.uk) web app, and runs entirely on the user's machine.
 
-Requirements: Node.js 20 or later, and a shell.
+Requirements: Node.js 22 or later, and a shell.
 
 **If you can't run commands** (for example in a chat app without a code environment), don't calculate it yourself either. Guide the user through the web app instead: they export their files (step 1), load them at https://cgtvisualiser.co.uk, check any warnings it shows, then click **Export PDF** for the tax year. The web app runs in their browser, so their files aren't uploaded anywhere.
 
