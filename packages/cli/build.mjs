@@ -13,7 +13,7 @@ await build({
   bundle: true,
   platform: 'node',
   format: 'esm',
-  target: 'node20',
+  target: 'node22',
   banner: {
     js: "#!/usr/bin/env node\nimport { createRequire as __cliCreateRequire } from 'node:module';\nconst require = __cliCreateRequire(import.meta.url);",
   },

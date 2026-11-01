@@ -44,11 +44,11 @@ jobs:
       - name: CLI smoke test
         run: bash packages/cli/scripts/smoke-test.sh
 
-      # packages/cli declares engines: node >=20, so check the built CLI runs on the oldest supported version
+      # packages/cli declares engines: node >=22, so check the built CLI runs on the oldest supported version
       - name: Setup oldest Node supported by the CLI
         uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: CLI smoke test on oldest supported Node
         run: bash packages/cli/scripts/smoke-test.sh

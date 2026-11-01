@@ -8,7 +8,7 @@ It runs on your machine and never uploads your transactions. The calculation eng
 npx cgt-visualiser calculate schwab.csv trading212.csv --tax-year 2025/26
 ```
 
-Requires Node.js 20 or later.
+Requires Node.js 22 or later.
 
 ## Commands
 
