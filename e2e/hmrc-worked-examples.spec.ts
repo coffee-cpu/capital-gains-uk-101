@@ -78,7 +78,8 @@ test.describe('HMRC HS284 Example 3 - Section 104 holding (Lobster plc)', () => 
 
   test('totals the year as HMRC does (£329 + £300)', async ({ page }) => {
     await expect(calculationRow(page, 'Total Gains')).toContainText('£629.67')
-    await expect(calculationRow(page, 'Total Losses')).toContainText('(£0.00)')
+    await expect(calculationRow(page, 'Total Losses')).toContainText('£0.00')
+    await expect(calculationRow(page, 'Total Losses')).not.toContainText('(£')
     await expect(calculationRow(page, 'Net Gain/(Loss)')).toContainText('£629.67')
   })
 })

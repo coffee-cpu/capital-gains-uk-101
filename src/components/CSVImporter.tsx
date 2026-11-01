@@ -245,6 +245,7 @@ export function CSVImporter() {
           <input
             id="csv-upload"
             type="file"
+            title=""
             accept=".csv"
             multiple
             onChange={handleFileUpload}

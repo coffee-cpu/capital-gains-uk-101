@@ -235,7 +235,7 @@ export function TaxYearSummary() {
             <div className="flex justify-between items-center">
               <span className="text-blue-800">Total Losses</span>
               <span className="font-medium text-blue-900">
-                (£{Math.abs(currentSummary.totalLossesGbp).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
+                {formatGbp(currentSummary.totalLossesGbp)}
               </span>
             </div>
 

@@ -173,7 +173,7 @@ function AdjustmentRequiredPanel({ data }: CGTRateChange2024PanelProps) {
                 <div className="flex justify-between items-center pl-3">
                   <span className="text-amber-700">Losses</span>
                   <span className="font-medium text-red-700">
-                    ({formatGbp(Math.abs(data.lossesBeforeRateChange))})
+                    {formatGbp(data.lossesBeforeRateChange)}
                   </span>
                 </div>
                 <div className="flex justify-between items-center pl-3 pb-2">
@@ -215,7 +215,7 @@ function AdjustmentRequiredPanel({ data }: CGTRateChange2024PanelProps) {
             <div className="flex justify-between items-center pl-3">
               <span className="text-amber-700">Losses</span>
               <span className="font-medium text-red-700">
-                ({formatGbp(Math.abs(data.lossesAfterRateChange))})
+                {formatGbp(data.lossesAfterRateChange)}
               </span>
             </div>
             <div className="flex justify-between items-center pl-3">
