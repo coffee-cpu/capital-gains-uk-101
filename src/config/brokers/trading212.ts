@@ -59,7 +59,7 @@ export const trading212Definition: BrokerDefinition = {
     ],
     notes: [
       'Trading 212 limits downloads to 1 year. For longer history, download year by year and upload multiple files.',
-      'Each export covers one account. Import only your Invest account: Stocks ISA gains are free of Capital Gains Tax, and the ISA export looks the same, so the app can\'t tell them apart.',
+      'Each export covers one account. Gains in your Invest account are taxable, so import it. Leave out your Stocks ISA: ISA gains are free of Capital Gains Tax, and the ISA export looks the same, so the app can\'t tell them apart.',
     ],
   },
   exampleFile: '/examples/trading212-example.csv',

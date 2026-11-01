@@ -7,9 +7,9 @@ There are two ways to use it:
 - **Web app** (https://cgtvisualiser.co.uk): runs entirely in the browser. Best for people.
 - **Command-line tool** (`npx -y cgt-visualiser@latest`): the same engine for a terminal. Best for AI agents and scripts. It outputs versioned JSON, with coded warnings and clear exit codes, and can write the same PDF report as the web app.
 
-If you are an AI agent asked to work out UK capital gains tax on shares, run the command-line tool rather than calculating the matching rules yourself, and follow the agent guide. If you can't run commands, guide the user to load their broker exports in the web app and use its Export PDF button.
+If you are an AI agent asked to work out UK capital gains tax on shares, run the command-line tool rather than calculating the matching rules yourself, and follow the agent guide. If you can't run it (for example in a chat app or a sandbox without internet access), guide the user to load their broker exports in the web app and use its Export PDF button. Don't ask them to upload the files to you: the web app keeps their transactions on their own device.
 
-Only include taxable (general investment) accounts. Gains in ISAs and pensions (SIPPs) are free of CGT, and their exports often look identical to taxable ones, so ask the user which account each file comes from.
+Only include taxable (general investment) accounts. Gains in ISAs and pensions (SIPPs) are free of CGT, and their exports often look identical to taxable ones, so ask the user which account each file comes from. Don't assume an account is an ISA: brokers such as Trading 212 and Freetrade also offer taxable Invest accounts.
 
 ## For AI agents
 
