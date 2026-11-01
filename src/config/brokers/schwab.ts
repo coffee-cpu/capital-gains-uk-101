@@ -19,7 +19,7 @@ export const schwabDefinition: BrokerDefinition = {
       'Click Export → CSV',
     ],
     notes: ['Schwab limits downloads to 4 years. For longer history, download in 4-year chunks and upload multiple files.'],
-    info: 'If you have equity awards (RSUs, stock options), also download "Equity Awards" history separately and upload both files together.',
+    info: 'If you have equity awards (RSUs, stock options), also download "Equity Awards" history separately and upload both files together. Vests appear in both files; the app uses the Equity Awards entry, which has the vest price, so they aren\'t counted twice.',
   },
   exampleFile: '/examples/schwab-transactions-example.csv',
   enabled: true,

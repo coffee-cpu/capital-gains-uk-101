@@ -6,13 +6,19 @@ This guide is for AI agents (Claude Code, Codex, Cursor, Gemini CLI and similar)
 
 Requirements: Node.js 22 or later, and a shell.
 
-**If you can't run commands** (for example in a chat app without a code environment), don't calculate it yourself either. Guide the user through the web app instead: they export their files (step 1), load them at https://cgtvisualiser.co.uk, check any warnings it shows, then click **Export PDF** for the tax year. The web app runs in their browser, so their files aren't uploaded anywhere.
+**If you can't run the tool** (for example in a chat app, or in a code sandbox that can't install npm packages from the internet), don't calculate it yourself either. Guide the user through the web app instead: they export their files (step 1), load them at https://cgtvisualiser.co.uk, check any warnings it shows, then click **Export PDF** for the tax year.
+
+In that case, don't ask the user to upload their broker files to you. The web app runs in their browser, so their transactions never leave their device; sending the files to a chat undoes that. Help with the exports, then ask them to share what the web app shows (the tax year summary, any warnings, or the PDF) if they want you to explain or check the result.
 
 ## 1. Get the right files from the user
 
 You need the user's **complete transaction history** for each taxable account: every purchase back to when they first bought the shares, not just the current tax year. Without the purchases, sales can't be matched to their costs, and the tool reports `INCOMPLETE_DISPOSAL`.
 
 Leave out ISA and pension (SIPP) accounts: their gains are free of CGT. Exports from the same broker look identical for both kinds of account (for example, Trading 212's Invest and Stocks ISA exports), so the tool can't tell them apart. Ask the user which account each file comes from.
+
+**Don't assume an account is an ISA.** Many people hold a taxable general account with brokers that also offer ISAs (for example, a Trading 212 or Freetrade Invest account). Leaving one out because it might be an ISA would leave out taxable gains. If the user hasn't said, ask before excluding anything.
+
+Charles Schwab users with RSUs or other equity awards should export both the Brokerage and the Equity Awards history and pass both files. Vests appear in both files (as "Stock Plan Activity" in the brokerage file); the tool keeps the Equity Awards entry, which has the vest price, and drops the matching brokerage entry, so they aren't counted twice.
 
 To see which brokers are supported and how to export the right file from each:
 
