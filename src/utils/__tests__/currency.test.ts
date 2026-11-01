@@ -4,7 +4,7 @@ import { formatGbp } from '../currency'
 describe('formatGbp', () => {
   it('formats positive amounts with thousands separators', () => {
     expect(formatGbp(5897.75)).toBe('£5,897.75')
-    expect(formatGbp(3000, 0)).toBe('£3,000')
+    expect(formatGbp(47302)).toBe('£47,302.00')
   })
 
   it('puts negative amounts in brackets', () => {

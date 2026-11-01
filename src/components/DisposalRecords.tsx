@@ -152,9 +152,9 @@ export function DisposalRecords({
                         £{disposal.proceedsGbp.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </div>
                       <div className="text-xs text-gray-500 mt-1">
-                        Sale price: £{disposal.disposal.price_gbp?.toFixed(2)} per {getUnitLabel(disposal.disposal, false)}
+                        Sale price: {formatGbp(disposal.disposal.price_gbp ?? 0)} per {getUnitLabel(disposal.disposal, false)}
                         {disposal.disposal.fee_gbp && disposal.disposal.fee_gbp > 0 && (
-                          <span> (fees: £{disposal.disposal.fee_gbp.toFixed(2)})</span>
+                          <span> (fees: {formatGbp(disposal.disposal.fee_gbp)})</span>
                         )}
                       </div>
                     </div>
@@ -216,14 +216,14 @@ export function DisposalRecords({
                                 <div key={acqIdx} className="text-xs text-gray-600">
                                   {matching.rule !== 'SECTION_104' && (
                                     <>
-                                      {acq.transaction.date}: {acq.quantityMatched.toFixed(2)} {getUnitLabel(disposal.disposal)} at £{(acq.costBasisGbp / acq.quantityMatched).toFixed(2)}
-                                      {' '}(cost: £{acq.costBasisGbp.toFixed(2)})
+                                      {acq.transaction.date}: {acq.quantityMatched.toFixed(2)} {getUnitLabel(disposal.disposal)} at {formatGbp(acq.costBasisGbp / acq.quantityMatched)}
+                                      {' '}(cost: {formatGbp(acq.costBasisGbp)})
                                     </>
                                   )}
                                   {matching.rule === 'SECTION_104' && (
                                     <>
-                                      Pool average cost: £{(acq.costBasisGbp / acq.quantityMatched).toFixed(2)} per {getUnitLabel(disposal.disposal, false)}
-                                      {' '}(total: £{acq.costBasisGbp.toFixed(2)})
+                                      Pool average cost: {formatGbp(acq.costBasisGbp / acq.quantityMatched)} per {getUnitLabel(disposal.disposal, false)}
+                                      {' '}(total: {formatGbp(acq.costBasisGbp)})
                                     </>
                                   )}
                                 </div>
@@ -254,11 +254,11 @@ export function DisposalRecords({
                     <div className="space-y-1 text-blue-800">
                       <div className="flex justify-between">
                         <span>Proceeds:</span>
-                        <span>£{disposal.proceedsGbp.toFixed(2)}</span>
+                        <span>{formatGbp(disposal.proceedsGbp)}</span>
                       </div>
                       <div className="flex justify-between">
                         <span>Less: Allowable costs:</span>
-                        <span>(£{disposal.allowableCostsGbp.toFixed(2)})</span>
+                        <span>({formatGbp(disposal.allowableCostsGbp)})</span>
                       </div>
                       <div className="flex justify-between font-bold border-t border-blue-200 pt-1 mt-1">
                         <span>Gain/(Loss):</span>
