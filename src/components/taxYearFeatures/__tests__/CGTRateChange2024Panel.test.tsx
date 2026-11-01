@@ -59,3 +59,25 @@ describe('2024 rate change message when no adjustment is required', () => {
     expect(renderPdf(makeData(1500))).toContain('Net gain (£1,500.00) is below')
   })
 })
+
+describe('2024 rate change breakdown when an adjustment is required', () => {
+  const data: CGTRateChange2024Data = {
+    ...makeData(10000),
+    requiresAdjustment: true,
+    gainsBeforeRateChange: 6000,
+    netGainOrLossBeforeRateChange: 6000,
+    disposalCountBeforeRateChange: 1,
+    gainsAfterRateChange: 5234.56,
+    lossesAfterRateChange: -1234.56,
+    netGainOrLossAfterRateChange: 4000,
+  }
+
+  it('shows losses once in brackets, and no losses without brackets', () => {
+    for (const html of [renderPanel(data), renderPdf(data)]) {
+      expect(html).toContain('(£1,234.56)')
+      expect(html).toContain('£0.00')
+      expect(html).not.toContain('((£')
+      expect(html).not.toContain('(£0.00)')
+    }
+  })
+})
