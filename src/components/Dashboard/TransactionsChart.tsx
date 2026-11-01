@@ -155,7 +155,7 @@ interface TradeStatsPanelProps {
   stats: TradeStats
 }
 
-function TradeStatsPanel({ stats }: TradeStatsPanelProps) {
+export function TradeStatsPanel({ stats }: TradeStatsPanelProps) {
   const hasStats = stats.sellCount > 0
 
   // Format percentage with sign
@@ -182,7 +182,7 @@ function TradeStatsPanel({ stats }: TradeStatsPanelProps) {
       {hasStats ? (
         <div className="space-y-2">
           {/* Best Trade */}
-          {stats.bestTrade && (
+          {stats.bestTrade && stats.bestTrade.gainLossPercent > 0 && (
             <div className="bg-green-50 rounded-lg px-3 py-2">
               <p className="text-xs text-green-700 font-medium">Best Trade</p>
               <div className="flex items-baseline justify-between">
