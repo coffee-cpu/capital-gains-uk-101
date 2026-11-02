@@ -74,22 +74,52 @@ export function isValidSplitRecord(
   year: number,
   today: string = new Date().toISOString().slice(0, 10)
 ): boolean {
-  if (typeof record.symbol !== 'string' || !record.symbol.trim()) return false
-  if (typeof record.date !== 'string') return false
+  return splitRecordRejection(record, year, today) === null
+}
+
+/** Why a fetched split record was rejected */
+export type SplitRejectionReason =
+  | 'missing-symbol'
+  | 'invalid-date'
+  | 'wrong-year'
+  | 'future-date'
+  | 'invalid-ratio'
+  | 'ratio-out-of-range'
+
+/**
+ * The reason a fetched split record fails validation (see isValidSplitRecord),
+ * or null when it is valid.
+ */
+export function splitRecordRejection(
+  record: { symbol?: unknown; date?: unknown; ratioNew?: unknown; ratioOld?: unknown },
+  year: number,
+  today: string = new Date().toISOString().slice(0, 10)
+): SplitRejectionReason | null {
+  if (typeof record.symbol !== 'string' || !record.symbol.trim()) return 'missing-symbol'
+  if (typeof record.date !== 'string') return 'invalid-date'
 
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(record.date)
-  if (!match) return false
+  if (!match) return 'invalid-date'
   const [, y, m, d] = match.map(Number)
   const parsed = new Date(Date.UTC(y, m - 1, d))
-  if (parsed.getUTCFullYear() !== y || parsed.getUTCMonth() !== m - 1 || parsed.getUTCDate() !== d) return false
-  if (y !== year) return false
-  if (record.date > today) return false
+  if (parsed.getUTCFullYear() !== y || parsed.getUTCMonth() !== m - 1 || parsed.getUTCDate() !== d) return 'invalid-date'
+  if (y !== year) return 'wrong-year'
+  if (record.date > today) return 'future-date'
 
   const { ratioNew, ratioOld } = record
-  if (typeof ratioNew !== 'number' || typeof ratioOld !== 'number') return false
-  if (!Number.isFinite(ratioNew) || !Number.isFinite(ratioOld) || ratioNew <= 0 || ratioOld <= 0) return false
+  if (typeof ratioNew !== 'number' || typeof ratioOld !== 'number') return 'invalid-ratio'
+  if (!Number.isFinite(ratioNew) || !Number.isFinite(ratioOld) || ratioNew <= 0 || ratioOld <= 0) return 'invalid-ratio'
   const multiplier = ratioNew / ratioOld
-  return multiplier <= MAX_SPLIT_MULTIPLIER && multiplier >= 1 / MAX_SPLIT_MULTIPLIER
+  if (multiplier > MAX_SPLIT_MULTIPLIER || multiplier < 1 / MAX_SPLIT_MULTIPLIER) return 'ratio-out-of-range'
+  return null
+}
+
+/** A fetched split record dropped as invalid (future-dated records excluded, as expected) */
+export interface RejectedSplitRecord {
+  symbol: string
+  date: string
+  year: number
+  reason: Exclude<SplitRejectionReason, 'future-date'>
 }
 
 /**
@@ -107,6 +137,13 @@ export class JsDelivrSplitSource implements SplitDataSource {
 
   /** Years whose split data could not be fetched and had no cached copy */
   readonly unavailableYears = new Set<number>()
+
+  /**
+   * Records dropped as invalid, so callers can warn when one is for a share
+   * the user holds: a dropped split means wrong quantities from that date.
+   * Future-dated records are left out; rejecting those is expected.
+   */
+  readonly rejectedRecords: RejectedSplitRecord[] = []
 
   async fetchSplitsForYears(years: number[]): Promise<SplitRecord[]> {
     const results = await Promise.all(
@@ -183,7 +220,14 @@ export class JsDelivrSplitSource implements SplitDataSource {
   }
 
   private parseCdnRecord(record: CdnSplitRecord, year: number): SplitRecord | null {
-    if (!isValidSplitRecord(record, year)) {
+    const rejection = splitRecordRejection(record, year)
+    if (rejection) {
+      if (rejection !== 'future-date') {
+        const symbol = typeof record.symbol === 'string' ? record.symbol : String(record.symbol ?? '')
+        const date = typeof record.date === 'string' ? record.date : String(record.date ?? '')
+        this.rejectedRecords.push({ symbol, date, year, reason: rejection })
+        console.warn(`Ignoring invalid stock split record for ${symbol || '(no symbol)'} on ${date || '(no date)'}: ${rejection}`)
+      }
       return null
     }
 

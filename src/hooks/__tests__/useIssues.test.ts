@@ -428,3 +428,22 @@ describe('detectIssues - data notices', () => {
     expect(ids).not.toContain('split-conflicts')
   })
 })
+
+describe('detectIssues - rejected split data', () => {
+  it('warns about fetched split data that was not applied', () => {
+    const results = createMockCGTResults({
+      dataNotices: {
+        overlappingRows: [],
+        splitConflicts: [],
+        rejectedSplitRecords: [{ symbol: 'VOD', date: '2023-07-01', reason: 'ratio-out-of-range' }],
+      },
+    })
+
+    const issue = detectIssues([createMockTransaction()], results).find(i => i.id === 'rejected-split-data')!
+
+    expect(issue.type).toBe('warning')
+    expect(issue.description).toContain('VOD (2023-07-01)')
+    expect(issue.affectedItems).toEqual(['VOD'])
+  })
+})
+

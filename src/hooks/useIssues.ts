@@ -121,6 +121,20 @@ export function detectIssues(
     })
   }
 
+  const rejectedSplits = cgtResults?.dataNotices?.rejectedSplitRecords ?? []
+  if (rejectedSplits.length > 0) {
+    issues.push({
+      id: 'rejected-split-data',
+      type: 'warning',
+      title: 'Invalid Stock Split Data Ignored',
+      description: `Auto-detected stock split data for ${rejectedSplits.map(r => `${r.symbol} (${r.date})`).join(', ')} failed validation and was not applied. If that split really happened, quantities from that date are wrong.`,
+      count: rejectedSplits.length,
+      affectedItems: [...new Set(rejectedSplits.map(r => r.symbol))],
+      action: 'Check whether the share split on that date. If it did, add a STOCK_SPLIT row with the ratio in a Generic CSV file.',
+      actionLabel: 'Check Split',
+    })
+  }
+
   // 3. Check for incomplete Stock Plan Activity (WARNING severity)
   // Note: Check tx.incomplete only (not !tx.ignored) to match TransactionList behavior
   const incompleteTransactions = transactions.filter(tx => tx.incomplete)

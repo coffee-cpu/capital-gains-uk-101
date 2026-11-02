@@ -22,6 +22,7 @@ export interface ReportWarning {
     | 'DUPLICATE_FILE'
     | 'TAX_YEAR_NOT_FOUND'
     | 'SPLIT_DATA_UNAVAILABLE'
+    | 'SPLIT_DATA_REJECTED'
     | 'SKIPPED_ROWS'
     | 'OVERLAPPING_ROWS_REMOVED'
     | 'SPLIT_RATIO_CONFLICT'
@@ -411,6 +412,17 @@ function collectWarnings(result: CGTCalculationResult, disposals: DisposalRecord
         `(${conflict.used.source}, ${conflict.used.date}), ignored ${conflict.ignored.ratio} ` +
         `(${conflict.ignored.source}, ${conflict.ignored.date}). Every later quantity depends on the ratio, so check it.`,
       transactionIds: [conflict.used.id, conflict.ignored.id],
+    })
+  }
+
+  const rejectedSplits = result.dataNotices?.rejectedSplitRecords ?? []
+  if (rejectedSplits.length > 0) {
+    warnings.push({
+      code: 'SPLIT_DATA_REJECTED',
+      message:
+        `Fetched stock split data failed validation and was not applied: ` +
+        `${rejectedSplits.map(r => `${r.symbol} on ${r.date} (${r.reason})`).join(', ')}. ` +
+        'If that split really happened, quantities from that date are wrong: add a STOCK_SPLIT row with the ratio in a Generic CSV.',
     })
   }
 

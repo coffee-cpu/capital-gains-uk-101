@@ -3,7 +3,7 @@ import { findSplitConflicts } from './enrichment/enrichers/splitEnricher'
 import { enrichTransactions } from './enrichment'
 import { calculateCGT } from './cgt/engine'
 import { getAutoSplitsForTransactions } from './splits/splitLookupService'
-import { SplitDataSource } from './splits/splitDataSource'
+import { SplitDataSource, JsDelivrSplitSource } from './splits/splitDataSource'
 import { FXSource, DEFAULT_FX_SOURCE } from '../types/fxSource'
 import { CGTCalculationResult } from '../types/cgt'
 import { GenericTransaction } from '../types/transaction'
@@ -47,8 +47,9 @@ export async function runPipeline(
 
   // Inject auto-fetched stock splits (not persisted, regenerated each run)
   let withAutoSplits = deduplicated
+  const source = splitSource ?? new JsDelivrSplitSource()
   if (autoSplits) {
-    const fetchedSplits = await getAutoSplitsForTransactions(deduplicated, splitSource)
+    const fetchedSplits = await getAutoSplitsForTransactions(deduplicated, source)
     if (fetchedSplits.length > 0) {
       withAutoSplits = [...deduplicated, ...fetchedSplits]
     }
@@ -61,9 +62,16 @@ export async function runPipeline(
   const result = calculateCGT(enriched)
 
   // Report data choices that change the figures, so the UI and CLI can show them
+  const heldSymbols = new Set(deduplicated.map(tx => tx.symbol))
+  const rejectedSplitRecords = source instanceof JsDelivrSplitSource
+    ? source.rejectedRecords
+        .filter(r => heldSymbols.has(r.symbol))
+        .map(({ symbol, date, reason }) => ({ symbol, date, reason }))
+    : []
   result.dataNotices = {
     overlappingRows,
     splitConflicts: findSplitConflicts(withAutoSplits),
+    rejectedSplitRecords,
   }
 
   return result

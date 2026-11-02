@@ -66,4 +66,20 @@ describe('JsDelivrSplitSource', () => {
 
     expect(splits.map(s => s.symbol)).toEqual(['NVDA'])
   })
+
+  it('records rejected records for callers to report, except future-dated ones', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => new Response(JSON.stringify(
+      String(url).endsWith('/2099.json')
+        ? { year: 2099, updated: '2099-01-01', splits: [record({ symbol: 'LATER', date: '2099-01-01' })] }
+        : { year: 2024, updated: '2024-12-31', splits: [record({ symbol: 'BAD', ratioNew: 1_000_000 })] }
+    )))
+    const source = new JsDelivrSplitSource()
+
+    await source.fetchSplitsForYears([2024, 2099])
+
+    expect(source.rejectedRecords).toEqual([
+      { symbol: 'BAD', date: '2024-06-10', year: 2024, reason: 'ratio-out-of-range' },
+    ])
+  })
 })
