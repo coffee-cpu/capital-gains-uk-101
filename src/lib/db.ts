@@ -67,7 +67,39 @@ export class CGTDatabase extends Dexie {
       settings: 'key',
       split_data_cache: 'year',
     })
+
+    // Version 5: Interactive Brokers debit (margin) interest was imported as
+    // INTEREST, which counted it as negative interest income. It is a cost, so
+    // it is now a FEE; convert rows imported before the parser change.
+    this.version(5).stores({
+      transactions: 'id, source, symbol, date, type',
+      fx_rates: 'id, date, currency, fxSource',
+      imported_files: 'fileId, filename, importedAt',
+      settings: 'key',
+      split_data_cache: 'year',
+    }).upgrade(tx =>
+      tx.table<GenericTransaction, string>('transactions')
+        .where('type').equals('INTEREST')
+        .modify(row => {
+          if (isImportedIBDebitInterest(row)) row.type = 'FEE'
+        })
+    )
   }
+}
+
+/**
+ * An Interactive Brokers margin interest charge stored as INTEREST by the
+ * parser before database version 5. Older imports noted both margin interest
+ * and bond accrued interest paid as "Debit Interest"; IB's description
+ * ("USD Debit Interest for Jan-2022") tells them apart.
+ */
+export function isImportedIBDebitInterest(row: GenericTransaction): boolean {
+  return (
+    row.source === 'Interactive Brokers' &&
+    row.type === 'INTEREST' &&
+    row.notes === 'Debit Interest' &&
+    /debit interest/i.test(row.name ?? '')
+  )
 }
 
 export const db = new CGTDatabase()

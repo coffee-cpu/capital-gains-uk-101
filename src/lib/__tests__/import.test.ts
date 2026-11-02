@@ -4,6 +4,9 @@ import { join } from 'node:path'
 import { createFileId, describeSkippedRows, importCSVText } from '../import'
 import { getEnabledBrokerDefinitions } from '../../config/brokers'
 import { BrokerType } from '../../types/broker'
+import type { EnrichedTransaction } from '../../types/transaction'
+import { calculateCGT } from '../cgt/engine'
+import { getTaxYear } from '../../utils/taxYear'
 
 const PUBLIC_DIR = join(__dirname, '../../../public')
 
@@ -109,5 +112,28 @@ describe('importCSVText', () => {
     const csv = 'foo,bar,baz\n1,2,3'
 
     expect(() => importCSVText(csv, 'unknown')).toThrow('Could not detect CSV format')
+  })
+})
+
+describe('Interactive Brokers debit interest', () => {
+  it('is not counted as negative interest income', () => {
+    const { transactions } = importCSVText(readExample('/examples/interactive-brokers-example.csv'), 'ib')
+    // Enrich with a 1:1 rate: the test is about which rows count as interest
+    const enriched = transactions.map(tx => ({
+      ...tx,
+      fx_rate: 1,
+      price_gbp: tx.price,
+      value_gbp: tx.total,
+      fee_gbp: tx.fee,
+      fx_source: 'test',
+      tax_year: getTaxYear(tx.date),
+    })) as EnrichedTransaction[]
+
+    const debit = enriched.find(tx => tx.name === 'USD Debit Interest for Jan-2022')
+    expect(debit?.type).toBe('FEE')
+
+    const summary = calculateCGT(enriched).taxYearSummaries.find(s => s.taxYear === '2021/22')
+    expect(summary?.totalInterest ?? 0).toBe(0)
+    expect(summary?.grossInterestGbp ?? 0).toBe(0)
   })
 })
