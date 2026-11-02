@@ -554,7 +554,16 @@ function normalizeDividendRow(
 }
 
 /**
- * Normalize an interest row (Credit Interest, Debit Interest, Investment Interest Paid)
+ * Normalize an interest row (Credit Interest, Debit Interest, Investment Interest
+ * Paid/Received).
+ *
+ * Debit Interest is margin interest charged to the account. It is a cost, not
+ * income, and an individual can't deduct it from interest income or capital
+ * gains, so it is recorded as a FEE and stays out of the interest totals.
+ *
+ * Investment Interest Paid (accrued interest paid when buying a bond) stays as
+ * negative INTEREST: under the accrued income scheme it reduces the interest
+ * later received on that bond.
  */
 function normalizeInterestRow(
   row: RawCSVRow,
@@ -565,18 +574,15 @@ function normalizeInterestRow(
   date: string,
   description: string | undefined
 ): GenericTransaction | null {
-  // Negative values indicate money paid out (debit interest)
-  const isDebit = transactionType === 'Debit Interest' || transactionType === 'Investment Interest Paid'
-
   return {
     ...createBaseTransaction(fileId, rowIndex, baseCurrency, date, description),
     symbol: 'CASH', // Placeholder for interest transactions
-    type: TransactionType.INTEREST,
+    type: transactionType === 'Debit Interest' ? TransactionType.FEE : TransactionType.INTEREST,
     quantity: null,
     price: null,
-    total: parseGrossAmount(row),
+    total: parseGrossAmount(row), // Negative for money paid out
     fee: null,
-    notes: isDebit ? 'Debit Interest' : 'Credit Interest',
+    notes: transactionType,
   }
 }
 

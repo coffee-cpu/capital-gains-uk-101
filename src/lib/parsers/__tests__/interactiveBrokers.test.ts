@@ -219,7 +219,7 @@ describe('Interactive Brokers Parser', () => {
       })
     })
 
-    it('should parse debit interest transactions with negative values', () => {
+    it('should record debit (margin) interest as a fee, not interest income', () => {
       const rows = [
         createIBRow({
           'Section': 'Transaction History',
@@ -241,10 +241,38 @@ describe('Interactive Brokers Parser', () => {
 
       expect(result).toHaveLength(1)
       expect(result[0]).toMatchObject({
-        type: TransactionType.INTEREST,
+        type: TransactionType.FEE,
         symbol: 'CASH',
         total: -14.63, // Preserved as negative (money paid out)
         notes: 'Debit Interest',
+      })
+    })
+
+    it('should keep bond accrued interest paid as negative interest', () => {
+      const rows = [
+        createIBRow({
+          'Section': 'Transaction History',
+          'RowType': 'Data',
+          'Date': '2025-03-25',
+          'Account': 'U1234567',
+          'Description': 'Purchase Accrued Interest UKT 0 5/8 06/07/25',
+          'Transaction Type': 'Investment Interest Paid',
+          'Symbol': 'UKT 0 5/8 06/07/25',
+          'Quantity': '-',
+          'Price': '-',
+          'Gross Amount ': '-1.87',
+          'Commission': '-',
+          'Net Amount': '-1.87',
+        }),
+      ]
+
+      const result = normalizeInteractiveBrokersTransactions(rows, 'test-file')
+
+      expect(result).toHaveLength(1)
+      expect(result[0]).toMatchObject({
+        type: TransactionType.INTEREST,
+        total: -1.87,
+        notes: 'Investment Interest Paid',
       })
     })
 
