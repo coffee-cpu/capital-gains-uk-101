@@ -528,7 +528,7 @@ interface TaxYearSummary {
 1. All disposals before 30 Oct → No adjustment
 2. All disposals after 30 Oct → No adjustment
 3. Split disposals, net gain < £3,000 → No adjustment
-4. Split disposals, net gain > £3,000 → Adjustment required
+4. Post-change gains exceed the year's losses plus the £3,000 AEA → Adjustment required. Losses and the AEA are set against post-change gains first (TCGA92/S4B), so split disposals with a year total above £3,000 need no adjustment when the post-change gains are covered
 5. Edge case: disposal exactly on 30 Oct 2024
 
 ## UX Considerations
