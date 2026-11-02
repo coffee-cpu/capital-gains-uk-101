@@ -1,4 +1,4 @@
-import { EnrichedTransaction, GainGroupType } from './transaction'
+import { EnrichedTransaction, GainGroupType, GenericTransaction } from './transaction'
 import type { TaxYearFeaturesMap } from '../lib/cgt/taxYearFeatures/types'
 
 /**
@@ -174,5 +174,32 @@ export interface CGTCalculationResult {
     totalBuys: number
     totalSells: number
   }
+  /**
+   * Choices the pipeline made about the imported data that change the
+   * figures, so they can be shown to the user. Set by runPipeline.
+   */
+  dataNotices?: DataNotices
+}
+
+/**
+ * One split record that was set aside because another record of the same
+ * split (same symbol, within a few days) gave a different ratio.
+ */
+export interface SplitConflict {
+  symbol: string
+  /** The record that was applied (the earliest) */
+  used: { id: string; date: string; ratio: string; source: string }
+  /** The record that was ignored */
+  ignored: { id: string; date: string; ratio: string; source: string }
+}
+
+export interface DataNotices {
+  /**
+   * Rows dropped because an identical row from the same broker appeared in
+   * another imported file (see removeOverlappingImports)
+   */
+  overlappingRows: GenericTransaction[]
+  /** Split records for the same split that disagreed on the ratio */
+  splitConflicts: SplitConflict[]
 }
 

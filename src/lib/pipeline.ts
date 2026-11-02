@@ -1,4 +1,5 @@
-import { deduplicateTransactions } from '../utils/deduplication'
+import { deduplicateTransactions, findOverlappingImports } from '../utils/deduplication'
+import { findSplitConflicts } from './enrichment/enrichers/splitEnricher'
 import { enrichTransactions } from './enrichment'
 import { calculateCGT } from './cgt/engine'
 import { getAutoSplitsForTransactions } from './splits/splitLookupService'
@@ -39,8 +40,10 @@ export async function runPipeline(
     return null
   }
 
-  // Deduplicate incomplete Stock Plan Activity when Equity Awards data exists
-  const deduplicated = deduplicateTransactions(rawTransactions)
+  // Drop rows repeated across overlapping imports (kept for reporting), then
+  // incomplete Stock Plan Activity when Equity Awards data exists
+  const { kept, removed: overlappingRows } = findOverlappingImports(rawTransactions)
+  const deduplicated = deduplicateTransactions(kept)
 
   // Inject auto-fetched stock splits (not persisted, regenerated each run)
   let withAutoSplits = deduplicated
@@ -55,5 +58,13 @@ export async function runPipeline(
   const enriched = await enrichTransactions(withAutoSplits, fxSource)
 
   // Calculate CGT with HMRC matching rules
-  return calculateCGT(enriched)
+  const result = calculateCGT(enriched)
+
+  // Report data choices that change the figures, so the UI and CLI can show them
+  result.dataNotices = {
+    overlappingRows,
+    splitConflicts: findSplitConflicts(withAutoSplits),
+  }
+
+  return result
 }

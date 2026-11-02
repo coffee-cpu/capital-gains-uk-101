@@ -1,4 +1,5 @@
-import { EnrichedTransaction, StockSplitEvent, parseRatioMultiplier } from '../../../types/transaction'
+import { EnrichedTransaction, GenericTransaction, StockSplitEvent, parseRatioMultiplier } from '../../../types/transaction'
+import type { SplitConflict } from '../../../types/cgt'
 import { Enricher } from '../types'
 
 /**
@@ -6,6 +7,21 @@ import { Enricher } from '../types'
  * Converts STOCK_SPLIT transactions into StockSplitEvent records
  */
 export function extractStockSplits(transactions: EnrichedTransaction[]): StockSplitEvent[] {
+  return dedupeSplitEvents(parseStockSplits(transactions)).kept
+}
+
+/**
+ * Split records that were ignored because an earlier record of the same split
+ * gave a different ratio. The earliest record is the one applied.
+ */
+export function findSplitConflicts(transactions: GenericTransaction[]): SplitConflict[] {
+  return dedupeSplitEvents(parseStockSplits(transactions)).conflicts
+}
+
+/**
+ * Parse STOCK_SPLIT transactions into split events, sorted by date
+ */
+function parseStockSplits(transactions: GenericTransaction[]): StockSplitEvent[] {
   const splits: StockSplitEvent[] = []
 
   for (const tx of transactions) {
@@ -30,9 +46,7 @@ export function extractStockSplits(transactions: EnrichedTransaction[]): StockSp
   }
 
   // Sort by date (earliest first) to apply in chronological order
-  splits.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-
-  return dedupeSplitEvents(splits)
+  return splits.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
 }
 
 /**
@@ -52,8 +66,11 @@ const SPLIT_DEDUP_WINDOW_MS = 7 * 24 * 60 * 60 * 1000
  *
  * @param splits Split events sorted by date (earliest first)
  */
-function dedupeSplitEvents(splits: StockSplitEvent[]): StockSplitEvent[] {
+function dedupeSplitEvents(
+  splits: StockSplitEvent[]
+): { kept: StockSplitEvent[]; conflicts: SplitConflict[] } {
   const kept: StockSplitEvent[] = []
+  const conflicts: SplitConflict[] = []
 
   for (const split of splits) {
     const splitMs = new Date(split.date).getTime()
@@ -68,14 +85,15 @@ function dedupeSplitEvents(splits: StockSplitEvent[]): StockSplitEvent[] {
     }
 
     if (duplicateOf.ratioMultiplier !== split.ratioMultiplier) {
-      console.warn(
-        `Conflicting stock split records for ${split.symbol}: ${duplicateOf.ratio} on ${duplicateOf.date} ` +
-        `(${duplicateOf.source}) and ${split.ratio} on ${split.date} (${split.source}). Using ${duplicateOf.ratio}.`
-      )
+      conflicts.push({
+        symbol: split.symbol,
+        used: { id: duplicateOf.id, date: duplicateOf.date, ratio: duplicateOf.ratio, source: duplicateOf.source },
+        ignored: { id: split.id, date: split.date, ratio: split.ratio, source: split.source },
+      })
     }
   }
 
-  return kept
+  return { kept, conflicts }
 }
 
 /**

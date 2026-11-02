@@ -23,6 +23,8 @@ export interface ReportWarning {
     | 'TAX_YEAR_NOT_FOUND'
     | 'SPLIT_DATA_UNAVAILABLE'
     | 'SKIPPED_ROWS'
+    | 'OVERLAPPING_ROWS_REMOVED'
+    | 'SPLIT_RATIO_CONFLICT'
   message: string
   transactionIds?: string[]
 }
@@ -386,6 +388,29 @@ function collectWarnings(result: CGTCalculationResult, disposals: DisposalRecord
         'left out of the totals. Import earlier history, or add the missing ' +
         'acquisitions to a Generic CSV (see the normalize command).',
       transactionIds: incomplete.map(d => d.disposal.id),
+    })
+  }
+
+  const overlapping = result.dataNotices?.overlappingRows ?? []
+  if (overlapping.length > 0) {
+    warnings.push({
+      code: 'OVERLAPPING_ROWS_REMOVED',
+      message:
+        `${overlapping.length} row(s) also appeared in another input file from the same broker and were counted once. ` +
+        'This is expected when exports cover overlapping dates. If any were separate trades (for example the same ' +
+        'order in two accounts), add them back in a Generic CSV.',
+      transactionIds: overlapping.map(tx => tx.id),
+    })
+  }
+
+  for (const conflict of result.dataNotices?.splitConflicts ?? []) {
+    warnings.push({
+      code: 'SPLIT_RATIO_CONFLICT',
+      message:
+        `Stock split records for ${conflict.symbol} disagree: used ${conflict.used.ratio} ` +
+        `(${conflict.used.source}, ${conflict.used.date}), ignored ${conflict.ignored.ratio} ` +
+        `(${conflict.ignored.source}, ${conflict.ignored.date}). Every later quantity depends on the ratio, so check it.`,
+      transactionIds: [conflict.used.id, conflict.ignored.id],
     })
   }
 

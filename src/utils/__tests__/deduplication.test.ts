@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { deduplicateTransactions, getIncompleteStockPlanActivity, getImportFileId } from '../deduplication'
+import { deduplicateTransactions, getIncompleteStockPlanActivity, getImportFileId, findOverlappingImports } from '../deduplication'
 import { GenericTransaction } from '../../types/transaction'
 
 // Helper to create a minimal valid transaction
@@ -499,5 +499,18 @@ describe('overlapping imports', () => {
   it('never drops rows whose ID does not identify a file', () => {
     const result = deduplicateTransactions([trade('x'), trade('y')])
     expect(result).toHaveLength(2)
+  })
+})
+
+describe('findOverlappingImports', () => {
+  it('returns the removed rows alongside the kept ones', () => {
+    const a = createTransaction({ id: 'a_csv-100-1', source: 'Freetrade' })
+    const b1 = createTransaction({ id: 'b_csv-200-1', source: 'Freetrade' })
+    const b2 = createTransaction({ id: 'b_csv-200-2', source: 'Freetrade' })
+
+    const { kept, removed } = findOverlappingImports([a, b1, b2])
+
+    expect(kept).toEqual([b1, b2])
+    expect(removed).toEqual([a])
   })
 })

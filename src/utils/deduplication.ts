@@ -38,6 +38,17 @@ function overlapKey(tx: GenericTransaction): string {
  * files, that make exactly the same trade on the same day will be merged.
  */
 export function removeOverlappingImports(transactions: GenericTransaction[]): GenericTransaction[] {
+  return findOverlappingImports(transactions).kept
+}
+
+/**
+ * Splits transactions into the rows kept and the rows removed as overlapping
+ * imports (see removeOverlappingImports), so the removed rows can be shown to
+ * the user.
+ */
+export function findOverlappingImports(
+  transactions: GenericTransaction[]
+): { kept: GenericTransaction[]; removed: GenericTransaction[] } {
   const groups = new Map<string, Map<string, GenericTransaction[]>>()
 
   for (const tx of transactions) {
@@ -76,7 +87,11 @@ export function removeOverlappingImports(transactions: GenericTransaction[]): Ge
     }
   }
 
-  return dropped.size === 0 ? transactions : transactions.filter(tx => !dropped.has(tx))
+  if (dropped.size === 0) return { kept: transactions, removed: [] }
+  return {
+    kept: transactions.filter(tx => !dropped.has(tx)),
+    removed: transactions.filter(tx => dropped.has(tx)),
+  }
 }
 
 /**

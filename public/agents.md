@@ -114,6 +114,8 @@ Every warning has a `code`, a `message` and usually `transactionIds`. Don't pres
 | `SPLIT_DATA_UNAVAILABLE` | Stock split data couldn't be fetched, so splits missing from the broker file weren't applied | Re-run with network access |
 | `SKIPPED_ROWS` (0.2.0+) | Some rows of a file couldn't be read (for example a missing date or an unrecognised `type` in a Generic CSV) and were left out | Show the user the listed rows and fix them before trusting the totals |
 | `UNKNOWN_TRANSACTION_TYPE` | Some rows weren't recognised and were left out | Show the user the affected rows and ask what they are |
+| `OVERLAPPING_ROWS_REMOVED` | Rows that also appear in another file from the same broker (overlapping exports) were counted once | Usually nothing. If the user has two accounts at that broker that made the same trade on the same day, add the missing trade back in a Generic CSV |
+| `SPLIT_RATIO_CONFLICT` | Two records of the same stock split gave different ratios; the earliest was used | Ask the user to confirm the correct ratio. If the one used is wrong, fix the split row in a Generic CSV |
 | `DUPLICATE_FILE` | The same file was passed twice and was used once | Usually nothing |
 | `TAX_YEAR_NOT_FOUND` | No transactions in the requested tax year | Check the year, and that the history covers it |
 
