@@ -154,10 +154,12 @@ export function detectIssues(
     issues.push({
       id: 'ticker-isin-conflicts',
       type: 'warning',
-      title: 'One Ticker, Different Securities',
+      title: 'One Ticker, Several ISINs',
       description: tickerConflicts
-        .map(c => `${c.symbol} appears with ISINs ${c.isins.join(' and ')}.`)
-        .join(' ') + ' Rows with an ISIN are pooled separately per ISIN; rows of these tickers without an ISIN cannot be told apart.',
+        .map(c => c.pooledSeparately
+          ? `${c.symbol} appears with ISINs ${c.isins.join(' and ')} at the same time, so it names different securities: rows with an ISIN are pooled separately, and rows without one, or stock split data for ${c.symbol}, can't be assigned to either.`
+          : `${c.symbol} changed ISIN (${c.isins.join(' to ')}), usually after a reorganisation, so its rows stay in one pool.`)
+        .join(' '),
       count: tickerConflicts.length,
       affectedItems: tickerConflicts.map(c => c.symbol),
       action: 'Check which security the rows without an ISIN belong to, and add the ISIN or a distinct symbol in a Generic CSV if needed.',

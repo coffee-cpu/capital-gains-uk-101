@@ -132,7 +132,7 @@ Every warning has a `code`, a `message` and usually `transactionIds`. Don't pres
 | `OVERLAPPING_ROWS_REMOVED` | Rows that also appear in another file from the same broker (overlapping exports) were counted once | Usually nothing. If the user has two accounts at that broker that made the same trade on the same day, add the missing trade back in a Generic CSV |
 | `SPLIT_RATIO_CONFLICT` | Two records of the same stock split gave different ratios; the earliest was used | Ask the user to confirm the correct ratio. If the one used is wrong, fix the split row in a Generic CSV |
 | `SYMBOLS_MATCHED_BY_ISIN` | Different tickers with the same ISIN (e.g. from two brokers) were treated as one security and share a Section 104 pool | Usually nothing; mention it so the user can confirm |
-| `TICKER_ISIN_CONFLICT` | One ticker appears with different ISINs, so it names more than one security. Rows with an ISIN are pooled per ISIN | Ask which security the rows without an ISIN belong to; fix them in a Generic CSV with an `isin` or a distinct symbol |
+| `TICKER_ISIN_CONFLICT` | One ticker appears with several ISINs. If they were used at the same time it names different securities and rows with an ISIN are pooled per ISIN; if one followed the other (an ISIN change after a reorganisation) the rows stay in one pool | Overlapping: ask which security the rows without an ISIN belong to and fix them in a Generic CSV. Sequential: confirm it is one holding |
 | `DUPLICATE_FILE` | The same file was passed twice and was used once | Usually nothing |
 | `TAX_YEAR_NOT_FOUND` | No transactions in the requested tax year | Check the year, and that the history covers it |
 

@@ -9,10 +9,17 @@ export interface SymbolMerge {
   mergedSymbols: string[]
 }
 
-/** A ticker seen with more than one ISIN: different securities sharing a ticker */
+/** A ticker seen with more than one ISIN */
 export interface TickerConflict {
   symbol: string
   isins: string[]
+  /**
+   * True when the ISINs were in use at overlapping times, so the ticker names
+   * different securities and rows are pooled per ISIN. False when one ISIN
+   * follows the other (typically an ISIN change in a reorganisation, where
+   * TCGA92/S127 keeps one holding), so the rows stay in one pool.
+   */
+  pooledSeparately: boolean
 }
 
 export interface SymbolMatchResult {
@@ -28,59 +35,86 @@ export interface SymbolMatchResult {
  * The Section 104 pool and the matching rules work per symbol, but brokers
  * don't agree on tickers (e.g. VUSA at one, VUSAL at another), so the same
  * holding could be split into separate pools. Tickers seen with the same ISIN
- * are renamed to the one used most across all imported rows, which keeps the
- * name other brokers' ISIN-less rows (and split data) use. Rows of a renamed
- * ticker without an ISIN follow it, since that ticker only ever meant this
- * security.
+ * are renamed to the one used most across imported trades, which keeps the
+ * name other brokers' ISIN-less rows use. Rows of a renamed ticker without an
+ * ISIN follow it, since that ticker only ever meant this security.
  *
- * The reverse also happens: one ticker for two securities (two ISINs). Those
- * rows get the ISIN appended to the symbol so they are pooled separately;
- * rows of that ticker without an ISIN can't be told apart and are left alone.
+ * One ticker with several ISINs is handled by timing:
+ * - ISINs in use at overlapping times mean different securities share the
+ *   ticker. Those rows get the ISIN appended to the symbol so they are pooled
+ *   separately; rows of that ticker without an ISIN can't be told apart and
+ *   are left alone.
+ * - ISINs that follow one another are usually one holding whose ISIN changed
+ *   (consolidation, redomiciliation), which TCGA92/S127 treats as the same
+ *   asset, so the rows stay in one pool. Both cases are reported.
  */
 export function matchSymbolsByIsin(transactions: GenericTransaction[]): SymbolMatchResult {
   const rowsPerSymbol = new Map<string, number>()
   const symbolsByIsin = new Map<string, Set<string>>()
-  const isinsBySymbol = new Map<string, Set<string>>()
+  // symbol -> ISIN -> first and last date seen
+  const isinDates = new Map<string, Map<string, { first: string; last: string }>>()
 
   for (const tx of transactions) {
     if (!tx.symbol) continue
-    rowsPerSymbol.set(tx.symbol, (rowsPerSymbol.get(tx.symbol) ?? 0) + 1)
+    // Split records (including fetched ones) aren't trading activity, so
+    // they don't count towards which ticker becomes the name
+    if (tx.type !== 'STOCK_SPLIT') {
+      rowsPerSymbol.set(tx.symbol, (rowsPerSymbol.get(tx.symbol) ?? 0) + 1)
+    }
     if (!tx.isin) continue
-    addTo(symbolsByIsin, tx.isin, tx.symbol)
-    addTo(isinsBySymbol, tx.symbol, tx.isin)
+    const symbols = symbolsByIsin.get(tx.isin) ?? new Set<string>()
+    symbols.add(tx.symbol)
+    symbolsByIsin.set(tx.isin, symbols)
+
+    const byIsin = isinDates.get(tx.symbol) ?? new Map()
+    const range = byIsin.get(tx.isin)
+    if (!range) byIsin.set(tx.isin, { first: tx.date, last: tx.date })
+    else {
+      if (tx.date < range.first) range.first = tx.date
+      if (tx.date > range.last) range.last = tx.date
+    }
+    isinDates.set(tx.symbol, byIsin)
   }
 
-  const conflictingSymbols = new Set(
-    [...isinsBySymbol].filter(([, isins]) => isins.size > 1).map(([symbol]) => symbol)
-  )
+  const conflicts: TickerConflict[] = []
+  const splitSymbols = new Set<string>() // overlapping ISINs: pooled per ISIN
+  const multiIsinSymbols = new Set<string>() // any symbol with more than one ISIN
+  for (const [symbol, byIsin] of isinDates) {
+    if (byIsin.size < 2) continue
+    multiIsinSymbols.add(symbol)
+    const ranges = [...byIsin.values()].sort((a, b) => a.first.localeCompare(b.first))
+    const overlapping = ranges.some((range, i) => i > 0 && range.first <= ranges[i - 1].last)
+    if (overlapping) splitSymbols.add(symbol)
+    conflicts.push({ symbol, isins: [...byIsin.keys()].sort(), pooledSeparately: overlapping })
+  }
 
   const renames = new Map<string, string>()
   const merges: SymbolMerge[] = []
   for (const [isin, symbols] of symbolsByIsin) {
-    const candidates = [...symbols].filter(symbol => !conflictingSymbols.has(symbol))
+    const candidates = [...symbols].filter(symbol => !splitSymbols.has(symbol))
     if (candidates.length < 2) continue
 
-    // Most-used ticker wins; then the shorter, then alphabetical, so the
-    // choice doesn't depend on import order
-    candidates.sort((a, b) =>
+    // A ticker used across an ISIN change spans several ISIN groups, so it
+    // must keep its name: renaming it in one group would move all its rows.
+    const anchored = candidates.filter(symbol => multiIsinSymbols.has(symbol))
+    if (anchored.length > 1) continue
+
+    // Otherwise the most-used ticker wins; then the shorter, then
+    // alphabetical, so the choice doesn't depend on import order
+    const symbol = anchored[0] ?? [...candidates].sort((a, b) =>
       (rowsPerSymbol.get(b) ?? 0) - (rowsPerSymbol.get(a) ?? 0) || a.length - b.length || a.localeCompare(b)
-    )
-    const [symbol, ...mergedSymbols] = candidates
+    )[0]
+    const mergedSymbols = candidates.filter(candidate => candidate !== symbol).sort()
     mergedSymbols.forEach(merged => renames.set(merged, symbol))
     merges.push({ isin, symbol, mergedSymbols })
   }
 
-  const conflicts: TickerConflict[] = [...conflictingSymbols].map(symbol => ({
-    symbol,
-    isins: [...(isinsBySymbol.get(symbol) ?? [])].sort(),
-  }))
-
-  if (renames.size === 0 && conflicts.length === 0) {
+  if (renames.size === 0 && splitSymbols.size === 0) {
     return { transactions, merges, conflicts }
   }
 
   const matched = transactions.map(tx => {
-    if (tx.isin && conflictingSymbols.has(tx.symbol)) {
+    if (tx.isin && splitSymbols.has(tx.symbol)) {
       return { ...tx, symbol: `${tx.symbol} (${tx.isin})` }
     }
     const renamed = renames.get(tx.symbol)
@@ -88,10 +122,4 @@ export function matchSymbolsByIsin(transactions: GenericTransaction[]): SymbolMa
   })
 
   return { transactions: matched, merges, conflicts }
-}
-
-function addTo(map: Map<string, Set<string>>, key: string, value: string): void {
-  const set = map.get(key)
-  if (set) set.add(value)
-  else map.set(key, new Set([value]))
 }

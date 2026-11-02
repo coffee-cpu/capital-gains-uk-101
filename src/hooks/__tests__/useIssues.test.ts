@@ -455,7 +455,7 @@ describe('detectIssues - ISIN matching', () => {
         overlappingRows: [],
         splitConflicts: [],
         symbolMerges: [{ isin: 'IE00B3XXRP09', symbol: 'VUSA', mergedSymbols: ['VUSAL'] }],
-        tickerConflicts: [{ symbol: 'BP', isins: ['GB0007980591', 'US0556221044'] }],
+        tickerConflicts: [{ symbol: 'BP', isins: ['GB0007980591', 'US0556221044'], pooledSeparately: true }],
       },
     })
     const issues = detectIssues([createMockTransaction()], results)
@@ -466,6 +466,6 @@ describe('detectIssues - ISIN matching', () => {
 
     const conflict = issues.find(i => i.id === 'ticker-isin-conflicts')!
     expect(conflict.type).toBe('warning')
-    expect(conflict.description).toContain('BP appears with ISINs GB0007980591 and US0556221044')
+    expect(conflict.description).toContain('BP appears with ISINs GB0007980591 and US0556221044 at the same time')
   })
 })

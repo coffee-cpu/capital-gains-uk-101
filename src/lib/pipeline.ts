@@ -45,23 +45,27 @@ export async function runPipeline(
   // incomplete Stock Plan Activity when Equity Awards data exists
   const { kept, removed: overlappingRows } = findOverlappingImports(rawTransactions)
 
-  // One symbol per security across brokers (by ISIN), before split lookup
-  // and matching, which both work per symbol
-  const {
-    transactions: deduplicated,
-    merges: symbolMerges,
-    conflicts: tickerConflicts,
-  } = matchSymbolsByIsin(deduplicateTransactions(kept))
+  const deduplicated = deduplicateTransactions(kept)
 
-  // Inject auto-fetched stock splits (not persisted, regenerated each run)
-  let withAutoSplits = deduplicated
+  // Inject auto-fetched stock splits (not persisted, regenerated each run).
+  // Looked up under the brokers' own tickers, which is what split data uses,
+  // before any renaming below.
+  let withFetchedSplits = deduplicated
   const source = splitSource ?? new JsDelivrSplitSource()
   if (autoSplits) {
     const fetchedSplits = await getAutoSplitsForTransactions(deduplicated, source)
     if (fetchedSplits.length > 0) {
-      withAutoSplits = [...deduplicated, ...fetchedSplits]
+      withFetchedSplits = [...deduplicated, ...fetchedSplits]
     }
   }
+
+  // One symbol per security across brokers (by ISIN). Fetched split rows
+  // follow the same renames as the holdings they belong to.
+  const {
+    transactions: withAutoSplits,
+    merges: symbolMerges,
+    conflicts: tickerConflicts,
+  } = matchSymbolsByIsin(withFetchedSplits)
 
   // Enrich with FX rates and GBP conversions using selected source
   const enriched = await enrichTransactions(withAutoSplits, fxSource)

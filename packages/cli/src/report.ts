@@ -486,9 +486,12 @@ function collectWarnings(result: CGTCalculationResult, disposals: DisposalRecord
   for (const conflict of result.dataNotices?.tickerConflicts ?? []) {
     warnings.push({
       code: 'TICKER_ISIN_CONFLICT',
-      message:
-        `${conflict.symbol} appears with different ISINs (${conflict.isins.join(', ')}), so it names more than one ` +
-        'security. Rows with an ISIN are pooled per ISIN; rows of this ticker without an ISIN cannot be told apart.',
+      message: conflict.pooledSeparately
+        ? `${conflict.symbol} appears with ISINs ${conflict.isins.join(', ')} at the same time, so it names more than ` +
+          'one security. Rows with an ISIN are pooled per ISIN; rows of this ticker without an ISIN, and stock split ' +
+          'data for it, cannot be assigned to either.'
+        : `${conflict.symbol} changed ISIN (${conflict.isins.join(' to ')}), usually after a reorganisation, so its ` +
+          'rows stay in one Section 104 pool. Check it is the same holding.',
     })
   }
 
