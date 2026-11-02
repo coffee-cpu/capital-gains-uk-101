@@ -40,6 +40,11 @@ export type Sa108Category = 'LISTED_SHARES' | 'CRYPTO' | 'OPTIONS'
 /** Brokers whose exports are cryptoassets. Transactions carry no asset class. */
 const CRYPTO_SOURCES = new Set(['Coinbase', 'Coinbase Pro'])
 
+/** True for transactions from a crypto exchange's own export */
+export function isCryptoSource(source: string): boolean {
+  return CRYPTO_SOURCES.has(source)
+}
+
 /**
  * Whether a transaction is a cryptoasset, as far as the imported data can tell:
  * - the row says so (Generic CSV asset_class "crypto"), or
@@ -51,7 +56,7 @@ const CRYPTO_SOURCES = new Set(['Coinbase', 'Coinbase Pro'])
 export function isCryptoasset(tx: Pick<GenericTransaction, 'source' | 'currency' | 'asset_class'>): boolean {
   if (tx.asset_class === 'crypto') return true
   if (tx.asset_class === 'share') return false
-  return CRYPTO_SOURCES.has(tx.source) || !isFiatCurrency(tx.currency)
+  return isCryptoSource(tx.source) || !isFiatCurrency(tx.currency)
 }
 
 /** Which SA108 section a disposal belongs in, as far as the imported data can tell */

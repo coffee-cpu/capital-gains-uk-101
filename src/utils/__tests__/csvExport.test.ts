@@ -223,4 +223,14 @@ describe('transactionsToGenericCSV - asset_class', () => {
     expect(csv.split('\n')[0]).toContain('asset_class')
     expect(reimported.map(t => [t.symbol, isCryptoasset(t)])).toEqual([['BTC', true], ['AAA', false]])
   })
+
+  it('does not write a currency-based guess as a stated asset_class', () => {
+    const gbxShare = {
+      id: 'g-1', source: 'Generic CSV', symbol: 'VOD', name: null, date: '2024-05-01', type: 'BUY' as const,
+      quantity: 100, price: 70, currency: 'GBX', total: 7000, fee: 0, notes: null,
+    }
+    const [header, row] = transactionsToGenericCSV([gbxShare]).split('\n')
+    const column = header.split(',').indexOf('asset_class')
+    expect(row.split(',')[column]).toBe('')
+  })
 })

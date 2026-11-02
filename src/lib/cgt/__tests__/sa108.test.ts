@@ -23,7 +23,12 @@ describe('isCryptoasset', () => {
 
   it('does not guess from the symbol', () => {
     // ETH is also a listed share ticker (Ethan Allen)
-    expect(isCryptoasset({ source: 'Generic CSV', currency: 'USD' })).toBe(false)
+    expect(isCryptoasset(tx({ symbol: 'ETH', currency: 'USD' }))).toBe(false)
+    const result = calculateCGT([
+      tx({ id: 'eth-buy', symbol: 'ETH', currency: 'USD', date: '2024-05-01' }),
+      tx({ id: 'eth-sell', symbol: 'ETH', currency: 'USD', type: 'SELL', price: 120, price_gbp: 120 }),
+    ])
+    expect(sa108Rows('2024/25', result.disposals).map(r => r.category)).toEqual(['LISTED_SHARES'])
   })
 })
 
