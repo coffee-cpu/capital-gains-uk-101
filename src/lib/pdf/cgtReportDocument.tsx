@@ -2,6 +2,15 @@ import type { TaxYearSummary, DisposalRecord } from '../../types/cgt'
 import type { EnrichedTransaction } from '../../types/transaction'
 import { renderAllFeaturePDFSections } from '../cgt/taxYearFeatures/pdfRenderers'
 import { formatGbp } from '../../utils/currency'
+import {
+  getEffectivePrice,
+  getEffectiveQuantity,
+  getUnitLabel,
+  isAcquisition,
+  isDisposal,
+  isFullyUnmatched,
+  QUANTITY_EPSILON,
+} from '../cgt/utils'
 
 /**
  * CGT report PDF document, shared by the web app's "Export PDF" button and the
@@ -146,6 +155,25 @@ function createStyles(StyleSheet: PdfLibrary['StyleSheet']) {
     backgroundColor: '#fce7f3',
     color: '#9d174d',
   },
+  warningBox: {
+    backgroundColor: '#fef2f2',
+    borderWidth: 1,
+    borderColor: '#fca5a5',
+    borderRadius: 4,
+    padding: 10,
+    marginBottom: 12,
+  },
+  warningTitle: {
+    fontSize: 10,
+    fontFamily: 'Helvetica-Bold',
+    color: '#991b1b',
+    marginBottom: 4,
+  },
+  warningText: {
+    fontSize: 8,
+    color: '#991b1b',
+    marginBottom: 3,
+  },
   disposalCard: {
     marginBottom: 12,
     padding: 10,
@@ -172,6 +200,70 @@ export function formatReportDate(date: string): string {
   return new Date(date).toLocaleDateString('en-GB', { timeZone: 'UTC' })
 }
 
+/**
+ * Format a share/unit quantity: thousands separators, up to 8 decimal places
+ * (crypto), no trailing zeros. 0.0086629 stays 0.0086629 rather than 0.01.
+ */
+export function formatQuantity(value: number): string {
+  return value.toLocaleString('en-GB', { maximumFractionDigits: 8 })
+}
+
+/** A quantity with its unit, singular for exactly one: "1 contract", "1,200 shares" */
+function quantityWithUnit(value: number, tx: { underlying_symbol?: string | null }): string {
+  const formatted = formatQuantity(value)
+  return `${formatted} ${getUnitLabel(tx, formatted !== '1')}`
+}
+
+const INCOME_TYPES = new Set<string>(['DIVIDEND', 'INTEREST', 'TAX_ON_DIVIDEND', 'TAX_ON_INTEREST'])
+
+export interface ReportDataIssues {
+  /** Transactions with no GBP exchange rate that feed this year's figures, by currency */
+  missingFx: Array<{ currency: string; count: number }>
+  /** Disposals in the year that could not be fully matched to acquisitions */
+  incompleteDisposals: DisposalRecord[]
+}
+
+/**
+ * Problems in the imported data that make this year's report wrong or
+ * incomplete. A missing FX rate counts for a trade up to the year end in an
+ * asset disposed of this year (earlier trades feed its Section 104 pool cost),
+ * and for income within the year.
+ */
+export function findReportDataIssues(
+  taxYearSummary: TaxYearSummary,
+  disposals: DisposalRecord[],
+  transactions: EnrichedTransaction[]
+): ReportDataIssues {
+  const disposedSymbols = new Set(disposals.map(d => d.disposal.symbol))
+  const counts = new Map<string, number>()
+  for (const tx of transactions) {
+    if (tx.ignored || !tx.fx_error || tx.date > taxYearSummary.endDate) continue
+    const affectsGains = (isAcquisition(tx) || isDisposal(tx)) && disposedSymbols.has(tx.symbol)
+    const affectsIncome = INCOME_TYPES.has(tx.type) && tx.date >= taxYearSummary.startDate
+    if (!affectsGains && !affectsIncome) continue
+    counts.set(tx.currency, (counts.get(tx.currency) ?? 0) + 1)
+  }
+  return {
+    missingFx: [...counts].map(([currency, count]) => ({ currency, count })),
+    incompleteDisposals: disposals.filter(d => d.isIncomplete),
+  }
+}
+
+/** True when the disposal or any acquisition matched against it has no GBP rate */
+function hasMissingFx(disposal: DisposalRecord): boolean {
+  return (
+    !!disposal.disposal.fx_error ||
+    disposal.matchings.some(m => m.acquisitions.some(acq => !!acq.transaction.fx_error))
+  )
+}
+
+export const REPORT_DISCLAIMER =
+  'This report is an estimate produced by Capital Gains Tax Visualiser from the transactions you imported, ' +
+  "using HMRC's same-day, 30-day and Section 104 matching rules. It is not tax advice and may be wrong or " +
+  'incomplete: it only knows about the transactions you imported, and it does not apply losses brought ' +
+  'forward from earlier years or any other reliefs. Check the figures against your broker statements and ' +
+  'HMRC helpsheet HS284, or ask a qualified adviser, before filing.'
+
 function createCGTReportDocument(
   Document: PdfLibrary['Document'],
   Page: PdfLibrary['Page'],
@@ -190,6 +282,9 @@ function createCGTReportDocument(
           .sort((a, b) => a.date.localeCompare(b.date) || a.symbol.localeCompare(b.symbol))
       : []
 
+    const issues = findReportDataIssues(taxYearSummary, disposals, transactions)
+    const hasIssues = issues.missingFx.length > 0 || issues.incompleteDisposals.length > 0
+
     return (
       <Document>
         <Page size="A4" style={styles.page}>
@@ -198,6 +293,31 @@ function createCGTReportDocument(
           <Text style={{ fontSize: 12, marginBottom: 20, color: '#6b7280' }}>
             Tax Year {taxYearSummary.taxYear} ({formatDate(taxYearSummary.startDate)} to {formatDate(taxYearSummary.endDate)})
           </Text>
+
+          {/* Data problems that make the figures below wrong or incomplete */}
+          {hasIssues && (
+            <View style={styles.warningBox} wrap={false}>
+              <Text style={styles.warningTitle}>Check before filing: this report is incomplete</Text>
+              {issues.missingFx.map(({ currency, count }) => (
+                <Text key={currency} style={styles.warningText}>
+                  {`• No GBP exchange rate for ${count} ${currency} transaction(s) up to ${formatDate(taxYearSummary.endDate)}. ` +
+                    'Their GBP values are counted as £0, so the gains or income that depend on them are wrong. ' +
+                    'Add the missing rates and generate the report again.'}
+                </Text>
+              ))}
+              {issues.incompleteDisposals.length > 0 && (
+                <Text style={styles.warningText}>
+                  {`• ${issues.incompleteDisposals.length} disposal(s) sold more than the imported history shows was acquired (` +
+                    issues.incompleteDisposals
+                      .map(d => `${d.disposal.symbol} on ${formatDate(d.disposal.date)}: ${quantityWithUnit(d.unmatchedQuantity ?? 0, d.disposal)} unmatched`)
+                      .join('; ') +
+                    '). Only the matched part of each is included: the proceeds, costs and gain of the unmatched ' +
+                    'quantity are left out of every total in this report. Import earlier history, or work out their ' +
+                    'gain from your own purchase records.'}
+                </Text>
+              )}
+            </View>
+          )}
 
           {/* Tax Year Summary */}
           <Text style={styles.subtitle}>Tax Year Summary</Text>
@@ -284,15 +404,28 @@ function createCGTReportDocument(
               <Text style={styles.subtitle}>Disposal Details</Text>
               {disposals.map((disposal) => {
                 const isGain = disposal.gainOrLossGbp >= 0
+                const tx = disposal.disposal
+                const unitSingular = getUnitLabel(tx, false)
+                const quantity = getEffectiveQuantity(tx)
+                const rawQuantity = Math.abs(tx.quantity ?? 0)
+                const isSplitAdjusted =
+                  tx.split_adjusted_quantity != null && Math.abs(tx.split_adjusted_quantity - rawQuantity) > QUANTITY_EPSILON
+                const unmatched = disposal.unmatchedQuantity ?? 0
+                const fee = tx.fee_gbp ?? 0
+                const salePrice = tx.underlying_symbol != null
+                  ? `Sale price: ${formatCurrency(getEffectivePrice(tx))} per underlying share` +
+                    (tx.contract_size ? ` (${formatQuantity(tx.contract_size)} shares per contract)` : '')
+                  : `Sale price: ${formatCurrency(getEffectivePrice(tx))} per ${unitSingular}`
                 return (
                   <View key={disposal.id} style={styles.disposalCard}>
                     {/* Header: Symbol, Date, Quantity, Gain/Loss */}
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8, paddingBottom: 6, borderBottomWidth: 1, borderBottomColor: '#e5e7eb' }}>
                       <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
-                        <Text style={{ fontSize: 11, fontFamily: 'Helvetica-Bold' }}>{disposal.disposal.symbol}</Text>
-                        <Text style={{ fontSize: 9, color: '#6b7280' }}>{formatDate(disposal.disposal.date)}</Text>
+                        <Text style={{ fontSize: 11, fontFamily: 'Helvetica-Bold' }}>{tx.symbol}</Text>
+                        <Text style={{ fontSize: 9, color: '#6b7280' }}>{formatDate(tx.date)}</Text>
                         <Text style={{ fontSize: 9, color: '#6b7280' }}>
-                          {disposal.disposal.quantity?.toFixed(2)} shares
+                          {quantityWithUnit(quantity, tx) +
+                            (isSplitAdjusted ? ` (${formatQuantity(rawQuantity)} before split adjustment)` : '')}
                         </Text>
                       </View>
                       <View>
@@ -303,6 +436,14 @@ function createCGTReportDocument(
                       </View>
                     </View>
 
+                    {hasMissingFx(disposal) && (
+                      <View style={{ backgroundColor: '#fef2f2', borderWidth: 1, borderColor: '#fecaca', borderRadius: 3, padding: 6, marginBottom: 8 }}>
+                        <Text style={{ fontSize: 7, color: '#991b1b' }}>
+                          No GBP exchange rate for this sale or an acquisition matched against it. Those values are counted as £0, so this gain or loss is wrong.
+                        </Text>
+                      </View>
+                    )}
+
                     {/* Proceeds and Costs */}
                     <View style={{ flexDirection: 'row', marginBottom: 8, gap: 12 }}>
                       <View style={{ flex: 1 }}>
@@ -311,10 +452,7 @@ function createCGTReportDocument(
                           {formatCurrency(disposal.proceedsGbp)}
                         </Text>
                         <Text style={{ fontSize: 7, color: '#6b7280' }}>
-                          Sale price: {formatCurrency(disposal.disposal.price_gbp || 0)} per share
-                          {disposal.disposal.fee_gbp && disposal.disposal.fee_gbp > 0 && (
-                            ` (fees: ${formatCurrency(disposal.disposal.fee_gbp)})`
-                          )}
+                          {salePrice + (fee > 0 ? ` (fees: ${formatCurrency(fee)})` : '')}
                         </Text>
                       </View>
                       <View style={{ flex: 1 }}>
@@ -328,18 +466,18 @@ function createCGTReportDocument(
                     {/* Matched Acquisitions */}
                     <View style={{ marginBottom: 8 }}>
                       <Text style={{ fontSize: 7, color: '#6b7280', textTransform: 'uppercase', marginBottom: 4 }}>Matched Acquisitions</Text>
-                      {disposal.isIncomplete && disposal.unmatchedQuantity === disposal.disposal.quantity ? (
-                        // Fully unmatched
+                      {isFullyUnmatched(disposal) ? (
                         <View style={{ backgroundColor: '#fef2f2', borderWidth: 1, borderColor: '#fecaca', borderRadius: 3, padding: 6 }}>
                           <Text style={{ fontSize: 8, color: '#991b1b', fontFamily: 'Helvetica-Bold', marginBottom: 2 }}>No Matching Acquisitions</Text>
                           <Text style={{ fontSize: 7, color: '#991b1b' }}>
-                            {disposal.unmatchedQuantity?.toFixed(2)} shares could not be matched to any acquisition records.
+                            {`${quantityWithUnit(unmatched, tx)} could not be matched to any acquisition records. ` +
+                              'Their proceeds, costs and gain are not included in this report: work them out from your own purchase records.'}
                           </Text>
                         </View>
                       ) : (
                         <>
                           {disposal.matchings
-                            .filter(matching => matching.quantityMatched > 0)
+                            .filter(matching => matching.quantityMatched > QUANTITY_EPSILON)
                             .map((matching, mIdx) => (
                               <View key={mIdx} style={{ backgroundColor: '#f9fafb', borderRadius: 3, padding: 6, marginBottom: 4 }}>
                                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 3 }}>
@@ -358,26 +496,27 @@ function createCGTReportDocument(
                                     </Text>
                                   </View>
                                   <Text style={{ fontSize: 8, fontFamily: 'Helvetica-Bold' }}>
-                                    {matching.quantityMatched.toFixed(2)} shares
+                                    {quantityWithUnit(matching.quantityMatched, tx)}
                                   </Text>
                                 </View>
-                                {matching.acquisitions.map((acq, acqIdx) => (
-                                  <Text key={acqIdx} style={{ fontSize: 7, color: '#4b5563' }}>
-                                    {matching.rule !== 'SECTION_104' && (
-                                      `${formatDate(acq.transaction.date)}: ${acq.quantityMatched.toFixed(2)} shares at ${formatCurrency(acq.costBasisGbp / acq.quantityMatched)} (cost: ${formatCurrency(acq.costBasisGbp)})`
-                                    )}
-                                    {matching.rule === 'SECTION_104' && (
-                                      `Pool average cost: ${formatCurrency(acq.costBasisGbp / acq.quantityMatched)} per share (total: ${formatCurrency(acq.costBasisGbp)})`
-                                    )}
-                                  </Text>
-                                ))}
+                                {matching.acquisitions
+                                  .filter(acq => acq.quantityMatched > QUANTITY_EPSILON)
+                                  .map((acq, acqIdx) => (
+                                    <Text key={acqIdx} style={{ fontSize: 7, color: '#4b5563' }}>
+                                      {matching.rule === 'SECTION_104'
+                                        ? `Pool average cost: ${formatCurrency(acq.costBasisGbp / acq.quantityMatched)} per ${unitSingular} (total: ${formatCurrency(acq.costBasisGbp)})`
+                                        : `${formatDate(acq.transaction.date)}: ${quantityWithUnit(acq.quantityMatched, tx)} at ${formatCurrency(acq.costBasisGbp / acq.quantityMatched)} (cost: ${formatCurrency(acq.costBasisGbp)})`}
+                                    </Text>
+                                  ))}
                               </View>
                             ))}
-                          {disposal.isIncomplete && disposal.unmatchedQuantity && disposal.unmatchedQuantity > 0 && (
-                            // Partially matched
+                          {disposal.isIncomplete && unmatched > 0 && (
                             <View style={{ backgroundColor: '#fefce8', borderWidth: 1, borderColor: '#fde047', borderRadius: 3, padding: 6 }}>
                               <Text style={{ fontSize: 7, color: '#854d0e' }}>
-                                <Text style={{ fontFamily: 'Helvetica-Bold' }}>Partially matched:</Text> {disposal.unmatchedQuantity.toFixed(2)} shares could not be matched.
+                                <Text style={{ fontFamily: 'Helvetica-Bold' }}>Partially matched: </Text>
+                                {`${formatQuantity(unmatched)} of ${quantityWithUnit(quantity, tx)} could not be matched. ` +
+                                  `The proceeds, costs and gain shown cover only the ${quantityWithUnit(quantity - unmatched, tx)} that were matched; ` +
+                                  'the rest are not included in this report.'}
                               </Text>
                             </View>
                           )}
@@ -447,6 +586,11 @@ function createCGTReportDocument(
               </View>
             </>
           )}
+
+          {/* Disclaimer */}
+          <View style={styles.disclaimer} wrap={false}>
+            <Text>{REPORT_DISCLAIMER}</Text>
+          </View>
 
           {/* Footer */}
           <View style={styles.footer}>

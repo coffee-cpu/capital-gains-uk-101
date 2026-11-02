@@ -1,5 +1,5 @@
 import { EnrichedTransaction, TransactionType } from '../../types/transaction'
-import { MatchingResult } from '../../types/cgt'
+import { DisposalRecord, MatchingResult } from '../../types/cgt'
 
 /**
  * Quantities at or below this are treated as zero.
@@ -69,6 +69,18 @@ export function getEffectiveQuantity(transaction: EnrichedTransaction): number {
   }
 
   return quantity
+}
+
+/**
+ * True when none of a disposal could be matched to an acquisition.
+ *
+ * unmatchedQuantity is in effective (split-adjusted, positive) units, so it is
+ * compared with getEffectiveQuantity rather than the raw broker quantity, with
+ * a tolerance for floating-point residue.
+ */
+export function isFullyUnmatched(record: DisposalRecord): boolean {
+  if (!record.isIncomplete || record.unmatchedQuantity == null) return false
+  return record.unmatchedQuantity >= getEffectiveQuantity(record.disposal) - QUANTITY_EPSILON
 }
 
 /**

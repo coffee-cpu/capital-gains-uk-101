@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { addDaysToISODate, allocateProRata, calculateCostBasis, calculateNetProceeds, getFeePerUnit } from '../utils'
+import { addDaysToISODate, allocateProRata, calculateCostBasis, calculateNetProceeds, getFeePerUnit, isFullyUnmatched } from '../utils'
 import { EnrichedTransaction, TransactionType } from '../../../types/transaction'
+import type { DisposalRecord } from '../../../types/cgt'
 
 function makeTx(overrides: Partial<EnrichedTransaction>): EnrichedTransaction {
   return {
@@ -97,5 +98,30 @@ describe('allocateProRata', () => {
     )
     expect(result.reduce((sum, r) => sum + r.quantity, 0)).toBe(0.35)
     result.forEach(r => expect(r.quantity).toBeGreaterThanOrEqual(0))
+  })
+})
+
+describe('isFullyUnmatched', () => {
+  const disposal = (overrides: Partial<EnrichedTransaction>) =>
+    ({ id: 's', type: 'SELL', quantity: 10, ...overrides }) as EnrichedTransaction
+  const record = (tx: EnrichedTransaction, unmatchedQuantity?: number) =>
+    ({ disposal: tx, unmatchedQuantity, isIncomplete: unmatchedQuantity !== undefined }) as DisposalRecord
+
+  it('is true when the whole disposal is unmatched', () => {
+    expect(isFullyUnmatched(record(disposal({}), 10))).toBe(true)
+  })
+
+  it('compares against the split-adjusted quantity', () => {
+    expect(isFullyUnmatched(record(disposal({ split_adjusted_quantity: 40 }), 40))).toBe(true)
+    expect(isFullyUnmatched(record(disposal({ split_adjusted_quantity: 40 }), 10))).toBe(false)
+  })
+
+  it('tolerates floating-point residue', () => {
+    expect(isFullyUnmatched(record(disposal({ quantity: 0.3 }), 0.1 + 0.2 - 1e-12))).toBe(true)
+  })
+
+  it('is false for partial or complete matches', () => {
+    expect(isFullyUnmatched(record(disposal({}), 4))).toBe(false)
+    expect(isFullyUnmatched(record(disposal({})))).toBe(false)
   })
 })

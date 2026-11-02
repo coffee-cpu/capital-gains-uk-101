@@ -108,7 +108,7 @@ Every warning has a `code`, a `message` and usually `transactionIds`. Don't pres
 
 | Code | What it means | What to do |
 |---|---|---|
-| `INCOMPLETE_DISPOSAL` | A sale has no recorded purchase for some of the shares, so part of its cost is missing and the gain is overstated | Ask for earlier history, or for transfers in (with the original cost) |
+| `INCOMPLETE_DISPOSAL` | A sale has no recorded purchase for some of the shares. Only the matched part is counted, so the unmatched shares' proceeds, cost and gain are left out of the totals | Ask for earlier history, or for transfers in (with the original cost) |
 | `FX_RATE_MISSING` | No GBP exchange rate could be found, so GBP values are missing | Re-run with network access. If it persists, report the currency and dates to the user |
 | `SPLIT_DATA_UNAVAILABLE` | Stock split data couldn't be fetched, so splits missing from the broker file weren't applied | Re-run with network access |
 | `SKIPPED_ROWS` (0.2.0+) | Some rows of a file couldn't be read (for example a missing date or an unrecognised `type` in a Generic CSV) and were left out | Show the user the listed rows and fix them before trusting the totals |
