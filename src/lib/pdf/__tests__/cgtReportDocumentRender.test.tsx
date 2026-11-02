@@ -237,6 +237,23 @@ describe('findReportDataIssues', () => {
     ])
     expect(issues.missingFx).toEqual([{ currency: 'USD', count: 2 }])
   })
+  it('counts a 30-day buy-back after the year end once', () => {
+    const sell = tx({ id: 'sell', date: '2025-04-01' })
+    const buyBack = tx({ id: 'buy-back', type: 'BUY', date: '2025-04-20', currency: 'USD', fx_error: 'x', tax_year: '2025/26' })
+    const m = matching(sell, 10, 0, '30_DAY')
+    m.acquisitions = [{ transaction: buyBack, quantityMatched: 10, costBasisGbp: 0 }]
+    const issues = findReportDataIssues(year, [record(sell, [m])], [sell, buyBack])
+    expect(issues.missingFx).toEqual([{ currency: 'USD', count: 1 }])
+  })
+
+  it('does not double count a matched acquisition already inside the year', () => {
+    const sell = tx({ id: 'sell', date: '2024-06-01' })
+    const buy = tx({ id: 'buy', type: 'BUY', date: '2024-06-01', currency: 'USD', fx_error: 'x' })
+    const m = matching(sell, 10, 0, 'SAME_DAY')
+    m.acquisitions = [{ transaction: buy, quantityMatched: 10, costBasisGbp: 0 }]
+    const issues = findReportDataIssues(year, [record(sell, [m])], [sell, buy])
+    expect(issues.missingFx).toEqual([{ currency: 'USD', count: 1 }])
+  })
 })
 
 describe('formatQuantity', () => {

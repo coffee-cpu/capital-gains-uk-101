@@ -227,7 +227,8 @@ export interface ReportDataIssues {
  * Problems in the imported data that make this year's report wrong or
  * incomplete. A missing FX rate counts for a trade up to the year end in an
  * asset disposed of this year (earlier trades feed its Section 104 pool cost),
- * and for income within the year.
+ * for any acquisition matched to this year's disposals (a 30-day buy-back can
+ * fall after the year end), and for income within the year.
  */
 export function findReportDataIssues(
   taxYearSummary: TaxYearSummary,
@@ -236,12 +237,26 @@ export function findReportDataIssues(
 ): ReportDataIssues {
   const disposedSymbols = new Set(disposals.map(d => d.disposal.symbol))
   const counts = new Map<string, number>()
+  const seen = new Set<string>()
+  const add = (tx: EnrichedTransaction) => {
+    if (seen.has(tx.id)) return
+    seen.add(tx.id)
+    counts.set(tx.currency, (counts.get(tx.currency) ?? 0) + 1)
+  }
   for (const tx of transactions) {
     if (tx.ignored || !tx.fx_error || tx.date > taxYearSummary.endDate) continue
     const affectsGains = (isAcquisition(tx) || isDisposal(tx)) && disposedSymbols.has(tx.symbol)
     const affectsIncome = INCOME_TYPES.has(tx.type) && tx.date >= taxYearSummary.startDate
-    if (!affectsGains && !affectsIncome) continue
-    counts.set(tx.currency, (counts.get(tx.currency) ?? 0) + 1)
+    if (affectsGains || affectsIncome) add(tx)
+  }
+  // Acquisitions matched to this year's disposals, including 30-day
+  // buy-backs that fall after the year end
+  for (const d of disposals) {
+    for (const m of d.matchings) {
+      for (const acq of m.acquisitions) {
+        if (acq.transaction.fx_error && !acq.transaction.ignored) add(acq.transaction)
+      }
+    }
   }
   return {
     missingFx: [...counts].map(([currency, count]) => ({ currency, count })),
