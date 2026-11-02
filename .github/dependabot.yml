@@ -1,0 +1,11 @@
+# Workflow actions are pinned to commit SHAs (supply-chain safety); Dependabot
+# keeps those pins current by opening a weekly PR with any updates.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
