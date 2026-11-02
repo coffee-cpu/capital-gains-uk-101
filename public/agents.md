@@ -61,8 +61,8 @@ The JSON has `schemaVersion: 1`. Check it: if it is different, re-read this guid
     {
       "taxYear": "2024/25",
       "disposals": 2,
-      "proceedsGbp": 5235,
-      "allowableCostsGbp": 4605.33,
+      "proceedsGbp": 5440,
+      "allowableCostsGbp": 4810.33,
       "gainsGbp": 629.67,
       "lossesGbp": 0,
       "netGainOrLossGbp": 629.67,
@@ -70,11 +70,23 @@ The JSON has `schemaVersion: 1`. Check it: if it is different, re-read this guid
       "taxableGainGbp": 0,
       "sa108": {
         "numberOfDisposals": 2,
-        "disposalProceedsGbp": 5235,
-        "allowableCostsGbp": 4605.33,
+        "disposalProceedsGbp": 5440,
+        "allowableCostsGbp": 4810.33,
         "gainsBeforeLossesGbp": 629.67,
         "lossesGbp": 0
-      }
+      },
+      "sa108Sections": [
+        {
+          "category": "listed-shares",
+          "section": "Listed shares and securities",
+          "boxes": { "number": "23", "proceeds": "24", "costs": "25", "gains": "26", "losses": "27" },
+          "numberOfDisposals": 2,
+          "disposalProceedsGbp": 5440,
+          "allowableCostsGbp": 4810.33,
+          "gainsBeforeLossesGbp": 629.67,
+          "lossesGbp": 0
+        }
+      ]
     }
   ],
   "disposals": [
@@ -84,8 +96,8 @@ The JSON has `schemaVersion: 1`. Check it: if it is different, re-read this guid
       "taxYear": "2024/25",
       "symbol": "LOBSTER",
       "quantity": 700,
-      "proceedsGbp": 3260,
-      "allowableCostsGbp": 2930.67,
+      "proceedsGbp": 3360,
+      "allowableCostsGbp": 3030.67,
       "gainOrLossGbp": 329.33,
       "rules": ["section-104"],
       "incomplete": false
@@ -96,7 +108,9 @@ The JSON has `schemaVersion: 1`. Check it: if it is different, re-read this guid
 ```
 
 - `taxYears[]`: the year's totals. `lossesGbp` is a positive number. `taxableGainGbp` is the net gain after the annual exempt amount; it doesn't include losses brought forward from earlier years, which the tool doesn't know about.
-- `taxYears[].sa108`: the figures the SA108 "listed shares and securities" section asks for. Fields are named, not numbered, because box numbers change between years. Point the user to that year's SA108 notes for the boxes.
+- `taxYears[].sa108`: the figures the SA108 "listed shares and securities" section asks for, covering listed shares and funds only. Fields are named, not numbered, because box numbers change between years. Point the user to that year's SA108 notes for the boxes.
+- `taxYears[].sa108Sections` (0.5.0+): one entry per SA108 section with disposals: `listed-shares`, `crypto` (the Cryptoassets section from 2024/25, "Other property, assets and gains" before), and `options`, whose section depends on the contract, so `section` and `boxes` are null; ask the user. `boxes` gives the box numbers for that year's form where known.
+- Proceeds are gross (before selling fees) and selling fees are in allowable costs, as SA108 asks. Same-day sales of one share count as one disposal, so `disposals` can be lower than the number of sale rows.
 - `disposals[].missingFx`: present and true when the disposal, or a purchase its cost comes from, has no GBP exchange rate and was valued at £0. Tell the user that disposal's gain is wrong until the rate loads (the `FX_RATE_MISSING` warning lists the transactions).
 - `taxYears[].rateChange2024` (2024/25 only): gains before and after the 30 October 2024 rate change. If `adjustmentRequired` is true, tell the user to use HMRC's calculator for the adjustment.
 - `disposals[]`: one row per sale, with the matching `rules` used (`same-day`, `30-day`, `section-104`, `short-sell`).

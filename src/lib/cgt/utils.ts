@@ -336,21 +336,28 @@ export function calculateCostBasis(
 }
 
 /**
- * Calculate net proceeds for the matched portion of a disposal
+ * Gross proceeds for the matched portion of a disposal: the sale value before
+ * selling fees.
  *
- * Selling fees are apportioned per unit and deducted from the price,
- * mirroring how calculateCostBasis adds them for acquisitions.
- *
- * @param disposal The sell transaction
- * @param quantityToMatch Number of shares/contracts being matched
- * @returns Net proceeds in GBP for the matched quantity
+ * SA108 asks for gross disposal proceeds, with incidental costs of disposal
+ * (commission, fees) included in allowable costs instead (TCGA92/S38). The
+ * gain is the same either way; only how it is split between the boxes differs.
  */
-export function calculateNetProceeds(
+export function calculateGrossProceeds(
   disposal: EnrichedTransaction,
   quantityToMatch: number
 ): number {
-  const pricePerShare = getEffectivePrice(disposal)
-  const contractMultiplier = disposal.contract_size || 1
-  const proceedsPerShare = pricePerShare - getFeePerUnit(disposal)
-  return proceedsPerShare * quantityToMatch * contractMultiplier
+  return getEffectivePrice(disposal) * quantityToMatch * (disposal.contract_size || 1)
 }
+
+/**
+ * Selling fees apportioned to the matched portion of a disposal. They are an
+ * allowable cost of disposal (TCGA92/S38(1)(c)).
+ */
+export function calculateDisposalFees(
+  disposal: EnrichedTransaction,
+  quantityToMatch: number
+): number {
+  return getFeePerUnit(disposal) * quantityToMatch * (disposal.contract_size || 1)
+}
+

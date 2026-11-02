@@ -7,7 +7,7 @@ import {
   groupBySymbol,
   MatchedQuantityTracker,
   calculateCostBasis,
-  calculateNetProceeds,
+  calculateGrossProceeds,
   hasGbpPrice,
   QUANTITY_EPSILON,
 } from './utils'
@@ -151,8 +151,8 @@ function matchAgainstPool(
     pool.averageCostGbp = pool.quantity > 0 ? pool.totalCostGbp / pool.quantity : 0
   }
 
-  // Net of selling fees, split-adjusted and scaled by contract size for options
-  const proceeds = calculateNetProceeds(transaction, quantityToMatch)
+  // Gross proceeds (as on SA108), split-adjusted and scaled by contract size for options
+  const proceeds = calculateGrossProceeds(transaction, quantityToMatch)
 
   // Record in history only if we matched something
   if (quantityToMatch > 0) {

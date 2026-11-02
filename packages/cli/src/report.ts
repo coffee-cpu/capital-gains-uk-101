@@ -4,6 +4,7 @@ import { BrokerType } from '../../../src/types/broker'
 import { GainGroupType } from '../../../src/types/transaction'
 import { getEffectiveQuantity, QUANTITY_EPSILON } from '../../../src/lib/cgt/utils'
 import type { CGTRateChange2024Data } from '../../../src/lib/cgt/taxYearFeatures/cgtRateChange2024'
+import { sa108Rows, Sa108Category, Sa108Row } from '../../../src/lib/cgt/sa108'
 import { CLI_NAME, CLI_VERSION, DISCLAIMER } from './meta'
 
 /**
@@ -36,6 +37,25 @@ export interface ReportInput {
   transactions: number
 }
 
+export interface Sa108Figures {
+  /** Same-day disposals of one asset count once (TCGA92/S105(1)(a)) */
+  numberOfDisposals: number
+  /** Gross proceeds, before selling fees */
+  disposalProceedsGbp: number
+  /** Acquisition costs plus buying and selling fees */
+  allowableCostsGbp: number
+  gainsBeforeLossesGbp: number
+  lossesGbp: number
+}
+
+export interface Sa108SectionReport extends Sa108Figures {
+  category: 'listed-shares' | 'crypto' | 'options'
+  /** SA108 section name, or null when it depends on the contract (options) */
+  section: string | null
+  /** Box numbers for this tax year's form, or null when not known */
+  boxes: { number: string; proceeds: string; costs: string; gains: string; losses: string } | null
+}
+
 export interface TaxYearReport {
   taxYear: string
   startDate: string
@@ -50,14 +70,13 @@ export interface TaxYearReport {
   annualExemptAmountGbp: number
   taxableGainGbp: number
   incompleteDisposals: number
-  /** Figures for the SA108 "listed shares and securities" section. Box numbers vary by year, so fields are named, not numbered. */
-  sa108: {
-    numberOfDisposals: number
-    disposalProceedsGbp: number
-    allowableCostsGbp: number
-    gainsBeforeLossesGbp: number
-    lossesGbp: number
-  }
+  /**
+   * Figures for the SA108 "listed shares and securities" section only (zero when there are none).
+   * Box numbers vary by year, so fields are named, not numbered.
+   */
+  sa108: Sa108Figures
+  /** Every SA108 section with disposals this year: listed shares, cryptoassets, and options (section left to the user) */
+  sa108Sections: Sa108SectionReport[]
   /** 2024/25 only: split around the 30 October 2024 CGT rate change */
   rateChange2024?: {
     rateChangeDate: string
@@ -215,7 +234,34 @@ export function buildCalculateReport(
   }
 }
 
+const SA108_CATEGORY_NAMES: Record<Sa108Category, Sa108SectionReport['category']> = {
+  LISTED_SHARES: 'listed-shares',
+  CRYPTO: 'crypto',
+  OPTIONS: 'options',
+}
+
+const EMPTY_SA108: Sa108Figures = {
+  numberOfDisposals: 0,
+  disposalProceedsGbp: 0,
+  allowableCostsGbp: 0,
+  gainsBeforeLossesGbp: 0,
+  lossesGbp: 0,
+}
+
+function toSa108Figures(row: Sa108Row): Sa108Figures {
+  return {
+    numberOfDisposals: row.numberOfDisposals,
+    disposalProceedsGbp: money(row.proceedsGbp),
+    allowableCostsGbp: money(row.costsGbp),
+    gainsBeforeLossesGbp: money(row.gainsGbp),
+    lossesGbp: money(row.lossesGbp),
+  }
+}
+
 function toTaxYearReport(summary: TaxYearSummary): TaxYearReport {
+  // Same rows as the PDF report's SA108 table
+  const rows = sa108Rows(summary.taxYear, summary.disposals)
+  const listedShares = rows.find(row => row.category === 'LISTED_SHARES')
   const report: TaxYearReport = {
     taxYear: summary.taxYear,
     startDate: summary.startDate,
@@ -229,13 +275,13 @@ function toTaxYearReport(summary: TaxYearSummary): TaxYearReport {
     annualExemptAmountGbp: money(summary.annualExemptAmount),
     taxableGainGbp: money(summary.taxableGainGbp),
     incompleteDisposals: summary.incompleteDisposals,
-    sa108: {
-      numberOfDisposals: summary.totalDisposals,
-      disposalProceedsGbp: money(summary.totalProceedsGbp),
-      allowableCostsGbp: money(summary.totalAllowableCostsGbp),
-      gainsBeforeLossesGbp: money(summary.totalGainsGbp),
-      lossesGbp: money(Math.abs(summary.totalLossesGbp)),
-    },
+    sa108: listedShares ? toSa108Figures(listedShares) : EMPTY_SA108,
+    sa108Sections: rows.map(row => ({
+      category: SA108_CATEGORY_NAMES[row.category],
+      section: row.section,
+      boxes: row.boxes,
+      ...toSa108Figures(row),
+    })),
     dividends: {
       count: summary.totalDividends,
       grossGbp: money(summary.grossDividendsGbp),

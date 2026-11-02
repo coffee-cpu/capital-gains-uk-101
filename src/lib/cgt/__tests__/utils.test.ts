@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { addDaysToISODate, allocateProRata, calculateCostBasis, calculateNetProceeds, getFeePerUnit, isFullyUnmatched } from '../utils'
+import { addDaysToISODate, allocateProRata, calculateCostBasis, calculateDisposalFees, calculateGrossProceeds, getFeePerUnit, isFullyUnmatched } from '../utils'
 import { EnrichedTransaction, TransactionType } from '../../../types/transaction'
 import type { DisposalRecord } from '../../../types/cgt'
 
@@ -39,10 +39,11 @@ describe('CGT utils fee apportionment', () => {
     expect(calculateCostBasis(buy, 0.5)).toBeCloseTo(0.5 * 100 + 1)
   })
 
-  it('deducts the full fee from proceeds for fractional disposals', () => {
+  it('apportions the full selling fee for fractional disposals, with proceeds gross', () => {
     const sell = makeTx({ type: TransactionType.SELL, quantity: 0.25, price_gbp: 200, fee_gbp: 1 })
 
-    expect(calculateNetProceeds(sell, 0.25)).toBeCloseTo(0.25 * 200 - 1)
+    expect(calculateGrossProceeds(sell, 0.25)).toBeCloseTo(0.25 * 200)
+    expect(calculateDisposalFees(sell, 0.25)).toBeCloseTo(1)
   })
 
   it('apportions fees per-share for integer quantities (unchanged behaviour)', () => {

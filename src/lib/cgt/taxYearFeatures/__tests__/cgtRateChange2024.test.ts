@@ -337,3 +337,43 @@ describe('CGT Rate Change 2024 Feature', () => {
     })
   })
 })
+
+describe('CGT Rate Change 2024 - same-day disposals', () => {
+  it('nets same-day sales of one share into a single disposal in its period', () => {
+    const disposals = [
+      createDisposal('a', '2024-06-03', -50),
+      createDisposal('b', '2024-06-03', 50),
+      createDisposal('c', '2024-11-15', 200),
+    ]
+
+    const data = cgtRateChange2024Feature.calculate(createSummary('2024/25', 200), disposals)!
+
+    expect(data.disposalCountBeforeRateChange).toBe(1)
+    expect(data.gainsBeforeRateChange).toBe(0)
+    expect(data.lossesBeforeRateChange).toBe(0)
+    expect(data.disposalCountAfterRateChange).toBe(1)
+    expect(data.gainsAfterRateChange).toBe(200)
+  })
+
+  it('agrees with the engine year totals', async () => {
+    const { calculateCGT } = await import('../../engine')
+    const tx = (overrides: Partial<EnrichedTransaction>): EnrichedTransaction => ({
+      id: 'tx', source: 'test', symbol: 'AAA', name: null, date: '2024-06-03', type: 'BUY',
+      quantity: 10, price: 100, currency: 'GBP', total: 1000, fee: 0, notes: null,
+      fx_rate: 1, price_gbp: 100, value_gbp: 1000, fee_gbp: 0, fx_source: 'Native GBP', fx_error: null,
+      tax_year: '2024/25', ...overrides,
+    })
+    const result = calculateCGT([
+      tx({ id: 'buy', date: '2024-05-01', quantity: 30, total: 3000 }),
+      tx({ id: 's1', type: 'SELL', price: 105, price_gbp: 105, fee: 100, fee_gbp: 100 }),
+      tx({ id: 's2', type: 'SELL', price: 105, price_gbp: 105 }),
+      tx({ id: 's3', type: 'SELL', date: '2024-12-02', price: 130, price_gbp: 130 }),
+    ])
+    const summary = result.taxYearSummaries.find(s => s.taxYear === '2024/25')!
+    const data = summary.features!['cgt-rate-change-2024'] as ReturnType<typeof cgtRateChange2024Feature.calculate>
+
+    expect(data!.gainsBeforeRateChange + data!.gainsAfterRateChange).toBeCloseTo(summary.totalGainsGbp)
+    expect(data!.lossesBeforeRateChange + data!.lossesAfterRateChange).toBeCloseTo(summary.totalLossesGbp)
+    expect(data!.disposalCountBeforeRateChange + data!.disposalCountAfterRateChange).toBe(summary.totalDisposals)
+  })
+})

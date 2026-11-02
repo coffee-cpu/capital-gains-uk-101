@@ -46,7 +46,8 @@ The output is versioned with `schemaVersion: 1`. New fields may be added within 
 |---|---|
 | `options`, `inputs` | What was calculated, including each file's detected broker and transaction count |
 | `taxYears[]` | One entry per year: disposals, proceeds, allowable costs, gains, losses (as a positive number), net gain, annual exempt amount and taxable gain, plus dividend and interest totals |
-| `taxYears[].sa108` | The figures the SA108 "listed shares and securities" section asks for. Fields are named rather than numbered because box numbers change between years |
+| `taxYears[].sa108` | The figures the SA108 "listed shares and securities" section asks for (listed shares and funds only; proceeds are gross, with selling fees in allowable costs). Fields are named rather than numbered because box numbers change between years |
+| `taxYears[].sa108Sections` | One entry per SA108 section with disposals (`listed-shares`, `crypto`, `options`), with box numbers for that year where known. Options have no section or boxes: it depends on the contract |
 | `taxYears[].rateChange2024` | 2024/25 only: gains and losses before and after the 30 October 2024 rate change, and whether an adjustment is required |
 | `disposals[]` | One row per disposal: date, symbol, split-adjusted quantity, proceeds, cost, gain or loss, matching rules used, an `incomplete` flag, and `missingFx: true` when the gain uses a missing exchange rate. `--details` adds the full audit trail |
 | `section104Pools[]` | Holdings remaining after the last imported transaction |

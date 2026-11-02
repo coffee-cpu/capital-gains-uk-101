@@ -165,6 +165,11 @@ export function TaxYearSummary() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
             </div>
+            {currentSummary.disposals.length !== currentSummary.totalDisposals && (
+              <div className="text-xs text-gray-500 mt-1">
+                {currentSummary.disposals.length} sales; same-day sales of a share count as one
+              </div>
+            )}
           </button>
 
           <div className="bg-gray-50 rounded-lg p-4">
