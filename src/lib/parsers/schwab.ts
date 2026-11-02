@@ -87,6 +87,11 @@ function normalizeSchwabRow(
     type = symbol ? TransactionType.TAX_ON_DIVIDEND : TransactionType.TAX_ON_INTEREST
   }
 
+  // Foreign Tax Paid on a stock is withholding on that stock's dividend
+  if (action?.toLowerCase() === 'foreign tax paid' && symbol) {
+    type = TransactionType.TAX_ON_DIVIDEND
+  }
+
   // Parse numeric values
   const quantity = parseCurrency(row['Quantity'])
   const price = parseCurrency(row['Price']) || null
@@ -216,11 +221,18 @@ function mapSchwabAction(action: string): SchwabActionResult {
   } else if (actionLower === 'options frwd split' || actionLower === 'options frwd split adj') {
     type = TransactionType.OPTIONS_STOCK_SPLIT
   // Regular stock actions
-  } else if (actionLower === 'buy' || actionLower === 'stock plan activity') {
+  } else if (
+    actionLower === 'buy' ||
+    actionLower === 'stock plan activity' ||
+    actionLower === 'reinvest shares' || // dividend reinvestment purchase
+    actionLower === 'buy to cover' // closes a short stock position
+  ) {
     type = TransactionType.BUY
   } else if (actionLower === 'sell' || actionLower === 'sell short') {
     type = TransactionType.SELL
-  } else if (actionLower === 'stock split') {
+  } else if (actionLower === 'stock split' || actionLower === 'reverse split') {
+    // Ratio comes from the description ("1 FOR 10"); without one the
+    // enricher skips the row and the auto-fetched split applies instead
     type = TransactionType.STOCK_SPLIT
   } else if (actionLower.includes('dividend')) {
     type = TransactionType.DIVIDEND
@@ -228,7 +240,7 @@ function mapSchwabAction(action: string): SchwabActionResult {
     type = TransactionType.INTEREST
   } else if (actionLower.includes('tax')) {
     type = TransactionType.TAX
-  } else if (actionLower.includes('wire') || actionLower.includes('transfer') || actionLower === 'journal' || actionLower === 'moneylink transfer') {
+  } else if (actionLower.includes('wire') || actionLower.includes('transfer') || actionLower === 'journal' || actionLower === 'journaled shares' || actionLower === 'moneylink transfer') {
     type = TransactionType.TRANSFER
   } else if (actionLower.includes('fee') || actionLower === 'misc cash entry') {
     type = TransactionType.FEE
