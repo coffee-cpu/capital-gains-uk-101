@@ -146,6 +146,8 @@ export class JsDelivrSplitSource implements SplitDataSource {
   readonly rejectedRecords: RejectedSplitRecord[] = []
 
   async fetchSplitsForYears(years: number[]): Promise<SplitRecord[]> {
+    // Rejections describe the latest fetch only
+    this.rejectedRecords.length = 0
     const results = await Promise.all(
       years.map(year => this.fetchYear(year))
     )

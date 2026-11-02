@@ -2,7 +2,7 @@ import { GenericTransaction, parseRatioMultiplier } from '../../types/transactio
 import { SplitDataSource, SplitRecord, JsDelivrSplitSource } from './splitDataSource'
 
 /** Transaction types that indicate the user holds a given symbol */
-const HOLDING_TYPES = new Set(['BUY', 'SELL', 'OPTIONS_BUY_TO_OPEN', 'OPTIONS_SELL_TO_OPEN', 'OPTIONS_BUY_TO_CLOSE', 'OPTIONS_SELL_TO_CLOSE', 'OPTIONS_ASSIGNED'])
+export const HOLDING_TYPES = new Set<string>(['BUY', 'SELL', 'OPTIONS_BUY_TO_OPEN', 'OPTIONS_SELL_TO_OPEN', 'OPTIONS_BUY_TO_CLOSE', 'OPTIONS_SELL_TO_CLOSE', 'OPTIONS_ASSIGNED'])
 
 /**
  * Fetches auto-detected stock splits for the user's held symbols,
