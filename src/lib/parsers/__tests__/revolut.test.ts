@@ -362,3 +362,29 @@ describe('Revolut Parser', () => {
     })
   })
 })
+
+describe('parseNumber - currency codes', () => {
+  it('reads amounts written with an ISO currency code', async () => {
+    const { parseNumber } = await import('../parsingUtils')
+    expect(parseNumber('USD 1,500.00')).toBe(1500)
+    expect(parseNumber('-USD 5.25')).toBe(-5.25)
+    expect(parseNumber('12.50 GBP')).toBe(12.5)
+    expect(parseNumber('$1,234.56')).toBe(1234.56)
+    expect(parseNumber('2.63622E-05')).toBeCloseTo(0.0000263622)
+    expect(parseNumber('N/A')).toBeUndefined()
+    expect(parseNumber('')).toBeUndefined()
+  })
+})
+
+describe('Revolut Parser - amounts with currency codes', () => {
+  it('reads "USD 1,871.87" style amounts', () => {
+    const [tx] = normalizeRevolutTransactions([{
+      'Date': '2024-01-15T10:30:45.123Z', 'Ticker': 'AAPL', 'Type': 'BUY - MARKET',
+      'Quantity': '10.25684932', 'Price per share': 'USD 182.50', 'Total Amount': 'USD 1,871.87',
+      'Currency': 'USD', 'FX Rate': '1.2751',
+    }], 'f')
+
+    expect(tx.price).toBe(182.5)
+    expect(tx.total).toBe(1871.87)
+  })
+})

@@ -14,8 +14,12 @@
 export function parseNumber(value: string | undefined | null): number | undefined {
   if (!value || value.trim() === '') return undefined
 
-  // Remove currency symbols ($, £, €) and commas
-  const cleaned = value.replace(/[$£€,]/g, '').trim()
+  // Remove currency symbols ($, £, €), thousands separators and spaces, then
+  // a leading or trailing ISO currency code ("USD 1,500.00", "-USD 5", "12.50 GBP")
+  const cleaned = value
+    .replace(/[$£€,\s]/g, '')
+    .replace(/^(-?)[A-Z]{3}/, '$1')
+    .replace(/[A-Z]{3}$/, '')
   const parsed = parseFloat(cleaned)
 
   return isNaN(parsed) ? undefined : parsed

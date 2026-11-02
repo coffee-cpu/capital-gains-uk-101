@@ -599,3 +599,17 @@ describe('Freetrade Parser', () => {
     })
   })
 })
+
+describe('Freetrade Parser - thousands separators', () => {
+  it('reads amounts written with thousands separators', () => {
+    const [tx] = normalizeFreetradeTransactions([{
+      'Title': 'RetailGroup', 'Type': 'ORDER', 'Timestamp': '2025-07-10T09:15:42.456Z',
+      'Account Currency': 'GBP', 'Total Amount': '12,500.50', 'Buy / Sell': 'BUY', 'Ticker': 'RTLG',
+      'Price per Share in Account Currency': '1,250.05', 'Stamp Duty': '62.50', 'Quantity': '10.00000000',
+      'Instrument Currency': 'GBP', 'FX Fee Amount': '',
+    }], 'f')
+
+    expect(tx.total).toBeCloseTo(12500.5)
+    expect(tx.price).toBeCloseTo(1250.05)
+  })
+})

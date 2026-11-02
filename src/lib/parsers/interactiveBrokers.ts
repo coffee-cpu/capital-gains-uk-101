@@ -1,6 +1,7 @@
 import { GenericTransaction, TransactionType } from '../../types/transaction'
 import { RawCSVRow } from '../../types/broker'
 import { CSVPreprocessor } from './fileUtils'
+import { parseNumber } from './parsingUtils'
 
 /**
  * Raw-file preprocessor for Interactive Brokers' multi-section CSV format.
@@ -34,7 +35,7 @@ export function preprocessInteractiveBrokersCSV(text: string): string {
     throw new Error('Failed to read file')
   }
 
-  const lines = text.split('\n')
+  const lines = text.split(/\r?\n/)
   let headerRow: string | null = null
   const summaryDataRows: Array<{ sectionName: string; rowType: string; restOfLine: string }> = []
   const transactionRows: string[] = []
@@ -157,8 +158,7 @@ function parseIBOptionsSymbol(symbol: string): ParsedIBOptionsSymbol | null {
  * Parse gross amount from IB row (handles column name with trailing space)
  */
 function parseGrossAmount(row: RawCSVRow): number | null {
-  const value = parseFloat(row['Gross Amount '] || row['Gross Amount'])
-  return isNaN(value) ? null : value
+  return parseNumber(row['Gross Amount '] || row['Gross Amount']) ?? null
 }
 
 /**
@@ -424,8 +424,8 @@ function normalizeTradeRow(
   }
 
   // Quantity can be negative for sells
-  const rawQuantity = parseFloat(row['Quantity']) || null
-  const commission = Math.abs(parseFloat(row['Commission']) || 0)
+  const rawQuantity = parseNumber(row['Quantity']) || null
+  const commission = Math.abs(parseNumber(row['Commission']) || 0)
 
   // In IB exports, Gross Amount is already in base currency. Derive price from it.
   const grossAmount = parseGrossAmount(row)
@@ -494,8 +494,7 @@ function normalizeTradeRow(
  * Parse net amount from IB row (handles column name with trailing space)
  */
 function parseNetAmount(row: RawCSVRow): number | null {
-  const value = parseFloat(row['Net Amount '] || row['Net Amount'])
-  return isNaN(value) ? null : value
+  return parseNumber(row['Net Amount '] || row['Net Amount']) ?? null
 }
 
 /**
