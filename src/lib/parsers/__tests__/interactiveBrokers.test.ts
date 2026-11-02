@@ -1037,3 +1037,21 @@ describe('Interactive Brokers Parser', () => {
     })
   })
 })
+
+describe('preprocessInteractiveBrokersCSV - line endings', () => {
+  it('reads exports with Windows (CRLF) line endings', () => {
+    const lines = [
+      'Statement,Header,Field Name,Field Value',
+      'Summary,Header,Field Name,Field Value',
+      'Summary,Data,Base Currency,GBP',
+      'Transaction History,Header,Date,Account,Description,Transaction Type,Symbol,Quantity,Price,Gross Amount ,Commission,Net Amount',
+      'Transaction History,Data,2024-09-27,U1234567,VANG,Buy,VUSD,100.0,108.75,-8132.00,-4.49,-8136.49',
+    ]
+
+    const crlf = preprocessInteractiveBrokersCSV(lines.join('\r\n'))
+    const lf = preprocessInteractiveBrokersCSV(lines.join('\n'))
+
+    expect(crlf).toBe(lf)
+    expect(crlf).toContain('VUSD')
+  })
+})

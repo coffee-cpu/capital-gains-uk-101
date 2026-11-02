@@ -1,6 +1,7 @@
 import { GenericTransaction, TransactionType } from '../../types/transaction'
 import { RawCSVRow } from '../../types/broker'
 import { SkippedRow } from '../../types/brokerDefinition'
+import { parseNumber } from './parsingUtils'
 
 /**
  * Expected CSV columns for generic format:
@@ -69,6 +70,9 @@ function normalizeGenericRow(
   if (!typeStr) {
     return 'missing type'
   }
+  if (!isValidISODate(dateStr)) {
+    return `date "${dateStr}" is not in YYYY-MM-DD format`
+  }
 
   // Validate transaction type
   const type = parseGenericType(typeStr)
@@ -78,10 +82,10 @@ function normalizeGenericRow(
 
   // Optional fields
   const name = row['name']?.trim() || null
-  const quantity = row['quantity'] ? (isNaN(parseFloat(row['quantity'])) ? null : parseFloat(row['quantity'])) : null
-  const price = row['price'] ? (isNaN(parseFloat(row['price'])) ? null : parseFloat(row['price'])) : null
-  const total = row['total'] ? (isNaN(parseFloat(row['total'])) ? null : parseFloat(row['total'])) : null
-  const fee = row['fee'] ? (isNaN(parseFloat(row['fee'])) ? null : parseFloat(row['fee'])) : null
+  const quantity = parseNumber(row['quantity']) ?? null
+  const price = parseNumber(row['price']) ?? null
+  const total = parseNumber(row['total']) ?? null
+  const fee = parseNumber(row['fee']) ?? null
   const notes = row['notes']?.trim() || null
   const ratio = row['split_ratio']?.trim() || null
 
@@ -114,4 +118,19 @@ function parseGenericType(typeStr: string): typeof TransactionType[keyof typeof 
   }
 
   return null
+}
+
+/**
+ * True for a real calendar date written as YYYY-MM-DD.
+ *
+ * Other formats are rejected rather than guessed: 03/04/2024 is 3 April in
+ * the UK and 4 March in the US, and a wrong guess silently moves trades
+ * between tax years and matching windows.
+ */
+function isValidISODate(date: string): boolean {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date)
+  if (!match) return false
+  const [, y, m, d] = match.map(Number)
+  const parsed = new Date(Date.UTC(y, m - 1, d))
+  return parsed.getUTCFullYear() === y && parsed.getUTCMonth() === m - 1 && parsed.getUTCDate() === d
 }

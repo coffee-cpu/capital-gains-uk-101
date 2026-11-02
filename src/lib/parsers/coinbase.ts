@@ -24,7 +24,7 @@ export function isCoinbaseCSV(content: string): boolean {
   const text = content.slice(0, 500)
   if (!text) return false
 
-  const lines = text.split('\n').filter(line => line.trim())
+  const lines = text.split(/\r?\n/).filter(line => line.trim())
   return lines.length >= 2 && lines[0].startsWith('Transactions') && lines[1].startsWith('User')
 }
 
@@ -45,7 +45,7 @@ export function stripCoinbaseMetadataRows(text: string): string {
   }
 
   // Split by lines and find where the actual headers start
-  const lines = text.split('\n')
+  const lines = text.split(/\r?\n/)
 
   // Find the index of the header row (starts with "ID")
   let headerRowIndex = -1

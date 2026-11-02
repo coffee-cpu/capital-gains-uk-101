@@ -1,6 +1,6 @@
 import { GenericTransaction, TransactionType } from '../../types/transaction'
 import { RawCSVRow } from '../../types/broker'
-import { parseISODate } from './parsingUtils'
+import { parseISODate, parseNumber } from './parsingUtils'
 
 /**
  * Normalize Freetrade CSV rows to GenericTransaction format
@@ -69,7 +69,7 @@ function normalizeFreetradeRow(row: RawCSVRow, fileId: string, rowIndex: number)
     quantity: null,
     price: null,
     currency: row['Account Currency']?.trim() || 'GBP',
-    total: parseFloat(row['Total Amount']) || null,
+    total: parseNumber(row['Total Amount']) || null,
     fee: null,
     ratio: null,
     notes: `Unrecognized transaction type: ${type}`,
@@ -92,7 +92,7 @@ function parseOrderTransaction(
   isFreeShare = false
 ): GenericTransaction | null {
   const buySell = row['Buy / Sell']?.trim()
-  const quantity = parseFloat(row['Quantity']) || null
+  const quantity = parseNumber(row['Quantity']) || null
   const accountCurrency = row['Account Currency']?.trim() || 'GBP'
 
   // For free shares, price and amount are £0 (no acquisition cost per HMRC)
@@ -107,10 +107,10 @@ function parseOrderTransaction(
     stampDuty = 0
     fxFeeAmount = 0
   } else {
-    pricePerShare = parseFloat(row['Price per Share in Account Currency']) || null
-    totalAmount = parseFloat(row['Total Amount']) || null
-    stampDuty = parseFloat(row['Stamp Duty']) || null
-    fxFeeAmount = parseFloat(row['FX Fee Amount']) || null
+    pricePerShare = parseNumber(row['Price per Share in Account Currency']) || null
+    totalAmount = parseNumber(row['Total Amount']) || null
+    stampDuty = parseNumber(row['Stamp Duty']) || null
+    fxFeeAmount = parseNumber(row['FX Fee Amount']) || null
   }
 
   // Determine if this is a buy or sell (free shares are always BUY)
@@ -173,11 +173,11 @@ function parseDividendTransaction(
   ticker: string,
   isin: string
 ): GenericTransaction | null {
-  const netAmount = parseFloat(row['Dividend Net Distribution Amount']) || null
-  const grossAmount = parseFloat(row['Dividend Gross Distribution Amount']) || null
-  const withheldTax = parseFloat(row['Dividend Withheld Tax Amount']) || null
+  const netAmount = parseNumber(row['Dividend Net Distribution Amount']) || null
+  const grossAmount = parseNumber(row['Dividend Gross Distribution Amount']) || null
+  const withheldTax = parseNumber(row['Dividend Withheld Tax Amount']) || null
   const accountCurrency = row['Account Currency']?.trim() || 'GBP'
-  const quantity = parseFloat(row['Dividend Eligible Quantity']) || null
+  const quantity = parseNumber(row['Dividend Eligible Quantity']) || null
 
   const notes = []
   if (isin) notes.push(`ISIN: ${isin}`)
@@ -216,7 +216,7 @@ function parseInterestTransaction(
   rowIndex: number,
   date: string
 ): GenericTransaction | null {
-  const totalAmount = parseFloat(row['Total Amount']) || null
+  const totalAmount = parseNumber(row['Total Amount']) || null
   const accountCurrency = row['Account Currency']?.trim() || 'GBP'
 
   return {
@@ -248,7 +248,7 @@ function parseTransferTransaction(
   date: string,
   type: string
 ): GenericTransaction | null {
-  const totalAmount = parseFloat(row['Total Amount']) || null
+  const totalAmount = parseNumber(row['Total Amount']) || null
   const accountCurrency = row['Account Currency']?.trim() || 'GBP'
 
   return {
@@ -282,8 +282,8 @@ function parseStockSplitTransaction(
   ticker: string,
   isin: string
 ): GenericTransaction | null {
-  const fromShares = parseFloat(row['Stock Split Rate of Share Outturn From']) || null
-  const toShares = parseFloat(row['Stock Split Rate of Share Outturn To']) || null
+  const fromShares = parseNumber(row['Stock Split Rate of Share Outturn From']) || null
+  const toShares = parseNumber(row['Stock Split Rate of Share Outturn To']) || null
 
   // Create ratio string in "new:old" format
   const ratio = fromShares && toShares ? `${toShares}:${fromShares}` : null

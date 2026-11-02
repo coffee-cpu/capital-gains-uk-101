@@ -14,8 +14,17 @@
 export function parseNumber(value: string | undefined | null): number | undefined {
   if (!value || value.trim() === '') return undefined
 
-  // Remove currency symbols ($, £, €) and commas
-  const cleaned = value.replace(/[$£€,]/g, '').trim()
+  // Remove currency symbols ($, £, €), thousands separators and spaces, then
+  // a leading or trailing ISO currency code ("USD 1,500.00", "-USD 5", "12.50 GBP")
+  const stripCodes = (text: string) => text.replace(/^(-?)[A-Z]{3}/, '$1').replace(/[A-Z]{3}$/, '')
+  let cleaned = stripCodes(value.replace(/[$£€,\s]/g, ''))
+
+  // Accounting-style negatives: "(1,234.56)" means -1234.56. Codes are stripped
+  // on both sides of the unwrap, so "USD (5.00)", "(5.00) USD" and
+  // "(USD 5.00)" all work.
+  const accounting = /^\((.*)\)$/.exec(cleaned)
+  if (accounting) cleaned = stripCodes(`-${accounting[1]}`)
+
   const parsed = parseFloat(cleaned)
 
   return isNaN(parsed) ? undefined : parsed

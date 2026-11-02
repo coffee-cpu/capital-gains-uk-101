@@ -360,3 +360,38 @@ describe('Generic CSV Parser', () => {
     })
   })
 })
+
+describe('Generic CSV Parser - number and date validation', () => {
+  const row = (overrides: Record<string, string>) => ({
+    date: '2024-01-15', type: 'BUY', symbol: 'AAPL', currency: 'USD',
+    quantity: '10', price: '150', total: '1500', fee: '0', ...overrides,
+  })
+
+  it('reads thousands separators and currency symbols in amounts', () => {
+    const [tx] = normalizeGenericTransactions(
+      [row({ quantity: '1,000', price: '$1,250.50', total: '1,250,500.00', fee: '£1.50' })],
+      'f'
+    )
+    expect(tx).toMatchObject({ quantity: 1000, price: 1250.5, total: 1250500, fee: 1.5 })
+  })
+
+  it('skips rows whose date is not YYYY-MM-DD instead of guessing', () => {
+    const skippedRows: { row: number; reason: string }[] = []
+    const result = normalizeGenericTransactions(
+      [row({ date: '15/01/2024' }), row({ date: '2024-02-30' }), row({ date: '2024-1-5' }), row({})],
+      'f',
+      skippedRows
+    )
+
+    expect(result).toHaveLength(1)
+    expect(skippedRows.map(s => s.reason)).toEqual([
+      'date "15/01/2024" is not in YYYY-MM-DD format',
+      'date "2024-02-30" is not in YYYY-MM-DD format',
+      'date "2024-1-5" is not in YYYY-MM-DD format',
+    ])
+  })
+
+  it('accepts 29 February in a leap year', () => {
+    expect(normalizeGenericTransactions([row({ date: '2024-02-29' })], 'f')).toHaveLength(1)
+  })
+})
