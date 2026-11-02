@@ -53,3 +53,28 @@ describe('buildCalculateReport - SA108 figures', () => {
     expect(year.lossesGbp).toBe(500)
   })
 })
+
+describe('2024/25 rate change in the report', () => {
+  const result = calculateCGT([
+    tx({ id: 'buy', date: '2024-05-01', quantity: 100, total: 10000 }),
+    tx({ id: 'sell-before', type: 'SELL', date: '2024-06-03', quantity: 20, price: 200, price_gbp: 200, total: 4000 }),
+    tx({ id: 'sell-after', type: 'SELL', date: '2024-11-15', quantity: 50, price: 200, price_gbp: 200, total: 10000 }),
+  ])
+  const report = buildCalculateReport(result, OPTIONS)
+
+  it('reports the gains left at the new rates after losses and the AEA', () => {
+    // After: 50 x (200 - 100) = 5,000 gain, less the 3,000 AEA = 2,000 at the new rates
+    expect(report.taxYears[0].rateChange2024).toMatchObject({
+      gainsAfterGbp: 5000,
+      chargeableGainsAfterGbp: 2000,
+      adjustmentRequired: true,
+    })
+  })
+
+  it('shows that figure in the text output', async () => {
+    const { formatCalculateText } = await import('../format')
+    // The text output lists the input files, so give it one
+    const withInput = { ...report, inputs: [{ file: 'trades.csv', broker: report.inputs[0]?.broker ?? ('generic' as never), transactions: 3 }] }
+    expect(formatCalculateText(withInput)).toContain('£2,000.00 of gains from 2024-10-30 remain chargeable')
+  })
+})

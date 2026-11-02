@@ -56,7 +56,10 @@ export function formatCalculateText(report: CalculateReport): string {
       lines.push('')
       lines.push(`  Rate change on ${rc.rateChangeDate}: net ${formatGbp(rc.netBeforeGbp)} before, ${formatGbp(rc.netAfterGbp)} on or after.`)
       if (rc.adjustmentRequired) {
-        lines.push('  An SA108 adjustment for the rate change is required; use HMRC\'s calculator to work it out.')
+        lines.push(
+          `  ${formatGbp(rc.chargeableGainsAfterGbp)} of gains from ${rc.rateChangeDate} remain chargeable after losses and the ` +
+          'annual exempt amount, so an SA108 adjustment for the rate change is required; use HMRC\'s calculator to work it out.'
+        )
       }
     }
 

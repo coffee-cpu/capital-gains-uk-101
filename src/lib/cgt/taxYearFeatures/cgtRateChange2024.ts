@@ -11,7 +11,9 @@
  * - The form does NOT have separate fields for before/after 30 October disposals
  * - Box 51 ("Adjustment to capital gains tax") is where the adjustment goes
  * - SA system defaults to OLD rates (10%/20%) for entire year
- * - Any disposal on/after 30 Oct requires adjustment if gains > £3,000 AEA
+ * - An adjustment is needed only when gains on/after 30 Oct remain chargeable
+ *   after the year's losses and the AEA are set against them first, the most
+ *   beneficial order (TCGA92/S4B)
  *
  * This feature provides the data needed to use HMRC's official calculator:
  * https://www.gov.uk/guidance/work-out-your-capital-gains-tax-adjustment-for-the-2024-to-2025-tax-year
