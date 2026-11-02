@@ -393,7 +393,9 @@ function createCGTReportDocument(
                   {'Assets are grouped by broker: disposals imported from Coinbase or Coinbase Pro are treated as cryptoassets, ' +
                     'options as options, and everything else as listed shares and securities. Move any that belong elsewhere, ' +
                     'such as unlisted shares or crypto bought through another broker. Same-day disposals of the same asset ' +
-                    'count as one disposal. Losses are shown as positive amounts, as the form asks.'}
+                    'count as one disposal, so their gains and losses are netted; the gains and losses here can ' +
+                    'therefore be lower than in the summary above, with the same net. Losses are shown as positive ' +
+                    'amounts, as the form asks.'}
                 </Text>
                 {sa108.some(row => row.category === 'OPTIONS') && (
                   <Text style={styles.note}>

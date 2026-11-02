@@ -122,11 +122,11 @@ export interface Sa108Row {
   section: string | null
   /** Box numbers, or null when not known for this tax year */
   boxes: Sa108Boxes | null
-  /** Same-day disposals of the same asset count once (TCGA92/S105) */
+  /** Same-day disposals of the same asset count once (TCGA92/S105(1)(a)) */
   numberOfDisposals: number
   proceedsGbp: number
   costsGbp: number
-  /** Gains in the year, before losses */
+  /** Gains in the year, before losses, with same-day disposals of one asset netted */
   gainsGbp: number
   /** Losses in the year, as a positive amount */
   lossesGbp: number
@@ -146,6 +146,14 @@ export function sa108Rows(taxYear: string, disposals: DisposalRecord[]): Sa108Ro
     const inCategory = disposals.filter(d => sa108Category(d.disposal) === category)
     if (inCategory.length === 0) return []
     const sum = (f: (d: DisposalRecord) => number) => inCategory.reduce((total, d) => total + f(d), 0)
+    // Same-day disposals of one asset are a single disposal (TCGA92/S105(1)(a)),
+    // so their gains and losses are netted before splitting into the boxes
+    const netByDisposal = new Map<string, number>()
+    for (const d of inCategory) {
+      const key = `${d.disposal.symbol}|${d.disposal.date}`
+      netByDisposal.set(key, (netByDisposal.get(key) ?? 0) + d.gainOrLossGbp)
+    }
+    const nets = [...netByDisposal.values()]
     return [{
       category,
       label: CATEGORY_LABELS[category],
@@ -154,11 +162,11 @@ export function sa108Rows(taxYear: string, disposals: DisposalRecord[]): Sa108Ro
         : category === 'CRYPTO' ? cryptoSection(taxYear)
         : null,
       boxes: category === 'OPTIONS' || !boxes ? null : boxes[category],
-      numberOfDisposals: new Set(inCategory.map(d => `${d.disposal.symbol}|${d.disposal.date}`)).size,
+      numberOfDisposals: netByDisposal.size,
       proceedsGbp: sum(d => d.proceedsGbp),
       costsGbp: sum(d => d.allowableCostsGbp),
-      gainsGbp: sum(d => Math.max(0, d.gainOrLossGbp)),
-      lossesGbp: sum(d => Math.max(0, -d.gainOrLossGbp)),
+      gainsGbp: nets.reduce((total, net) => total + Math.max(0, net), 0),
+      lossesGbp: nets.reduce((total, net) => total + Math.max(0, -net), 0),
     }]
   })
 }

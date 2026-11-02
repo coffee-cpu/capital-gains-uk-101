@@ -61,7 +61,7 @@ describe('sa108Rows', () => {
     record(tx({ id: 'e', symbol: 'NVDA C', underlying_symbol: 'NVDA' }), 100, 50),
   ]
 
-  it('totals each section and counts same-day disposals of one asset once', () => {
+  it('totals each section, treating same-day disposals of one asset as one netted disposal', () => {
     const [shares, crypto, options] = sa108Rows('2024/25', disposals)
     expect(shares).toMatchObject({
       category: 'LISTED_SHARES',
@@ -69,8 +69,9 @@ describe('sa108Rows', () => {
       numberOfDisposals: 2,
       proceedsGbp: 1800,
       costsGbp: 1500,
-      gainsGbp: 400,
-      lossesGbp: 100,
+      // AAPL same day: +200 and -100 net to one +100 gain; MSFT +200
+      gainsGbp: 300,
+      lossesGbp: 0,
     })
     expect(shares.boxes).toEqual({ number: '23', proceeds: '24', costs: '25', gains: '26', losses: '27' })
     expect(crypto).toMatchObject({ category: 'CRYPTO', section: 'Cryptoassets', lossesGbp: 50 })
