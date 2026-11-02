@@ -19,5 +19,13 @@ updates:
     allow:
       - dependency-type: development
     groups:
+      # Minor and patch updates together; majors get their own PRs so one
+      # breaking upgrade doesn't hold back the rest
       dev-dependencies:
+        dependency-type: development
+        update-types: [minor, patch]
+      # Security fixes grouped too, so packages pinned to each other's exact
+      # version (vitest, @vitest/ui, @vitest/coverage-v8) move together
+      dev-security:
+        applies-to: security-updates
         dependency-type: development
