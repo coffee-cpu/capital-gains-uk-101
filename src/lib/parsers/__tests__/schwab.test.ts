@@ -927,3 +927,39 @@ describe('Schwab Parser', () => {
     })
   })
 })
+
+describe('Schwab action mapping - share-moving actions', () => {
+  const row = (action: string, overrides: Record<string, string> = {}) => ({
+    'Date': '06/03/2024', 'Action': action, 'Symbol': 'AAPL', 'Description': 'APPLE INC',
+    'Quantity': '10', 'Price': '$190.00', 'Fees & Comm': '', 'Amount': '-$1,900.00', ...overrides,
+  })
+  const typeOf = (action: string, overrides?: Record<string, string>) =>
+    normalizeSchwabTransactions([row(action, overrides)], 'f')[0]?.type
+
+  it('treats a dividend reinvestment as a purchase', () => {
+    expect(typeOf('Reinvest Shares')).toBe(TransactionType.BUY)
+  })
+
+  it('treats Buy to Cover as a purchase that can cover a short sale', () => {
+    expect(typeOf('Buy to Cover')).toBe(TransactionType.BUY)
+  })
+
+  it('reads a reverse split with its ratio', () => {
+    const [tx] = normalizeSchwabTransactions([row('Reverse Split', { Description: 'REVERSE SPLIT 1 FOR 10', Price: '', Amount: '' })], 'f')
+    expect(tx.type).toBe(TransactionType.STOCK_SPLIT)
+    expect(tx.ratio).toBe('1:10')
+  })
+
+  it('treats journaled shares as a transfer, not a disposal', () => {
+    expect(typeOf('Journaled Shares')).toBe(TransactionType.TRANSFER)
+  })
+
+  it('treats Foreign Tax Paid on a stock as dividend withholding', () => {
+    expect(typeOf('Foreign Tax Paid', { Quantity: '', Price: '', Amount: '-$1.50' })).toBe(TransactionType.TAX_ON_DIVIDEND)
+  })
+
+  it('still flags corporate actions it cannot value as UNKNOWN', () => {
+    expect(typeOf('Stock Merger')).toBe(TransactionType.UNKNOWN)
+    expect(typeOf('Cash In Lieu')).toBe(TransactionType.UNKNOWN)
+  })
+})

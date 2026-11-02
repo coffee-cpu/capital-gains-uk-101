@@ -1,10 +1,16 @@
 import { GenericTransaction, TransactionType } from '../../types/transaction'
 import { RawCSVRow } from '../../types/broker'
-import { parseUSDate, parseCurrency } from './parsingUtils'
+import { parseUSDate, parseCurrency, parseNumber } from './parsingUtils'
 
 /**
  * Normalize Schwab Equity Awards CSV rows to GenericTransaction format
- * This format has paired rows - the transaction row followed by a detail row
+ *
+ * Each transaction row (it has a Date) is followed by zero or more detail rows
+ * (Date empty). A Lapse has one detail row; a Dividend or Wire Transfer has
+ * none; a Sale can have several. Rows are grouped by that rule rather than
+ * read as fixed pairs, so a row without details can't shift every later pair
+ * and silently drop vests.
+ *
  * @param rows Raw CSV rows
  * @param fileId Unique identifier for this file
  */
@@ -12,14 +18,8 @@ export function normalizeSchwabEquityAwardsTransactions(rows: RawCSVRow[], fileI
   const transactions: GenericTransaction[] = []
   let rowIndex = 1
 
-  // Process pairs of rows
-  for (let i = 0; i < rows.length; i += 2) {
-    const transactionRow = rows[i]
-    const detailRow = rows[i + 1]
-
-    if (!transactionRow || !detailRow) break
-
-    const normalized = normalizeSchwabEquityAwardsPair(transactionRow, detailRow, fileId, rowIndex)
+  for (const group of groupTransactionRows(rows)) {
+    const normalized = normalizeSchwabEquityAwardsPair(group.transactionRow, group.detailRows, fileId, rowIndex)
     if (normalized) {
       transactions.push(normalized)
       rowIndex++
@@ -30,11 +30,26 @@ export function normalizeSchwabEquityAwardsTransactions(rows: RawCSVRow[], fileI
 }
 
 /**
- * Normalize a pair of Schwab Equity Awards rows (transaction + details)
+ * Group each transaction row with the detail rows that follow it
+ */
+function groupTransactionRows(rows: RawCSVRow[]): { transactionRow: RawCSVRow; detailRows: RawCSVRow[] }[] {
+  const groups: { transactionRow: RawCSVRow; detailRows: RawCSVRow[] }[] = []
+  for (const row of rows) {
+    if (row['Date']?.trim()) {
+      groups.push({ transactionRow: row, detailRows: [] })
+    } else if (groups.length > 0) {
+      groups[groups.length - 1].detailRows.push(row)
+    }
+  }
+  return groups
+}
+
+/**
+ * Normalize a Schwab Equity Awards transaction row with its detail rows
  */
 function normalizeSchwabEquityAwardsPair(
   transactionRow: RawCSVRow,
-  detailRow: RawCSVRow,
+  detailRows: RawCSVRow[],
   fileId: string,
   rowIndex: number
 ): GenericTransaction | null {
@@ -45,18 +60,21 @@ function normalizeSchwabEquityAwardsPair(
   const description = transactionRow['Description']?.trim()
   const quantityStr = transactionRow['Quantity']?.trim()
 
-  // Detail row has: AwardDate, AwardId, FairMarketValuePrice, SharesSoldWithheldForTaxes, NetSharesDeposited, Taxes
-  const fmvPrice = parseCurrency(detailRow['FairMarketValuePrice'])
-  const sharesSoldForTaxes = parseFloat(detailRow['SharesSoldWithheldForTaxes']) || 0
-  const netShares = parseFloat(detailRow['NetSharesDeposited']) || 0
-  const taxes = parseCurrency(detailRow['Taxes']) || 0
+  // Detail rows have: AwardDate, AwardId, FairMarketValuePrice, SharesSoldWithheldForTaxes, NetSharesDeposited, Taxes.
+  // A lapse covering several awards has one detail row per award: shares are summed,
+  // and the fair market value (the same for every award on the vest date) taken from the first.
+  const fmvPrice = detailRows.map(row => parseCurrency(row['FairMarketValuePrice'])).find(price => price !== null) ?? null
+  const sumDetail = (field: string) => detailRows.reduce((sum, row) => sum + (parseNumber(row[field]) || 0), 0)
+  const sharesSoldForTaxes = sumDetail('SharesSoldWithheldForTaxes')
+  const netShares = sumDetail('NetSharesDeposited')
+  const taxes = detailRows.reduce((sum, row) => sum + (parseCurrency(row['Taxes']) || 0), 0)
 
   if (!date || !symbol || !action) {
     return null
   }
 
   // Total quantity vested (before tax withholding)
-  const totalQuantity = parseFloat(quantityStr) || 0
+  const totalQuantity = parseNumber(quantityStr) || 0
 
   // Net shares received after tax withholding
   const quantity = netShares
@@ -69,8 +87,28 @@ function normalizeSchwabEquityAwardsPair(
 
   // Type mapping
   let type: typeof TransactionType[keyof typeof TransactionType]
-  if (action.toLowerCase().includes('lapse')) {
+  const actionLower = action.toLowerCase()
+  if (actionLower.includes('lapse') && detailRows.length === 0) {
+    // The award details (fair market value, net shares) are missing, e.g. a
+    // truncated export. Flag the row rather than record a 0-share purchase.
+    return {
+      id: `${fileId}-${rowIndex}`,
+      source: 'Charles Schwab Equity Awards',
+      symbol,
+      name: description,
+      date,
+      type: TransactionType.UNKNOWN,
+      quantity: totalQuantity || null,
+      price: null,
+      currency: 'USD',
+      total: null,
+      fee: null,
+      notes: 'RSU vest is missing its award detail row (fair market value and net shares), so it could not be read',
+    }
+  } else if (actionLower.includes('lapse')) {
     type = TransactionType.BUY // RSU vest = acquiring shares
+  } else if (actionLower.includes('wire') || actionLower.includes('transfer')) {
+    type = TransactionType.TRANSFER // cash or shares moved out; not a disposal
   } else {
     // Return UNKNOWN for unrecognized actions
     console.warn(`Unknown Schwab Equity Awards action: "${action}", marking as UNKNOWN`)

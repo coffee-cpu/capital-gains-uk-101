@@ -294,3 +294,54 @@ describe('normalizeSchwabEquityAwardsTransactions', () => {
     expect(transactions).toHaveLength(0)
   })
 })
+
+describe('normalizeSchwabEquityAwardsTransactions - row grouping', () => {
+  const lapse = (date: string, quantity: string): RawCSVRow => ({
+    'Date': date, 'Action': 'Lapse', 'Symbol': 'AAPL', 'Description': 'Restricted Stock Lapse', 'Quantity': quantity,
+  })
+  const lapseDetail = (fmv: string, sold: string, net: string, taxes: string): RawCSVRow => ({
+    'Date': '', 'FairMarketValuePrice': fmv, 'SharesSoldWithheldForTaxes': sold, 'NetSharesDeposited': net, 'Taxes': taxes,
+  })
+  const noDetails = (date: string, action: string): RawCSVRow => ({
+    'Date': date, 'Action': action, 'Symbol': 'AAPL', 'Description': action, 'Quantity': '', 'Amount': '$12.00',
+  })
+
+  it('keeps every vest when a row without detail rows sits between them', () => {
+    const result = normalizeSchwabEquityAwardsTransactions([
+      lapse('08/15/2024', '100'), lapseDetail('$150.00', '48', '52', '$7,200.00'),
+      noDetails('07/01/2024', 'Dividend'),
+      lapse('05/15/2024', '50'), lapseDetail('$160.00', '24', '26', '$3,840.00'),
+    ], 'f')
+
+    const vests = result.filter(tx => tx.type === TransactionType.BUY)
+    expect(vests.map(tx => [tx.date, tx.quantity, tx.price])).toEqual([
+      ['2024-08-15', 52, 150],
+      ['2024-05-15', 26, 160],
+    ])
+  })
+
+  it('sums shares when a vest has one detail row per award', () => {
+    const [vest] = normalizeSchwabEquityAwardsTransactions([
+      lapse('08/15/2024', '1,000'),
+      lapseDetail('$150.00', '400', '600', '$60,000.00'),
+      lapseDetail('$150.00', '20', '30', '$3,000.00'),
+    ], 'f')
+
+    expect(vest.quantity).toBe(630)
+    expect(vest.price).toBe(150)
+    expect(vest.notes).toContain('1000 shares vested, 420 sold for taxes ($63000.00), 630 net shares deposited')
+  })
+
+  it('flags a vest with no detail rows instead of recording a 0-share purchase', () => {
+    const [tx] = normalizeSchwabEquityAwardsTransactions([lapse('08/15/2024', '100')], 'f')
+
+    expect(tx.type).toBe(TransactionType.UNKNOWN)
+    expect(tx.quantity).toBe(100)
+    expect(tx.notes).toContain('missing its award detail row')
+  })
+
+  it('treats a wire transfer as a transfer', () => {
+    const [tx] = normalizeSchwabEquityAwardsTransactions([noDetails('07/01/2024', 'Wire Transfer')], 'f')
+    expect(tx.type).toBe(TransactionType.TRANSFER)
+  })
+})
