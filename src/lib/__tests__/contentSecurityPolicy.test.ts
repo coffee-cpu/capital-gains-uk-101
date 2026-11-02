@@ -44,7 +44,8 @@ describe('Content-Security-Policy', () => {
 
   it('blocks scripts from other origins, eval and plugins', () => {
     expect(viteConfig).toContain(`"script-src 'self' 'wasm-unsafe-eval'"`)
-    expect(viteConfig).not.toContain(`'unsafe-eval'"`)
+    // 'unsafe-eval' anywhere, other than as part of 'wasm-unsafe-eval'
+    expect(viteConfig).not.toMatch(/(?<!wasm-)'unsafe-eval'/)
     expect(viteConfig).toContain(`"object-src 'none'"`)
   })
 })

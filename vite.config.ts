@@ -100,9 +100,15 @@ function contentSecurityPolicy(): Plugin {
     name: 'content-security-policy',
     apply: 'build',
     transformIndexHtml(html) {
+      // Inserted right after the charset tag, which must stay first. Fail the
+      // build if it's missing, rather than silently shipping without a CSP.
+      const anchor = '<meta charset="UTF-8" />'
+      if (!html.includes(anchor)) {
+        throw new Error(`content-security-policy: "${anchor}" not found in index.html`)
+      }
       return html.replace(
-        '<meta charset="UTF-8" />',
-        `<meta charset="UTF-8" />\n    <meta http-equiv="Content-Security-Policy" content="${CONTENT_SECURITY_POLICY}" />`
+        anchor,
+        `${anchor}\n    <meta http-equiv="Content-Security-Policy" content="${CONTENT_SECURITY_POLICY}" />`
       )
     },
   }
