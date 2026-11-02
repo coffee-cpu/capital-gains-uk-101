@@ -361,6 +361,22 @@ describe('cgt-visualiser CLI', () => {
       expect(stderr).toContain('row 3: unrecognised type "SEL"')
     })
 
+    it('warns on stderr when rows repeated across overlapping files are written once', async () => {
+      const header = 'date,type,symbol,currency,quantity,price,total,fee\n'
+      const buy = '2024-01-02,BUY,VOD,GBP,100,1,100,0\n'
+      const year = join(tmp, 'vod-2024.csv')
+      const all = join(tmp, 'vod-all.csv')
+      const out = join(tmp, 'generic.csv')
+      writeFileSync(year, header + buy)
+      writeFileSync(all, header + buy + '2024-06-03,SELL,VOD,GBP,100,2,200,0\n')
+
+      const { code, stderr } = await run(['normalize', year, all, '-o', out])
+
+      expect(code).toBe(0)
+      expect(stderr).toContain('Warning: 1 row(s) also appeared in another input file')
+      expect(stderr).toContain('Wrote 2 transactions')
+    })
+
     it('requires an output file', async () => {
       const { code, stderr } = await run(['normalize', fixture('hmrc-hs284-example3.csv')])
 

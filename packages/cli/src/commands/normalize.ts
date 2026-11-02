@@ -1,6 +1,6 @@
 import { describeSkippedRows, importCSVText } from '../../../../src/lib/import'
 import { transactionsToGenericCSV } from '../../../../src/utils/csvExport'
-import { deduplicateTransactions } from '../../../../src/utils/deduplication'
+import { deduplicateTransactions, findOverlappingImports } from '../../../../src/utils/deduplication'
 import { GenericTransaction } from '../../../../src/types/transaction'
 import { InputFile } from '../inputs'
 import { CliError, ExitCode } from '../meta'
@@ -24,6 +24,8 @@ export function normalize(files: InputFile[]): {
   skippedFiles: string[]
   /** One message per file whose rows couldn't all be read */
   skippedRowMessages: string[]
+  /** Rows dropped because an identical row from the same broker is in another input file */
+  overlappingRows: number
 } {
   const transactions: GenericTransaction[] = []
   const seenFileIds = new Set<string>()
@@ -61,6 +63,13 @@ export function normalize(files: InputFile[]): {
     )
   }
 
-  const kept = deduplicateTransactions(transactions).filter(tx => !tx.ignored)
-  return { csv: transactionsToGenericCSV(kept) + '\n', transactions: kept.length, skippedFiles, skippedRowMessages }
+  const { kept: withoutOverlaps, removed } = findOverlappingImports(transactions)
+  const kept = deduplicateTransactions(withoutOverlaps).filter(tx => !tx.ignored)
+  return {
+    csv: transactionsToGenericCSV(kept) + '\n',
+    transactions: kept.length,
+    skippedFiles,
+    skippedRowMessages,
+    overlappingRows: removed.length,
+  }
 }
