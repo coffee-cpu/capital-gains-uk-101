@@ -20,6 +20,7 @@
 import type { TaxYearSummary, DisposalRecord } from '../../../types/cgt'
 import type { TaxYearFeature, TaxYearFeatureData } from './types'
 import { getAnnualExemptAmount } from '../allowances'
+import { netSameDayGains, splitGainsAndLosses } from '../sa108'
 
 /** The date when CGT rates changed (inclusive - disposals ON this date use new rates) */
 export const CGT_RATE_CHANGE_DATE = '2024-10-30'
@@ -123,25 +124,23 @@ export const cgtRateChange2024Feature: TaxYearFeature<CGTRateChange2024Data> = {
       (d) => d.disposal.date >= CGT_RATE_CHANGE_DATE
     )
 
-    // Calculate totals for before period
-    const gainsBeforeRateChange = disposalsBeforeChange
-      .filter((d) => d.gainOrLossGbp > 0)
-      .reduce((sum, d) => sum + d.gainOrLossGbp, 0)
+    // Same-day disposals of one asset are a single disposal with one net
+    // gain or loss (TCGA92/S105(1)(a)), as in the year totals. They always
+    // fall in the same period, so each period is netted on its own.
+    const netsBefore = netSameDayGains(disposalsBeforeChange)
+    const netsAfter = netSameDayGains(disposalsAfterChange)
+    const before = splitGainsAndLosses(netsBefore)
+    const after = splitGainsAndLosses(netsAfter)
 
-    const lossesBeforeRateChange = disposalsBeforeChange
-      .filter((d) => d.gainOrLossGbp < 0)
-      .reduce((sum, d) => sum + d.gainOrLossGbp, 0)
+    // Calculate totals for before period (losses as a negative amount)
+    const gainsBeforeRateChange = before.gainsGbp
+    const lossesBeforeRateChange = -before.lossesGbp || 0
 
     const netGainOrLossBeforeRateChange = gainsBeforeRateChange + lossesBeforeRateChange
 
     // Calculate totals for after period
-    const gainsAfterRateChange = disposalsAfterChange
-      .filter((d) => d.gainOrLossGbp > 0)
-      .reduce((sum, d) => sum + d.gainOrLossGbp, 0)
-
-    const lossesAfterRateChange = disposalsAfterChange
-      .filter((d) => d.gainOrLossGbp < 0)
-      .reduce((sum, d) => sum + d.gainOrLossGbp, 0)
+    const gainsAfterRateChange = after.gainsGbp
+    const lossesAfterRateChange = -after.lossesGbp || 0
 
     const netGainOrLossAfterRateChange = gainsAfterRateChange + lossesAfterRateChange
 
@@ -162,11 +161,11 @@ export const cgtRateChange2024Feature: TaxYearFeature<CGTRateChange2024Data> = {
       gainsBeforeRateChange,
       lossesBeforeRateChange,
       netGainOrLossBeforeRateChange,
-      disposalCountBeforeRateChange: disposalsBeforeChange.length,
+      disposalCountBeforeRateChange: netsBefore.length,
       gainsAfterRateChange,
       lossesAfterRateChange,
       netGainOrLossAfterRateChange,
-      disposalCountAfterRateChange: disposalsAfterChange.length,
+      disposalCountAfterRateChange: netsAfter.length,
       requiresAdjustment,
       annualExemptAmount: AEA_2024_25,
       totalNetGainOrLoss,

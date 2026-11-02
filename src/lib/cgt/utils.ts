@@ -336,26 +336,6 @@ export function calculateCostBasis(
 }
 
 /**
- * Calculate net proceeds for the matched portion of a disposal
- *
- * Selling fees are apportioned per unit and deducted from the price,
- * mirroring how calculateCostBasis adds them for acquisitions.
- *
- * @param disposal The sell transaction
- * @param quantityToMatch Number of shares/contracts being matched
- * @returns Net proceeds in GBP for the matched quantity
- */
-export function calculateNetProceeds(
-  disposal: EnrichedTransaction,
-  quantityToMatch: number
-): number {
-  const pricePerShare = getEffectivePrice(disposal)
-  const contractMultiplier = disposal.contract_size || 1
-  const proceedsPerShare = pricePerShare - getFeePerUnit(disposal)
-  return proceedsPerShare * quantityToMatch * contractMultiplier
-}
-
-/**
  * Gross proceeds for the matched portion of a disposal: the sale value before
  * selling fees.
  *
