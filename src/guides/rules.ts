@@ -68,7 +68,7 @@ const overview = rulePage({
 <p>The calculator does this matching for you, and shows which rule matched each sale.</p>
 
 <h2>3. Work out the gain or loss on each sale</h2>
-<p>Gain = sale proceeds − allowable costs. Allowable costs are what you paid for the matched shares, including dealing fees and stamp duty. Fees on the sale are deducted from the proceeds. Amounts in other currencies are converted to pounds (see <a href="${FOREIGN_CURRENCY_PATH}">foreign currency shares</a>).</p>
+<p>Gain = sale proceeds − allowable costs. Allowable costs are what you paid for the matched shares, including dealing fees and stamp duty. Fees on the sale are allowable costs too: on the SA108 form you enter the proceeds before fees and include the selling fees in allowable costs, which gives the same gain. Amounts in other currencies are converted to pounds (see <a href="${FOREIGN_CURRENCY_PATH}">foreign currency shares</a>).</p>
 
 <h2>4. Add up the year and deduct the allowance</h2>
 <p>Add the year’s gains, subtract the year’s losses, and then deduct the annual exempt amount. Losses from earlier years can reduce the rest, if you reported them to HMRC (you have 4 years from the end of the tax year to claim a loss).</p>

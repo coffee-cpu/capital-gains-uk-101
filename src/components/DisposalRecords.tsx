@@ -98,6 +98,8 @@ export function DisposalRecords({
         {disposals.map((disposal) => {
           const isExpanded = expandedDisposal === disposal.id
           const isGain = disposal.gainOrLossGbp > 0
+          // Allowable costs are the matched acquisition costs plus the selling fees
+          const sellingFees = disposal.allowableCostsGbp - disposal.matchings.reduce((sum, m) => sum + m.totalCostBasisGbp, 0)
 
           return (
             <div key={disposal.id} className="px-6 py-4 hover:bg-gray-50">
@@ -260,6 +262,12 @@ export function DisposalRecords({
                         <span>Less: Allowable costs:</span>
                         <span>({formatGbp(disposal.allowableCostsGbp)})</span>
                       </div>
+                      {sellingFees > 0.005 && (
+                        <div className="flex justify-between text-xs text-blue-700 pl-3">
+                          <span>includes selling fees</span>
+                          <span>{formatGbp(sellingFees)}</span>
+                        </div>
+                      )}
                       <div className="flex justify-between font-bold border-t border-blue-200 pt-1 mt-1">
                         <span>Gain/(Loss):</span>
                         <span className={isGain ? 'text-green-700' : 'text-red-700'}>

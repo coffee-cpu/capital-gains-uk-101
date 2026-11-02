@@ -99,10 +99,10 @@ describe('Options Short Sell', () => {
     console.log('Allowable costs GBP:', disposal.allowableCostsGbp)
     console.log('Gain/Loss GBP:', disposal.gainOrLossGbp)
 
-    // The proceeds should be calculated as: price * quantity * contract_size - fees
-    // = $1.10 * 4 * 100 - $2.65 = $437.35
-    expect(disposal.proceedsGbp).toBeCloseTo(437.35, 2)
-    expect(disposal.allowableCostsGbp).toBe(0)
+    // Gross proceeds: price * quantity * contract_size = $1.10 * 4 * 100 = $440
+    // The $2.65 fee is an allowable cost, so the gain is still $437.35
+    expect(disposal.proceedsGbp).toBeCloseTo(440, 2)
+    expect(disposal.allowableCostsGbp).toBeCloseTo(2.65, 2)
     expect(disposal.gainOrLossGbp).toBeCloseTo(437.35, 2)
   })
 
@@ -205,8 +205,8 @@ describe('Options Short Sell', () => {
     const optionsDisposal = result.disposals.find(d => d.disposal.symbol.includes('DELL 07/03/2025'))
     expect(optionsDisposal).toBeDefined()
     expect(optionsDisposal!.matchings[0]?.rule).toBe('SHORT_SELL')
-    expect(optionsDisposal!.proceedsGbp).toBeCloseTo(146.69, 2)
-    expect(optionsDisposal!.allowableCostsGbp).toBe(0)
+    expect(optionsDisposal!.proceedsGbp).toBeCloseTo(150, 2) // gross; the $3.31 fee is a cost
+    expect(optionsDisposal!.allowableCostsGbp).toBeCloseTo(3.31, 2)
     expect(optionsDisposal!.gainOrLossGbp).toBeCloseTo(146.69, 2)
 
     // Find the stock disposal
@@ -322,8 +322,8 @@ describe('Options Short Sell', () => {
     const optionsDisposal = result.disposals[0]
     expect(optionsDisposal.disposal.symbol).toBe('RKLB 06/13/2025 27.00 P')
     expect(optionsDisposal.matchings[0]?.rule).toBe('SHORT_SELL')
-    expect(optionsDisposal.proceedsGbp).toBeCloseTo(543.35, 2)
-    expect(optionsDisposal.allowableCostsGbp).toBe(0)
+    expect(optionsDisposal.proceedsGbp).toBeCloseTo(550, 2) // gross; the $6.65 fee is a cost
+    expect(optionsDisposal.allowableCostsGbp).toBeCloseTo(6.65, 2)
     expect(optionsDisposal.gainOrLossGbp).toBeCloseTo(543.35, 2)
 
     // Verify RKLB shares are in Section 104 pool
@@ -455,10 +455,10 @@ describe('Options Short Sell', () => {
     console.log('Gain:', smci1200Disposal!.gainOrLossGbp)
     console.log('Rule:', smci1200Disposal!.matchings[0]?.rule)
 
-    // Expected: Proceeds $4,149.31, Cost $950.66, Gain $3,198.65
+    // Expected: gross proceeds $4,150, cost $951.35 (950.66 + $0.69 selling fee), gain $3,198.65
     // Note: Same-day Sell to Open + Buy to Close on 03/18 should match
-    expect(smci1200Disposal!.proceedsGbp).toBeCloseTo(4149.31, 0)
-    expect(smci1200Disposal!.allowableCostsGbp).toBeCloseTo(950.66, 0)
+    expect(smci1200Disposal!.proceedsGbp).toBeCloseTo(4150, 0)
+    expect(smci1200Disposal!.allowableCostsGbp).toBeCloseTo(951.35, 0)
     expect(smci1200Disposal!.gainOrLossGbp).toBeCloseTo(3198.65, 0)
 
     // Find the 1010.00 C disposal (next-day close)
@@ -470,10 +470,10 @@ describe('Options Short Sell', () => {
     console.log('Gain:', smci1010Disposal!.gainOrLossGbp)
     console.log('Rule:', smci1010Disposal!.matchings[0]?.rule)
 
-    // Expected: Proceeds $5,549.30, Cost $600.66, Gain $4,948.64
+    // Expected: gross proceeds $5,550, cost $601.36 (600.66 + $0.70 selling fee), gain $4,948.64
     // Short sell rule: Sell to Open on 03/18, Buy to Close on 03/19
-    expect(smci1010Disposal!.proceedsGbp).toBeCloseTo(5549.30, 0)
-    expect(smci1010Disposal!.allowableCostsGbp).toBeCloseTo(600.66, 0)
+    expect(smci1010Disposal!.proceedsGbp).toBeCloseTo(5550, 0)
+    expect(smci1010Disposal!.allowableCostsGbp).toBeCloseTo(601.36, 0)
     expect(smci1010Disposal!.gainOrLossGbp).toBeCloseTo(4948.64, 0)
   })
 })

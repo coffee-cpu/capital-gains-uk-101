@@ -354,3 +354,30 @@ export function calculateNetProceeds(
   const proceedsPerShare = pricePerShare - getFeePerUnit(disposal)
   return proceedsPerShare * quantityToMatch * contractMultiplier
 }
+
+/**
+ * Gross proceeds for the matched portion of a disposal: the sale value before
+ * selling fees.
+ *
+ * SA108 asks for gross disposal proceeds, with incidental costs of disposal
+ * (commission, fees) included in allowable costs instead (TCGA92/S38). The
+ * gain is the same either way; only how it is split between the boxes differs.
+ */
+export function calculateGrossProceeds(
+  disposal: EnrichedTransaction,
+  quantityToMatch: number
+): number {
+  return getEffectivePrice(disposal) * quantityToMatch * (disposal.contract_size || 1)
+}
+
+/**
+ * Selling fees apportioned to the matched portion of a disposal. They are an
+ * allowable cost of disposal (TCGA92/S38(1)(c)).
+ */
+export function calculateDisposalFees(
+  disposal: EnrichedTransaction,
+  quantityToMatch: number
+): number {
+  return getFeePerUnit(disposal) * quantityToMatch * (disposal.contract_size || 1)
+}
+

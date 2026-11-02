@@ -91,8 +91,11 @@ test.describe('30-Day Rule - Multiple Same-Day Disposals', () => {
 
     await page.waitForTimeout(500)
 
-    // Should show 2 disposals (both Aug 1 SELLs)
-    await expect(page.getByRole('button', { name: /Disposals/ })).toContainText('2')
+    // Both Aug 1 SELLs are one disposal (same-day disposals of one share, TCGA92/S105(1)(a)),
+    // with the two sale records noted
+    const disposalsTile = page.getByRole('button', { name: /Disposals/ })
+    await expect(disposalsTile).toContainText('1')
+    await expect(disposalsTile).toContainText('2 sales; same-day sales of a share count as one')
 
     // Total proceeds should be based on actual matched shares, not double-counted
     // First SELL: 100 shares @ $38 = $3800

@@ -66,13 +66,18 @@ test.describe('HMRC HS284 Example 3 - Section 104 holding (Lobster plc)', () => 
   test('matches HMRC gain on the first sale (700 shares)', async ({ page }) => {
     const disposal = await openDisposal(page, 'LOBSTER', '2024-05-15')
     await expect(disposal.getByText('Section 104 Pool').first()).toBeVisible()
-    await expect(disposal).toContainText('Less: Allowable costs:(£2,930.67)')
+    // HMRC's pool cost £2,930.67 plus the £100 selling fee (proceeds are shown gross, as on SA108)
+    await expect(disposal).toContainText('total: £2,930.67')
+    await expect(disposal).toContainText('Less: Allowable costs:(£3,030.67)')
+    await expect(disposal).toContainText('includes selling fees£100.00')
     await expect(disposal).toContainText('Gain/(Loss):£329.33')
   })
 
   test('matches HMRC gain on the second sale (400 shares)', async ({ page }) => {
     const disposal = await openDisposal(page, 'LOBSTER', '2025-02-03')
-    await expect(disposal).toContainText('Less: Allowable costs:(£1,674.67)')
+    // HMRC's pool cost £1,674.67 plus the £105 selling fee
+    await expect(disposal).toContainText('total: £1,674.67')
+    await expect(disposal).toContainText('Less: Allowable costs:(£1,779.67)')
     await expect(disposal).toContainText('Gain/(Loss):£300.33')
   })
 

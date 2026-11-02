@@ -6,7 +6,8 @@ import { sameDayStage } from './sameDayMatcher'
 import { thirtyDayStage } from './thirtyDayMatcher'
 import { section104Stage } from './section104Pool'
 import { getTaxYearBounds } from '../../utils/taxYear'
-import { getEffectiveQuantity, isAcquisition, isDisposal, calculateNetProceeds, hasGbpPrice, QUANTITY_EPSILON } from './utils'
+import { getEffectiveQuantity, isAcquisition, isDisposal, calculateGrossProceeds, calculateDisposalFees, hasGbpPrice, QUANTITY_EPSILON } from './utils'
+import { netSameDayGains, splitGainsAndLosses } from './sa108'
 import { calculateTaxYearFeatures } from './taxYearFeatures/registry'
 import { getAnnualExemptAmount, getDividendAllowance } from './allowances'
 
@@ -124,21 +125,23 @@ function createDisposalRecords(matchings: MatchingResult[]): DisposalRecord[] {
     const unmatchedQuantity = disposalQuantity - totalMatchedQuantity
     const isIncomplete = unmatchedQuantity > QUANTITY_EPSILON
 
-    // Calculate proceeds - ONLY for matched portion to ensure accurate CGT calculation
+    // Proceeds and costs cover only the matched portion, so an unmatched
+    // remainder doesn't show as pure gain.
     //
-    // For options transactions, the price is quoted per-share but quantity is in contracts.
-    // Each contract typically represents 100 shares (contract_size), handled inside
-    // calculateNetProceeds.
-    const netProceeds = calculateNetProceeds(disposal, totalMatchedQuantity)
+    // Proceeds are gross (before selling fees) and the selling fees are an
+    // allowable cost, as SA108 reports them. Options prices are per share and
+    // quantities in contracts; both helpers apply contract_size.
+    const grossProceeds = calculateGrossProceeds(disposal, totalMatchedQuantity)
+    const disposalFees = calculateDisposalFees(disposal, totalMatchedQuantity)
 
-    // Sum up all allowable costs from matched acquisitions
+    // Acquisition costs from the matched acquisitions, plus the selling fees
     const totalCostBasis = disposalMatchings.reduce(
       (sum, matching) => sum + matching.totalCostBasisGbp,
-      0
+      disposalFees
     )
 
     // Calculate gain or loss (only for matched portion)
-    const gainOrLoss = netProceeds - totalCostBasis
+    const gainOrLoss = grossProceeds - totalCostBasis
 
     // A missing exchange rate values that side at £0. Section 104 matches
     // carry the pool's flag; their synthetic acquisition is priced at the
@@ -152,7 +155,7 @@ function createDisposalRecords(matchings: MatchingResult[]): DisposalRecord[] {
       id: `disposal-${disposalId}`,
       disposal,
       matchings: disposalMatchings,
-      proceedsGbp: netProceeds,
+      proceedsGbp: grossProceeds,
       allowableCostsGbp: totalCostBasis,
       gainOrLossGbp: gainOrLoss,
       taxYear: disposal.tax_year,
@@ -196,17 +199,16 @@ function generateTaxYearSummaries(
     const { startDate, endDate } = getTaxYearBounds(taxYear)
     const yearDisposals = byTaxYear.get(taxYear) || []
 
-    // Calculate CGT totals
-    const totalDisposals = yearDisposals.length
+    // Calculate CGT totals. Same-day disposals of one asset count as one
+    // disposal, with their gains and losses netted (TCGA92/S105(1)(a)), so
+    // these match the SA108 figures in the PDF and CLI.
+    const sameDayNets = netSameDayGains(yearDisposals)
+    const totalDisposals = sameDayNets.length
     const totalProceeds = yearDisposals.reduce((sum, d) => sum + d.proceedsGbp, 0)
     const totalAllowableCosts = yearDisposals.reduce((sum, d) => sum + d.allowableCostsGbp, 0)
 
-    // Separate gains and losses
-    const gains = yearDisposals.filter(d => d.gainOrLossGbp > 0)
-    const losses = yearDisposals.filter(d => d.gainOrLossGbp < 0)
-
-    const totalGains = gains.reduce((sum, d) => sum + d.gainOrLossGbp, 0)
-    const totalLosses = losses.reduce((sum, d) => sum + d.gainOrLossGbp, 0)
+    const { gainsGbp: totalGains, lossesGbp } = splitGainsAndLosses(sameDayNets)
+    const totalLosses = -lossesGbp || 0 // avoid -0 when there are no losses
 
     const netGainOrLoss = totalGains + totalLosses
 

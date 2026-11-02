@@ -239,11 +239,11 @@ describe('CGT Engine', () => {
       const result = calculateCGT(transactions)
 
       const disposal = result.disposals[0]
-      // Proceeds = 1500 - 10 = 1490
-      // Costs = 1000 + 10 = 1010
-      // Gain = 1490 - 1010 = 480
-      expect(disposal.proceedsGbp).toBe(1490)
-      expect(disposal.allowableCostsGbp).toBe(1010)
+      // Proceeds are gross: 1500 (selling fee goes into costs, as on SA108)
+      // Costs = 1000 + 10 buying fee + 10 selling fee = 1020
+      // Gain = 1500 - 1020 = 480
+      expect(disposal.proceedsGbp).toBe(1500)
+      expect(disposal.allowableCostsGbp).toBe(1020)
       expect(disposal.gainOrLossGbp).toBe(480)
     })
 
@@ -915,14 +915,14 @@ describe('CGT Engine', () => {
       expect(disposal.isIncomplete).toBe(true)
       expect(disposal.unmatchedQuantity).toBe(40)
 
-      // Proceeds only for matched 60 shares (150 - 0.1 fee/share) * 60
-      expect(disposal.proceedsGbp).toBeCloseTo(8994, 2) // (150 - 10/100) * 60
+      // Gross proceeds only for matched 60 shares
+      expect(disposal.proceedsGbp).toBeCloseTo(9000, 2) // 150 * 60
 
-      // Cost basis only for matched 60 shares
-      expect(disposal.allowableCostsGbp).toBeCloseTo(6010, 2) // 6000 + 10
+      // Cost basis only for matched 60 shares, plus their share of the selling fee
+      expect(disposal.allowableCostsGbp).toBeCloseTo(6016, 2) // 6000 + 10 + 10/100 * 60
 
       // Gain calculation: proceeds for matched 60 minus cost for 60
-      expect(disposal.gainOrLossGbp).toBeCloseTo(2984, 2) // 8994 - 6010
+      expect(disposal.gainOrLossGbp).toBeCloseTo(2984, 2) // 9000 - 6016
 
       // Should have one Section 104 matching with 60 shares
       expect(disposal.matchings).toHaveLength(1)
@@ -1288,5 +1288,46 @@ describe('missing exchange rates - rows with no price', () => {
 
     expect(result.disposals).toHaveLength(1)
     expect(result.disposals[0].missingFx).toBeUndefined()
+  })
+})
+
+describe('tax year totals - same-day disposals and gross proceeds', () => {
+  const tx = (overrides: Partial<EnrichedTransaction>): EnrichedTransaction => ({
+    id: 'tx', source: 'test', symbol: 'AAA', name: null, date: '2024-06-03', type: 'BUY',
+    quantity: 10, price: 100, currency: 'GBP', total: 1000, fee: 0, notes: null,
+    fx_rate: 1, price_gbp: 100, value_gbp: 1000, fee_gbp: 0, fx_source: 'Native GBP', fx_error: null,
+    tax_year: '2024/25',
+    ...overrides,
+  })
+
+  it('counts same-day sales of one share once and nets their gains and losses', () => {
+    // Both sales take the pool's cost; sell-1's large fee turns it into a loss
+    const result = calculateCGT([
+      tx({ id: 'buy', date: '2024-05-01', quantity: 20, total: 2000 }),
+      tx({ id: 'sell-1', type: 'SELL', quantity: 10, price: 105, price_gbp: 105, fee: 100, fee_gbp: 100 }),
+      tx({ id: 'sell-2', type: 'SELL', quantity: 10, price: 105, price_gbp: 105 }),
+    ])
+
+    const [loss, gain] = result.disposals.map(d => d.gainOrLossGbp)
+    expect(loss).toBeCloseTo(-50)
+    expect(gain).toBeCloseTo(50)
+
+    const summary = result.taxYearSummaries[0]
+    expect(summary.totalDisposals).toBe(1)
+    expect(summary.totalGainsGbp).toBeCloseTo(0)
+    expect(summary.totalLossesGbp).toBe(0)
+    expect(summary.netGainOrLossGbp).toBeCloseTo(0)
+  })
+
+  it('reports gross proceeds with selling fees in allowable costs, leaving the gain unchanged', () => {
+    const result = calculateCGT([
+      tx({ id: 'buy', date: '2024-05-01', fee: 5, fee_gbp: 5 }),
+      tx({ id: 'sell', type: 'SELL', price: 150, price_gbp: 150, fee: 7, fee_gbp: 7 }),
+    ])
+
+    const [disposal] = result.disposals
+    expect(disposal.proceedsGbp).toBeCloseTo(1500)
+    expect(disposal.allowableCostsGbp).toBeCloseTo(1012) // 1000 + 5 buying fee + 7 selling fee
+    expect(disposal.gainOrLossGbp).toBeCloseTo(488)
   })
 })
