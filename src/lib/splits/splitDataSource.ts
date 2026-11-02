@@ -51,6 +51,48 @@ export interface SplitDataSource {
 const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000
 
 /**
+ * Largest split multiplier accepted from fetched data, either way (1000:1 or
+ * 1:1000). Real splits sit well inside this (forward splits up to about 20:1,
+ * reverse splits rarely beyond 1:250); anything larger is bad data.
+ */
+export const MAX_SPLIT_MULTIPLIER = 1000
+
+/**
+ * Validate a fetched split record before it can change quantities.
+ *
+ * Fetched data changes every holding of the symbol, so a malformed record is
+ * dropped rather than trusted:
+ * - ratio sides must be positive finite numbers within MAX_SPLIT_MULTIPLIER
+ * - the date must be a real YYYY-MM-DD date inside the year file it came from
+ * - the date must not be in the future: an announced split that hasn't taken
+ *   effect yet would otherwise multiply every current holding now
+ *
+ * @param today ISO date (YYYY-MM-DD) to compare against; defaults to now (UTC)
+ */
+export function isValidSplitRecord(
+  record: { symbol?: unknown; date?: unknown; ratioNew?: unknown; ratioOld?: unknown },
+  year: number,
+  today: string = new Date().toISOString().slice(0, 10)
+): boolean {
+  if (typeof record.symbol !== 'string' || !record.symbol.trim()) return false
+  if (typeof record.date !== 'string') return false
+
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(record.date)
+  if (!match) return false
+  const [, y, m, d] = match.map(Number)
+  const parsed = new Date(Date.UTC(y, m - 1, d))
+  if (parsed.getUTCFullYear() !== y || parsed.getUTCMonth() !== m - 1 || parsed.getUTCDate() !== d) return false
+  if (y !== year) return false
+  if (record.date > today) return false
+
+  const { ratioNew, ratioOld } = record
+  if (typeof ratioNew !== 'number' || typeof ratioOld !== 'number') return false
+  if (!Number.isFinite(ratioNew) || !Number.isFinite(ratioOld) || ratioNew <= 0 || ratioOld <= 0) return false
+  const multiplier = ratioNew / ratioOld
+  return multiplier <= MAX_SPLIT_MULTIPLIER && multiplier >= 1 / MAX_SPLIT_MULTIPLIER
+}
+
+/**
  * Fetches stock split data from the coffee-cpu/stock-splits-data repo via jsDelivr CDN.
  *
  * - Maps CDN ratioNew/ratioOld fields to internal ratioTo/ratioFrom
@@ -77,7 +119,7 @@ export class JsDelivrSplitSource implements SplitDataSource {
     // Check cache first
     const cached = await this.getCached(year)
     if (cached && !this.isStale(cached.fetchedAt)) {
-      return this.parseCdnData(cached.data)
+      return this.parseCdnData(cached.data, year)
     }
 
     // Fetch from CDN
@@ -102,11 +144,11 @@ export class JsDelivrSplitSource implements SplitDataSource {
         fetchedAt: new Date().toISOString(),
       })
 
-      return this.parseCdnData(text)
+      return this.parseCdnData(text, year)
     } catch {
       // Network failure: use stale cache if available
       if (cached) {
-        return this.parseCdnData(cached.data)
+        return this.parseCdnData(cached.data, year)
       }
       this.unavailableYears.add(year)
       return []
@@ -126,31 +168,27 @@ export class JsDelivrSplitSource implements SplitDataSource {
     return age > CACHE_TTL_MS
   }
 
-  private parseCdnData(jsonText: string): SplitRecord[] {
+  private parseCdnData(jsonText: string, year: number): SplitRecord[] {
     try {
       const data: CdnSplitYearData = JSON.parse(jsonText)
       if (!data.splits || !Array.isArray(data.splits)) {
         return []
       }
       return data.splits
-        .map(s => this.parseCdnRecord(s))
+        .map(s => this.parseCdnRecord(s, year))
         .filter((r): r is SplitRecord => r !== null)
     } catch {
       return []
     }
   }
 
-  private parseCdnRecord(record: CdnSplitRecord): SplitRecord | null {
-    if (!record.symbol || !record.date) {
+  private parseCdnRecord(record: CdnSplitRecord, year: number): SplitRecord | null {
+    if (!isValidSplitRecord(record, year)) {
       return null
     }
 
     const ratioTo = record.ratioNew
     const ratioFrom = record.ratioOld
-
-    if (!ratioTo || !ratioFrom || ratioFrom === 0 || ratioTo === 0) {
-      return null
-    }
 
     return {
       symbol: record.symbol,
