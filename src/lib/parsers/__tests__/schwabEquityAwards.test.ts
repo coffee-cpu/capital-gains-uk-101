@@ -331,4 +331,17 @@ describe('normalizeSchwabEquityAwardsTransactions - row grouping', () => {
     expect(vest.price).toBe(150)
     expect(vest.notes).toContain('1000 shares vested, 420 sold for taxes ($63000.00), 630 net shares deposited')
   })
+
+  it('flags a vest with no detail rows instead of recording a 0-share purchase', () => {
+    const [tx] = normalizeSchwabEquityAwardsTransactions([lapse('08/15/2024', '100')], 'f')
+
+    expect(tx.type).toBe(TransactionType.UNKNOWN)
+    expect(tx.quantity).toBe(100)
+    expect(tx.notes).toContain('missing its award detail row')
+  })
+
+  it('treats a wire transfer as a transfer', () => {
+    const [tx] = normalizeSchwabEquityAwardsTransactions([noDetails('07/01/2024', 'Wire Transfer')], 'f')
+    expect(tx.type).toBe(TransactionType.TRANSFER)
+  })
 })

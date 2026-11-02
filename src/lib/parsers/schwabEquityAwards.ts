@@ -87,8 +87,28 @@ function normalizeSchwabEquityAwardsPair(
 
   // Type mapping
   let type: typeof TransactionType[keyof typeof TransactionType]
-  if (action.toLowerCase().includes('lapse')) {
+  const actionLower = action.toLowerCase()
+  if (actionLower.includes('lapse') && detailRows.length === 0) {
+    // The award details (fair market value, net shares) are missing, e.g. a
+    // truncated export. Flag the row rather than record a 0-share purchase.
+    return {
+      id: `${fileId}-${rowIndex}`,
+      source: 'Charles Schwab Equity Awards',
+      symbol,
+      name: description,
+      date,
+      type: TransactionType.UNKNOWN,
+      quantity: totalQuantity || null,
+      price: null,
+      currency: 'USD',
+      total: null,
+      fee: null,
+      notes: 'RSU vest is missing its award detail row (fair market value and net shares), so it could not be read',
+    }
+  } else if (actionLower.includes('lapse')) {
     type = TransactionType.BUY // RSU vest = acquiring shares
+  } else if (actionLower.includes('wire') || actionLower.includes('transfer')) {
+    type = TransactionType.TRANSFER // cash or shares moved out; not a disposal
   } else {
     // Return UNKNOWN for unrecognized actions
     console.warn(`Unknown Schwab Equity Awards action: "${action}", marking as UNKNOWN`)
