@@ -371,6 +371,8 @@ describe('parseNumber - currency codes', () => {
     expect(parseNumber('12.50 GBP')).toBe(12.5)
     expect(parseNumber('$1,234.56')).toBe(1234.56)
     expect(parseNumber('2.63622E-05')).toBeCloseTo(0.0000263622)
+    expect(parseNumber('(1,234.56)')).toBe(-1234.56)
+    expect(parseNumber('($5.00)')).toBe(-5)
     expect(parseNumber('N/A')).toBeUndefined()
     expect(parseNumber('')).toBeUndefined()
   })
