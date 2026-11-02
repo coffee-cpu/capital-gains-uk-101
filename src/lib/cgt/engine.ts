@@ -323,7 +323,7 @@ function generateTaxYearSummaries(
  * stores withholding as a positive amount, so for other sources any sign
  * counts as tax withheld.
  */
-function withheldAmountGbp(tx: EnrichedTransaction): number {
+export function withheldAmountGbp(tx: EnrichedTransaction): number {
   const value = tx.value_gbp ?? 0
   return tx.source === 'Interactive Brokers' ? -value : Math.abs(value)
 }

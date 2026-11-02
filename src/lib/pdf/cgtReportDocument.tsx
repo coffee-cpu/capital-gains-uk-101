@@ -1,4 +1,4 @@
-import type { TaxYearSummary, DisposalRecord } from '../../types/cgt'
+import type { TaxYearSummary, DisposalRecord, Section104Pool } from '../../types/cgt'
 import type { EnrichedTransaction } from '../../types/transaction'
 import { renderAllFeaturePDFSections } from '../cgt/taxYearFeatures/pdfRenderers'
 import { formatGbp } from '../../utils/currency'
@@ -6,11 +6,17 @@ import {
   getEffectivePrice,
   getEffectiveQuantity,
   getUnitLabel,
-  isAcquisition,
-  isDisposal,
   isFullyUnmatched,
   QUANTITY_EPSILON,
 } from '../cgt/utils'
+import {
+  dividendLines,
+  findReportDataIssues,
+  fxSourcesUsed,
+  hasMissingFx,
+  poolBalancesAt,
+  sa108Rows,
+} from './reportData'
 
 /**
  * CGT report PDF document, shared by the web app's "Export PDF" button and the
@@ -29,6 +35,7 @@ function createStyles(StyleSheet: PdfLibrary['StyleSheet']) {
   return StyleSheet.create({
   page: {
     padding: 40,
+    paddingBottom: 70,
     fontSize: 10,
     fontFamily: 'Helvetica',
   },
@@ -105,6 +112,11 @@ function createStyles(StyleSheet: PdfLibrary['StyleSheet']) {
     fontSize: 12,
     fontFamily: 'Helvetica-Bold',
   },
+  note: {
+    fontSize: 7,
+    color: '#6b7280',
+    marginTop: 4,
+  },
   disclaimer: {
     fontSize: 7,
     color: '#6b7280',
@@ -129,6 +141,14 @@ function createStyles(StyleSheet: PdfLibrary['StyleSheet']) {
     fontSize: 8,
     color: '#ffffff',
     lineHeight: 1.4,
+  },
+  pageNumber: {
+    position: 'absolute',
+    bottom: 11,
+    right: 40,
+    fontSize: 8,
+    color: '#ffffff',
+    textAlign: 'right',
   },
   footerBold: {
     fontFamily: 'Helvetica-Bold',
@@ -190,6 +210,8 @@ export interface PDFDocumentProps {
   disposals: DisposalRecord[]
   transactions: EnrichedTransaction[]
   includeTransactions?: boolean
+  /** Section 104 pools from the CGT result, for the year-end holdings table */
+  section104Pools?: Map<string, Section104Pool>
 }
 
 /**
@@ -214,62 +236,13 @@ function quantityWithUnit(value: number, tx: { underlying_symbol?: string | null
   return `${formatted} ${getUnitLabel(tx, formatted !== '1')}`
 }
 
-const INCOME_TYPES = new Set<string>(['DIVIDEND', 'INTEREST', 'TAX_ON_DIVIDEND', 'TAX_ON_INTEREST'])
+/** Cards with more matching lines than this may split across pages rather than overflow one */
+const MAX_UNBROKEN_CARD_LINES = 40
 
-export interface ReportDataIssues {
-  /** Transactions with no GBP exchange rate that feed this year's figures, by currency */
-  missingFx: Array<{ currency: string; count: number }>
-  /** Disposals in the year that could not be fully matched to acquisitions */
-  incompleteDisposals: DisposalRecord[]
-}
-
-/**
- * Problems in the imported data that make this year's report wrong or
- * incomplete. A missing FX rate counts for a trade up to the year end in an
- * asset disposed of this year (earlier trades feed its Section 104 pool cost),
- * for any acquisition matched to this year's disposals (a 30-day buy-back can
- * fall after the year end), and for income within the year.
- */
-export function findReportDataIssues(
-  taxYearSummary: TaxYearSummary,
-  disposals: DisposalRecord[],
-  transactions: EnrichedTransaction[]
-): ReportDataIssues {
-  const disposedSymbols = new Set(disposals.map(d => d.disposal.symbol))
-  const counts = new Map<string, number>()
-  const seen = new Set<string>()
-  const add = (tx: EnrichedTransaction) => {
-    if (seen.has(tx.id)) return
-    seen.add(tx.id)
-    counts.set(tx.currency, (counts.get(tx.currency) ?? 0) + 1)
-  }
-  for (const tx of transactions) {
-    if (tx.ignored || !tx.fx_error || tx.date > taxYearSummary.endDate) continue
-    const affectsGains = (isAcquisition(tx) || isDisposal(tx)) && disposedSymbols.has(tx.symbol)
-    const affectsIncome = INCOME_TYPES.has(tx.type) && tx.date >= taxYearSummary.startDate
-    if (affectsGains || affectsIncome) add(tx)
-  }
-  // Acquisitions matched to this year's disposals, including 30-day
-  // buy-backs that fall after the year end
-  for (const d of disposals) {
-    for (const m of d.matchings) {
-      for (const acq of m.acquisitions) {
-        if (acq.transaction.fx_error && !acq.transaction.ignored) add(acq.transaction)
-      }
-    }
-  }
-  return {
-    missingFx: [...counts].map(([currency, count]) => ({ currency, count })),
-    incompleteDisposals: disposals.filter(d => d.isIncomplete),
-  }
-}
-
-/** True when the disposal or any acquisition matched against it has no GBP rate */
-function hasMissingFx(disposal: DisposalRecord): boolean {
-  return (
-    !!disposal.disposal.fx_error ||
-    disposal.matchings.some(m => m.acquisitions.some(acq => !!acq.transaction.fx_error))
-  )
+/** OPTIONS_BUY_TO_OPEN → "Options buy to open", TAX_ON_DIVIDEND → "Tax on dividend" */
+export function formatTransactionType(type: string): string {
+  const words = type.toLowerCase().replace(/_/g, ' ')
+  return words.charAt(0).toUpperCase() + words.slice(1)
 }
 
 export const REPORT_DISCLAIMER =
@@ -286,7 +259,7 @@ function createCGTReportDocument(
   View: PdfLibrary['View'],
   styles: PdfStyles
 ) {
-  return ({ taxYearSummary, disposals, transactions, includeTransactions }: PDFDocumentProps) => {
+  return ({ taxYearSummary, disposals, transactions, includeTransactions, section104Pools }: PDFDocumentProps) => {
     const formatCurrency = formatGbp
     const formatDate = formatReportDate
 
@@ -299,14 +272,24 @@ function createCGTReportDocument(
 
     const issues = findReportDataIssues(taxYearSummary, disposals, transactions)
     const hasIssues = issues.missingFx.length > 0 || issues.incompleteDisposals.length > 0
+    const fxSources = fxSourcesUsed(taxYearSummary, disposals, transactions)
+    const sa108 = sa108Rows(taxYearSummary.taxYear, disposals)
+    const dividends = dividendLines(taxYearSummary, transactions)
+    const hasInterest = taxYearSummary.totalInterest > 0
+    const poolBalances = poolBalancesAt(section104Pools, taxYearSummary.endDate)
 
     return (
       <Document>
         <Page size="A4" style={styles.page}>
           {/* Title */}
           <Text style={styles.title}>Capital Gains Tax Report</Text>
-          <Text style={{ fontSize: 12, marginBottom: 20, color: '#6b7280' }}>
+          <Text style={{ fontSize: 12, marginBottom: 4, color: '#6b7280' }}>
             Tax Year {taxYearSummary.taxYear} ({formatDate(taxYearSummary.startDate)} to {formatDate(taxYearSummary.endDate)})
+          </Text>
+          <Text style={{ fontSize: 8, marginBottom: 20, color: '#6b7280' }}>
+            {fxSources.length > 0
+              ? `Exchange rates: ${fxSources.join(', ')}`
+              : 'Exchange rates: none needed (all amounts are in GBP)'}
           </Text>
 
           {/* Data problems that make the figures below wrong or incomplete */}
@@ -357,7 +340,7 @@ function createCGTReportDocument(
             </View>
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Total Losses:</Text>
-              <Text style={[styles.summaryValue, { color: '#dc2626' }]}>
+              <Text style={[styles.summaryValue, taxYearSummary.totalLossesGbp < 0 ? { color: '#dc2626' } : {}]}>
                 {formatCurrency(taxYearSummary.totalLossesGbp)}
               </Text>
             </View>
@@ -367,42 +350,106 @@ function createCGTReportDocument(
                 {formatCurrency(taxYearSummary.netGainOrLossGbp)}
               </Text>
             </View>
-            <View style={styles.summaryRow}>
+            <View style={[styles.summaryRow, { marginTop: 6 }]}>
               <Text style={styles.summaryLabel}>Annual Exempt Amount:</Text>
               <Text style={styles.summaryValue}>{formatCurrency(taxYearSummary.annualExemptAmount)}</Text>
             </View>
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>Taxable Gain:</Text>
-              <Text style={[styles.totalValue, { color: '#dc2626' }]}>
+              <Text style={[styles.totalValue, taxYearSummary.taxableGainGbp > 0 ? { color: '#dc2626' } : {}]}>
                 {formatCurrency(taxYearSummary.taxableGainGbp)}
               </Text>
             </View>
           </View>
 
-          {/* SA106 Foreign Dividend Summary */}
-          {taxYearSummary.grossDividendsGbp > 0 && (
-            <>
-              <Text style={styles.subtitle}>SA106 Foreign Income Summary</Text>
-              <View style={[styles.summaryBox, { backgroundColor: '#fffbeb', borderWidth: 1, borderColor: '#fde68a' }]}>
-                <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>Gross Dividends (before tax withheld):</Text>
-                  <Text style={styles.summaryValue}>{formatCurrency(taxYearSummary.grossDividendsGbp)}</Text>
-                </View>
-                <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>Tax Withheld at Source:</Text>
-                  <Text style={styles.summaryValue}>{formatCurrency(taxYearSummary.totalWithholdingTaxGbp)}</Text>
-                </View>
-                <View style={styles.totalRow}>
-                  <Text style={styles.totalLabel}>Net Dividends Received:</Text>
-                  <Text style={styles.totalValue}>
-                    {formatCurrency(taxYearSummary.grossDividendsGbp - taxYearSummary.totalWithholdingTaxGbp)}
+          {/* SA108 figures, per section of the form */}
+          {sa108.length > 0 && (
+            <View wrap={false}>
+              <Text style={styles.subtitle}>SA108 Capital Gains Summary</Text>
+              <View style={styles.summaryBox}>
+                {sa108.map(row => {
+                  const box = (n: string | undefined) => (n ? ` (box ${n})` : '')
+                  return (
+                    <View key={row.category} style={{ marginBottom: 8 }}>
+                      <Text style={{ fontSize: 9, fontFamily: 'Helvetica-Bold', marginBottom: 3 }}>
+                        {row.section ? `${row.label}: "${row.section}" section` : `${row.label}: section not decided by this report`}
+                      </Text>
+                      {([
+                        ['Number of disposals', row.boxes?.number, String(row.numberOfDisposals)],
+                        ['Disposal proceeds', row.boxes?.proceeds, formatCurrency(row.proceedsGbp)],
+                        ['Allowable costs (including purchase price)', row.boxes?.costs, formatCurrency(row.costsGbp)],
+                        ['Gains in the year, before losses', row.boxes?.gains, formatCurrency(row.gainsGbp)],
+                        ['Losses in the year', row.boxes?.losses, formatCurrency(row.lossesGbp)],
+                      ] as const).map(([label, n, value]) => (
+                        <View key={label} style={styles.summaryRow}>
+                          <Text style={styles.summaryLabel}>{label + box(n)}</Text>
+                          <Text style={styles.summaryValue}>{value}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  )
+                })}
+                <Text style={styles.note}>
+                  {'Assets are grouped by broker: disposals imported from Coinbase or Coinbase Pro are treated as cryptoassets, ' +
+                    'options as options, and everything else as listed shares and securities. Move any that belong elsewhere, ' +
+                    'such as unlisted shares or crypto bought through another broker. Same-day disposals of the same asset ' +
+                    'count as one disposal. Losses are shown as positive amounts, as the form asks.'}
+                </Text>
+                {sa108.some(row => row.category === 'OPTIONS') && (
+                  <Text style={styles.note}>
+                    Check HMRC's SA108 notes for the section your options belong in.
                   </Text>
-                </View>
-                <Text style={{ fontSize: 7, color: '#92400e', marginTop: 8 }}>
-                  Use these figures when completing SA106 (Foreign). You may be able to claim Foreign Tax Credit Relief for tax withheld.
+                )}
+                {sa108.some(row => row.category !== 'OPTIONS' && !row.boxes) && (
+                  <Text style={styles.note}>
+                    {`Box numbers for ${taxYearSummary.taxYear} are not built into this report: find the boxes by their names on your SA108.`}
+                  </Text>
+                )}
+              </View>
+            </View>
+          )}
+
+          {/* Dividend and interest income */}
+          {(dividends.length > 0 || hasInterest) && (
+            <View>
+              <Text style={styles.subtitle} minPresenceAhead={60}>Dividend and Interest Income</Text>
+              <View style={[styles.summaryBox, { backgroundColor: '#fffbeb', borderWidth: 1, borderColor: '#fde68a' }]}>
+                {dividends.length > 0 && (
+                  <>
+                    <View style={[styles.summaryRow, { borderBottomWidth: 1, borderBottomColor: '#fde68a', paddingBottom: 2 }]}>
+                      <Text style={[styles.summaryLabel, { width: '50%', fontFamily: 'Helvetica-Bold' }]}>Dividends by holding</Text>
+                      <Text style={[styles.summaryLabel, { width: '25%', textAlign: 'right', fontFamily: 'Helvetica-Bold' }]}>Gross</Text>
+                      <Text style={[styles.summaryLabel, { width: '25%', textAlign: 'right', fontFamily: 'Helvetica-Bold' }]}>Tax withheld</Text>
+                    </View>
+                    {dividends.map(line => (
+                      <View key={line.symbol} style={styles.summaryRow} wrap={false}>
+                        <Text style={[styles.summaryLabel, { width: '50%' }]}>{line.symbol}</Text>
+                        <Text style={[styles.summaryLabel, { width: '25%', textAlign: 'right' }]}>{formatCurrency(line.grossGbp)}</Text>
+                        <Text style={[styles.summaryLabel, { width: '25%', textAlign: 'right' }]}>{formatCurrency(line.withheldGbp)}</Text>
+                      </View>
+                    ))}
+                    <View style={[styles.summaryRow, { borderTopWidth: 1, borderTopColor: '#fde68a', paddingTop: 2 }]}>
+                      <Text style={[styles.summaryValue, { width: '50%' }]}>Total dividends</Text>
+                      <Text style={[styles.summaryValue, { width: '25%', textAlign: 'right' }]}>{formatCurrency(taxYearSummary.grossDividendsGbp)}</Text>
+                      <Text style={[styles.summaryValue, { width: '25%', textAlign: 'right' }]}>{formatCurrency(taxYearSummary.totalWithholdingTaxGbp)}</Text>
+                    </View>
+                  </>
+                )}
+                {hasInterest && (
+                  <View style={[styles.summaryRow, { marginTop: dividends.length > 0 ? 6 : 0 }]}>
+                    <Text style={[styles.summaryValue, { width: '50%' }]}>Interest</Text>
+                    <Text style={[styles.summaryValue, { width: '25%', textAlign: 'right' }]}>{formatCurrency(taxYearSummary.grossInterestGbp)}</Text>
+                    <Text style={[styles.summaryValue, { width: '25%', textAlign: 'right' }]}>{formatCurrency(taxYearSummary.interestWithholdingTaxGbp)}</Text>
+                  </View>
+                )}
+                <Text style={[styles.note, { color: '#92400e' }]}>
+                  {'This report cannot tell UK income from foreign income. Dividends from UK companies and UK funds, and ' +
+                    'UK interest, go on the main tax return (SA100). Dividends and interest from abroad, including from ' +
+                    'Irish-domiciled funds, go on the Foreign pages (SA106), where you may be able to claim Foreign Tax ' +
+                    'Credit Relief for tax withheld. Dividends and interest are income, not capital gains.'}
                 </Text>
               </View>
-            </>
+            </View>
           )}
 
           {/* Tax Year Features - dynamically rendered based on registry */}
@@ -431,8 +478,9 @@ function createCGTReportDocument(
                   ? `Sale price: ${formatCurrency(getEffectivePrice(tx))} per underlying share` +
                     (tx.contract_size ? ` (${formatQuantity(tx.contract_size)} shares per contract)` : '')
                   : `Sale price: ${formatCurrency(getEffectivePrice(tx))} per ${unitSingular}`
+                const acquisitionLines = disposal.matchings.reduce((n, m) => n + 1 + m.acquisitions.length, 0)
                 return (
-                  <View key={disposal.id} style={styles.disposalCard}>
+                  <View key={disposal.id} style={styles.disposalCard} wrap={acquisitionLines > MAX_UNBROKEN_CARD_LINES}>
                     {/* Header: Symbol, Date, Quantity, Gain/Loss */}
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8, paddingBottom: 6, borderBottomWidth: 1, borderBottomColor: '#e5e7eb' }}>
                       <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
@@ -563,6 +611,32 @@ function createCGTReportDocument(
             </>
           )}
 
+          {/* Section 104 holdings at the year end */}
+          {poolBalances.length > 0 && (
+            <View>
+              <Text style={styles.subtitle} minPresenceAhead={60}>{`Section 104 Holdings at ${formatDate(taxYearSummary.endDate)}`}</Text>
+              <View style={styles.table}>
+                <View style={styles.tableHeader}>
+                  <Text style={[styles.tableHeaderCell, { width: '40%' }]}>Asset</Text>
+                  <Text style={[styles.tableHeaderCell, { width: '20%', textAlign: 'right' }]}>Quantity</Text>
+                  <Text style={[styles.tableHeaderCell, { width: '20%', textAlign: 'right' }]}>Pool cost</Text>
+                  <Text style={[styles.tableHeaderCell, { width: '20%', textAlign: 'right' }]}>Average cost</Text>
+                </View>
+                {poolBalances.map(pool => (
+                  <View key={pool.symbol} style={styles.tableRow} wrap={false}>
+                    <Text style={[styles.tableCell, { width: '40%' }]}>{pool.symbol}</Text>
+                    <Text style={[styles.tableCell, { width: '20%', textAlign: 'right' }]}>{formatQuantity(pool.quantity)}</Text>
+                    <Text style={[styles.tableCell, { width: '20%', textAlign: 'right' }]}>{formatCurrency(pool.costGbp)}</Text>
+                    <Text style={[styles.tableCell, { width: '20%', textAlign: 'right' }]}>{formatCurrency(pool.costGbp / pool.quantity)}</Text>
+                  </View>
+                ))}
+              </View>
+              <Text style={styles.note}>
+                The cost carried forward for next year's disposals. Quantities are adjusted for any later stock splits.
+              </Text>
+            </View>
+          )}
+
           {/* All Transactions (optional) */}
           {includeTransactions && filteredTransactions.length > 0 && (
             <>
@@ -582,7 +656,7 @@ function createCGTReportDocument(
                 {filteredTransactions.map((tx) => (
                   <View key={tx.id} style={styles.tableRow} wrap={false}>
                     <Text style={[styles.tableCell, { width: '11%' }]}>{formatDate(tx.date)}</Text>
-                    <Text style={[styles.tableCell, { width: '23%' }]}>{tx.type}</Text>
+                    <Text style={[styles.tableCell, { width: '23%' }]}>{formatTransactionType(tx.type)}</Text>
                     <Text style={[styles.tableCell, { width: '20%' }]}>{tx.symbol}</Text>
                     <Text style={[styles.tableCell, { width: '11%', textAlign: 'right' }]}>
                       {tx.quantity?.toFixed(2) ?? '-'}
@@ -608,18 +682,27 @@ function createCGTReportDocument(
           </View>
 
           {/* Footer */}
-          <View style={styles.footer}>
+          <View style={styles.footer} fixed>
             <View>
               <Text style={[styles.footerText, styles.footerBold]}>Capital Gains Tax Visualiser • cgtvisualiser.co.uk</Text>
               <Text style={styles.footerText}>Free, open source, privacy focused tool</Text>
             </View>
             <View>
-              <Text style={[styles.footerText, { textAlign: 'right' }]}>Generated:</Text>
               <Text style={[styles.footerText, { textAlign: 'right' }]}>
-                {new Date().toLocaleDateString('en-GB')}
+                {`Generated ${new Date().toLocaleDateString('en-GB')}`}
               </Text>
+              {/* Space for the page number, drawn separately below */}
+              <Text style={styles.footerText}> </Text>
             </View>
           </View>
+          {/* Page number, on top of the footer. Its style must not set a unitless
+              lineHeight: react-pdf re-applies it on every page for fixed
+              render-prop text, so it compounds until rendering fails. */}
+          <Text
+            fixed
+            style={styles.pageNumber}
+            render={({ pageNumber, totalPages }) => `Page ${pageNumber} of ${totalPages}`}
+          />
         </Page>
       </Document>
     )

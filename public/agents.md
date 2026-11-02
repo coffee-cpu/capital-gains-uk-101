@@ -134,7 +134,7 @@ npx -y cgt-visualiser@latest detect transactions.csv --format json   # "transact
 
 ## 6. Create a PDF report (optional)
 
-If the user wants a report to keep with their tax records, write a PDF for one tax year (version 0.3.0 and later). It is the same report as the web app's **Export PDF** button: the summary, every disposal with how it was matched, and the calculation.
+If the user wants a report to keep with their tax records, write a PDF for one tax year (version 0.3.0 and later). It is the same report as the web app's **Export PDF** button: the summary, the SA108 figures with box numbers, dividend and interest income, every disposal with how it was matched, the Section 104 holdings at the year end, and warnings about missing exchange rates or unmatched sales.
 
 ```bash
 npx -y cgt-visualiser@latest calculate statement1.csv statement2.csv --tax-year 2025/26 --format pdf -o CGT-Report-2025-26.pdf

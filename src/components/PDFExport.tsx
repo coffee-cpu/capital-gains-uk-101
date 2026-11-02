@@ -1,4 +1,4 @@
-import type { TaxYearSummary, DisposalRecord } from '../types/cgt'
+import type { TaxYearSummary, DisposalRecord, Section104Pool } from '../types/cgt'
 import type { EnrichedTransaction } from '../types/transaction'
 import { buildCGTReportDocument, pdfReportFileName } from '../lib/pdf/cgtReportDocument'
 
@@ -15,12 +15,14 @@ async function loadPdfLibrary() {
  * Generate and download a PDF report for the given tax year.
  * This function lazy-loads @react-pdf/renderer only when called.
  * @param includeTransactions - If true, includes a full list of all transactions up to the tax year end
+ * @param section104Pools - Pools from the CGT result, for the year-end holdings table
  */
 export async function generatePDFReport(
   taxYearSummary: TaxYearSummary,
   disposals: DisposalRecord[],
   transactions: EnrichedTransaction[],
-  includeTransactions: boolean = false
+  includeTransactions: boolean = false,
+  section104Pools?: Map<string, Section104Pool>
 ): Promise<void> {
   // Lazy-load the PDF library
   const library = await loadPdfLibrary()
@@ -30,6 +32,7 @@ export async function generatePDFReport(
     disposals,
     transactions,
     includeTransactions,
+    section104Pools,
   })
 
   const blob = await library.pdf(doc).toBlob()

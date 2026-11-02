@@ -3,11 +3,12 @@ import { isValidElement, type ReactElement, type ReactNode } from 'react'
 import * as reactPdf from '@react-pdf/renderer'
 import {
   buildCGTReportDocument,
-  findReportDataIssues,
   formatQuantity,
+  formatTransactionType,
   REPORT_DISCLAIMER,
   type ReactPdfLibrary,
 } from '../cgtReportDocument'
+import { findReportDataIssues } from '../reportData'
 import type { DisposalRecord, MatchingResult, TaxYearSummary } from '../../../types/cgt'
 import type { EnrichedTransaction } from '../../../types/transaction'
 
@@ -212,6 +213,58 @@ describe('CGT report document', () => {
     )
   })
 
+  it('shows the SA108 figures with box numbers for the year', () => {
+    const sell = tx({ id: 's' })
+    const lines = render([record(sell, [matching(sell, 10, 40)])])
+    expect(lines).toContain('Shares and funds: "Listed shares and securities" section')
+    expect(lines).toContain('Disposal proceeds (box 24)')
+    expect(lines).toContain('Gains in the year, before losses (box 26)')
+  })
+
+  it('lists dividends by holding, interest, and where each goes', () => {
+    const div = tx({ id: 'div', type: 'DIVIDEND', symbol: 'VUSA', value_gbp: 12, grossDividend_gbp: 12 })
+    const s = summary([])
+    s.grossDividendsGbp = 12
+    s.totalInterest = 1
+    s.grossInterestGbp = 3.5
+    const lines = textLines(buildCGTReportDocument(fakeLibrary, { taxYearSummary: s, disposals: [], transactions: [div] }))
+    expect(lines).toContain('Dividend and Interest Income')
+    expect(lines).toContain('VUSA')
+    expect(lines).toContain('Interest')
+    expect(lines).toContain('£3.50')
+    expect(lines.some(l => l.includes('cannot tell UK income from foreign income'))).toBe(true)
+    expect(lines.some(l => l.includes('SA106 Foreign Income Summary'))).toBe(false)
+  })
+
+  it('shows the Section 104 holdings at the year end', () => {
+    const pools = new Map([['AAPL', {
+      symbol: 'AAPL', quantity: 0, totalCostGbp: 0, averageCostGbp: 0,
+      history: [{ date: '2024-05-01', type: 'BUY' as const, quantity: 10, costOrProceeds: 1500, balanceQuantity: 10, balanceCost: 1500, transactionId: 'b' }],
+    }]])
+    const lines = textLines(buildCGTReportDocument(fakeLibrary, { taxYearSummary: summary([]), disposals: [], transactions: [], section104Pools: pools }))
+    expect(lines).toContain('Section 104 Holdings at 05/04/2025')
+    expect(lines).toContain('£1,500.00')
+    expect(lines).toContain('£150.00')
+  })
+
+  it('names the exchange-rate source', () => {
+    const sell = tx({ id: 's', currency: 'USD', fx_source: 'HMRC Monthly Exchange Rates' })
+    expect(render([record(sell, [matching(sell, 10, 40)])], [sell])).toContain('Exchange rates: HMRC Monthly Exchange Rates')
+    expect(render([])).toContain('Exchange rates: none needed (all amounts are in GBP)')
+  })
+
+  it('renders a many-page report with page numbers without crashing', async () => {
+    // A unitless lineHeight on the fixed page-number text compounds on every
+    // page and crashed rendering from about page 3
+    const disposals = Array.from({ length: 30 }, (_, i) => {
+      const sell = tx({ id: `s${i}`, symbol: `S${i}` })
+      return record(sell, [matching(sell, 10, 40)])
+    })
+    const doc = buildCGTReportDocument(reactPdf, { taxYearSummary: summary(disposals), disposals, transactions: [] })
+    const buffer = await reactPdf.renderToBuffer(doc)
+    expect(buffer.subarray(0, 5).toString()).toBe('%PDF-')
+  }, 30000)
+
   it('renders to a PDF with the real library', async () => {
     const sell = tx({ id: 's', fee_gbp: 0 })
     const disposals = [record(sell, [matching(sell, 10, 40)])]
@@ -253,6 +306,13 @@ describe('findReportDataIssues', () => {
     m.acquisitions = [{ transaction: buy, quantityMatched: 10, costBasisGbp: 0 }]
     const issues = findReportDataIssues(year, [record(sell, [m])], [sell, buy])
     expect(issues.missingFx).toEqual([{ currency: 'USD', count: 1 }])
+  })
+})
+
+describe('formatTransactionType', () => {
+  it('turns enum names into words', () => {
+    expect(formatTransactionType('OPTIONS_BUY_TO_OPEN')).toBe('Options buy to open')
+    expect(formatTransactionType('BUY')).toBe('Buy')
   })
 })
 
