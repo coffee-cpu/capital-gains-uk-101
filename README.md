@@ -74,7 +74,16 @@ Capital Gains Tax Visualiser helps you understand and calculate your capital gai
 4. **Calculating gains and losses** for each disposal with full audit trail
 5. **Generating tax year summaries** with total gains, losses, and taxable amounts
 
-All processing happens in your browser using IndexedDB for storage. No data is sent to any server.
+All processing happens in your browser using IndexedDB for storage. Your transactions are never uploaded. The app only fetches public reference data, and its Content Security Policy blocks connections to anywhere else:
+
+| Service | Used for | What a request reveals |
+|---|---|---|
+| hmrc.matchilling.com (mirror of HMRC's rates) | HMRC monthly exchange rates (default) | Year and month |
+| www.trade-tariff.service.gov.uk | HMRC yearly average rates (optional) | Year |
+| api.frankfurter.dev | ECB daily rates (optional) | Trade dates and currencies |
+| cdn.jsdelivr.net | Stock split data (can be turned off) | Years only, not which shares you hold |
+
+Like any web request, these reveal your IP address to the service.
 
 ### CGT Calculation Engine
 
