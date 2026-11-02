@@ -24,6 +24,8 @@ export interface ReportWarning {
     | 'TAX_YEAR_NOT_FOUND'
     | 'SPLIT_DATA_UNAVAILABLE'
     | 'SPLIT_DATA_REJECTED'
+    | 'SYMBOLS_MATCHED_BY_ISIN'
+    | 'TICKER_ISIN_CONFLICT'
     | 'SKIPPED_ROWS'
     | 'OVERLAPPING_ROWS_REMOVED'
     | 'SPLIT_RATIO_CONFLICT'
@@ -469,6 +471,24 @@ function collectWarnings(result: CGTCalculationResult, disposals: DisposalRecord
         `Fetched stock split data failed validation and was not applied: ` +
         `${rejectedSplits.map(r => `${r.symbol} on ${r.date} (${r.reason})`).join(', ')}. ` +
         'If that split really happened, quantities from that date are wrong: add a STOCK_SPLIT row with the ratio in a Generic CSV.',
+    })
+  }
+
+  for (const merge of result.dataNotices?.symbolMerges ?? []) {
+    warnings.push({
+      code: 'SYMBOLS_MATCHED_BY_ISIN',
+      message:
+        `${merge.mergedSymbols.join(', ')} treated as ${merge.symbol}: same ISIN ${merge.isin}, so they share ` +
+        'one Section 104 pool. Check this is the same security.',
+    })
+  }
+
+  for (const conflict of result.dataNotices?.tickerConflicts ?? []) {
+    warnings.push({
+      code: 'TICKER_ISIN_CONFLICT',
+      message:
+        `${conflict.symbol} appears with different ISINs (${conflict.isins.join(', ')}), so it names more than one ` +
+        'security. Rows with an ISIN are pooled per ISIN; rows of this ticker without an ISIN cannot be told apart.',
     })
   }
 

@@ -38,6 +38,7 @@ export const GenericTransactionSchema = z.object({
   fee: z.number().nullable().describe('Fee or commission amount'),
   notes: z.string().nullable().describe('Optional broker notes'),
   ratio: z.string().nullable().optional().describe('Stock split ratio (e.g., "10:1", "2:1", "1:10"). Only used for STOCK_SPLIT transactions.'),
+  isin: z.string().nullable().optional().describe('ISIN security identifier when the source gives one (e.g. Freetrade, Trading 212). Used to match the same security across brokers that use different tickers.'),
   incomplete: z.boolean().optional().describe('True if transaction is missing required data (e.g., Stock Plan Activity without price)'),
   ignored: z.boolean().optional().describe('True if transaction should be excluded from calculations (e.g., Stock Plan Activity which is always incomplete)'),
   is_short_sell: z.boolean().optional().describe('True if this is an explicit short sell as reported by the broker (e.g., Schwab "Sell Short" action)'),

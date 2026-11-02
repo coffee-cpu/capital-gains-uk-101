@@ -212,6 +212,7 @@ export function normalizeTrading212Transactions(
         date: parseDate(time),
         type,
         symbol: ticker || '',
+        isin: row['ISIN']?.trim() || null,
         name: name || null,
         quantity: quantity ?? null,
         price: normalizedPrice ?? null,

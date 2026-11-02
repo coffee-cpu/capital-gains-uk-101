@@ -447,3 +447,25 @@ describe('detectIssues - rejected split data', () => {
   })
 })
 
+
+describe('detectIssues - ISIN matching', () => {
+  it('reports tickers treated as one security, and tickers naming two', () => {
+    const results = createMockCGTResults({
+      dataNotices: {
+        overlappingRows: [],
+        splitConflicts: [],
+        symbolMerges: [{ isin: 'IE00B3XXRP09', symbol: 'VUSA', mergedSymbols: ['VUSAL'] }],
+        tickerConflicts: [{ symbol: 'BP', isins: ['GB0007980591', 'US0556221044'] }],
+      },
+    })
+    const issues = detectIssues([createMockTransaction()], results)
+
+    const merge = issues.find(i => i.id === 'symbols-matched-by-isin')!
+    expect(merge.type).toBe('info')
+    expect(merge.description).toContain('VUSAL treated as VUSA (same ISIN IE00B3XXRP09)')
+
+    const conflict = issues.find(i => i.id === 'ticker-isin-conflicts')!
+    expect(conflict.type).toBe('warning')
+    expect(conflict.description).toContain('BP appears with ISINs GB0007980591 and US0556221044')
+  })
+})

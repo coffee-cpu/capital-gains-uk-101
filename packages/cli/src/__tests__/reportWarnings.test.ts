@@ -28,3 +28,23 @@ describe('buildCalculateReport - rejected split data', () => {
     expect(warning.message).toContain('VOD on 2023-07-01 (ratio-out-of-range)')
   })
 })
+
+describe('buildCalculateReport - ISIN matching', () => {
+  it('warns when tickers were matched by ISIN or one ticker has two ISINs', () => {
+    const result = calculateCGT([])
+    result.dataNotices = {
+      overlappingRows: [],
+      splitConflicts: [],
+      symbolMerges: [{ isin: 'IE00B3XXRP09', symbol: 'VUSA', mergedSymbols: ['VUSAL'] }],
+      tickerConflicts: [{ symbol: 'BP', isins: ['GB0007980591', 'US0556221044'] }],
+    }
+
+    const report = buildCalculateReport(result, {
+      taxYear: null, fxSource: 'HMRC_MONTHLY', autoSplits: true, offline: false,
+      details: false, inputs: [], warnings: [],
+    })
+
+    expect(report.warnings.find(w => w.code === 'SYMBOLS_MATCHED_BY_ISIN')!.message).toContain('VUSAL treated as VUSA')
+    expect(report.warnings.find(w => w.code === 'TICKER_ISIN_CONFLICT')!.message).toContain('BP appears with different ISINs')
+  })
+})

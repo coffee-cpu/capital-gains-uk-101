@@ -1,5 +1,6 @@
 import { deduplicateTransactions, findOverlappingImports } from '../utils/deduplication'
 import { findSplitConflicts } from './enrichment/enrichers/splitEnricher'
+import { matchSymbolsByIsin } from './symbolMatching'
 import { enrichTransactions } from './enrichment'
 import { calculateCGT } from './cgt/engine'
 import { getAutoSplitsForTransactions, hasUsableRatio, HOLDING_TYPES } from './splits/splitLookupService'
@@ -43,7 +44,14 @@ export async function runPipeline(
   // Drop rows repeated across overlapping imports (kept for reporting), then
   // incomplete Stock Plan Activity when Equity Awards data exists
   const { kept, removed: overlappingRows } = findOverlappingImports(rawTransactions)
-  const deduplicated = deduplicateTransactions(kept)
+
+  // One symbol per security across brokers (by ISIN), before split lookup
+  // and matching, which both work per symbol
+  const {
+    transactions: deduplicated,
+    merges: symbolMerges,
+    conflicts: tickerConflicts,
+  } = matchSymbolsByIsin(deduplicateTransactions(kept))
 
   // Inject auto-fetched stock splits (not persisted, regenerated each run)
   let withAutoSplits = deduplicated
@@ -71,6 +79,8 @@ export async function runPipeline(
     overlappingRows,
     splitConflicts: findSplitConflicts(withAutoSplits),
     rejectedSplitRecords,
+    symbolMerges,
+    tickerConflicts,
   }
 
   return result

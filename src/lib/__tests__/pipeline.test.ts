@@ -145,4 +145,19 @@ describe('runPipeline', () => {
       expect(result!.dataNotices!.rejectedSplitRecords).toEqual([])
     })
   })
+
+  it('pools the same security bought under different tickers at two brokers', async () => {
+    const header = 'date,type,symbol,currency,quantity,price,total,fee,isin'
+    const brokerA = importCSVText([header, '2023-05-01,BUY,VUSA,GBP,10,50,500,0,IE00B3XXRP09'].join('\n'), 'a_csv-1').transactions
+    const brokerB = importCSVText([header, '2023-09-01,SELL,VUSAL,GBP,10,60,600,0,IE00B3XXRP09'].join('\n'), 'b_csv-2').transactions
+
+    const result = await runPipeline([...brokerA, ...brokerB], { autoSplits: false })
+
+    const [disposal] = result!.disposals
+    expect(disposal.isIncomplete).toBe(false)
+    expect(disposal.gainOrLossGbp).toBeCloseTo(100)
+    expect(result!.dataNotices!.symbolMerges).toEqual([
+      { isin: 'IE00B3XXRP09', symbol: 'VUSA', mergedSymbols: ['VUSAL'] },
+    ])
+  })
 })

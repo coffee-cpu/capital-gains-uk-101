@@ -15,6 +15,7 @@ import { parseNumber } from './parsingUtils'
  * - total (optional, number)
  * - fee (optional, number)
  * - split_ratio (optional, for STOCK_SPLIT only, e.g., "10:1", "2:1")
+ * - isin (optional, 12-character ISIN; matches the security across brokers)
  * - notes (optional, text)
  */
 
@@ -89,6 +90,11 @@ function normalizeGenericRow(
   const notes = row['notes']?.trim() || null
   const ratio = row['split_ratio']?.trim() || null
 
+  const isin = row['isin']?.trim().toUpperCase() || null
+  if (isin && !/^[A-Z]{2}[A-Z0-9]{9}[0-9]$/.test(isin)) {
+    return `isin "${row['isin']?.trim()}" is not a 12-character ISIN`
+  }
+
   return {
     id: `${fileId}-${rowIndex}`,
     source: 'Generic CSV',
@@ -103,6 +109,7 @@ function normalizeGenericRow(
     fee,
     notes,
     ratio,
+    ...(isin && { isin }),
   }
 }
 
