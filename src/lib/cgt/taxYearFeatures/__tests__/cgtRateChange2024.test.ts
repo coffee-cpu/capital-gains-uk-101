@@ -253,7 +253,22 @@ describe('CGT Rate Change 2024 Feature', () => {
         expect(result?.requiresAdjustment).toBe(true)
       })
 
-      it('should require adjustment when disposals in both periods AND total gain > £3,000', () => {
+      it('should require adjustment when post-change gains exceed losses and the AEA', () => {
+        const summary = createSummary('2024/25', 6000)
+        const disposals = [
+          createDisposal('1', '2024-09-15', 2000), // Before
+          createDisposal('2', '2024-11-15', 4000), // After: 4,000 - 3,000 AEA = 1,000 at new rates
+        ]
+
+        const result = cgtRateChange2024Feature.calculate(summary, disposals)
+
+        expect(result?.chargeableGainsAfterRateChange).toBe(1000)
+        expect(result?.requiresAdjustment).toBe(true)
+      })
+
+      it('should NOT require adjustment when the AEA covers all post-change gains, even if the year total exceeds it', () => {
+        // The AEA goes against the new-rate gains first (TCGA92/S4B): 2,500 after
+        // is fully covered, leaving the 2,000 before taxed at the old rates
         const summary = createSummary('2024/25', 4500)
         const disposals = [
           createDisposal('1', '2024-09-15', 2000), // Before
@@ -262,7 +277,34 @@ describe('CGT Rate Change 2024 Feature', () => {
 
         const result = cgtRateChange2024Feature.calculate(summary, disposals)
 
-        expect(result?.requiresAdjustment).toBe(true)
+        expect(result?.chargeableGainsAfterRateChange).toBe(0)
+        expect(result?.requiresAdjustment).toBe(false)
+      })
+
+      it('should NOT require adjustment when the only post-change disposal is a loss', () => {
+        const summary = createSummary('2024/25', 5480)
+        const disposals = [
+          createDisposal('1', '2024-09-15', 5980), // Before
+          createDisposal('2', '2024-11-15', -500), // After: a loss, nothing taxed at new rates
+        ]
+
+        const result = cgtRateChange2024Feature.calculate(summary, disposals)
+
+        expect(result?.requiresAdjustment).toBe(false)
+      })
+
+      it('should set pre-change losses against post-change gains first', () => {
+        const summary = createSummary('2024/25', 5000)
+        const disposals = [
+          createDisposal('1', '2024-06-01', 3000), // Before: gain
+          createDisposal('2', '2024-07-01', -2000), // Before: loss
+          createDisposal('3', '2024-11-15', 4000), // After: 4,000 - 2,000 loss - 3,000 AEA < 0
+        ]
+
+        const result = cgtRateChange2024Feature.calculate(summary, disposals)
+
+        expect(result?.chargeableGainsAfterRateChange).toBe(0)
+        expect(result?.requiresAdjustment).toBe(false)
       })
 
       it('should NOT require adjustment when disposals in both periods BUT total gain <= £3,000', () => {

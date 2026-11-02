@@ -158,7 +158,9 @@ function NoAdjustmentRequiredContent({ data, context }: ContentProps): React.Rea
       ? `Net loss of ${formatCurrency(-data.totalNetGainOrLoss)} for the year. No CGT adjustment needed.`
       : data.totalNetGainOrLoss <= data.annualExemptAmount
       ? `Net gain (${formatCurrency(data.totalNetGainOrLoss)}) is below Annual Exempt Amount (${formatCurrency(data.annualExemptAmount)}). No CGT adjustment needed.`
-      : `All disposals were before 30 October 2024. No CGT adjustment needed.`
+      : data.disposalCountAfterRateChange === 0
+      ? `All disposals were before 30 October 2024. No CGT adjustment needed.`
+      : `Losses and the Annual Exempt Amount cover all gains from 30 October 2024 onwards (TCGA92 s4B), so no gains are taxed at the new rates. No CGT adjustment needed.`
 
   return <Text style={{ fontSize: 8, color: '#1e40af' }}>{message}</Text>
 }

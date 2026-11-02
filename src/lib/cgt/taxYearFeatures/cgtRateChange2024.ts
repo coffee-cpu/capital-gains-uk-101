@@ -74,11 +74,16 @@ export interface CGTRateChange2024Data extends TaxYearFeatureData {
   disposalCountAfterRateChange: number
 
   /**
-   * Whether Box 51 adjustment is required.
-   *
-   * TRUE when BOTH conditions are met:
-   * 1. At least one disposal on or after 30 October 2024
-   * 2. Total net gain for the year exceeds the Annual Exempt Amount (£3,000)
+   * Gains on or after 30 October 2024 still chargeable after the year's losses
+   * and the Annual Exempt Amount are set against them first. TCGA92/S4B lets
+   * losses and the AEA go wherever they are most beneficial, which is against
+   * the gains taxed at the higher, new rates.
+   */
+  chargeableGainsAfterRateChange: number
+
+  /**
+   * Whether Box 51 adjustment is required: some gains on or after 30 October
+   * 2024 remain chargeable after losses and the AEA (chargeableGainsAfterRateChange > 0).
    *
    * When true, user must use HMRC's calculator to work out the adjustment.
    */
@@ -147,11 +152,14 @@ export const cgtRateChange2024Feature: TaxYearFeature<CGTRateChange2024Data> = {
     // Total for the year
     const totalNetGainOrLoss = netGainOrLossBeforeRateChange + netGainOrLossAfterRateChange
 
-    // Determine if Box 51 adjustment is required:
-    // 1. At least one disposal on/after 30 Oct
-    // 2. Total net gain exceeds AEA (£3,000)
-    const hasDisposalsAfterChange = disposalsAfterChange.length > 0
-    const requiresAdjustment = hasDisposalsAfterChange && totalNetGainOrLoss > AEA_2024_25
+    // Box 51 adjustment is needed only when gains taxed at the new rates are
+    // left after relief. The year's losses (from either period) and the AEA
+    // are set against post-change gains first, the most beneficial order
+    // (TCGA92/S4B), so only what remains after them is chargeable at the new
+    // rates.
+    const totalLosses = -(lossesBeforeRateChange + lossesAfterRateChange)
+    const chargeableGainsAfterRateChange = Math.max(0, gainsAfterRateChange - totalLosses - AEA_2024_25)
+    const requiresAdjustment = chargeableGainsAfterRateChange > 0
 
     return {
       featureId: 'cgt-rate-change-2024',
@@ -166,6 +174,7 @@ export const cgtRateChange2024Feature: TaxYearFeature<CGTRateChange2024Data> = {
       lossesAfterRateChange,
       netGainOrLossAfterRateChange,
       disposalCountAfterRateChange: netsAfter.length,
+      chargeableGainsAfterRateChange,
       requiresAdjustment,
       annualExemptAmount: AEA_2024_25,
       totalNetGainOrLoss,
