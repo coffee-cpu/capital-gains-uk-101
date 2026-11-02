@@ -386,6 +386,9 @@ export function TransactionList() {
                 if (tx.type === 'DIVIDEND') {
                   return 'Dividend income is subject to Income Tax, not Capital Gains Tax. Report dividends on your Self Assessment tax return if they exceed the dividend allowance.'
                 }
+                if (tx.type === 'FEE' && tx.notes === 'Debit Interest') {
+                  return 'Margin interest charged by your broker. It is not deductible from interest income or capital gains for individuals, so it is not included in any calculation.'
+                }
                 if (tx.type === 'FEE') {
                   return 'Fees are not directly included in CGT calculations. They may be deductible as an allowable cost when calculating gains/losses.'
                 }
