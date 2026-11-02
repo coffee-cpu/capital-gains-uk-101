@@ -2,8 +2,8 @@ import { deduplicateTransactions, findOverlappingImports } from '../utils/dedupl
 import { findSplitConflicts } from './enrichment/enrichers/splitEnricher'
 import { enrichTransactions } from './enrichment'
 import { calculateCGT } from './cgt/engine'
-import { getAutoSplitsForTransactions } from './splits/splitLookupService'
-import { SplitDataSource } from './splits/splitDataSource'
+import { getAutoSplitsForTransactions, hasUsableRatio, HOLDING_TYPES } from './splits/splitLookupService'
+import { SplitDataSource, JsDelivrSplitSource } from './splits/splitDataSource'
 import { FXSource, DEFAULT_FX_SOURCE } from '../types/fxSource'
 import { CGTCalculationResult } from '../types/cgt'
 import { GenericTransaction } from '../types/transaction'
@@ -47,8 +47,9 @@ export async function runPipeline(
 
   // Inject auto-fetched stock splits (not persisted, regenerated each run)
   let withAutoSplits = deduplicated
+  const source = splitSource ?? new JsDelivrSplitSource()
   if (autoSplits) {
-    const fetchedSplits = await getAutoSplitsForTransactions(deduplicated, splitSource)
+    const fetchedSplits = await getAutoSplitsForTransactions(deduplicated, source)
     if (fetchedSplits.length > 0) {
       withAutoSplits = [...deduplicated, ...fetchedSplits]
     }
@@ -61,10 +62,38 @@ export async function runPipeline(
   const result = calculateCGT(enriched)
 
   // Report data choices that change the figures, so the UI and CLI can show them
+  const rejectedSplitRecords = source instanceof JsDelivrSplitSource
+    ? source.rejectedRecords
+        .filter(r => mayBeMissedSplit(r, deduplicated))
+        .map(({ symbol, date, reason }) => ({ symbol, date, reason }))
+    : []
   result.dataNotices = {
     overlappingRows,
     splitConflicts: findSplitConflicts(withAutoSplits),
+    rejectedSplitRecords,
   }
 
   return result
+}
+
+/** Same window the split lookup uses to match broker and fetched splits */
+const SPLIT_MATCH_WINDOW_MS = 7 * 24 * 60 * 60 * 1000
+
+/**
+ * Whether a rejected fetched split could mean a missed split: the user holds
+ * the share (same definition as the split lookup) and their own files don't
+ * already record a usable split for it within a few days, which the lookup
+ * would have preferred anyway.
+ */
+function mayBeMissedSplit(record: { symbol: string; date: string }, transactions: GenericTransaction[]): boolean {
+  const held = transactions.some(tx => tx.symbol === record.symbol && HOLDING_TYPES.has(tx.type))
+  if (!held) return false
+  const recordMs = new Date(record.date).getTime()
+  const coveredByBroker = transactions.some(tx =>
+    tx.type === 'STOCK_SPLIT' &&
+    tx.symbol === record.symbol &&
+    hasUsableRatio(tx.ratio) &&
+    Math.abs(new Date(tx.date).getTime() - recordMs) <= SPLIT_MATCH_WINDOW_MS
+  )
+  return !coveredByBroker
 }

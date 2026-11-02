@@ -1,4 +1,6 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
+import { JsDelivrSplitSource } from '../splits/splitDataSource'
+import { createMemoryCacheBackends, setCacheBackends } from '../cache'
 import { runPipeline } from '../pipeline'
 import { importCSVText } from '../import'
 
@@ -56,5 +58,91 @@ describe('runPipeline', () => {
     expect(conflicts).toHaveLength(1)
     expect(conflicts[0].used.ratio).toBe('10:1')
     expect(conflicts[0].ignored.ratio).toBe('2:1')
+  })
+
+  describe('rejected split data', () => {
+    afterEach(() => {
+      vi.restoreAllMocks()
+    })
+
+    it('reports fetched split records that failed validation, for held symbols only', async () => {
+      setCacheBackends(createMemoryCacheBackends())
+      vi.spyOn(console, 'warn').mockImplementation(() => {})
+      vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => String(url).endsWith('/2023.json')
+        ? new Response(JSON.stringify({
+            year: 2023,
+            updated: '2023-12-31',
+            splits: [
+              { symbol: 'VOD', date: '2023-07-01', ratioNew: 5000, ratioOld: 1 },
+              { symbol: 'NOTHELD', date: '2023-07-01', ratioNew: 5000, ratioOld: 1 },
+            ],
+          }))
+        : new Response('', { status: 404 }))
+      const csv = [
+        'date,type,symbol,currency,quantity,price,total,fee',
+        '2023-05-01,BUY,VOD,GBP,100,1.00,100,0',
+      ].join('\n')
+
+      const result = await runPipeline(importCSVText(csv, 'gbp').transactions, {
+        autoSplits: true,
+        splitSource: new JsDelivrSplitSource(),
+      })
+
+      expect(result!.dataNotices!.rejectedSplitRecords).toEqual([
+        { symbol: 'VOD', date: '2023-07-01', reason: 'ratio-out-of-range' },
+      ])
+    })
+
+    it('still warns when the broker split row has a ratio that cannot be applied', async () => {
+      setCacheBackends(createMemoryCacheBackends())
+      vi.spyOn(console, 'warn').mockImplementation(() => {})
+      vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => String(url).endsWith('/2023.json')
+        ? new Response(JSON.stringify({
+            year: 2023,
+            updated: '2023-12-31',
+            splits: [{ symbol: 'VOD', date: '2023-07-01', ratioNew: 5000, ratioOld: 1 }],
+          }))
+        : new Response('', { status: 404 }))
+      const csv = [
+        'date,type,symbol,currency,quantity,price,total,fee,split_ratio',
+        '2023-05-01,BUY,VOD,GBP,100,1.00,100,0,',
+        '2023-07-03,STOCK_SPLIT,VOD,GBP,,,,,1-for-5',
+      ].join('\n')
+
+      const result = await runPipeline(importCSVText(csv, 'gbp').transactions, {
+        autoSplits: true,
+        splitSource: new JsDelivrSplitSource(),
+      })
+
+      expect(result!.dataNotices!.rejectedSplitRecords!.map(r => r.symbol)).toEqual(['VOD'])
+    })
+
+    it('does not warn when the broker file records the split, or the share is not held', async () => {
+      setCacheBackends(createMemoryCacheBackends())
+      vi.spyOn(console, 'warn').mockImplementation(() => {})
+      vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => String(url).endsWith('/2023.json')
+        ? new Response(JSON.stringify({
+            year: 2023,
+            updated: '2023-12-31',
+            splits: [
+              { symbol: 'VOD', date: '2023-07-01', ratioNew: 5000, ratioOld: 1 },
+              { symbol: 'DIVONLY', date: '2023-07-01', ratioNew: 5000, ratioOld: 1 },
+            ],
+          }))
+        : new Response('', { status: 404 }))
+      const csv = [
+        'date,type,symbol,currency,quantity,price,total,fee,split_ratio',
+        '2023-05-01,BUY,VOD,GBP,100,1.00,100,0,',
+        '2023-07-03,STOCK_SPLIT,VOD,GBP,,,,,2:1',
+        '2023-08-01,DIVIDEND,DIVONLY,GBP,,,5,0,',
+      ].join('\n')
+
+      const result = await runPipeline(importCSVText(csv, 'gbp').transactions, {
+        autoSplits: true,
+        splitSource: new JsDelivrSplitSource(),
+      })
+
+      expect(result!.dataNotices!.rejectedSplitRecords).toEqual([])
+    })
   })
 })

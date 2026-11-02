@@ -201,5 +201,10 @@ export interface DataNotices {
   overlappingRows: GenericTransaction[]
   /** Split records for the same split that disagreed on the ratio */
   splitConflicts: SplitConflict[]
+  /**
+   * Fetched split records dropped as invalid, for symbols the user holds.
+   * Each may be a missed split, so quantities from its date may be wrong.
+   */
+  rejectedSplitRecords?: { symbol: string; date: string; reason: string }[]
 }
 
