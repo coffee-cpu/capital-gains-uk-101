@@ -8,6 +8,7 @@ import { GenericTransaction } from '../types/transaction'
  * follow the pattern, such as auto-fetched splits.
  */
 export function getImportFileId(transactionId: string): string | null {
+  if (transactionId.startsWith('auto-split-')) return null
   const match = /^(.+?)-(?:exp-)?\d+$/.exec(transactionId)
   return match ? match[1] : null
 }

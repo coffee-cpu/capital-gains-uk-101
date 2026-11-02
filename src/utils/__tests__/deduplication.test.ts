@@ -447,6 +447,7 @@ describe('overlapping imports', () => {
   it('reads the file ID from parser-generated transaction IDs', () => {
     expect(getImportFileId('export_2023_csv-5120-14')).toBe('export_2023_csv-5120')
     expect(getImportFileId('ib_csv-900-exp-3')).toBe('ib_csv-900')
+    expect(getImportFileId('auto-split-NVDA-2024-06-10')).toBeNull()
     expect(getImportFileId('b1')).toBeNull()
   })
 
