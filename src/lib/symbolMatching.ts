@@ -22,6 +22,17 @@ export interface TickerConflict {
   pooledSeparately: boolean
 }
 
+/**
+ * Rows that change a holding. Only these date an ISIN's period of use:
+ * income rows (dividends, interest) can be paid under an old ISIN after a
+ * reorganisation and would make sequential ISINs look like they overlap.
+ */
+const HOLDING_CHANGE_TYPES = new Set<string>([
+  'BUY', 'SELL', 'TRANSFER', 'STOCK_SPLIT',
+  'OPTIONS_BUY_TO_OPEN', 'OPTIONS_SELL_TO_OPEN', 'OPTIONS_BUY_TO_CLOSE',
+  'OPTIONS_SELL_TO_CLOSE', 'OPTIONS_ASSIGNED', 'OPTIONS_EXPIRED',
+])
+
 export interface SymbolMatchResult {
   transactions: GenericTransaction[]
   merges: SymbolMerge[]
@@ -65,6 +76,8 @@ export function matchSymbolsByIsin(transactions: GenericTransaction[]): SymbolMa
     const symbols = symbolsByIsin.get(tx.isin) ?? new Set<string>()
     symbols.add(tx.symbol)
     symbolsByIsin.set(tx.isin, symbols)
+
+    if (!HOLDING_CHANGE_TYPES.has(tx.type)) continue
 
     const byIsin = isinDates.get(tx.symbol) ?? new Map()
     const range = byIsin.get(tx.isin)

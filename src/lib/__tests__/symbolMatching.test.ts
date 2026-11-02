@@ -2,8 +2,11 @@ import { describe, it, expect } from 'vitest'
 import { matchSymbolsByIsin } from '../symbolMatching'
 import type { GenericTransaction } from '../../types/transaction'
 
-const tx = (id: string, symbol: string, isin: string | null, source = 'Test', date = '2024-06-03'): GenericTransaction => ({
-  id, source, symbol, isin, name: null, date, type: 'BUY',
+const tx = (
+  id: string, symbol: string, isin: string | null, source = 'Test', date = '2024-06-03',
+  type: GenericTransaction['type'] = 'BUY'
+): GenericTransaction => ({
+  id, source, symbol, isin, name: null, date, type,
   quantity: 1, price: 100, currency: 'GBP', total: 100, fee: 0, notes: null,
 })
 
@@ -80,6 +83,18 @@ describe('matchSymbolsByIsin', () => {
     expect(new Set(transactions.map(t => t.symbol))).toEqual(new Set(['ABC']))
     // The new ISIN sorts first alphabetically; the list follows first use instead
     expect(conflicts).toEqual([{ symbol: 'ABC', isins: ['GB00B00000Z9', 'GB00A00000Z1'], pooledSeparately: false }])
+  })
+
+  it('ignores a dividend paid under the old ISIN after the change when dating ISINs', () => {
+    const { transactions, conflicts } = matchSymbolsByIsin([
+      tx('buy', 'SHEL', 'GB00B03MLX29', 'Freetrade', '2022-01-10'),
+      tx('swap-in', 'SHEL', 'GB00BP6MXD84', 'Freetrade', '2022-01-31', 'TRANSFER'),
+      tx('late-dividend', 'SHEL', 'GB00B03MLX29', 'Freetrade', '2022-03-28', 'DIVIDEND'),
+      tx('sell', 'SHEL', 'GB00BP6MXD84', 'Freetrade', '2024-02-01', 'SELL'),
+    ])
+
+    expect(new Set(transactions.map(t => t.symbol))).toEqual(new Set(['SHEL']))
+    expect(conflicts[0].pooledSeparately).toBe(false)
   })
 
   it('returns the input unchanged when nothing needs matching', () => {
