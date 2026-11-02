@@ -31,14 +31,16 @@ describe('matchSymbolsByIsin', () => {
   })
 
   it('keeps a ticker that names two securities apart by ISIN', () => {
+    // The US ADR and the London listing traded over overlapping periods
     const { transactions, conflicts, merges } = matchSymbolsByIsin([
-      tx('us', 'BP', 'US0556221044'),
-      tx('uk', 'BP', 'GB0007980591'),
+      tx('us-1', 'BP', 'US0556221044', 'Test', '2023-01-10'),
+      tx('uk-1', 'BP', 'GB0007980591', 'Test', '2023-03-01'),
+      tx('us-2', 'BP', 'US0556221044', 'Test', '2024-06-01'),
       tx('unknown', 'BP', null),
     ])
 
-    expect(transactions.map(t => t.symbol)).toEqual(['BP (US0556221044)', 'BP (GB0007980591)', 'BP'])
-    expect(conflicts).toEqual([{ symbol: 'BP', isins: ['GB0007980591', 'US0556221044'], pooledSeparately: true }])
+    expect(transactions.map(t => t.symbol)).toEqual(['BP (US0556221044)', 'BP (GB0007980591)', 'BP (US0556221044)', 'BP'])
+    expect(conflicts).toEqual([{ symbol: 'BP', isins: ['US0556221044', 'GB0007980591'], pooledSeparately: true }])
     expect(merges).toEqual([])
   })
 
@@ -65,6 +67,19 @@ describe('matchSymbolsByIsin', () => {
 
     expect(new Set(transactions.map(t => t.symbol))).toEqual(new Set(['SHEL']))
     expect(merges).toEqual([{ isin: 'GB00B03MLX29', symbol: 'SHEL', mergedSymbols: ['RDSB'] }])
+  })
+
+  it('treats old-out and new-in rows on the same day as an ISIN change, listed old to new', () => {
+    const { transactions, conflicts } = matchSymbolsByIsin([
+      tx('buy', 'ABC', 'GB00B00000Z9', 'Test', '2022-01-10'),
+      tx('out', 'ABC', 'GB00B00000Z9', 'Test', '2023-05-01'),
+      tx('in', 'ABC', 'GB00A00000Z1', 'Test', '2023-05-01'),
+      tx('sell', 'ABC', 'GB00A00000Z1', 'Test', '2024-02-01'),
+    ])
+
+    expect(new Set(transactions.map(t => t.symbol))).toEqual(new Set(['ABC']))
+    // The new ISIN sorts first alphabetically; the list follows first use instead
+    expect(conflicts).toEqual([{ symbol: 'ABC', isins: ['GB00B00000Z9', 'GB00A00000Z1'], pooledSeparately: false }])
   })
 
   it('returns the input unchanged when nothing needs matching', () => {

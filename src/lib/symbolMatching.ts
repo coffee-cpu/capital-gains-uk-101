@@ -82,10 +82,13 @@ export function matchSymbolsByIsin(transactions: GenericTransaction[]): SymbolMa
   for (const [symbol, byIsin] of isinDates) {
     if (byIsin.size < 2) continue
     multiIsinSymbols.add(symbol)
-    const ranges = [...byIsin.values()].sort((a, b) => a.first.localeCompare(b.first))
-    const overlapping = ranges.some((range, i) => i > 0 && range.first <= ranges[i - 1].last)
+    // Ordered by first use, so a change reads old to new. Ranges that only
+    // touch (old ISIN out and new ISIN in on the same day, the usual way a
+    // reorganisation is recorded) are sequential, not overlapping.
+    const byFirstUse = [...byIsin].sort(([, a], [, b]) => a.first.localeCompare(b.first))
+    const overlapping = byFirstUse.some(([, range], i) => i > 0 && range.first < byFirstUse[i - 1][1].last)
     if (overlapping) splitSymbols.add(symbol)
-    conflicts.push({ symbol, isins: [...byIsin.keys()].sort(), pooledSeparately: overlapping })
+    conflicts.push({ symbol, isins: byFirstUse.map(([isin]) => isin), pooledSeparately: overlapping })
   }
 
   const renames = new Map<string, string>()
