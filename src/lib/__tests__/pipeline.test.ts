@@ -93,6 +93,30 @@ describe('runPipeline', () => {
       ])
     })
 
+    it('still warns when the broker split row has a ratio that cannot be applied', async () => {
+      setCacheBackends(createMemoryCacheBackends())
+      vi.spyOn(console, 'warn').mockImplementation(() => {})
+      vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => String(url).endsWith('/2023.json')
+        ? new Response(JSON.stringify({
+            year: 2023,
+            updated: '2023-12-31',
+            splits: [{ symbol: 'VOD', date: '2023-07-01', ratioNew: 5000, ratioOld: 1 }],
+          }))
+        : new Response('', { status: 404 }))
+      const csv = [
+        'date,type,symbol,currency,quantity,price,total,fee,split_ratio',
+        '2023-05-01,BUY,VOD,GBP,100,1.00,100,0,',
+        '2023-07-03,STOCK_SPLIT,VOD,GBP,,,,,1-for-5',
+      ].join('\n')
+
+      const result = await runPipeline(importCSVText(csv, 'gbp').transactions, {
+        autoSplits: true,
+        splitSource: new JsDelivrSplitSource(),
+      })
+
+      expect(result!.dataNotices!.rejectedSplitRecords!.map(r => r.symbol)).toEqual(['VOD'])
+    })
+
     it('does not warn when the broker file records the split, or the share is not held', async () => {
       setCacheBackends(createMemoryCacheBackends())
       vi.spyOn(console, 'warn').mockImplementation(() => {})

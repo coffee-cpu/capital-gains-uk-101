@@ -2,7 +2,7 @@ import { deduplicateTransactions, findOverlappingImports } from '../utils/dedupl
 import { findSplitConflicts } from './enrichment/enrichers/splitEnricher'
 import { enrichTransactions } from './enrichment'
 import { calculateCGT } from './cgt/engine'
-import { getAutoSplitsForTransactions, HOLDING_TYPES } from './splits/splitLookupService'
+import { getAutoSplitsForTransactions, hasUsableRatio, HOLDING_TYPES } from './splits/splitLookupService'
 import { SplitDataSource, JsDelivrSplitSource } from './splits/splitDataSource'
 import { FXSource, DEFAULT_FX_SOURCE } from '../types/fxSource'
 import { CGTCalculationResult } from '../types/cgt'
@@ -92,7 +92,7 @@ function mayBeMissedSplit(record: { symbol: string; date: string }, transactions
   const coveredByBroker = transactions.some(tx =>
     tx.type === 'STOCK_SPLIT' &&
     tx.symbol === record.symbol &&
-    !!tx.ratio &&
+    hasUsableRatio(tx.ratio) &&
     Math.abs(new Date(tx.date).getTime() - recordMs) <= SPLIT_MATCH_WINDOW_MS
   )
   return !coveredByBroker

@@ -89,7 +89,7 @@ export async function getAutoSplitsForTransactions(
 /**
  * True when a broker split's ratio can be applied by the split enricher.
  */
-function hasUsableRatio(ratio: string | null | undefined): boolean {
+export function hasUsableRatio(ratio: string | null | undefined): boolean {
   if (!ratio) return false
   try {
     parseRatioMultiplier(ratio)
