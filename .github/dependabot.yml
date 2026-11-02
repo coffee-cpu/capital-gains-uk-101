@@ -19,6 +19,10 @@ updates:
     allow:
       - dependency-type: development
     groups:
+      # Listed first so it wins: the vitest packages pin each other's exact
+      # version, so every update to them (majors included) must be one PR
+      vitest:
+        patterns: ["vitest", "@vitest/*"]
       # Minor and patch updates together; majors get their own PRs so one
       # breaking upgrade doesn't hold back the rest
       dev-dependencies:
