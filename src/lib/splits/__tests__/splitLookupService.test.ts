@@ -225,4 +225,33 @@ describe('getAutoSplitsForTransactions', () => {
     expect(result).toHaveLength(1)
     expect(result[0].ratio).toBe('1:20')
   })
+
+  it('still adds the fetched split when the broker row has no ratio', async () => {
+    // Revolut and some Trading 212 / Schwab split rows carry no ratio, so the
+    // split enricher can't apply them; they must not block the fetched split
+    mockSource = new MockSplitSource([
+      { symbol: 'NVDA', date: '2024-06-10', ratioFrom: 1, ratioTo: 10, name: 'NVIDIA' },
+    ])
+    const transactions = [
+      makeTx({ id: 'buy-1', symbol: 'NVDA', date: '2024-01-10', type: 'BUY' }),
+      makeTx({ id: 'split-1', symbol: 'NVDA', date: '2024-06-10', type: 'STOCK_SPLIT', ratio: null }),
+    ]
+
+    const result = await getAutoSplitsForTransactions(transactions, mockSource)
+
+    expect(result).toHaveLength(1)
+    expect(result[0].ratio).toBe('10:1')
+  })
+
+  it('does not add the fetched split when the broker row has a usable ratio', async () => {
+    mockSource = new MockSplitSource([
+      { symbol: 'NVDA', date: '2024-06-10', ratioFrom: 1, ratioTo: 10, name: 'NVIDIA' },
+    ])
+    const transactions = [
+      makeTx({ id: 'buy-1', symbol: 'NVDA', date: '2024-01-10', type: 'BUY' }),
+      makeTx({ id: 'split-1', symbol: 'NVDA', date: '2024-06-10', type: 'STOCK_SPLIT', ratio: '10:1' }),
+    ]
+
+    expect(await getAutoSplitsForTransactions(transactions, mockSource)).toHaveLength(0)
+  })
 })

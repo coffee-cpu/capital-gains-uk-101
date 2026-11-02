@@ -103,6 +103,8 @@ export interface DisposalReport {
   rules: MatchRule[]
   incomplete: boolean
   unmatchedQuantity?: number
+  /** True when the gain uses a missing GBP exchange rate (valued at £0) */
+  missingFx?: boolean
   details?: DisposalDetails
 }
 
@@ -284,6 +286,9 @@ function toDisposalReport(
   }
   if (record.unmatchedQuantity && record.unmatchedQuantity > QUANTITY_EPSILON) {
     report.unmatchedQuantity = quantity(record.unmatchedQuantity)
+  }
+  if (record.missingFx) {
+    report.missingFx = true
   }
   if (includeDetails) {
     report.details = toDisposalDetails(record, pools.get(tx.symbol))

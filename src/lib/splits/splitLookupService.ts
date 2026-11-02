@@ -1,4 +1,4 @@
-import { GenericTransaction } from '../../types/transaction'
+import { GenericTransaction, parseRatioMultiplier } from '../../types/transaction'
 import { SplitDataSource, SplitRecord, JsDelivrSplitSource } from './splitDataSource'
 
 /** Transaction types that indicate the user holds a given symbol */
@@ -52,7 +52,10 @@ export async function getAutoSplitsForTransactions(
     // slightly differently than CDN sources (e.g., ex-date vs effective date)
     const brokerSplits: Array<{ symbol: string; dateMs: number; ratio?: string | null }> = []
     for (const tx of transactions) {
-      if (tx.type === 'STOCK_SPLIT' && tx.symbol && tx.date) {
+      // Only broker splits with a usable ratio count: the split enricher skips
+      // rows without one (some Revolut, Trading 212 and Schwab rows), so
+      // letting them block the fetched split would leave no split applied
+      if (tx.type === 'STOCK_SPLIT' && tx.symbol && tx.date && hasUsableRatio(tx.ratio)) {
         brokerSplits.push({ symbol: tx.symbol, dateMs: new Date(tx.date).getTime(), ratio: tx.ratio })
       }
     }
@@ -80,6 +83,19 @@ export async function getAutoSplitsForTransactions(
   } catch {
     // Graceful degradation — return empty on any failure
     return []
+  }
+}
+
+/**
+ * True when a broker split's ratio can be applied by the split enricher.
+ */
+function hasUsableRatio(ratio: string | null | undefined): boolean {
+  if (!ratio) return false
+  try {
+    parseRatioMultiplier(ratio)
+    return true
+  } catch {
+    return false
   }
 }
 

@@ -8,6 +8,7 @@ import {
   MatchedQuantityTracker,
   calculateCostBasis,
   calculateNetProceeds,
+  hasGbpPrice,
   QUANTITY_EPSILON,
 } from './utils'
 
@@ -62,6 +63,11 @@ export function applySection104Pooling(
       history: [],
     }
 
+    // Whether the pool's cost includes an acquisition valued at £0 because
+    // its exchange rate is missing. Every disposal from the pool shares its
+    // average cost, so all of them are affected until the pool empties.
+    let poolMissingFx = false
+
     // Process each transaction in chronological order
     for (const tx of sorted) {
       const remainingQuantity = tracker.getRemaining(tx)
@@ -73,9 +79,12 @@ export function applySection104Pooling(
       if (isAcquisition(tx)) {
         // Add to pool
         addToPool(pool, tx, remainingQuantity)
+        if (!hasGbpPrice(tx)) poolMissingFx = true
       } else if (isDisposal(tx)) {
         // Match against pool (always returns a result, even if pool is empty/insufficient)
         const matching = matchAgainstPool(pool, tx, remainingQuantity)
+        if (poolMissingFx && matching.quantityMatched > 0) matching.missingFx = true
+        if (pool.quantity === 0) poolMissingFx = false
         matchings.push(matching)
       }
     }

@@ -101,6 +101,19 @@ export function getEffectivePrice(transaction: EnrichedTransaction): number {
 }
 
 /**
+ * False when the transaction has a price but no GBP value for it.
+ *
+ * A failed or unsupported exchange-rate lookup leaves price_gbp null, which
+ * getEffectivePrice turns into £0. Matching still runs so quantities stay
+ * right, but any gain using that price is wrong and must be flagged. Rows
+ * with no price at all (e.g. some option expiries) are genuinely £0 and pass.
+ */
+export function hasGbpPrice(transaction: EnrichedTransaction): boolean {
+  if (transaction.price == null) return true
+  return (transaction.split_adjusted_price_gbp ?? transaction.price_gbp) != null
+}
+
+/**
  * Check if a transaction is an acquisition (increases holdings)
  *
  * Includes:

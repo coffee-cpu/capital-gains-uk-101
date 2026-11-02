@@ -1198,3 +1198,95 @@ describe('CGT Engine - dividend and interest withholding tax', () => {
     expect(summary.totalDividendsGbp).toBeCloseTo(22, 6)
   })
 })
+
+describe('missing exchange rates', () => {
+  const tx = (overrides: Partial<EnrichedTransaction>): EnrichedTransaction => ({
+    id: 'tx',
+    source: 'test',
+    symbol: 'AAPL',
+    name: null,
+    date: '2024-06-01',
+    type: 'BUY',
+    quantity: 10,
+    price: 100,
+    currency: 'GBP',
+    total: 1000,
+    fee: 0,
+    notes: null,
+    fx_rate: 1,
+    price_gbp: 100,
+    value_gbp: 1000,
+    fee_gbp: 0,
+    fx_source: 'Native GBP',
+    fx_error: null,
+    tax_year: getTaxYear(overrides.date ?? '2024-06-01'),
+    ...overrides,
+  })
+  const noRate = {
+    currency: 'USD', fx_rate: null, price_gbp: null, value_gbp: null, fee_gbp: null,
+    fx_source: 'Failed', fx_error: 'network error',
+  } as const
+
+  it('flags a disposal whose own rate is missing', () => {
+    const result = calculateCGT([
+      tx({ id: 'buy', date: '2024-05-01' }),
+      tx({ id: 'sell', type: 'SELL', date: '2024-07-01', ...noRate }),
+    ])
+
+    expect(result.disposals[0].missingFx).toBe(true)
+    expect(result.taxYearSummaries.find(s => s.taxYear === '2024/25')!.missingFxDisposals).toBe(1)
+  })
+
+  it('flags a same-day disposal matched to a buy with no rate', () => {
+    const result = calculateCGT([
+      tx({ id: 'buy', ...noRate }),
+      tx({ id: 'sell', type: 'SELL', price_gbp: 150 }),
+    ])
+
+    expect(result.disposals[0].matchings[0].rule).toBe('SAME_DAY')
+    expect(result.disposals[0].missingFx).toBe(true)
+  })
+
+  it('flags every pool disposal while the pool holds a buy with no rate, until it empties', () => {
+    const result = calculateCGT([
+      tx({ id: 'buy-norate', date: '2024-05-01', ...noRate }),
+      tx({ id: 'buy-ok', date: '2024-05-10' }),
+      tx({ id: 'sell-1', type: 'SELL', date: '2024-07-01', quantity: 5 }),
+      tx({ id: 'sell-2', type: 'SELL', date: '2024-08-01', quantity: 15 }),
+      tx({ id: 'buy-later', date: '2024-10-01' }),
+      tx({ id: 'sell-3', type: 'SELL', date: '2024-12-01', quantity: 10 }),
+    ])
+
+    const flags = Object.fromEntries(result.disposals.map(d => [d.disposal.id, d.missingFx ?? false]))
+    expect(flags).toEqual({ 'sell-1': true, 'sell-2': true, 'sell-3': false })
+    expect(result.taxYearSummaries.find(s => s.taxYear === '2024/25')!.missingFxDisposals).toBe(2)
+  })
+
+  it('leaves disposals with complete rates unflagged', () => {
+    const result = calculateCGT([
+      tx({ id: 'buy', date: '2024-05-01' }),
+      tx({ id: 'sell', type: 'SELL', date: '2024-07-01' }),
+    ])
+
+    expect(result.disposals[0].missingFx).toBeUndefined()
+    expect(result.taxYearSummaries[0].missingFxDisposals).toBe(0)
+  })
+})
+
+describe('missing exchange rates - rows with no price', () => {
+  it('does not flag a disposal matched to a row that has no price at all', () => {
+    const base = {
+      source: 'test', symbol: 'AAPL 240621C00200000', name: null, currency: 'USD', notes: null,
+      fx_rate: 1.27, fx_source: 'HMRC', fx_error: null, tax_year: '2024/25', fee: 0, fee_gbp: 0,
+    } as const
+    const result = calculateCGT([
+      { ...base, id: 'sto', date: '2024-05-01', type: 'OPTIONS_SELL_TO_OPEN', quantity: 1, price: 2,
+        total: 200, price_gbp: 1.57, value_gbp: 157.48 },
+      { ...base, id: 'exp', date: '2024-06-21', type: 'OPTIONS_EXPIRED', quantity: 1, price: null,
+        total: null, price_gbp: null, value_gbp: null },
+    ] as EnrichedTransaction[])
+
+    expect(result.disposals).toHaveLength(1)
+    expect(result.disposals[0].missingFx).toBeUndefined()
+  })
+})

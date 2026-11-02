@@ -18,7 +18,8 @@ export interface PipelineOptions {
 
 /**
  * Run raw transactions through the full calculation pipeline:
- * 1. Deduplicate (remove incomplete Stock Plan Activity when Equity Awards exists)
+ * 1. Deduplicate (rows repeated across overlapping imports, and incomplete
+ *    Stock Plan Activity when Equity Awards exists)
  * 2. Inject auto-fetched stock splits (if enabled)
  * 3. Enrich with FX rates and GBP conversions
  * 4. Calculate CGT with HMRC matching rules

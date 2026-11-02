@@ -30,7 +30,52 @@ export function extractStockSplits(transactions: EnrichedTransaction[]): StockSp
   }
 
   // Sort by date (earliest first) to apply in chronological order
-  return splits.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+  splits.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+
+  return dedupeSplitEvents(splits)
+}
+
+/**
+ * Brokers may record the same split a few days apart (ex-date vs pay date),
+ * matching the window used to dedupe auto-fetched splits.
+ */
+const SPLIT_DEDUP_WINDOW_MS = 7 * 24 * 60 * 60 * 1000
+
+/**
+ * Collapse repeated reports of the same split into one event.
+ *
+ * The same split often arrives more than once: from two brokers that both
+ * held the shares, or from overlapping exports of one broker. Applying each
+ * copy would multiply quantities by the ratio twice (10 shares becoming 1,000
+ * after a 10:1 split), so events for the same symbol within a few days of
+ * each other are treated as one split, keeping the earliest.
+ *
+ * @param splits Split events sorted by date (earliest first)
+ */
+function dedupeSplitEvents(splits: StockSplitEvent[]): StockSplitEvent[] {
+  const kept: StockSplitEvent[] = []
+
+  for (const split of splits) {
+    const splitMs = new Date(split.date).getTime()
+    const duplicateOf = kept.find(existing =>
+      existing.symbol === split.symbol &&
+      Math.abs(new Date(existing.date).getTime() - splitMs) <= SPLIT_DEDUP_WINDOW_MS
+    )
+
+    if (!duplicateOf) {
+      kept.push(split)
+      continue
+    }
+
+    if (duplicateOf.ratioMultiplier !== split.ratioMultiplier) {
+      console.warn(
+        `Conflicting stock split records for ${split.symbol}: ${duplicateOf.ratio} on ${duplicateOf.date} ` +
+        `(${duplicateOf.source}) and ${split.ratio} on ${split.date} (${split.source}). Using ${duplicateOf.ratio}.`
+      )
+    }
+  }
+
+  return kept
 }
 
 /**
