@@ -20,6 +20,7 @@ export const genericDefinition: BrokerDefinition = {
       'Required for DIVIDEND/FEE: total',
       'Required for STOCK_SPLIT: split_ratio (e.g., "10:1", "2:1", "1:10" for reverse splits)',
       'Optional: name, total, fee, notes',
+      'Optional: asset_class ("share" or "crypto") so cryptoassets are reported in the SA108 Cryptoassets section. Rows priced in a cryptocurrency are treated as crypto automatically',
       'Transaction types: BUY, SELL, DIVIDEND, FEE, INTEREST, TRANSFER, TAX, STOCK_SPLIT',
     ],
     info: 'A simplified format that matches the data model used internally by this tool. Use this if your broker isn\'t supported yet, or to manually create test data. Stock Splits: Use STOCK_SPLIT to record corporate actions like 10:1 splits. The tool will automatically adjust your cost basis per HMRC TCGA92/S127 rules.',

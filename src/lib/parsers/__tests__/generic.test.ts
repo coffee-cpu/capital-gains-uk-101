@@ -395,3 +395,24 @@ describe('Generic CSV Parser - number and date validation', () => {
     expect(normalizeGenericTransactions([row({ date: '2024-02-29' })], 'f')).toHaveLength(1)
   })
 })
+
+describe('Generic CSV Parser - asset_class', () => {
+  const row = (assetClass: string) => ({
+    date: '2024-01-15', type: 'BUY', symbol: 'BTC', currency: 'GBP',
+    quantity: '0.1', price: '30000', total: '3000', fee: '0', asset_class: assetClass,
+  })
+
+  it('reads crypto and share, case-insensitively', () => {
+    const [crypto, share, blank] = normalizeGenericTransactions([row('Crypto'), row('share'), row('')], 'f')
+    expect(crypto.asset_class).toBe('crypto')
+    expect(share.asset_class).toBe('share')
+    expect(blank.asset_class).toBeUndefined()
+  })
+
+  it('skips a row with an unrecognised asset_class instead of guessing', () => {
+    const skippedRows: { row: number; reason: string }[] = []
+    const result = normalizeGenericTransactions([row('bond')], 'f', skippedRows)
+    expect(result).toHaveLength(0)
+    expect(skippedRows[0].reason).toBe('unrecognised asset_class "bond" (use share or crypto)')
+  })
+})

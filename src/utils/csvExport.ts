@@ -1,4 +1,5 @@
 import { GenericTransaction } from '../types/transaction'
+import { isCryptoasset } from '../lib/cgt/sa108'
 
 /**
  * Export transactions to Generic CSV format and trigger a browser download
@@ -41,7 +42,8 @@ export function transactionsToGenericCSV(transactions: GenericTransaction[]): st
     'total',
     'fee',
     'notes',
-    'split_ratio'
+    'split_ratio',
+    'asset_class'
   ]
 
   // Sort transactions by date (oldest first)
@@ -62,7 +64,10 @@ export function transactionsToGenericCSV(transactions: GenericTransaction[]): st
       tx.total !== null ? tx.total.toString() : '',
       tx.fee !== null ? tx.fee.toString() : '',
       tx.notes || '',
-      tx.ratio || ''
+      tx.ratio || '',
+      // Keeps crypto in the Cryptoassets section once the source (e.g.
+      // Coinbase) is replaced by "Generic CSV"
+      isCryptoasset(tx) ? 'crypto' : (tx.asset_class ?? '')
     ]
   })
 

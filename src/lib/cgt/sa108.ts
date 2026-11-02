@@ -1,5 +1,6 @@
 import type { DisposalRecord } from '../../types/cgt'
-import type { EnrichedTransaction } from '../../types/transaction'
+import type { EnrichedTransaction, GenericTransaction } from '../../types/transaction'
+import { isFiatCurrency } from '../currencies'
 
 /**
  * SA108 figures: how disposals are counted and totalled on the capital gains
@@ -39,10 +40,24 @@ export type Sa108Category = 'LISTED_SHARES' | 'CRYPTO' | 'OPTIONS'
 /** Brokers whose exports are cryptoassets. Transactions carry no asset class. */
 const CRYPTO_SOURCES = new Set(['Coinbase', 'Coinbase Pro'])
 
+/**
+ * Whether a transaction is a cryptoasset, as far as the imported data can tell:
+ * - the row says so (Generic CSV asset_class "crypto"), or
+ * - it comes from a crypto exchange's export, or
+ * - it is priced in a cryptocurrency (a listed share can't be),
+ * unless the row explicitly says it is a share. Symbols aren't used: tickers
+ * such as ETH are also listed shares.
+ */
+export function isCryptoasset(tx: Pick<GenericTransaction, 'source' | 'currency' | 'asset_class'>): boolean {
+  if (tx.asset_class === 'crypto') return true
+  if (tx.asset_class === 'share') return false
+  return CRYPTO_SOURCES.has(tx.source) || !isFiatCurrency(tx.currency)
+}
+
 /** Which SA108 section a disposal belongs in, as far as the imported data can tell */
 export function sa108Category(tx: EnrichedTransaction): Sa108Category {
   if (tx.underlying_symbol != null) return 'OPTIONS'
-  if (CRYPTO_SOURCES.has(tx.source)) return 'CRYPTO'
+  if (isCryptoasset(tx)) return 'CRYPTO'
   return 'LISTED_SHARES'
 }
 

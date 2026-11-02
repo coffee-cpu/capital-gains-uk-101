@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach, type MockInstance } from 'vitest'
-import { exportTransactionsToCSV } from '../csvExport'
+import { exportTransactionsToCSV, transactionsToGenericCSV } from '../csvExport'
 import { GenericTransaction } from '../../types/transaction'
 
 describe('csvExport', () => {
@@ -204,5 +204,23 @@ describe('csvExport', () => {
     // Verify download was triggered
     expect(createObjectURLSpy).toHaveBeenCalled()
     expect(mockLink.click).toHaveBeenCalled()
+  })
+})
+
+describe('transactionsToGenericCSV - asset_class', () => {
+  it('keeps crypto as crypto through export and re-import', async () => {
+    const { importCSVText } = await import('../../lib/import')
+    const { isCryptoasset } = await import('../../lib/cgt/sa108')
+    const coinbaseBuy = {
+      id: 'cb-1', source: 'Coinbase', symbol: 'BTC', name: 'Bitcoin', date: '2024-05-01', type: 'BUY' as const,
+      quantity: 0.1, price: 30000, currency: 'GBP', total: 3000, fee: 0, notes: null,
+    }
+    const share = { ...coinbaseBuy, id: 'gen-1', source: 'Generic CSV', symbol: 'AAA', name: null }
+
+    const csv = transactionsToGenericCSV([coinbaseBuy, share])
+    const reimported = importCSVText(csv, 'roundtrip').transactions
+
+    expect(csv.split('\n')[0]).toContain('asset_class')
+    expect(reimported.map(t => [t.symbol, isCryptoasset(t)])).toEqual([['BTC', true], ['AAA', false]])
   })
 })
