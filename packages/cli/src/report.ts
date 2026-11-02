@@ -376,8 +376,9 @@ function collectWarnings(result: CGTCalculationResult, disposals: DisposalRecord
     warnings.push({
       code: 'INCOMPLETE_DISPOSAL',
       message:
-        `${incomplete.length} disposal(s) sell more shares than the imported history shows were acquired, ` +
-        'so part of their cost is missing and gains are overstated. Import earlier history, or add the missing ' +
+        `${incomplete.length} disposal(s) sell more shares than the imported history shows were acquired. ` +
+        'Only the matched part of each is counted, so the proceeds, cost and gain of the unmatched shares are ' +
+        'left out of the totals. Import earlier history, or add the missing ' +
         'acquisitions to a Generic CSV (see the normalize command).',
       transactionIds: incomplete.map(d => d.disposal.id),
     })

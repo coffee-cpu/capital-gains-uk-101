@@ -50,7 +50,8 @@ export function ExportPDFButton() {
         taxYearSummary,
         disposalsForYear,
         transactions,
-        includeTransactions
+        includeTransactions,
+        cgtResults?.section104Pools
       )
 
       // Mark that user has successfully exported a PDF

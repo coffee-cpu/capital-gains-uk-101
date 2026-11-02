@@ -83,7 +83,7 @@ function AdjustmentRequiredContent({ data, context }: ContentProps): React.React
           </View>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Losses:</Text>
-            <Text style={[styles.summaryValue, { color: '#dc2626' }]}>
+            <Text style={[styles.summaryValue, data.lossesBeforeRateChange < 0 ? { color: '#dc2626' } : {}]}>
               {formatCurrency(data.lossesBeforeRateChange)}
             </Text>
           </View>
@@ -124,7 +124,7 @@ function AdjustmentRequiredContent({ data, context }: ContentProps): React.React
       </View>
       <View style={styles.summaryRow}>
         <Text style={styles.summaryLabel}>Losses:</Text>
-        <Text style={[styles.summaryValue, { color: '#dc2626' }]}>
+        <Text style={[styles.summaryValue, data.lossesAfterRateChange < 0 ? { color: '#dc2626' } : {}]}>
           {formatCurrency(data.lossesAfterRateChange)}
         </Text>
       </View>

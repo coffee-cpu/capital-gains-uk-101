@@ -1,6 +1,6 @@
 import { useTransactionStore } from '../stores/transactionStore'
 import { useState } from 'react'
-import { getUnitLabel } from '../lib/cgt/utils'
+import { getUnitLabel, isFullyUnmatched } from '../lib/cgt/utils'
 import { formatGbp } from '../utils/currency'
 
 const EMPTY_DISPOSALS: never[] = []
@@ -169,7 +169,7 @@ export function DisposalRecords({
                   {/* Matchings or Incomplete Warning */}
                   <div>
                     <div className="text-xs text-gray-500 uppercase mb-2">Matched Acquisitions</div>
-                    {disposal.isIncomplete && disposal.unmatchedQuantity === disposal.disposal.quantity ? (
+                    {isFullyUnmatched(disposal) ? (
                       // Fully unmatched disposal - show warning instead of matching section
                       <div className="bg-red-50 border border-red-200 rounded p-3">
                         <div className="flex items-start gap-2">

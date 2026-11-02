@@ -47,6 +47,23 @@ test.describe('Tax Year Summary Verification', () => {
     await expect(exportButton).toBeEnabled()
   })
 
+  test('should download the PDF report', async ({ page }) => {
+    await page.goto('/')
+    await page.locator('input[type="file"]').setInputFiles(path.join(__dirname, 'fixtures', 'generic-multi-company.csv'))
+    await expect(page.getByText(/file\(s\) imported successfully/i)).toBeVisible({ timeout: 15000 })
+
+    const downloadPromise = page.waitForEvent('download', { timeout: 30000 })
+    await page.getByRole('button', { name: /Export PDF/i }).click()
+    const download = await downloadPromise
+
+    expect(download.suggestedFilename()).toMatch(/^CGT-Report-\d{4}-\d{2}\.pdf$/)
+    const stream = await download.createReadStream()
+    const chunks: Buffer[] = []
+    for await (const chunk of stream) chunks.push(chunk as Buffer)
+    expect(Buffer.concat(chunks).subarray(0, 5).toString()).toBe('%PDF-')
+    await expect(page.getByText(/Failed to generate PDF/i)).not.toBeVisible()
+  })
+
   test('should calculate correct CGT summary for 2023/24 tax year', async ({ page }) => {
     await page.goto('/')
 

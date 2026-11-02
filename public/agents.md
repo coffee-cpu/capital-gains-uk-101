@@ -108,7 +108,7 @@ Every warning has a `code`, a `message` and usually `transactionIds`. Don't pres
 
 | Code | What it means | What to do |
 |---|---|---|
-| `INCOMPLETE_DISPOSAL` | A sale has no recorded purchase for some of the shares, so part of its cost is missing and the gain is overstated | Ask for earlier history, or for transfers in (with the original cost) |
+| `INCOMPLETE_DISPOSAL` | A sale has no recorded purchase for some of the shares. Only the matched part is counted, so the unmatched shares' proceeds, cost and gain are left out of the totals | Ask for earlier history, or for transfers in (with the original cost) |
 | `FX_RATE_MISSING` | No GBP exchange rate could be found, so GBP values are missing | Re-run with network access. If it persists, report the currency and dates to the user |
 | `SPLIT_DATA_UNAVAILABLE` | Stock split data couldn't be fetched, so splits missing from the broker file weren't applied | Re-run with network access |
 | `SKIPPED_ROWS` (0.2.0+) | Some rows of a file couldn't be read (for example a missing date or an unrecognised `type` in a Generic CSV) and were left out | Show the user the listed rows and fix them before trusting the totals |
@@ -134,7 +134,7 @@ npx -y cgt-visualiser@latest detect transactions.csv --format json   # "transact
 
 ## 6. Create a PDF report (optional)
 
-If the user wants a report to keep with their tax records, write a PDF for one tax year (version 0.3.0 and later). It is the same report as the web app's **Export PDF** button: the summary, every disposal with how it was matched, and the calculation.
+If the user wants a report to keep with their tax records, write a PDF for one tax year (version 0.3.0 and later). It is the same report as the web app's **Export PDF** button: the summary, the SA108 figures with box numbers, dividend and interest income, every disposal with how it was matched, the Section 104 holdings at the year end, and warnings about missing exchange rates or unmatched sales.
 
 ```bash
 npx -y cgt-visualiser@latest calculate statement1.csv statement2.csv --tax-year 2025/26 --format pdf -o CGT-Report-2025-26.pdf
