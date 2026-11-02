@@ -25,7 +25,7 @@ jobs:
           cache: 'npm'
 
       - name: Install npm with OIDC support
-        run: npm install -g npm@11.21.1  # pinned: 11.5.1+ needed for trusted publishing
+        run: npm install -g npm@11.21.1  # pinned: 11.5.1+ needed for trusted publishing; Dependabot does not update this line
 
       - run: npm ci
 

@@ -9,3 +9,15 @@ updates:
     groups:
       actions:
         patterns: ["*"]
+
+  # Dev tooling (e.g. vitest, pinned exactly) gets security and patch updates
+  # in one grouped weekly PR. Runtime dependencies are left to manual updates.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    allow:
+      - dependency-type: development
+    groups:
+      dev-dependencies:
+        dependency-type: development
