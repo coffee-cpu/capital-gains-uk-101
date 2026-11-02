@@ -1,8 +1,103 @@
 import { GenericTransaction } from '../types/transaction'
 
 /**
- * Deduplicates transactions by removing Stock Plan Activity transactions
- * when there are corresponding Equity Awards transactions.
+ * The file a transaction was imported from, from its ID.
+ *
+ * Parsers build IDs as `${fileId}-${rowIndex}` (Interactive Brokers option
+ * expiries use `${fileId}-exp-${rowIndex}`). Returns null for IDs that don't
+ * follow the pattern, such as auto-fetched splits.
+ */
+export function getImportFileId(transactionId: string): string | null {
+  if (transactionId.startsWith('auto-split-')) return null
+  const match = /^(.+?)-(?:exp-)?\d+$/.exec(transactionId)
+  return match ? match[1] : null
+}
+
+function overlapKey(tx: GenericTransaction): string {
+  return JSON.stringify([
+    tx.source, tx.type, tx.date, tx.symbol, tx.currency,
+    tx.quantity, tx.price, tx.total, tx.fee, tx.ratio ?? null,
+  ])
+}
+
+/**
+ * Removes rows that appear in more than one imported file.
+ *
+ * Users often import overlapping exports from the same broker, such as a
+ * "2023" statement and a "2022-2024" statement. The duplicate-file check only
+ * compares file name and size, so without this every overlapping trade would
+ * be counted twice: double proceeds, double cost and a doubled pool.
+ *
+ * Rows match when every recorded field is identical (broker, type, date,
+ * symbol, currency, quantity, price, total, fee, split ratio). Identical rows
+ * within one file are kept, since separate fills at the same price are real.
+ * Across files, the file with the most copies of a row is kept and the copies
+ * in other files are dropped.
+ *
+ * Limitation: two separate accounts at the same broker, imported as separate
+ * files, that make exactly the same trade on the same day will be merged.
+ */
+export function removeOverlappingImports(transactions: GenericTransaction[]): GenericTransaction[] {
+  return findOverlappingImports(transactions).kept
+}
+
+/**
+ * Splits transactions into the rows kept and the rows removed as overlapping
+ * imports (see removeOverlappingImports), so the removed rows can be shown to
+ * the user.
+ */
+export function findOverlappingImports(
+  transactions: GenericTransaction[]
+): { kept: GenericTransaction[]; removed: GenericTransaction[] } {
+  const groups = new Map<string, Map<string, GenericTransaction[]>>()
+
+  for (const tx of transactions) {
+    const fileId = getImportFileId(tx.id)
+    if (fileId === null) continue
+
+    const key = overlapKey(tx)
+    let byFile = groups.get(key)
+    if (!byFile) {
+      byFile = new Map()
+      groups.set(key, byFile)
+    }
+    const rows = byFile.get(fileId)
+    if (rows) {
+      rows.push(tx)
+    } else {
+      byFile.set(fileId, [tx])
+    }
+  }
+
+  const dropped = new Set<GenericTransaction>()
+  for (const byFile of groups.values()) {
+    if (byFile.size < 2) continue
+
+    let keepFile: string | null = null
+    let keepCount = 0
+    for (const [fileId, rows] of byFile) {
+      if (rows.length > keepCount) {
+        keepFile = fileId
+        keepCount = rows.length
+      }
+    }
+
+    for (const [fileId, rows] of byFile) {
+      if (fileId !== keepFile) rows.forEach(tx => dropped.add(tx))
+    }
+  }
+
+  if (dropped.size === 0) return { kept: transactions, removed: [] }
+  return {
+    kept: transactions.filter(tx => !dropped.has(tx)),
+    removed: transactions.filter(tx => dropped.has(tx)),
+  }
+}
+
+/**
+ * Deduplicates transactions: removes rows repeated across overlapping imports
+ * (see removeOverlappingImports), then removes Stock Plan Activity
+ * transactions when there are corresponding Equity Awards transactions.
  *
  * Stock Plan Activity transactions appear in the standard Schwab export, often with
  * missing price data (though users may manually add prices). When users also import
@@ -18,7 +113,9 @@ import { GenericTransaction } from '../types/transaction'
  * @param transactions Array of all loaded transactions
  * @returns Array with Stock Plan Activity removed when Equity Awards coverage exists
  */
-export function deduplicateTransactions(transactions: GenericTransaction[]): GenericTransaction[] {
+export function deduplicateTransactions(allTransactions: GenericTransaction[]): GenericTransaction[] {
+  const transactions = removeOverlappingImports(allTransactions)
+
   // Helper function to check if a Stock Plan Activity transaction has Equity Awards coverage
   const hasEquityAwardsCoverage = (tx: GenericTransaction) => {
     if (!tx.symbol) return false

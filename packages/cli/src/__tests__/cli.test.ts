@@ -192,6 +192,39 @@ describe('cgt-visualiser CLI', () => {
       expect(report.taxYears.find(y => y.taxYear === '2024/25')!.netGainOrLossGbp).toBe(629.67)
     })
 
+    it('warns when rows repeated across overlapping files are counted once', async () => {
+      const header = 'date,type,symbol,currency,quantity,price,total,fee\n'
+      const buy = '2024-05-01,BUY,VOD,GBP,100,1.00,100,0\n'
+      const sell = '2024-06-03,SELL,VOD,GBP,100,1.50,150,0\n'
+      const year = join(tmp, 'vod-2024.csv')
+      const all = join(tmp, 'vod-all.csv')
+      writeFileSync(year, header + buy)
+      writeFileSync(all, header + buy + sell)
+
+      const { stdout } = await run(['calculate', year, all, ...OFFLINE])
+      const report: CalculateReport = JSON.parse(stdout)
+      const warning = report.warnings.find(w => w.code === 'OVERLAPPING_ROWS_REMOVED')!
+
+      expect(warning.transactionIds).toHaveLength(1)
+      expect(report.taxYears.find(y => y.taxYear === '2024/25')!.netGainOrLossGbp).toBe(50)
+    })
+
+    it('warns when stock split records disagree on the ratio', async () => {
+      const file = join(tmp, 'splits.csv')
+      writeFileSync(file, [
+        'date,type,symbol,currency,quantity,price,total,fee,split_ratio',
+        '2024-01-10,BUY,NVDA,GBP,1,500,500,0,',
+        '2024-06-10,STOCK_SPLIT,NVDA,GBP,,,,,10:1',
+        '2024-06-12,STOCK_SPLIT,NVDA,GBP,,,,,2:1',
+      ].join('\n') + '\n')
+
+      const { stdout } = await run(['calculate', file, ...OFFLINE])
+      const warning = (JSON.parse(stdout) as CalculateReport).warnings.find(w => w.code === 'SPLIT_RATIO_CONFLICT')!
+
+      expect(warning.message).toContain('used 10:1')
+      expect(warning.transactionIds).toHaveLength(2)
+    })
+
     it('warns when stock split data is unavailable, and exits 3 with --strict', async () => {
       const args = ['calculate', fixture('hmrc-hs284-example3.csv'), '--offline', '--no-cache']
 
@@ -326,6 +359,22 @@ describe('cgt-visualiser CLI', () => {
       expect(code).toBe(0)
       expect(stderr).toContain('Warning:')
       expect(stderr).toContain('row 3: unrecognised type "SEL"')
+    })
+
+    it('warns on stderr when rows repeated across overlapping files are written once', async () => {
+      const header = 'date,type,symbol,currency,quantity,price,total,fee\n'
+      const buy = '2024-01-02,BUY,VOD,GBP,100,1,100,0\n'
+      const year = join(tmp, 'vod-2024.csv')
+      const all = join(tmp, 'vod-all.csv')
+      const out = join(tmp, 'generic.csv')
+      writeFileSync(year, header + buy)
+      writeFileSync(all, header + buy + '2024-06-03,SELL,VOD,GBP,100,2,200,0\n')
+
+      const { code, stderr } = await run(['normalize', year, all, '-o', out])
+
+      expect(code).toBe(0)
+      expect(stderr).toContain('Warning: 1 row(s) also appeared in another input file')
+      expect(stderr).toContain('Wrote 2 transactions')
     })
 
     it('requires an output file', async () => {

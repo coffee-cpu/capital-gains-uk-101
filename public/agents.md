@@ -97,6 +97,7 @@ The JSON has `schemaVersion: 1`. Check it: if it is different, re-read this guid
 
 - `taxYears[]`: the year's totals. `lossesGbp` is a positive number. `taxableGainGbp` is the net gain after the annual exempt amount; it doesn't include losses brought forward from earlier years, which the tool doesn't know about.
 - `taxYears[].sa108`: the figures the SA108 "listed shares and securities" section asks for. Fields are named, not numbered, because box numbers change between years. Point the user to that year's SA108 notes for the boxes.
+- `disposals[].missingFx`: present and true when the disposal, or a purchase its cost comes from, has no GBP exchange rate and was valued at £0. Tell the user that disposal's gain is wrong until the rate loads (the `FX_RATE_MISSING` warning lists the transactions).
 - `taxYears[].rateChange2024` (2024/25 only): gains before and after the 30 October 2024 rate change. If `adjustmentRequired` is true, tell the user to use HMRC's calculator for the adjustment.
 - `disposals[]`: one row per sale, with the matching `rules` used (`same-day`, `30-day`, `section-104`, `short-sell`).
 - `section104Pools[]`: holdings remaining after the last transaction.
@@ -113,6 +114,8 @@ Every warning has a `code`, a `message` and usually `transactionIds`. Don't pres
 | `SPLIT_DATA_UNAVAILABLE` | Stock split data couldn't be fetched, so splits missing from the broker file weren't applied | Re-run with network access |
 | `SKIPPED_ROWS` (0.2.0+) | Some rows of a file couldn't be read (for example a missing date or an unrecognised `type` in a Generic CSV) and were left out | Show the user the listed rows and fix them before trusting the totals |
 | `UNKNOWN_TRANSACTION_TYPE` | Some rows weren't recognised and were left out | Show the user the affected rows and ask what they are |
+| `OVERLAPPING_ROWS_REMOVED` | Rows that also appear in another file from the same broker (overlapping exports) were counted once | Usually nothing. If the user has two accounts at that broker that made the same trade on the same day, add the missing trade back in a Generic CSV |
+| `SPLIT_RATIO_CONFLICT` | Two records of the same stock split gave different ratios; the earliest was used | Ask the user to confirm the correct ratio. If the one used is wrong, fix the split row in a Generic CSV |
 | `DUPLICATE_FILE` | The same file was passed twice and was used once | Usually nothing |
 | `TAX_YEAR_NOT_FOUND` | No transactions in the requested tax year | Check the year, and that the history covers it |
 

@@ -1,4 +1,5 @@
-import { EnrichedTransaction, StockSplitEvent, parseRatioMultiplier } from '../../../types/transaction'
+import { EnrichedTransaction, GenericTransaction, StockSplitEvent, parseRatioMultiplier } from '../../../types/transaction'
+import type { SplitConflict } from '../../../types/cgt'
 import { Enricher } from '../types'
 
 /**
@@ -6,6 +7,21 @@ import { Enricher } from '../types'
  * Converts STOCK_SPLIT transactions into StockSplitEvent records
  */
 export function extractStockSplits(transactions: EnrichedTransaction[]): StockSplitEvent[] {
+  return dedupeSplitEvents(parseStockSplits(transactions)).kept
+}
+
+/**
+ * Split records that were ignored because an earlier record of the same split
+ * gave a different ratio. The earliest record is the one applied.
+ */
+export function findSplitConflicts(transactions: GenericTransaction[]): SplitConflict[] {
+  return dedupeSplitEvents(parseStockSplits(transactions)).conflicts
+}
+
+/**
+ * Parse STOCK_SPLIT transactions into split events, sorted by date
+ */
+function parseStockSplits(transactions: GenericTransaction[]): StockSplitEvent[] {
   const splits: StockSplitEvent[] = []
 
   for (const tx of transactions) {
@@ -31,6 +47,53 @@ export function extractStockSplits(transactions: EnrichedTransaction[]): StockSp
 
   // Sort by date (earliest first) to apply in chronological order
   return splits.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+}
+
+/**
+ * Brokers may record the same split a few days apart (ex-date vs pay date),
+ * matching the window used to dedupe auto-fetched splits.
+ */
+const SPLIT_DEDUP_WINDOW_MS = 7 * 24 * 60 * 60 * 1000
+
+/**
+ * Collapse repeated reports of the same split into one event.
+ *
+ * The same split often arrives more than once: from two brokers that both
+ * held the shares, or from overlapping exports of one broker. Applying each
+ * copy would multiply quantities by the ratio twice (10 shares becoming 1,000
+ * after a 10:1 split), so events for the same symbol within a few days of
+ * each other are treated as one split, keeping the earliest.
+ *
+ * @param splits Split events sorted by date (earliest first)
+ */
+function dedupeSplitEvents(
+  splits: StockSplitEvent[]
+): { kept: StockSplitEvent[]; conflicts: SplitConflict[] } {
+  const kept: StockSplitEvent[] = []
+  const conflicts: SplitConflict[] = []
+
+  for (const split of splits) {
+    const splitMs = new Date(split.date).getTime()
+    const duplicateOf = kept.find(existing =>
+      existing.symbol === split.symbol &&
+      Math.abs(new Date(existing.date).getTime() - splitMs) <= SPLIT_DEDUP_WINDOW_MS
+    )
+
+    if (!duplicateOf) {
+      kept.push(split)
+      continue
+    }
+
+    if (duplicateOf.ratioMultiplier !== split.ratioMultiplier) {
+      conflicts.push({
+        symbol: split.symbol,
+        used: { id: duplicateOf.id, date: duplicateOf.date, ratio: duplicateOf.ratio, source: duplicateOf.source },
+        ignored: { id: split.id, date: split.date, ratio: split.ratio, source: split.source },
+      })
+    }
+  }
+
+  return { kept, conflicts }
 }
 
 /**

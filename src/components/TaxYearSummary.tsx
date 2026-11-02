@@ -189,6 +189,17 @@ export function TaxYearSummary() {
           </div>
         </div>
 
+        {/* Warning for disposals valued with a missing exchange rate */}
+        {(currentSummary.missingFxDisposals ?? 0) > 0 && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4" data-testid="missing-fx-warning">
+            <h4 className="text-sm font-medium text-red-800">Missing Exchange Rates</h4>
+            <p className="mt-1 text-sm text-red-700">
+              {currentSummary.missingFxDisposals} disposal{currentSummary.missingFxDisposals !== 1 ? 's' : ''} use a transaction with no GBP exchange rate, valued at £0.
+              The gains and losses above are wrong until the rate is available. Try reloading, or choose a different FX source.
+            </p>
+          </div>
+        )}
+
         {/* Warning for incomplete disposals */}
         {currentSummary.incompleteDisposals > 0 && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">

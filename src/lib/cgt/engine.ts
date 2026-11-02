@@ -6,7 +6,7 @@ import { sameDayStage } from './sameDayMatcher'
 import { thirtyDayStage } from './thirtyDayMatcher'
 import { section104Stage } from './section104Pool'
 import { getTaxYearBounds } from '../../utils/taxYear'
-import { getEffectiveQuantity, isAcquisition, isDisposal, calculateNetProceeds, QUANTITY_EPSILON } from './utils'
+import { getEffectiveQuantity, isAcquisition, isDisposal, calculateNetProceeds, hasGbpPrice, QUANTITY_EPSILON } from './utils'
 import { calculateTaxYearFeatures } from './taxYearFeatures/registry'
 import { getAnnualExemptAmount, getDividendAllowance } from './allowances'
 
@@ -140,6 +140,14 @@ function createDisposalRecords(matchings: MatchingResult[]): DisposalRecord[] {
     // Calculate gain or loss (only for matched portion)
     const gainOrLoss = netProceeds - totalCostBasis
 
+    // A missing exchange rate values that side at £0. Section 104 matches
+    // carry the pool's flag; their synthetic acquisition is priced at the
+    // pool average, so it can't be checked directly.
+    const missingFx = !hasGbpPrice(disposal) || disposalMatchings.some(matching =>
+      matching.missingFx ||
+      (matching.rule !== 'SECTION_104' && matching.acquisitions.some(acq => !hasGbpPrice(acq.transaction)))
+    )
+
     records.push({
       id: `disposal-${disposalId}`,
       disposal,
@@ -150,6 +158,7 @@ function createDisposalRecords(matchings: MatchingResult[]): DisposalRecord[] {
       taxYear: disposal.tax_year,
       unmatchedQuantity: isIncomplete ? unmatchedQuantity : undefined,
       isIncomplete,
+      ...(missingFx && { missingFx: true }),
     })
   }
 
@@ -275,6 +284,7 @@ function generateTaxYearSummaries(
 
     // Count incomplete disposals (those with missing acquisition data)
     const incompleteDisposals = yearDisposals.filter(d => d.isIncomplete).length
+    const missingFxDisposals = yearDisposals.filter(d => d.missingFx).length
 
     // Create the summary (without features first)
     const summary: TaxYearSummary = {
@@ -300,6 +310,7 @@ function generateTaxYearSummaries(
       grossInterestGbp,
       interestWithholdingTaxGbp,
       incompleteDisposals,
+      missingFxDisposals,
     }
 
     // Calculate tax year-specific features

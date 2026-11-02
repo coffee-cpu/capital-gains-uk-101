@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { SplitEnricher, extractStockSplits } from '../splitEnricher'
+import { SplitEnricher, extractStockSplits, findSplitConflicts } from '../splitEnricher'
 import { EnrichedTransaction, GenericTransaction, TransactionType } from '../../../../types/transaction'
 
 function makeTx(overrides: Partial<GenericTransaction>): EnrichedTransaction {
@@ -210,5 +210,71 @@ describe('SplitEnricher', () => {
     expect(buy.split_adjusted_price).toBe(50.0) // 5.00 / 0.1
     expect(buy.split_multiplier).toBe(0.1)
     expect(buy.applied_splits).toEqual(['split-reverse'])
+  })
+})
+
+describe('duplicate split records', () => {
+  const split = (id: string, source: string, date: string, ratio = '10:1') =>
+    makeTx({ id, source, symbol: 'NVDA', date, type: TransactionType.STOCK_SPLIT, ratio })
+
+  it('applies a split once when two brokers both report it', async () => {
+    const result = await enrich([
+      makeTx({ id: 'buy-1', symbol: 'NVDA', date: '2024-01-10', quantity: 1, price: 500 }),
+      split('schwab-split', 'Charles Schwab', '2024-06-10'),
+      split('ib-split', 'Interactive Brokers', '2024-06-10'),
+    ])
+
+    const buy = result.find(tx => tx.id === 'buy-1')!
+    expect(buy.split_adjusted_quantity).toBe(10)
+    expect(buy.split_multiplier).toBe(10)
+    expect(buy.applied_splits).toEqual(['schwab-split'])
+  })
+
+  it('treats records a few days apart as the same split', () => {
+    const splits = extractStockSplits([
+      split('pay-date', 'Freetrade', '2024-06-11'),
+      split('ex-date', 'Charles Schwab', '2024-06-07'),
+    ])
+    expect(splits.map(s => s.id)).toEqual(['ex-date'])
+  })
+
+  it('keeps separate splits of the same symbol further apart', () => {
+    const splits = extractStockSplits([
+      split('first', 'Charles Schwab', '2021-07-20', '4:1'),
+      split('second', 'Charles Schwab', '2024-06-10'),
+    ])
+    expect(splits.map(s => s.id)).toEqual(['first', 'second'])
+  })
+
+  it('keeps the earliest record when duplicates disagree on the ratio', () => {
+    const splits = extractStockSplits([
+      split('a', 'Charles Schwab', '2024-06-10', '10:1'),
+      split('b', 'Interactive Brokers', '2024-06-12', '2:1'),
+    ])
+    expect(splits).toHaveLength(1)
+    expect(splits[0].ratio).toBe('10:1')
+  })
+})
+
+describe('findSplitConflicts', () => {
+  const split = (id: string, source: string, date: string, ratio: string) =>
+    makeTx({ id, source, symbol: 'NVDA', date, type: TransactionType.STOCK_SPLIT, ratio })
+
+  it('reports a record ignored because it disagrees on the ratio', () => {
+    expect(findSplitConflicts([
+      split('b', 'Interactive Brokers', '2024-06-12', '2:1'),
+      split('a', 'Charles Schwab', '2024-06-10', '10:1'),
+    ])).toEqual([{
+      symbol: 'NVDA',
+      used: { id: 'a', date: '2024-06-10', ratio: '10:1', source: 'Charles Schwab' },
+      ignored: { id: 'b', date: '2024-06-12', ratio: '2:1', source: 'Interactive Brokers' },
+    }])
+  })
+
+  it('reports nothing for duplicates that agree', () => {
+    expect(findSplitConflicts([
+      split('a', 'Charles Schwab', '2024-06-10', '10:1'),
+      split('b', 'Interactive Brokers', '2024-06-10', '10:1'),
+    ])).toEqual([])
   })
 })

@@ -1,4 +1,4 @@
-import { EnrichedTransaction, GainGroupType } from './transaction'
+import { EnrichedTransaction, GainGroupType, GenericTransaction } from './transaction'
 import type { TaxYearFeaturesMap } from '../lib/cgt/taxYearFeatures/types'
 
 /**
@@ -30,6 +30,12 @@ export interface MatchingResult {
   quantityMatched: number
   /** Total cost basis in GBP for the matched quantity */
   totalCostBasisGbp: number
+  /**
+   * True when the matched cost includes an acquisition with no GBP exchange
+   * rate (valued at £0). Set by the Section 104 stage when the pool holds such
+   * an acquisition; other stages leave it unset.
+   */
+  missingFx?: boolean
 }
 
 /**
@@ -54,6 +60,11 @@ export interface DisposalRecord {
   unmatchedQuantity?: number
   /** True if disposal has insufficient acquisition data */
   isIncomplete: boolean
+  /**
+   * True if the disposal, or an acquisition its cost comes from, has no GBP
+   * exchange rate. The missing side is valued at £0, so the gain is wrong.
+   */
+  missingFx?: boolean
 }
 
 /**
@@ -131,6 +142,8 @@ export interface TaxYearSummary {
   interestWithholdingTaxGbp: number
   /** Number of disposals with incomplete/missing acquisition data */
   incompleteDisposals: number
+  /** Number of disposals whose gain uses a missing GBP exchange rate */
+  missingFxDisposals?: number
   /**
    * Tax year-specific feature data.
    * Each feature stores its calculated data under its unique ID.
@@ -161,5 +174,32 @@ export interface CGTCalculationResult {
     totalBuys: number
     totalSells: number
   }
+  /**
+   * Choices the pipeline made about the imported data that change the
+   * figures, so they can be shown to the user. Set by runPipeline.
+   */
+  dataNotices?: DataNotices
+}
+
+/**
+ * One split record that was set aside because another record of the same
+ * split (same symbol, within a few days) gave a different ratio.
+ */
+export interface SplitConflict {
+  symbol: string
+  /** The record that was applied (the earliest) */
+  used: { id: string; date: string; ratio: string; source: string }
+  /** The record that was ignored */
+  ignored: { id: string; date: string; ratio: string; source: string }
+}
+
+export interface DataNotices {
+  /**
+   * Rows dropped because an identical row from the same broker appeared in
+   * another imported file (see removeOverlappingImports)
+   */
+  overlappingRows: GenericTransaction[]
+  /** Split records for the same split that disagreed on the ratio */
+  splitConflicts: SplitConflict[]
 }
 

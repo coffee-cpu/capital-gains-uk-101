@@ -87,6 +87,40 @@ export function detectIssues(
     }
   }
 
+  // Rows dropped as overlapping imports, and split records that disagreed
+  // (WARNING severity): both change the figures, so the user should check them
+  const overlappingRows = cgtResults?.dataNotices?.overlappingRows ?? []
+  if (overlappingRows.length > 0) {
+    const affectedSymbols = [...new Set(overlappingRows.map(tx => tx.symbol).filter(Boolean))]
+
+    issues.push({
+      id: 'overlapping-imports',
+      type: 'warning',
+      title: 'Overlapping Imports',
+      description: `${overlappingRows.length} row${overlappingRows.length !== 1 ? 's' : ''} also appeared in another imported file from the same broker and ${overlappingRows.length !== 1 ? 'were' : 'was'} counted once. This is expected when exports cover overlapping dates.`,
+      count: overlappingRows.length,
+      affectedItems: affectedSymbols,
+      action: 'If any of these were separate trades (for example the same order placed in two accounts), add the missing trade back in a Generic CSV file.',
+      actionLabel: 'Check Rows',
+    })
+  }
+
+  const splitConflicts = cgtResults?.dataNotices?.splitConflicts ?? []
+  if (splitConflicts.length > 0) {
+    issues.push({
+      id: 'split-conflicts',
+      type: 'warning',
+      title: 'Conflicting Stock Split Records',
+      description: splitConflicts
+        .map(c => `${c.symbol}: used ${c.used.ratio} (${c.used.source}, ${c.used.date}), ignored ${c.ignored.ratio} (${c.ignored.source}, ${c.ignored.date}).`)
+        .join(' '),
+      count: splitConflicts.length,
+      affectedItems: [...new Set(splitConflicts.map(c => c.symbol))],
+      action: 'Check the correct split ratio with the company or your broker. Every quantity after the split depends on it.',
+      actionLabel: 'Check Split Ratio',
+    })
+  }
+
   // 3. Check for incomplete Stock Plan Activity (WARNING severity)
   // Note: Check tx.incomplete only (not !tx.ignored) to match TransactionList behavior
   const incompleteTransactions = transactions.filter(tx => tx.incomplete)

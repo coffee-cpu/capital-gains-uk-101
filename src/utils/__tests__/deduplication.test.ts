@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { deduplicateTransactions, getIncompleteStockPlanActivity } from '../deduplication'
+import { deduplicateTransactions, getIncompleteStockPlanActivity, getImportFileId, findOverlappingImports } from '../deduplication'
 import { GenericTransaction } from '../../types/transaction'
 
 // Helper to create a minimal valid transaction
@@ -435,5 +435,82 @@ describe('getIncompleteStockPlanActivity', () => {
 
     expect(result).toHaveLength(1)
     expect(result).toContain('AAPL')
+  })
+})
+
+describe('overlapping imports', () => {
+  // IDs follow the parser pattern `${fileId}-${rowIndex}`, with fileId being
+  // `${sanitisedName}-${size}` as created by createFileId
+  const trade = (id: string, overrides: Partial<GenericTransaction> = {}) =>
+    createTransaction({ id, source: 'Trading 212', notes: null, ...overrides })
+
+  it('reads the file ID from parser-generated transaction IDs', () => {
+    expect(getImportFileId('export_2023_csv-5120-14')).toBe('export_2023_csv-5120')
+    expect(getImportFileId('ib_csv-900-exp-3')).toBe('ib_csv-900')
+    expect(getImportFileId('auto-split-NVDA-2024-06-10')).toBeNull()
+    expect(getImportFileId('b1')).toBeNull()
+  })
+
+  it('drops rows repeated in a second, overlapping export', () => {
+    const year2023 = [trade('y2023_csv-100-1'), trade('y2023_csv-100-2', { date: '2023-09-01' })]
+    const fullHistory = [
+      trade('all_csv-300-1', { date: '2022-05-01' }),
+      trade('all_csv-300-2'),
+      trade('all_csv-300-3', { date: '2023-09-01' }),
+    ]
+
+    const result = deduplicateTransactions([...year2023, ...fullHistory])
+
+    expect(result).toHaveLength(3)
+    expect(result.map(tx => tx.date).sort()).toEqual(['2022-05-01', '2023-09-01', '2024-08-15'])
+  })
+
+  it('keeps identical rows within one file (separate fills at the same price)', () => {
+    const result = deduplicateTransactions([trade('a_csv-100-1'), trade('a_csv-100-2')])
+    expect(result).toHaveLength(2)
+  })
+
+  it('keeps the file with the most copies when files overlap', () => {
+    const result = deduplicateTransactions([
+      trade('a_csv-100-1'),
+      trade('b_csv-200-1'),
+      trade('b_csv-200-2'),
+    ])
+    expect(result.map(tx => tx.id)).toEqual(['b_csv-200-1', 'b_csv-200-2'])
+  })
+
+  it('keeps matching rows from different brokers', () => {
+    const result = deduplicateTransactions([
+      trade('a_csv-100-1'),
+      trade('b_csv-200-1', { source: 'Freetrade' }),
+    ])
+    expect(result).toHaveLength(2)
+  })
+
+  it('keeps rows that differ in any recorded field', () => {
+    const result = deduplicateTransactions([
+      trade('a_csv-100-1'),
+      trade('b_csv-200-1', { fee: 1 }),
+      trade('c_csv-300-1', { quantity: 11 }),
+    ])
+    expect(result).toHaveLength(3)
+  })
+
+  it('never drops rows whose ID does not identify a file', () => {
+    const result = deduplicateTransactions([trade('x'), trade('y')])
+    expect(result).toHaveLength(2)
+  })
+})
+
+describe('findOverlappingImports', () => {
+  it('returns the removed rows alongside the kept ones', () => {
+    const a = createTransaction({ id: 'a_csv-100-1', source: 'Freetrade' })
+    const b1 = createTransaction({ id: 'b_csv-200-1', source: 'Freetrade' })
+    const b2 = createTransaction({ id: 'b_csv-200-2', source: 'Freetrade' })
+
+    const { kept, removed } = findOverlappingImports([a, b1, b2])
+
+    expect(kept).toEqual([b1, b2])
+    expect(removed).toEqual([a])
   })
 })

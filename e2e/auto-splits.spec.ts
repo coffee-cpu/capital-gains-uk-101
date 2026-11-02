@@ -157,6 +157,11 @@ test.describe('Auto-detected Stock Splits', () => {
     const autoSplitRow = page.locator('tr').filter({ hasText: 'STOCK_SPLIT' }).filter({ hasText: '2022-08-24' })
     await expect(autoSplitRow).toBeVisible()
     await expect(autoSplitRow.getByText('Community')).toBeVisible()
+
+    // Both splits applied exactly once: 1 share x 5 x 3 = 15, so the sale of 15 is fully matched
+    const sellRow = page.locator('tr').filter({ hasText: 'SELL' }).filter({ hasText: '2025-06-15' })
+    await expect(sellRow).toBeVisible()
+    await expect(sellRow.locator('.bg-red-100.text-red-800').filter({ hasText: 'Incomplete' })).toHaveCount(0)
   })
 
   test('should not show auto-splits when toggle is disabled', async ({ page }) => {

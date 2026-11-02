@@ -382,3 +382,49 @@ describe('detectIssues', () => {
     expect(buyOnlyIssue).toBeUndefined()
   })
 })
+
+describe('detectIssues - data notices', () => {
+  it('reports rows dropped as overlapping imports', () => {
+    const results = createMockCGTResults({
+      dataNotices: {
+        overlappingRows: [
+          createMockTransaction({ id: 'b_csv-200-1', symbol: 'AAPL' }),
+          createMockTransaction({ id: 'b_csv-200-2', symbol: 'MSFT' }),
+        ],
+        splitConflicts: [],
+      },
+    })
+
+    const issue = detectIssues([createMockTransaction()], results).find(i => i.id === 'overlapping-imports')!
+
+    expect(issue.type).toBe('warning')
+    expect(issue.count).toBe(2)
+    expect(issue.affectedItems).toEqual(['AAPL', 'MSFT'])
+  })
+
+  it('reports conflicting split records with both ratios', () => {
+    const results = createMockCGTResults({
+      dataNotices: {
+        overlappingRows: [],
+        splitConflicts: [{
+          symbol: 'NVDA',
+          used: { id: 'a', date: '2024-06-10', ratio: '10:1', source: 'Charles Schwab' },
+          ignored: { id: 'b', date: '2024-06-12', ratio: '2:1', source: 'Interactive Brokers' },
+        }],
+      },
+    })
+
+    const issue = detectIssues([createMockTransaction()], results).find(i => i.id === 'split-conflicts')!
+
+    expect(issue.type).toBe('warning')
+    expect(issue.description).toContain('used 10:1')
+    expect(issue.description).toContain('ignored 2:1')
+    expect(issue.affectedItems).toEqual(['NVDA'])
+  })
+
+  it('reports nothing when there are no data notices', () => {
+    const ids = detectIssues([createMockTransaction()], createMockCGTResults()).map(i => i.id)
+    expect(ids).not.toContain('overlapping-imports')
+    expect(ids).not.toContain('split-conflicts')
+  })
+})
