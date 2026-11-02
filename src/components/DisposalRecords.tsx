@@ -2,6 +2,7 @@ import { useTransactionStore } from '../stores/transactionStore'
 import { useState } from 'react'
 import { getUnitLabel, isFullyUnmatched } from '../lib/cgt/utils'
 import { formatGbp } from '../utils/currency'
+import { netSameDayGains, splitGainsAndLosses } from '../lib/cgt/sa108'
 
 const EMPTY_DISPOSALS: never[] = []
 
@@ -53,14 +54,12 @@ export function DisposalRecords({
     )
   }
 
-  // Calculate totals
-  const totalGains = disposals
-    .filter(d => d.gainOrLossGbp > 0)
-    .reduce((sum, d) => sum + d.gainOrLossGbp, 0)
-
-  const totalLosses = disposals
-    .filter(d => d.gainOrLossGbp < 0)
-    .reduce((sum, d) => sum + d.gainOrLossGbp, 0)
+  // Same-day sales of one share are one disposal with one net gain or loss
+  // (TCGA92/S105(1)(a)), as in the year summary, PDF and CLI
+  const sameDayNets = netSameDayGains(disposals)
+  const disposalCount = sameDayNets.length
+  const { gainsGbp: totalGains, lossesGbp: totalLosses } = splitGainsAndLosses(sameDayNets)
+  const salesNote = disposals.length !== disposalCount ? ` (${disposals.length} sales)` : ''
 
   return (
     <div className={containerClassName}>
@@ -68,7 +67,7 @@ export function DisposalRecords({
         <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
           <h3 className="text-lg font-semibold text-gray-900">{headerTitle}</h3>
           <p className="text-sm text-gray-500 mt-1">
-            {disposals.length} disposal{disposals.length !== 1 ? 's' : ''} in {selectedTaxYear}
+            {disposalCount} disposal{disposalCount !== 1 ? 's' : ''}{salesNote} in {selectedTaxYear}
           </p>
         </div>
       )}
@@ -84,12 +83,13 @@ export function DisposalRecords({
         <div>
           <div className="text-xs text-gray-500 uppercase">Total Losses</div>
           <div className="text-lg font-semibold text-red-600">
-            £{Math.abs(totalLosses).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            £{totalLosses.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
         </div>
         <div>
           <div className="text-xs text-gray-500 uppercase">Disposals</div>
-          <div className="text-lg font-semibold text-gray-900">{disposals.length}</div>
+          <div className="text-lg font-semibold text-gray-900">{disposalCount}</div>
+          {salesNote && <div className="text-xs text-gray-500">{disposals.length} sales</div>}
         </div>
       </div>
 

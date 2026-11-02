@@ -1,0 +1,4 @@
+date,type,symbol,currency,name,quantity,price,total,fee,notes
+2024-05-01,BUY,AAA,GBP,AAA plc,20,100.00,2000.00,0,Pool purchase
+2024-06-03,SELL,AAA,GBP,AAA plc,10,105.00,1050.00,100.00,Large fee turns this sale into a £50 loss
+2024-06-03,SELL,AAA,GBP,AAA plc,10,105.00,1050.00,0,Same day: a £50 gain
