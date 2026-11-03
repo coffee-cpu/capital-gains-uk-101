@@ -111,6 +111,16 @@ describe('HMRCMonthlyProvider', () => {
     expect(fetchSpy).toHaveBeenCalledTimes(2) // gov.uk + mirror for the first lookup only
   })
 
+  it('skips an unusable mirror entry without failing the rest of the month', async () => {
+    mockFetch(url => url.startsWith('https://www.trade-tariff.service.gov.uk')
+      ? new Response('Not found', { status: 404 })
+      : new Response(JSON.stringify({ base: 'GBP', period: {}, rates: { USD: '1.4040', XYZ: '', ABC: 'n/a' } })))
+    const provider = new HMRCMonthlyProvider()
+
+    expect((await provider.getRate('2016-03-10', 'USD')).rate).toBe(1.404)
+    await expect(provider.getRate('2016-03-10', 'XYZ')).rejects.toThrow(/XYZ not found/)
+  })
+
   it('fails clearly when neither source has the month', async () => {
     mockFetch(() => new Response('Not found', { status: 404 }))
     await expect(new HMRCMonthlyProvider().getRate('2099-01-10', 'USD')).rejects.toThrow(/2099\/01/)

@@ -168,10 +168,9 @@ async function fetchMirrorMonth(year: string, month: string): Promise<MonthRates
   const rates: MonthRates = {}
   for (const [code, value] of Object.entries(data.rates ?? {})) {
     const rate = parseFloat(value)
-    if (!Number.isFinite(rate) || rate <= 0) {
-      throw new Error(`Invalid rate from HMRC API: ${value}`)
-    }
-    rates[code] = rate
+    // Skip bad entries: one unusable currency mustn't fail the whole month.
+    // fetchRate reports a missing currency for the one asked for.
+    if (Number.isFinite(rate) && rate > 0) rates[code] = rate
   }
   return rates
 }
