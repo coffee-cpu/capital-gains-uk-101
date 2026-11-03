@@ -57,8 +57,65 @@ function guidePages(): Plugin {
 }
 
 // https://vite.dev/config/
+/**
+ * Hosts the app fetches data from. Keep in sync with the privacy notice in
+ * src/components/About.tsx and README.md (checked by
+ * src/lib/__tests__/contentSecurityPolicy.test.ts).
+ * - hmrc.matchilling.com: HMRC monthly exchange rates (mirror of HMRC's data)
+ * - www.trade-tariff.service.gov.uk: HMRC yearly average exchange rates
+ * - api.frankfurter.dev: ECB daily exchange rates
+ * - cdn.jsdelivr.net: stock split data
+ */
+export const CONNECT_SOURCES = [
+  'https://hmrc.matchilling.com',
+  'https://www.trade-tariff.service.gov.uk',
+  'https://api.frankfurter.dev',
+  'https://cdn.jsdelivr.net',
+]
+
+/**
+ * Content-Security-Policy for the built app, as a <meta> tag (GitHub Pages
+ * can't set headers). connect-src lists the only hosts the app may contact,
+ * so the browser enforces that transaction data stays on the device even if
+ * a dependency were compromised. Build only: the dev server injects inline
+ * scripts (HMR, React refresh) that this policy would block.
+ */
+export const CONTENT_SECURITY_POLICY = [
+  "default-src 'self'",
+  "script-src 'self' 'wasm-unsafe-eval'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob:",
+  "font-src 'self' data:",
+  // data: lets react-pdf load its WebAssembly layout engine, which is embedded
+  // in the bundle as a data: URL (a local read; nothing leaves the device)
+  `connect-src 'self' data: ${CONNECT_SOURCES.join(' ')}`,
+  "worker-src 'self' blob:",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+].join('; ')
+
+function contentSecurityPolicy(): Plugin {
+  return {
+    name: 'content-security-policy',
+    apply: 'build',
+    transformIndexHtml(html) {
+      // Inserted right after the charset tag, which must stay first. Fail the
+      // build if it's missing, rather than silently shipping without a CSP.
+      const anchor = '<meta charset="UTF-8" />'
+      if (!html.includes(anchor)) {
+        throw new Error(`content-security-policy: "${anchor}" not found in index.html`)
+      }
+      return html.replace(
+        anchor,
+        `${anchor}\n    <meta http-equiv="Content-Security-Policy" content="${CONTENT_SECURITY_POLICY}" />`
+      )
+    },
+  }
+}
+
 export default defineConfig({
-  plugins: [react(), guidePages()],
+  plugins: [react(), guidePages(), contentSecurityPolicy()],
   base: '/', // Custom domain - use root path
   server: {
     port: 3000,
