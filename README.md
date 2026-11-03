@@ -78,8 +78,8 @@ All processing happens in your browser using IndexedDB for storage. Your transac
 
 | Service | Used for | What a request reveals |
 |---|---|---|
-| hmrc.matchilling.com (mirror of HMRC's rates) | HMRC monthly exchange rates (default) | Year and month |
-| www.trade-tariff.service.gov.uk | HMRC yearly average rates (optional) | Year |
+| www.trade-tariff.service.gov.uk | HMRC monthly exchange rates (default) and yearly average rates (optional) | Year and month (monthly), year (yearly) |
+| hmrc.matchilling.com (mirror of HMRC's rates) | Fallback for a month gov.uk can't supply; those rates are labelled | Year and month |
 | api.frankfurter.dev | ECB daily rates (optional) | Trade dates and currencies |
 | cdn.jsdelivr.net | Stock split data (can be turned off) | Years only, not which shares you hold |
 

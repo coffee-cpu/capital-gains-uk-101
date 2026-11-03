@@ -25,7 +25,7 @@ export abstract class BaseFXProvider implements FXProvider {
     // Check cache first
     const cached = await getFxRateCache().get(cacheKey)
     if (cached) {
-      return this.createResult(cached.rate, date, currency)
+      return this.createResult(cached.rate, date, currency, cached.source)
     }
 
     // Fetch from API
@@ -56,15 +56,26 @@ export abstract class BaseFXProvider implements FXProvider {
   protected abstract fetchRate(date: string, currency: string): Promise<number>
 
   /**
-   * Create a standardized FX rate result
+   * Where a rate for this date came from, shown next to converted values.
+   * Providers that can fall back to another host override this.
    */
-  protected createResult(rate: number, date: string, currency: string): FXRateResult {
+  protected sourceAttribution(_dateKey: string): string {
+    return FXSourceAttributions[this.fxSource]
+  }
+
+  /**
+   * Create a standardized FX rate result
+   *
+   * @param source Attribution stored with a cached rate, if any
+   */
+  protected createResult(rate: number, date: string, currency: string, source?: string): FXRateResult {
+    const dateKey = this.getDateKey(date)
     return {
       rate,
-      dateKey: this.getDateKey(date),
+      dateKey,
       currency,
       fxSource: this.fxSource,
-      source: FXSourceAttributions[this.fxSource],
+      source: source || this.sourceAttribution(dateKey),
     }
   }
 
@@ -82,7 +93,7 @@ export abstract class BaseFXProvider implements FXProvider {
       date: this.getDateKey(date),
       currency,
       rate,
-      source: FXSourceAttributions[this.fxSource],
+      source: this.sourceAttribution(this.getDateKey(date)),
       fxSource: this.fxSource,
     })
   }

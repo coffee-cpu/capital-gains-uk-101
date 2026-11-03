@@ -428,8 +428,7 @@ export function About() {
                 </p>
                 <ul className="list-disc list-inside mt-2 space-y-1">
                   <li>
-                    <strong>HMRC monthly exchange rates</strong> (the default) from hmrc.matchilling.com, a
-                    mirror of{' '}
+                    <strong>HMRC monthly exchange rates</strong> (the default) from{' '}
                     <a
                       href="https://www.trade-tariff.service.gov.uk/exchange_rates"
                       target="_blank"
@@ -438,10 +437,12 @@ export function About() {
                     >
                       HMRC's published rates
                     </a>
-                    . Requests contain the year and month.
+                    {' '}on trade-tariff.service.gov.uk. For a month gov.uk can't supply, the app uses
+                    hmrc.matchilling.com, a mirror of the same data, and labels those rates. Requests
+                    contain the year and month.
                   </li>
                   <li>
-                    <strong>HMRC yearly average rates</strong> from trade-tariff.service.gov.uk, if you
+                    <strong>HMRC yearly average rates</strong> from trade-tariff.service.gov.uk too, if you
                     choose that source. Requests contain the year.
                   </li>
                   <li>

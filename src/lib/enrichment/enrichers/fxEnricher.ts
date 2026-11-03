@@ -109,7 +109,8 @@ export class FxEnricher implements Enricher {
           fee_gbp: feeGbp,
           grossDividend_gbp: grossDividendGbp,
           withholdingTax_gbp: withholdingTaxGbp,
-          fx_source: tx.currency === 'GBP' ? 'Native GBP' : FXSourceAttributions[fxSource],
+          // The rate's own attribution: says when a fallback host supplied it
+          fx_source: tx.currency === 'GBP' ? 'Native GBP' : fxResult.source || FXSourceAttributions[fxSource],
           fx_error: null,
         })
       } catch (error) {

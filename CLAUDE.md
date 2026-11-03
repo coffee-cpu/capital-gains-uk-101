@@ -328,7 +328,7 @@ PapaParse configuration:
 
 ### FX Rate Enrichment
 Three user-selectable FX sources (`src/lib/fx/providers/`):
-- **HMRC Monthly Rates** (default): official monthly rates via an HMRC data mirror (hmrc.matchilling.com / trade-tariff.service.gov.uk)
+- **HMRC Monthly Rates** (default): HMRC's monthly CSV on trade-tariff.service.gov.uk, falling back per month to the hmrc.matchilling.com mirror (rates from the mirror are labelled in `fx_source`)
 - **HMRC Yearly Average**: annual average rates from HMRC CSV publications
 - **Daily Spot**: ECB daily reference rates via the Frankfurter API
 
