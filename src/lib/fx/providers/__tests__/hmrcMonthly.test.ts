@@ -154,6 +154,20 @@ describe('HMRCMonthlyProvider', () => {
     expect(result.source).toBe(GOV_UK_ATTRIBUTION)
   })
 
+  it('falls back to a rate cached by the old version when the refetch fails', async () => {
+    const { getFxRateCache } = await import('../../../cache')
+    await getFxRateCache().put({
+      id: 'HMRC_MONTHLY-2024-06-USD', date: '2024-06', currency: 'USD', rate: 1.2711,
+      source: FXSourceAttributions.HMRC_MONTHLY, fxSource: 'HMRC_MONTHLY',
+    })
+    mockFetch(() => Promise.reject(new TypeError('Failed to fetch')))
+
+    const result = await new HMRCMonthlyProvider().getRate('2024-06-14', 'USD')
+
+    expect(result.rate).toBe(1.2711)
+    expect(result.source).toBe(FXSourceAttributions.HMRC_MONTHLY)
+  })
+
   it('fails clearly when neither source has the month', async () => {
     mockFetch(() => new Response('Not found', { status: 404 }))
     await expect(new HMRCMonthlyProvider().getRate('2099-01-10', 'USD')).rejects.toThrow(/2099\/01/)

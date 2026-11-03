@@ -28,8 +28,15 @@ export abstract class BaseFXProvider implements FXProvider {
       return this.createResult(cached.rate, date, currency, cached.source)
     }
 
-    // Fetch from API
-    const rate = await this.fetchRate(date, currency)
+    // Fetch from API. A cached rate the provider wanted to refresh still
+    // beats no rate when the fetch fails (offline, both sources down)
+    let rate: number
+    try {
+      rate = await this.fetchRate(date, currency)
+    } catch (error) {
+      if (cached) return this.createResult(cached.rate, date, currency, cached.source)
+      throw error
+    }
 
     // Cache the result
     await this.cacheRate(cacheKey, date, currency, rate)
