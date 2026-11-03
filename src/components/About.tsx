@@ -422,16 +422,41 @@ export function About() {
               <div className="mt-4">
                 <h3 className="text-lg font-medium text-gray-900 mb-2">External API Calls:</h3>
                 <p>
-                  The only external network requests are to fetch{' '}
-                  <a
-                    href="https://www.trade-tariff.service.gov.uk/exchange_rates"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline"
-                  >
-                    HMRC exchange rates
-                  </a>
-                  {' '}for currency conversion. These requests contain only the date and currency code — no personal or transaction data.
+                  The app fetches public reference data from these services. The requests never include
+                  your amounts, quantities or share names, but like any web request they reveal your IP
+                  address to the service:
+                </p>
+                <ul className="list-disc list-inside mt-2 space-y-1">
+                  <li>
+                    <strong>HMRC monthly exchange rates</strong> (the default) from hmrc.matchilling.com, a
+                    mirror of{' '}
+                    <a
+                      href="https://www.trade-tariff.service.gov.uk/exchange_rates"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline"
+                    >
+                      HMRC's published rates
+                    </a>
+                    . Requests contain the year and month.
+                  </li>
+                  <li>
+                    <strong>HMRC yearly average rates</strong> from trade-tariff.service.gov.uk, if you
+                    choose that source. Requests contain the year.
+                  </li>
+                  <li>
+                    <strong>Daily spot rates</strong> from api.frankfurter.dev (European Central Bank
+                    data), if you choose that source. Requests contain your trade dates and currencies.
+                  </li>
+                  <li>
+                    <strong>Stock split data</strong> from cdn.jsdelivr.net, unless you turn off automatic
+                    split detection. Whole years are downloaded, so the request doesn't say which shares
+                    you hold.
+                  </li>
+                </ul>
+                <p className="mt-2">
+                  The site's Content Security Policy only allows connections to these services, so your
+                  browser itself blocks any attempt to send data anywhere else.
                 </p>
               </div>
             </div>

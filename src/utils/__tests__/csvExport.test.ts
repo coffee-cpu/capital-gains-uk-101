@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach, type MockInstance } from 'vitest'
-import { exportTransactionsToCSV } from '../csvExport'
+import { exportTransactionsToCSV, transactionsToGenericCSV } from '../csvExport'
 import { GenericTransaction } from '../../types/transaction'
 
 describe('csvExport', () => {
@@ -204,5 +204,46 @@ describe('csvExport', () => {
     // Verify download was triggered
     expect(createObjectURLSpy).toHaveBeenCalled()
     expect(mockLink.click).toHaveBeenCalled()
+  })
+})
+
+describe('transactionsToGenericCSV - asset_class', () => {
+  it('keeps crypto as crypto through export and re-import', async () => {
+    const { importCSVText } = await import('../../lib/import')
+    const { isCryptoasset } = await import('../../lib/cgt/sa108')
+    const coinbaseBuy = {
+      id: 'cb-1', source: 'Coinbase', symbol: 'BTC', name: 'Bitcoin', date: '2024-05-01', type: 'BUY' as const,
+      quantity: 0.1, price: 30000, currency: 'GBP', total: 3000, fee: 0, notes: null,
+    }
+    const share = { ...coinbaseBuy, id: 'gen-1', source: 'Generic CSV', symbol: 'AAA', name: null }
+
+    const csv = transactionsToGenericCSV([coinbaseBuy, share])
+    const reimported = importCSVText(csv, 'roundtrip').transactions
+
+    expect(csv.split('\n')[0]).toContain('asset_class')
+    expect(reimported.map(t => [t.symbol, isCryptoasset(t)])).toEqual([['BTC', true], ['AAA', false]])
+  })
+
+  it('does not write a currency-based guess as a stated asset_class', () => {
+    const gbxShare = {
+      id: 'g-1', source: 'Generic CSV', symbol: 'VOD', name: null, date: '2024-05-01', type: 'BUY' as const,
+      quantity: 100, price: 70, currency: 'GBX', total: 7000, fee: 0, notes: null,
+    }
+    const [header, row] = transactionsToGenericCSV([gbxShare]).split('\n')
+    const column = header.split(',').indexOf('asset_class')
+    expect(row.split(',')[column]).toBe('')
+  })
+})
+
+describe('transactionsToGenericCSV - isin and asset_class together', () => {
+  it('round-trips both columns', async () => {
+    const { importCSVText } = await import('../../lib/import')
+    const tx = {
+      id: 'x-1', source: 'Generic CSV', symbol: 'VUSA', name: null, date: '2024-05-01', type: 'BUY' as const,
+      quantity: 10, price: 50, currency: 'GBP', total: 500, fee: 0, notes: null,
+      isin: 'IE00B3XXRP09', asset_class: 'share' as const,
+    }
+    const [reimported] = importCSVText(transactionsToGenericCSV([tx]), 'roundtrip-both').transactions
+    expect(reimported).toMatchObject({ isin: 'IE00B3XXRP09', asset_class: 'share' })
   })
 })

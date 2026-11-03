@@ -88,6 +88,8 @@ export interface TaxYearReport {
     gainsAfterGbp: number
     lossesAfterGbp: number
     netAfterGbp: number
+    /** Gains from 30 Oct 2024 still chargeable after the year's losses and the AEA are set against them first */
+    chargeableGainsAfterGbp: number
     adjustmentRequired: boolean
   }
   dividends: { count: number; grossGbp: number; withholdingTaxGbp: number; netGbp: number; allowanceGbp: number }
@@ -309,6 +311,7 @@ function toTaxYearReport(summary: TaxYearSummary): TaxYearReport {
       gainsAfterGbp: money(rateChange.gainsAfterRateChange),
       lossesAfterGbp: money(Math.abs(rateChange.lossesAfterRateChange)),
       netAfterGbp: money(rateChange.netGainOrLossAfterRateChange),
+      chargeableGainsAfterGbp: money(rateChange.chargeableGainsAfterRateChange),
       adjustmentRequired: rateChange.requiresAdjustment,
     }
   }

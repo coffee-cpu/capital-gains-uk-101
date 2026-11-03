@@ -26,7 +26,7 @@ To see which brokers are supported and how to export the right file from each:
 npx -y cgt-visualiser@latest brokers
 ```
 
-If a broker isn't supported, the user can provide a Generic CSV with these columns: `date,type,symbol,currency,quantity,price,total,fee`, plus optional `name`, `notes`, `split_ratio` and `isin` (the 12-character ISIN, which matches the security across brokers that use different tickers). Dates must be `YYYY-MM-DD`. The type must be one of `BUY`, `SELL`, `DIVIDEND`, `INTEREST`, `FEE`, `TAX`, `TRANSFER` or `STOCK_SPLIT`.
+If a broker isn't supported, the user can provide a Generic CSV with these columns: `date,type,symbol,currency,quantity,price,total,fee`, plus optional `name`, `notes`, `split_ratio`, `isin` (the 12-character ISIN, which matches the security across brokers that use different tickers) and `asset_class` (`share` or `crypto`; set `crypto` for cryptoassets so they go in the SA108 Cryptoassets section, not listed shares). Dates must be `YYYY-MM-DD`. The type must be one of `BUY`, `SELL`, `DIVIDEND`, `INTEREST`, `FEE`, `TAX`, `TRANSFER` or `STOCK_SPLIT`.
 
 ## 2. Check the files are recognised
 
@@ -112,7 +112,7 @@ The JSON has `schemaVersion: 1`. Check it: if it is different, re-read this guid
 - `taxYears[].sa108Sections` (0.5.0+): one entry per SA108 section with disposals: `listed-shares`, `crypto` (the Cryptoassets section from 2024/25, "Other property, assets and gains" before), and `options`, whose section depends on the contract, so `section` and `boxes` are null; ask the user. `boxes` gives the box numbers for that year's form where known.
 - Proceeds are gross (before selling fees) and selling fees are in allowable costs, as SA108 asks. Same-day sales of one share count as one disposal, so `disposals` can be lower than the number of sale rows.
 - `disposals[].missingFx`: present and true when the disposal, or a purchase its cost comes from, has no GBP exchange rate and was valued at £0. Tell the user that disposal's gain is wrong until the rate loads (the `FX_RATE_MISSING` warning lists the transactions).
-- `taxYears[].rateChange2024` (2024/25 only): gains before and after the 30 October 2024 rate change. If `adjustmentRequired` is true, tell the user to use HMRC's calculator for the adjustment.
+- `taxYears[].rateChange2024` (2024/25 only): gains before and after the 30 October 2024 rate change. `chargeableGainsAfterGbp` is what remains of the post-change gains after the year's losses and the annual exempt amount are set against them first, the most beneficial order (TCGA92/S4B). `adjustmentRequired` is true only when that is above zero; then tell the user to use HMRC's calculator for the adjustment.
 - `disposals[]`: one row per sale, with the matching `rules` used (`same-day`, `30-day`, `section-104`, `short-sell`).
 - `section104Pools[]`: holdings remaining after the last transaction.
 - Full schema: [CLI README](https://github.com/coffee-cpu/capital-gains-uk-101/blob/main/packages/cli/README.md#json-output---format-json).

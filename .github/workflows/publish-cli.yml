@@ -16,16 +16,16 @@ jobs:
       contents: read
       id-token: write  # Required for npm trusted publishing
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
           cache: 'npm'
 
       - name: Install npm with OIDC support
-        run: npm install -g npm@latest
+        run: npm install -g npm@11.21.1  # pinned: 11.5.1+ needed for trusted publishing; Dependabot does not update this line
 
       - run: npm ci
 

@@ -21,6 +21,7 @@ function makeData(totalNetGainOrLoss: number): CGTRateChange2024Data {
     lossesAfterRateChange: 0,
     netGainOrLossAfterRateChange: totalNetGainOrLoss,
     disposalCountAfterRateChange: 1,
+    chargeableGainsAfterRateChange: 0,
     requiresAdjustment: false,
     annualExemptAmount: 3000,
     totalNetGainOrLoss,
@@ -57,6 +58,12 @@ describe('2024 rate change message when no adjustment is required', () => {
   it('still compares a net gain with the Annual Exempt Amount', () => {
     expect(renderPanel(makeData(1500))).toContain('Your net gain (£1,500.00) is below')
     expect(renderPdf(makeData(1500))).toContain('Net gain (£1,500.00) is below')
+  })
+  it('explains when losses and the AEA cover all post-change gains', () => {
+    const data = { ...makeData(4500), gainsBeforeRateChange: 2000, gainsAfterRateChange: 2500 }
+    expect(renderPanel(data)).toContain('cover all your gains from 30 October 2024 onwards')
+    expect(renderPdf(data)).toContain('cover all gains from 30 October 2024 onwards')
+    expect(renderPdf(data)).not.toContain('All disposals were before 30 October 2024')
   })
 })
 

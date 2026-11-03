@@ -42,3 +42,4 @@ playwright-debug-screenshot.png
 .cache/
 tmp/
 temp/
+*.tsbuildinfo
