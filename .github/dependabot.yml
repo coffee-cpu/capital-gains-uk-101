@@ -1,0 +1,35 @@
+# Workflow actions are pinned to commit SHAs (supply-chain safety); Dependabot
+# keeps those pins current by opening a weekly PR with any updates.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+
+  # Dev tooling (e.g. vitest, pinned exactly) gets security and patch updates
+  # in one grouped weekly PR. Runtime dependencies are left to manual updates.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    allow:
+      - dependency-type: development
+    groups:
+      # Listed first so it wins: the vitest packages pin each other's exact
+      # version, so every update to them (majors included) must be one PR
+      vitest:
+        patterns: ["vitest", "@vitest/*"]
+      # Minor and patch updates together; majors get their own PRs so one
+      # breaking upgrade doesn't hold back the rest
+      dev-dependencies:
+        dependency-type: development
+        update-types: [minor, patch]
+      # Security fixes grouped too, so packages pinned to each other's exact
+      # version (vitest, @vitest/ui, @vitest/coverage-v8) move together
+      dev-security:
+        applies-to: security-updates
+        dependency-type: development
