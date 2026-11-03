@@ -1,5 +1,6 @@
 import { deduplicateTransactions, findOverlappingImports } from '../utils/deduplication'
 import { findSplitConflicts } from './enrichment/enrichers/splitEnricher'
+import { matchSymbolsByIsin } from './symbolMatching'
 import { enrichTransactions } from './enrichment'
 import { calculateCGT } from './cgt/engine'
 import { getAutoSplitsForTransactions, hasUsableRatio, HOLDING_TYPES } from './splits/splitLookupService'
@@ -43,17 +44,28 @@ export async function runPipeline(
   // Drop rows repeated across overlapping imports (kept for reporting), then
   // incomplete Stock Plan Activity when Equity Awards data exists
   const { kept, removed: overlappingRows } = findOverlappingImports(rawTransactions)
+
   const deduplicated = deduplicateTransactions(kept)
 
-  // Inject auto-fetched stock splits (not persisted, regenerated each run)
-  let withAutoSplits = deduplicated
+  // Inject auto-fetched stock splits (not persisted, regenerated each run).
+  // Looked up under the brokers' own tickers, which is what split data uses,
+  // before any renaming below.
+  let withFetchedSplits = deduplicated
   const source = splitSource ?? new JsDelivrSplitSource()
   if (autoSplits) {
     const fetchedSplits = await getAutoSplitsForTransactions(deduplicated, source)
     if (fetchedSplits.length > 0) {
-      withAutoSplits = [...deduplicated, ...fetchedSplits]
+      withFetchedSplits = [...deduplicated, ...fetchedSplits]
     }
   }
+
+  // One symbol per security across brokers (by ISIN). Fetched split rows
+  // follow the same renames as the holdings they belong to.
+  const {
+    transactions: withAutoSplits,
+    merges: symbolMerges,
+    conflicts: tickerConflicts,
+  } = matchSymbolsByIsin(withFetchedSplits)
 
   // Enrich with FX rates and GBP conversions using selected source
   const enriched = await enrichTransactions(withAutoSplits, fxSource)
@@ -71,6 +83,8 @@ export async function runPipeline(
     overlappingRows,
     splitConflicts: findSplitConflicts(withAutoSplits),
     rejectedSplitRecords,
+    symbolMerges,
+    tickerConflicts,
   }
 
   return result

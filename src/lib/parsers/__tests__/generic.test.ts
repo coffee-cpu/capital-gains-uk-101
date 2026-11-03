@@ -396,6 +396,24 @@ describe('Generic CSV Parser - number and date validation', () => {
   })
 })
 
+describe('Generic CSV Parser - isin', () => {
+  const row = (isin: string) => ({
+    date: '2024-01-15', type: 'BUY', symbol: 'VUSA', currency: 'GBP',
+    quantity: '1', price: '50', total: '50', fee: '0', isin,
+  })
+
+  it('reads an ISIN, upper-casing it', () => {
+    const [tx] = normalizeGenericTransactions([row('ie00b3xxrp09')], 'f')
+    expect(tx.isin).toBe('IE00B3XXRP09')
+  })
+
+  it('skips a row whose ISIN is malformed', () => {
+    const skippedRows: { row: number; reason: string }[] = []
+    expect(normalizeGenericTransactions([row('IE00B3')], 'f', skippedRows)).toHaveLength(0)
+    expect(skippedRows[0].reason).toBe('isin "IE00B3" is not a 12-character ISIN')
+  })
+})
+
 describe('Generic CSV Parser - asset_class', () => {
   const row = (assetClass: string) => ({
     date: '2024-01-15', type: 'BUY', symbol: 'BTC', currency: 'GBP',

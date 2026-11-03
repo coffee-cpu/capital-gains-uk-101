@@ -30,7 +30,7 @@ function normalizeFreetradeRow(row: RawCSVRow, fileId: string, rowIndex: number)
   const title = row['Title']?.trim()
   const timestamp = row['Timestamp']?.trim()
   const ticker = row['Ticker']?.trim()
-  const isin = row['ISIN']?.trim()
+  const isin = row['ISIN']?.trim().toUpperCase()
 
   // Parse date from timestamp (ISO format: 2025-11-01T00:00:00.000Z)
   const date = parseFreetradeDate(timestamp)
@@ -63,6 +63,7 @@ function normalizeFreetradeRow(row: RawCSVRow, fileId: string, rowIndex: number)
     id: `${fileId}-${rowIndex}`,
     source: 'Freetrade',
     symbol: ticker || '',
+    isin: isin || null,
     name: title || null,
     date,
     type: TransactionType.UNKNOWN,
@@ -141,6 +142,7 @@ function parseOrderTransaction(
     id: `${fileId}-${rowIndex}`,
     source: 'Freetrade',
     symbol: ticker || '',
+    isin: isin || null,
     name: title || null,
     date,
     type,
@@ -189,6 +191,7 @@ function parseDividendTransaction(
     id: `${fileId}-${rowIndex}`,
     source: 'Freetrade',
     symbol: ticker || '',
+    isin: isin || null,
     name: title || null,
     date,
     type: TransactionType.DIVIDEND,
@@ -296,6 +299,7 @@ function parseStockSplitTransaction(
     id: `${fileId}-${rowIndex}`,
     source: 'Freetrade',
     symbol: ticker || '',
+    isin: isin || null,
     name: title || null,
     date,
     type: TransactionType.STOCK_SPLIT,

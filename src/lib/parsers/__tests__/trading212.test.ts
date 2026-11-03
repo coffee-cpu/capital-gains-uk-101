@@ -31,6 +31,7 @@ describe('Trading 212 Parser', () => {
       ]
 
       const result = normalizeTrading212Transactions(rows, 'test-file')
+      expect(result[0].isin).toBe('IE00BK5BQT80')
 
       expect(result).toHaveLength(1)
       expect(result[0]).toMatchObject({

@@ -206,5 +206,13 @@ export interface DataNotices {
    * Each may be a missed split, so quantities from its date may be wrong.
    */
   rejectedSplitRecords?: { symbol: string; date: string; reason: string }[]
+  /** Tickers for one ISIN that were given one symbol, so they share a pool */
+  symbolMerges?: { isin: string; symbol: string; mergedSymbols: string[] }[]
+  /**
+   * Tickers seen with more than one ISIN. pooledSeparately: the ISINs
+   * overlapped in time, so rows were pooled per ISIN; otherwise one ISIN
+   * followed the other and the rows stayed in one pool.
+   */
+  tickerConflicts?: { symbol: string; isins: string[]; pooledSeparately: boolean }[]
 }
 

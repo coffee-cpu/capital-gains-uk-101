@@ -20,6 +20,7 @@ export const genericDefinition: BrokerDefinition = {
       'Required for DIVIDEND/FEE: total',
       'Required for STOCK_SPLIT: split_ratio (e.g., "10:1", "2:1", "1:10" for reverse splits)',
       'Optional: name, total, fee, notes',
+      'Optional: isin (12-character ISIN) to match the same security across brokers that use different tickers',
       'Optional: asset_class ("share" or "crypto") so cryptoassets are reported in the SA108 Cryptoassets section. Rows priced in a cryptocurrency are treated as crypto automatically',
       'Transaction types: BUY, SELL, DIVIDEND, FEE, INTEREST, TRANSFER, TAX, STOCK_SPLIT',
     ],

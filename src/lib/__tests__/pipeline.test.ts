@@ -145,4 +145,42 @@ describe('runPipeline', () => {
       expect(result!.dataNotices!.rejectedSplitRecords).toEqual([])
     })
   })
+
+  it('pools the same security bought under different tickers at two brokers', async () => {
+    const header = 'date,type,symbol,currency,quantity,price,total,fee,isin'
+    const brokerA = importCSVText([header, '2023-05-01,BUY,VUSA,GBP,10,50,500,0,IE00B3XXRP09'].join('\n'), 'a_csv-1').transactions
+    const brokerB = importCSVText([header, '2023-09-01,SELL,VUSAL,GBP,10,60,600,0,IE00B3XXRP09'].join('\n'), 'b_csv-2').transactions
+
+    const result = await runPipeline([...brokerA, ...brokerB], { autoSplits: false })
+
+    const [disposal] = result!.disposals
+    expect(disposal.isIncomplete).toBe(false)
+    expect(disposal.gainOrLossGbp).toBeCloseTo(100)
+    expect(result!.dataNotices!.symbolMerges).toEqual([
+      { isin: 'IE00B3XXRP09', symbol: 'VUSA', mergedSymbols: ['VUSAL'] },
+    ])
+  })
+
+  it('still applies a stock split looked up under a ticker that was renamed by ISIN', async () => {
+    setCacheBackends(createMemoryCacheBackends())
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => String(url).endsWith('/2023.json')
+      ? new Response(JSON.stringify({
+          year: 2023,
+          updated: '2023-12-31',
+          splits: [{ symbol: 'VUSAL', date: '2023-07-01', ratioNew: 2, ratioOld: 1 }],
+        }))
+      : new Response('', { status: 404 }))
+    const header = 'date,type,symbol,currency,quantity,price,total,fee,isin'
+    const a = importCSVText([header, '2023-05-01,BUY,VUSA,GBP,10,50,500,0,IE00B3XXRP09', '2023-05-02,BUY,VUSA,GBP,10,50,500,0,IE00B3XXRP09'].join('\n'), 'a_csv-1').transactions
+    const b = importCSVText([header, '2023-06-01,BUY,VUSAL,GBP,10,50,500,0,IE00B3XXRP09', '2023-09-01,SELL,VUSAL,GBP,60,30,1800,0,IE00B3XXRP09'].join('\n'), 'b_csv-2').transactions
+
+    // VUSA and VUSAL have 2 trades each, so the shorter VUSA wins; the split was published under VUSAL
+    const result = await runPipeline([...a, ...b], { autoSplits: true, splitSource: new JsDelivrSplitSource() })
+
+    // 30 shares bought before a 2:1 split become 60, so selling 60 is fully matched
+    const [disposal] = result!.disposals
+    expect(disposal.disposal.symbol).toBe('VUSA')
+    expect(disposal.isIncomplete).toBe(false)
+    vi.restoreAllMocks()
+  })
 })

@@ -43,6 +43,7 @@ export function transactionsToGenericCSV(transactions: GenericTransaction[]): st
     'fee',
     'notes',
     'split_ratio',
+    'isin',
     'asset_class'
   ]
 
@@ -65,6 +66,7 @@ export function transactionsToGenericCSV(transactions: GenericTransaction[]): st
       tx.fee !== null ? tx.fee.toString() : '',
       tx.notes || '',
       tx.ratio || '',
+      tx.isin || '',
       // Write only what the source said: the crypto exchange is lost once
       // the source becomes "Generic CSV". A cryptocurrency price is still in
       // the file, so that rule still applies on re-import; writing it out

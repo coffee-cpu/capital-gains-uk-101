@@ -32,6 +32,7 @@ describe('Freetrade Parser', () => {
       ]
 
       const result = normalizeFreetradeTransactions(rows, 'test-file')
+      expect(result[0].isin).toBe('GB1122334455')
 
       expect(result).toHaveLength(1)
       expect(result[0]).toMatchObject({

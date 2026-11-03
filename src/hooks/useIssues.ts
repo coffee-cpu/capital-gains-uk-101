@@ -135,6 +135,38 @@ export function detectIssues(
     })
   }
 
+  const symbolMerges = cgtResults?.dataNotices?.symbolMerges ?? []
+  if (symbolMerges.length > 0) {
+    issues.push({
+      id: 'symbols-matched-by-isin',
+      type: 'info',
+      title: 'Same Security, Different Tickers',
+      description: symbolMerges
+        .map(m => `${m.mergedSymbols.join(', ')} treated as ${m.symbol} (same ISIN ${m.isin}).`)
+        .join(' ') + ' Their purchases and sales share one Section 104 pool.',
+      count: symbolMerges.length,
+      affectedItems: symbolMerges.map(m => m.symbol),
+    })
+  }
+
+  const tickerConflicts = cgtResults?.dataNotices?.tickerConflicts ?? []
+  if (tickerConflicts.length > 0) {
+    issues.push({
+      id: 'ticker-isin-conflicts',
+      type: 'warning',
+      title: 'One Ticker, Several ISINs',
+      description: tickerConflicts
+        .map(c => c.pooledSeparately
+          ? `${c.symbol} appears with ISINs ${c.isins.join(' and ')} at the same time, so it names different securities: rows with an ISIN are pooled separately, and rows without one, or stock split data for ${c.symbol}, can't be assigned to either.`
+          : `${c.symbol} changed ISIN (${c.isins.join(' to ')}), usually after a reorganisation, so its rows stay in one pool.`)
+        .join(' '),
+      count: tickerConflicts.length,
+      affectedItems: tickerConflicts.map(c => c.symbol),
+      action: 'Check which security the rows without an ISIN belong to, and add the ISIN or a distinct symbol in a Generic CSV if needed.',
+      actionLabel: 'Check Tickers',
+    })
+  }
+
   // 3. Check for incomplete Stock Plan Activity (WARNING severity)
   // Note: Check tx.incomplete only (not !tx.ignored) to match TransactionList behavior
   const incompleteTransactions = transactions.filter(tx => tx.incomplete)

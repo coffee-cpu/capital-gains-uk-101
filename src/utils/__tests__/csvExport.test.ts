@@ -234,3 +234,16 @@ describe('transactionsToGenericCSV - asset_class', () => {
     expect(row.split(',')[column]).toBe('')
   })
 })
+
+describe('transactionsToGenericCSV - isin and asset_class together', () => {
+  it('round-trips both columns', async () => {
+    const { importCSVText } = await import('../../lib/import')
+    const tx = {
+      id: 'x-1', source: 'Generic CSV', symbol: 'VUSA', name: null, date: '2024-05-01', type: 'BUY' as const,
+      quantity: 10, price: 50, currency: 'GBP', total: 500, fee: 0, notes: null,
+      isin: 'IE00B3XXRP09', asset_class: 'share' as const,
+    }
+    const [reimported] = importCSVText(transactionsToGenericCSV([tx]), 'roundtrip-both').transactions
+    expect(reimported).toMatchObject({ isin: 'IE00B3XXRP09', asset_class: 'share' })
+  })
+})
