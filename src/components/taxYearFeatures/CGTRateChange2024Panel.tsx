@@ -77,8 +77,11 @@ function NoAdjustmentRequiredPanel({ data }: CGTRateChange2024PanelProps) {
               </>
             ) : (
               <>
-                No CGT adjustment is required for this tax year. Your Self
-                Assessment will calculate correctly.
+                Your losses and the Annual Exempt Amount
+                ({formatGbp(data.annualExemptAmount)}) cover all your gains from
+                30 October 2024 onwards, so none of your gains are taxed at the
+                new rates. They can be set against those gains first (TCGA92
+                s4B). No CGT adjustment is needed.
               </>
             )}
           </p>
