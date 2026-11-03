@@ -15,6 +15,7 @@ import { parseNumber } from './parsingUtils'
  * - total (optional, number)
  * - fee (optional, number)
  * - split_ratio (optional, for STOCK_SPLIT only, e.g., "10:1", "2:1")
+ * - asset_class (optional: "share" or "crypto"; decides the SA108 section)
  * - notes (optional, text)
  */
 
@@ -89,6 +90,12 @@ function normalizeGenericRow(
   const notes = row['notes']?.trim() || null
   const ratio = row['split_ratio']?.trim() || null
 
+  const assetClassText = row['asset_class']?.trim().toLowerCase() || ''
+  const asset_class = ASSET_CLASSES[assetClassText]
+  if (assetClassText && asset_class === undefined) {
+    return `unrecognised asset_class "${row['asset_class']?.trim()}" (use share or crypto)`
+  }
+
   return {
     id: `${fileId}-${rowIndex}`,
     source: 'Generic CSV',
@@ -103,7 +110,19 @@ function normalizeGenericRow(
     fee,
     notes,
     ratio,
+    ...(asset_class && { asset_class }),
   }
+}
+
+/** Accepted asset_class values (lower case) */
+const ASSET_CLASSES: Record<string, 'share' | 'crypto'> = {
+  share: 'share',
+  shares: 'share',
+  fund: 'share',
+  etf: 'share',
+  crypto: 'crypto',
+  cryptoasset: 'crypto',
+  cryptocurrency: 'crypto',
 }
 
 /**

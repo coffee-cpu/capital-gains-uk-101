@@ -26,7 +26,7 @@ To see which brokers are supported and how to export the right file from each:
 npx -y cgt-visualiser@latest brokers
 ```
 
-If a broker isn't supported, the user can provide a Generic CSV with these columns: `date,type,symbol,currency,quantity,price,total,fee`, plus optional `name`, `notes` and `split_ratio`. Dates must be `YYYY-MM-DD`. The type must be one of `BUY`, `SELL`, `DIVIDEND`, `INTEREST`, `FEE`, `TAX`, `TRANSFER` or `STOCK_SPLIT`.
+If a broker isn't supported, the user can provide a Generic CSV with these columns: `date,type,symbol,currency,quantity,price,total,fee`, plus optional `name`, `notes`, `split_ratio` and `asset_class` (`share` or `crypto`; set `crypto` for cryptoassets so they go in the SA108 Cryptoassets section, not listed shares). Dates must be `YYYY-MM-DD`. The type must be one of `BUY`, `SELL`, `DIVIDEND`, `INTEREST`, `FEE`, `TAX`, `TRANSFER` or `STOCK_SPLIT`.
 
 ## 2. Check the files are recognised
 
