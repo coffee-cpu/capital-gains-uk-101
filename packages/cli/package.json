@@ -39,6 +39,6 @@
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^24.7.0",
-    "esbuild": "^0.25.10"
+    "esbuild": "^0.28.2"
   }
 }
