@@ -24,7 +24,7 @@ export abstract class BaseFXProvider implements FXProvider {
 
     // Check cache first
     const cached = await getFxRateCache().get(cacheKey)
-    if (cached) {
+    if (cached && this.isCachedRateUsable(cached.source)) {
       return this.createResult(cached.rate, date, currency, cached.source)
     }
 
@@ -54,6 +54,14 @@ export abstract class BaseFXProvider implements FXProvider {
    * Must be implemented by each provider
    */
   protected abstract fetchRate(date: string, currency: string): Promise<number>
+
+  /**
+   * Whether a cached rate can be reused. Providers override this to refetch
+   * rates cached by an older version from a source they no longer prefer.
+   */
+  protected isCachedRateUsable(_source: string | undefined): boolean {
+    return true
+  }
 
   /**
    * Where a rate for this date came from, shown next to converted values.

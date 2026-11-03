@@ -12,6 +12,9 @@ export function mirrorMonthlyJsonUrl(year: string, month: string): string {
   return `https://hmrc.matchilling.com/rate/${year}/${month}.json`
 }
 
+/** Attribution for rates read from gov.uk */
+export const GOV_UK_ATTRIBUTION = `${FXSourceAttributions.HMRC_MONTHLY} (gov.uk)`
+
 /** Attribution for months the gov.uk file couldn't supply */
 export const MIRROR_ATTRIBUTION = `${FXSourceAttributions.HMRC_MONTHLY} (via hmrc.matchilling.com mirror)`
 
@@ -48,6 +51,13 @@ export class HMRCMonthlyProvider extends BaseFXProvider {
   private mirrorMonths = new Set<string>()
 
   /**
+   * Set after a network-level failure (e.g. the browser blocks the request
+   * under CORS): gov.uk is then skipped for the rest of this provider's life
+   * instead of failing once per month. HTTP errors (404) stay per month.
+   */
+  private govUkUnreachable = false
+
+  /**
    * Generate cache key in format: HMRC_MONTHLY-YYYY-MM-CURRENCY
    */
   getCacheKey(date: string, currency: string): string {
@@ -64,7 +74,16 @@ export class HMRCMonthlyProvider extends BaseFXProvider {
   }
 
   protected sourceAttribution(dateKey: string): string {
-    return this.mirrorMonths.has(dateKey) ? MIRROR_ATTRIBUTION : super.sourceAttribution(dateKey)
+    return this.mirrorMonths.has(dateKey) ? MIRROR_ATTRIBUTION : GOV_UK_ATTRIBUTION
+  }
+
+  /**
+   * Rates cached before gov.uk became the source carry the plain label but
+   * came from the mirror; refetch them so gov.uk is tried and the label is
+   * accurate.
+   */
+  protected isCachedRateUsable(source: string | undefined): boolean {
+    return source === GOV_UK_ATTRIBUTION || source === MIRROR_ATTRIBUTION
   }
 
   /**
@@ -76,14 +95,19 @@ export class HMRCMonthlyProvider extends BaseFXProvider {
     let promise = this.monthlyResponseCache.get(key)
     if (!promise) {
       promise = (async () => {
-        try {
-          return await fetchGovUkMonth(year, month)
-        } catch (govUkError) {
-          console.warn(`gov.uk HMRC rates for ${key} unavailable, using the mirror:`, govUkError)
-          const rates = await fetchMirrorMonth(year, month)
-          this.mirrorMonths.add(key)
-          return rates
+        if (!this.govUkUnreachable) {
+          try {
+            return await fetchGovUkMonth(year, month)
+          } catch (govUkError) {
+            // fetch() rejects (TypeError) only when the request couldn't be
+            // made at all, e.g. blocked or offline, not for HTTP errors
+            if (govUkError instanceof TypeError) this.govUkUnreachable = true
+            console.warn(`gov.uk HMRC rates for ${key} unavailable, using the mirror:`, govUkError)
+          }
         }
+        const rates = await fetchMirrorMonth(year, month)
+        this.mirrorMonths.add(key)
+        return rates
       })()
       this.monthlyResponseCache.set(key, promise)
       // Evict failures so transient errors can be retried
