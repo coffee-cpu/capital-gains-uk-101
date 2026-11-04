@@ -38,7 +38,7 @@
   },
   "license": "MIT",
   "devDependencies": {
-    "@types/node": "^24.7.0",
+    "@types/node": "^26.6.6",
     "esbuild": "^0.28.2"
   }
 }
