@@ -1,10 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import {
   HMRCMonthlyProvider,
+  ARCHIVE_ATTRIBUTION,
   GOV_UK_ATTRIBUTION,
-  MIRROR_ATTRIBUTION,
   govUkMonthlyCsvUrl,
-  mirrorMonthlyJsonUrl,
   parseGovUkMonthlyCsv,
 } from '../hmrcMonthly'
 import { createMemoryCacheBackends, setCacheBackends } from '../../../cache'
@@ -27,12 +26,6 @@ function govUkCsv(): string {
   return rows.join('\n')
 }
 
-const mirrorJson = JSON.stringify({
-  base: 'GBP',
-  period: { start: '2016-03-01', end: '2016-03-31' },
-  rates: { USD: '1.4040', EUR: '1.2905' },
-})
-
 describe('parseGovUkMonthlyCsv', () => {
   it('reads codes and rates by header, including quoted country names with commas', () => {
     const rates = parseGovUkMonthlyCsv(govUkCsv())
@@ -52,7 +45,6 @@ describe('HMRCMonthlyProvider', () => {
 
   beforeEach(() => {
     setCacheBackends(createMemoryCacheBackends())
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
   })
   afterEach(() => {
     vi.restoreAllMocks()
@@ -61,116 +53,137 @@ describe('HMRCMonthlyProvider', () => {
   function mockFetch(handler: (url: string) => Response | Promise<Response>) {
     fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async input => handler(String(input))) as unknown as typeof fetchSpy
   }
+  const fetchedUrls = () => fetchSpy.mock.calls.map(call => String(call[0]))
 
-  it('uses the gov.uk monthly file and never contacts the mirror when it works', async () => {
-    mockFetch(url => url === govUkMonthlyCsvUrl('2024', '06')
-      ? new Response(govUkCsv())
-      : new Response('unexpected', { status: 500 }))
-    const provider = new HMRCMonthlyProvider()
+  async function cacheOldMirrorRate(id: string, rate: number) {
+    const { getFxRateCache } = await import('../../../cache')
+    const [, year, month, currency] = id.split('-')
+    await getFxRateCache().put({
+      id, date: `${year}-${month}`, currency, rate,
+      source: FXSourceAttributions.HMRC_MONTHLY, fxSource: 'HMRC_MONTHLY',
+    })
+  }
 
-    const result = await provider.getRate('2024-06-14', 'USD')
+  describe('from January 2021: gov.uk only', () => {
+    it('reads the gov.uk monthly file', async () => {
+      mockFetch(() => new Response(govUkCsv()))
 
-    expect(result.rate).toBe(1.2711)
-    expect(result.source).toBe(GOV_UK_ATTRIBUTION)
-    expect(fetchSpy.mock.calls.map(call => String(call[0]))).toEqual([govUkMonthlyCsvUrl('2024', '06')])
+      const result = await new HMRCMonthlyProvider().getRate('2024-06-14', 'USD')
+
+      expect(result.rate).toBe(1.2711)
+      expect(result.source).toBe(GOV_UK_ATTRIBUTION)
+      expect(fetchedUrls()).toEqual([govUkMonthlyCsvUrl('2024', '06')])
+    })
+
+    it('downloads each month once for all currencies', async () => {
+      mockFetch(() => new Response(govUkCsv()))
+      const provider = new HMRCMonthlyProvider()
+
+      const [usd, eur] = await Promise.all([
+        provider.getRate('2024-06-03', 'USD'),
+        provider.getRate('2024-06-20', 'EUR'),
+      ])
+
+      expect(usd.rate).toBe(1.2711)
+      expect(eur.rate).toBe(1.1695)
+      expect(fetchSpy).toHaveBeenCalledTimes(1)
+    })
+
+    it('fails clearly when gov.uk has no file for the month, without trying anywhere else', async () => {
+      mockFetch(() => new Response('{"errors":[{"detail":"not found"}]}', { status: 404 }))
+
+      await expect(new HMRCMonthlyProvider().getRate('2099-01-10', 'USD'))
+        .rejects.toThrow(/USD in 2099\/01.*no HMRC rates file/)
+      expect(fetchedUrls()).toEqual([govUkMonthlyCsvUrl('2099', '01')])
+    })
+
+    it('fails on a network error or an unusable file instead of guessing', async () => {
+      mockFetch(() => Promise.reject(new TypeError('Failed to fetch')))
+      await expect(new HMRCMonthlyProvider().getRate('2024-06-14', 'USD')).rejects.toThrow(/Failed to fetch/)
+
+      mockFetch(() => new Response('<html>Service unavailable</html>'))
+      await expect(new HMRCMonthlyProvider().getRate('2024-06-14', 'USD')).rejects.toThrow()
+    })
+
+    it('retries a month after a failure', async () => {
+      let calls = 0
+      mockFetch(() => (++calls === 1 ? Promise.reject(new TypeError('Failed to fetch')) : new Response(govUkCsv())))
+      const provider = new HMRCMonthlyProvider()
+
+      await expect(provider.getRate('2024-06-14', 'USD')).rejects.toThrow()
+      expect((await provider.getRate('2024-06-14', 'USD')).rate).toBe(1.2711)
+    })
   })
 
-  it('downloads each month once for all currencies', async () => {
-    mockFetch(() => new Response(govUkCsv()))
-    const provider = new HMRCMonthlyProvider()
+  describe('2015 to 2020: bundled archive', () => {
+    it('reads old months from the archive with no network request', async () => {
+      mockFetch(() => new Response('unexpected', { status: 500 }))
 
-    await Promise.all([provider.getRate('2024-06-03', 'USD'), provider.getRate('2024-06-20', 'EUR')])
+      const result = await new HMRCMonthlyProvider().getRate('2016-03-10', 'USD')
 
-    expect(fetchSpy).toHaveBeenCalledTimes(1)
-  })
+      expect(result.rate).toBe(1.4318)
+      expect(result.source).toBe(ARCHIVE_ATTRIBUTION)
+      expect(fetchSpy).not.toHaveBeenCalled()
+    })
 
-  it.each([
-    ['not published (404)', () => new Response('Not found', { status: 404 })],
-    ['an error page instead of a CSV', () => new Response('<html>Service unavailable</html>')],
-    ['blocked or unreachable (e.g. CORS)', () => Promise.reject(new TypeError('Failed to fetch'))],
-  ])('falls back to the mirror when gov.uk is %s, and labels the rate', async (_case, govUkResponse) => {
-    mockFetch(url => url.startsWith('https://www.trade-tariff.service.gov.uk')
-      ? govUkResponse()
-      : url === mirrorMonthlyJsonUrl('2016', '03') ? new Response(mirrorJson) : new Response('', { status: 404 }))
-    const provider = new HMRCMonthlyProvider()
+    it('covers every month from January 2015 to December 2020', async () => {
+      const { default: archive } = await import('../../data/hmrcMonthlyArchive.json')
+      const months = Object.keys(archive.months)
 
-    const result = await provider.getRate('2016-03-10', 'USD')
-
-    expect(result.rate).toBe(1.404)
-    expect(result.source).toBe(MIRROR_ATTRIBUTION)
-  })
-
-  it('keeps the mirror label for a rate read back from the cache', async () => {
-    mockFetch(url => url.startsWith('https://www.trade-tariff.service.gov.uk')
-      ? new Response('Not found', { status: 404 })
-      : new Response(mirrorJson))
-    await new HMRCMonthlyProvider().getRate('2016-03-10', 'USD')
-
-    const fromCache = await new HMRCMonthlyProvider().getRate('2016-03-10', 'USD')
-
-    expect(fromCache.source).toBe(MIRROR_ATTRIBUTION)
-    expect(fetchSpy).toHaveBeenCalledTimes(2) // gov.uk + mirror for the first lookup only
-  })
-
-  it('skips an unusable mirror entry without failing the rest of the month', async () => {
-    mockFetch(url => url.startsWith('https://www.trade-tariff.service.gov.uk')
-      ? new Response('Not found', { status: 404 })
-      : new Response(JSON.stringify({ base: 'GBP', period: {}, rates: { USD: '1.4040', XYZ: '', ABC: 'n/a' } })))
-    const provider = new HMRCMonthlyProvider()
-
-    expect((await provider.getRate('2016-03-10', 'USD')).rate).toBe(1.404)
-    await expect(provider.getRate('2016-03-10', 'XYZ')).rejects.toThrow(/XYZ not found/)
-  })
-
-  it('stops trying gov.uk after a network failure, but still checks each month after a 404', async () => {
-    const govUkCalls: string[] = []
-    mockFetch(url => {
-      if (url.startsWith('https://www.trade-tariff.service.gov.uk')) {
-        govUkCalls.push(url)
-        return Promise.reject(new TypeError('Failed to fetch'))
+      expect(months).toHaveLength(72)
+      expect(months[0]).toBe('2015-01')
+      expect(months[71]).toBe('2020-12')
+      for (const rates of Object.values(archive.months) as Record<string, number>[]) {
+        expect(rates.USD).toBeGreaterThan(1)
+        expect(rates.EUR).toBeGreaterThan(1)
       }
-      return new Response(mirrorJson)
     })
-    const provider = new HMRCMonthlyProvider()
 
-    await provider.getRate('2016-03-10', 'USD')
-    await provider.getRate('2016-04-10', 'USD')
-    await provider.getRate('2016-05-10', 'USD')
+    it('leaves out known typos, so the rate fails instead of being wildly wrong', async () => {
+      // HMRC's April 2019 file has BRL 439943 (about 5 in the months around it)
+      await expect(new HMRCMonthlyProvider().getRate('2019-04-10', 'BRL')).rejects.toThrow(/BRL not found/)
+      expect((await new HMRCMonthlyProvider().getRate('2019-04-10', 'USD')).rate).toBe(1.3188)
+    })
 
-    expect(govUkCalls).toHaveLength(1)
+    it('fails clearly before 2015', async () => {
+      await expect(new HMRCMonthlyProvider().getRate('2014-12-10', 'USD')).rejects.toThrow(/only available from 2015/)
+    })
   })
 
-  it('refetches a rate cached by the old mirror-only version, so gov.uk is tried', async () => {
-    const { getFxRateCache } = await import('../../../cache')
-    await getFxRateCache().put({
-      id: 'HMRC_MONTHLY-2024-06-USD', date: '2024-06', currency: 'USD', rate: 9.99,
-      source: FXSourceAttributions.HMRC_MONTHLY, fxSource: 'HMRC_MONTHLY',
+  describe('cache', () => {
+    it('keeps the label for a rate read back from the cache', async () => {
+      mockFetch(() => new Response(govUkCsv()))
+      await new HMRCMonthlyProvider().getRate('2024-06-14', 'USD')
+      fetchSpy.mockClear()
+
+      const cached = await new HMRCMonthlyProvider().getRate('2024-06-14', 'USD')
+
+      expect(cached.source).toBe(GOV_UK_ATTRIBUTION)
+      expect(fetchSpy).not.toHaveBeenCalled()
     })
-    mockFetch(() => new Response(govUkCsv()))
 
-    const result = await new HMRCMonthlyProvider().getRate('2024-06-14', 'USD')
+    it('replaces rates cached from the mirror by earlier versions', async () => {
+      await cacheOldMirrorRate('HMRC_MONTHLY-2024-06-USD', 9.99)
+      await cacheOldMirrorRate('HMRC_MONTHLY-2016-03-USD', 9.99)
+      mockFetch(() => new Response(govUkCsv()))
+      const provider = new HMRCMonthlyProvider()
 
-    expect(result.rate).toBe(1.2711)
-    expect(result.source).toBe(GOV_UK_ATTRIBUTION)
-  })
+      const recent = await provider.getRate('2024-06-14', 'USD')
+      const old = await provider.getRate('2016-03-10', 'USD')
 
-  it('falls back to a rate cached by the old version when the refetch fails', async () => {
-    const { getFxRateCache } = await import('../../../cache')
-    await getFxRateCache().put({
-      id: 'HMRC_MONTHLY-2024-06-USD', date: '2024-06', currency: 'USD', rate: 1.2711,
-      source: FXSourceAttributions.HMRC_MONTHLY, fxSource: 'HMRC_MONTHLY',
+      expect([recent.rate, recent.source]).toEqual([1.2711, GOV_UK_ATTRIBUTION])
+      expect([old.rate, old.source]).toEqual([1.4318, ARCHIVE_ATTRIBUTION])
     })
-    mockFetch(() => Promise.reject(new TypeError('Failed to fetch')))
 
-    const result = await new HMRCMonthlyProvider().getRate('2024-06-14', 'USD')
+    it('uses a rate cached by an earlier version when gov.uk is unreachable', async () => {
+      await cacheOldMirrorRate('HMRC_MONTHLY-2024-06-USD', 1.2711)
+      mockFetch(() => Promise.reject(new TypeError('Failed to fetch')))
 
-    expect(result.rate).toBe(1.2711)
-    expect(result.source).toBe(FXSourceAttributions.HMRC_MONTHLY)
-  })
+      const result = await new HMRCMonthlyProvider().getRate('2024-06-14', 'USD')
 
-  it('fails clearly when neither source has the month', async () => {
-    mockFetch(() => new Response('Not found', { status: 404 }))
-    await expect(new HMRCMonthlyProvider().getRate('2099-01-10', 'USD')).rejects.toThrow(/2099\/01/)
+      expect(result.rate).toBe(1.2711)
+      expect(result.source).toBe(FXSourceAttributions.HMRC_MONTHLY)
+    })
   })
 })
 
@@ -179,15 +192,9 @@ describe('FxEnricher with HMRC monthly rates', () => {
     vi.restoreAllMocks()
   })
 
-  it('shows on each transaction whether its rate came from gov.uk or the mirror', async () => {
+  it('shows on each transaction whether its rate came from gov.uk or the archive', async () => {
     setCacheBackends(createMemoryCacheBackends())
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
-    vi.spyOn(globalThis, 'fetch').mockImplementation(async input => {
-      const url = String(input)
-      if (url === govUkMonthlyCsvUrl('2024', '06')) return new Response(govUkCsv())
-      if (url.startsWith('https://www.trade-tariff.service.gov.uk')) return new Response('', { status: 404 })
-      return new Response(mirrorJson)
-    })
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async () => new Response(govUkCsv()))
     const tx = (id: string, date: string) => ({
       id, source: 'Test', symbol: 'AAPL', name: null, date, type: 'BUY', quantity: 1, price: 100,
       currency: 'USD', total: 100, fee: 0, notes: null,
@@ -196,6 +203,6 @@ describe('FxEnricher with HMRC monthly rates', () => {
     const [recent, old] = await new FxEnricher('HMRC_MONTHLY').enrich([tx('a', '2024-06-14'), tx('b', '2016-03-10')])
 
     expect(recent.fx_source).toBe(GOV_UK_ATTRIBUTION)
-    expect(old.fx_source).toBe(MIRROR_ATTRIBUTION)
+    expect(old.fx_source).toBe(ARCHIVE_ATTRIBUTION)
   })
 })

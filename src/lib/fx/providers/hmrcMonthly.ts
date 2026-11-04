@@ -7,20 +7,21 @@ export function govUkMonthlyCsvUrl(year: string, month: string): string {
   return `https://www.trade-tariff.service.gov.uk/api/v2/exchange_rates/files/monthly_csv_${year}-${month}.csv`
 }
 
-/** Community JSON mirror of the same HMRC data, used only as a fallback */
-export function mirrorMonthlyJsonUrl(year: string, month: string): string {
-  return `https://hmrc.matchilling.com/rate/${year}/${month}.json`
-}
+/** First month HMRC publishes on gov.uk as a file */
+export const FIRST_GOV_UK_MONTH = '2021-01'
+
+/** First month in the bundled archive of older rates */
+export const FIRST_ARCHIVE_MONTH = '2015-01'
 
 /** Attribution for rates read from gov.uk */
 export const GOV_UK_ATTRIBUTION = `${FXSourceAttributions.HMRC_MONTHLY} (gov.uk)`
 
-/** Attribution for months the gov.uk file couldn't supply */
-export const MIRROR_ATTRIBUTION = `${FXSourceAttributions.HMRC_MONTHLY} (via hmrc.matchilling.com mirror)`
+/** Attribution for 2015-2020 rates read from the bundled archive */
+export const ARCHIVE_ATTRIBUTION = `${FXSourceAttributions.HMRC_MONTHLY} (2015-2020 archive)`
 
 /**
  * A real monthly file lists well over 100 currencies. Fewer than this means
- * an error page or a truncated file, so the month falls back to the mirror.
+ * an error page or a truncated file.
  */
 const MIN_RATES_IN_FILE = 20
 
@@ -32,13 +33,13 @@ type MonthRates = Record<string, number>
  * Uses HMRC's official monthly exchange rates for tax purposes.
  * Each month has a single fixed rate that applies to all transactions in that month.
  *
- * Source: the monthly CSV HMRC publishes on gov.uk (Trade Tariff service):
- * https://www.trade-tariff.service.gov.uk/exchange_rates/monthly
- *
- * Fallback: if gov.uk can't supply a month (not published as a file for that
- * month, unreachable, blocked, or malformed), the month is read from the
- * hmrc.matchilling.com JSON mirror of the same data. Rates from the mirror
- * carry MIRROR_ATTRIBUTION, so reports show where they came from.
+ * The source depends on the month, never on what fails:
+ * - January 2021 onwards: the monthly CSV HMRC publishes on gov.uk (Trade
+ *   Tariff service): https://www.trade-tariff.service.gov.uk/exchange_rates/monthly
+ *   If gov.uk can't supply a month, the rate fails with a clear error.
+ * - 2015 to 2020: gov.uk has no files for these months, so they come from an
+ *   archive bundled with the app (see scripts/vendor-hmrc-monthly-archive.mjs).
+ *   It's loaded only when a transaction needs it.
  */
 export class HMRCMonthlyProvider extends BaseFXProvider {
   readonly fxSource: FXSource = 'HMRC_MONTHLY'
@@ -46,16 +47,6 @@ export class HMRCMonthlyProvider extends BaseFXProvider {
   // Each month's file contains ALL currencies; share one in-flight fetch per
   // month so multi-currency histories don't re-download the same file
   private monthlyResponseCache = new Map<string, Promise<MonthRates>>()
-
-  /** Months (YYYY-MM) whose rates came from the mirror */
-  private mirrorMonths = new Set<string>()
-
-  /**
-   * Set after a network-level failure (e.g. the browser blocks the request
-   * under CORS): gov.uk is then skipped for the rest of this provider's life
-   * instead of failing once per month. HTTP errors (404) stay per month.
-   */
-  private govUkUnreachable = false
 
   /**
    * Generate cache key in format: HMRC_MONTHLY-YYYY-MM-CURRENCY
@@ -74,41 +65,27 @@ export class HMRCMonthlyProvider extends BaseFXProvider {
   }
 
   protected sourceAttribution(dateKey: string): string {
-    return this.mirrorMonths.has(dateKey) ? MIRROR_ATTRIBUTION : GOV_UK_ATTRIBUTION
+    return dateKey < FIRST_GOV_UK_MONTH ? ARCHIVE_ATTRIBUTION : GOV_UK_ATTRIBUTION
   }
 
   /**
-   * Rates cached before gov.uk became the source carry the plain label but
-   * came from the mirror; refetch them so gov.uk is tried and the label is
-   * accurate.
+   * Rates cached by earlier versions came from the hmrc.matchilling.com
+   * mirror and carry the plain label. Read them again from gov.uk or the
+   * archive: the mirror has differed from HMRC's current files for a few
+   * minor currencies.
    */
   protected isCachedRateUsable(source: string | undefined): boolean {
-    return source === GOV_UK_ATTRIBUTION || source === MIRROR_ATTRIBUTION
+    return source === GOV_UK_ATTRIBUTION || source === ARCHIVE_ATTRIBUTION
   }
 
   /**
-   * Fetch a month's rates (gov.uk first, then the mirror), deduplicating
-   * concurrent requests
+   * Load a month's rates, deduplicating concurrent requests
    */
   private fetchMonth(year: string, month: string): Promise<MonthRates> {
     const key = `${year}-${month}`
     let promise = this.monthlyResponseCache.get(key)
     if (!promise) {
-      promise = (async () => {
-        if (!this.govUkUnreachable) {
-          try {
-            return await fetchGovUkMonth(year, month)
-          } catch (govUkError) {
-            // fetch() rejects (TypeError) only when the request couldn't be
-            // made at all, e.g. blocked or offline, not for HTTP errors
-            if (govUkError instanceof TypeError) this.govUkUnreachable = true
-            console.warn(`gov.uk HMRC rates for ${key} unavailable, using the mirror:`, govUkError)
-          }
-        }
-        const rates = await fetchMirrorMonth(year, month)
-        this.mirrorMonths.add(key)
-        return rates
-      })()
+      promise = key < FIRST_GOV_UK_MONTH ? loadArchiveMonth(key) : fetchGovUkMonth(year, month)
       this.monthlyResponseCache.set(key, promise)
       // Evict failures so transient errors can be retried
       promise.catch(() => {
@@ -146,7 +123,11 @@ export class HMRCMonthlyProvider extends BaseFXProvider {
 async function fetchGovUkMonth(year: string, month: string): Promise<MonthRates> {
   const response = await fetch(govUkMonthlyCsvUrl(year, month))
   if (!response.ok) {
-    throw new Error(`HTTP ${response.status}`)
+    throw new Error(
+      response.status === 404
+        ? `gov.uk has no HMRC rates file for this month yet (HTTP 404)`
+        : `gov.uk returned HTTP ${response.status}`
+    )
   }
   return parseGovUkMonthlyCsv(await response.text())
 }
@@ -183,30 +164,17 @@ export function parseGovUkMonthlyCsv(csvText: string): MonthRates {
   return rates
 }
 
-async function fetchMirrorMonth(year: string, month: string): Promise<MonthRates> {
-  const response = await fetch(mirrorMonthlyJsonUrl(year, month))
-  if (!response.ok) {
-    throw new Error(`HMRC API error: ${response.status}`)
-  }
-  const data = (await response.json()) as MirrorResponse
-  const rates: MonthRates = {}
-  for (const [code, value] of Object.entries(data.rates ?? {})) {
-    const rate = parseFloat(value)
-    // Skip bad entries: one unusable currency mustn't fail the whole month.
-    // fetchRate reports a missing currency for the one asked for.
-    if (Number.isFinite(rate) && rate > 0) rates[code] = rate
-  }
-  return rates
+interface MonthlyArchive {
+  months: Record<string, MonthRates>
 }
 
-/**
- * Mirror response format
- */
-interface MirrorResponse {
-  base: string
-  period: {
-    start: string
-    end: string
+async function loadArchiveMonth(key: string): Promise<MonthRates> {
+  if (key < FIRST_ARCHIVE_MONTH) {
+    throw new Error(`HMRC monthly rates are only available from ${FIRST_ARCHIVE_MONTH.slice(0, 4)}`)
   }
-  rates: Record<string, string>
+  // A separate chunk in the web build, fetched only when an old month is needed
+  const archive: MonthlyArchive = (await import('../data/hmrcMonthlyArchive.json')).default
+  const rates = archive.months[key]
+  if (!rates) throw new Error(`no archived HMRC rates for ${key}`)
+  return rates
 }

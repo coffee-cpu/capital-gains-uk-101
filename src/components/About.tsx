@@ -437,9 +437,9 @@ export function About() {
                     >
                       HMRC's published rates
                     </a>
-                    {' '}on trade-tariff.service.gov.uk. For a month gov.uk can't supply, the app uses
-                    hmrc.matchilling.com, a mirror of the same data, and labels those rates. Requests
-                    contain the year and month.
+                    {' '}on trade-tariff.service.gov.uk, for January 2021 onwards. Requests contain the
+                    year and month. gov.uk doesn't publish earlier months as files, so the 2015 to 2020
+                    rates are built into the app and need no request.
                   </li>
                   <li>
                     <strong>HMRC yearly average rates</strong> from trade-tariff.service.gov.uk too, if you

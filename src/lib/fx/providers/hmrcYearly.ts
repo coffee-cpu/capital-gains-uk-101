@@ -87,11 +87,12 @@ export class HMRCYearlyProvider extends BaseFXProvider {
    * Note: CSV format changed in 2023 - older files lack the Currency Code column.
    * The parser handles both formats by detecting the header.
    *
-   * URL format: /exchange_rates/view/files/average_csv_YYYY-M.csv
+   * URL format: /api/v2/exchange_rates/files/average_csv_YYYY-M.csv (the
+   * /exchange_rates/view/files/ path returns 403 to non-browser clients)
    */
   private async fetchYearlyRates(year: string): Promise<Record<string, number>> {
     // Try December file first (calendar year average: Jan 1 - Dec 31)
-    const decUrl = `https://www.trade-tariff.service.gov.uk/exchange_rates/view/files/average_csv_${year}-12.csv`
+    const decUrl = `https://www.trade-tariff.service.gov.uk/api/v2/exchange_rates/files/average_csv_${year}-12.csv`
 
     try {
       const response = await fetch(decUrl)
@@ -108,7 +109,7 @@ export class HMRCYearlyProvider extends BaseFXProvider {
 
     // Try March file (tax year period: Apr 1 prev year - Mar 31 this year)
     // Useful for Jan-Mar transactions when December file not yet published
-    const marUrl = `https://www.trade-tariff.service.gov.uk/exchange_rates/view/files/average_csv_${year}-3.csv`
+    const marUrl = `https://www.trade-tariff.service.gov.uk/api/v2/exchange_rates/files/average_csv_${year}-3.csv`
 
     try {
       const response = await fetch(marUrl)

@@ -61,13 +61,12 @@ function guidePages(): Plugin {
  * Hosts the app fetches data from. Keep in sync with the privacy notice in
  * src/components/About.tsx and README.md (checked by
  * src/lib/__tests__/contentSecurityPolicy.test.ts).
- * - www.trade-tariff.service.gov.uk: HMRC monthly and yearly average exchange rates
- * - hmrc.matchilling.com: mirror of HMRC's monthly rates, fallback for months gov.uk can't supply
+ * - www.trade-tariff.service.gov.uk: HMRC monthly (2021 onwards; earlier months are
+ *   bundled) and yearly average exchange rates
  * - api.frankfurter.dev: ECB daily exchange rates
  * - cdn.jsdelivr.net: stock split data
  */
 export const CONNECT_SOURCES = [
-  'https://hmrc.matchilling.com',
   'https://www.trade-tariff.service.gov.uk',
   'https://api.frankfurter.dev',
   'https://cdn.jsdelivr.net',
