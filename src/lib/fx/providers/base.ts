@@ -2,12 +2,6 @@ import { FXProvider, FXRateResult, FXSource, FXSourceAttributions } from '../../
 import { getFxRateCache } from '../../cache'
 
 /**
- * Abstract base class for FX providers
- *
- * Provides common functionality for caching and result creation.
- * Each provider implements source-specific rate fetching.
- */
-/**
  * The source answered and has no rate for this currency and period (as
  * opposed to the source being unreachable). A stale cached rate must not
  * stand in for it: it may be a value the source deliberately leaves out.
@@ -19,6 +13,12 @@ export class RateNotPublishedError extends Error {
   }
 }
 
+/**
+ * Abstract base class for FX providers
+ *
+ * Provides common functionality for caching and result creation.
+ * Each provider implements source-specific rate fetching.
+ */
 export abstract class BaseFXProvider implements FXProvider {
   abstract readonly fxSource: FXSource
 
