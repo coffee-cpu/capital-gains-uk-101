@@ -2,6 +2,18 @@ import { FXProvider, FXRateResult, FXSource, FXSourceAttributions } from '../../
 import { getFxRateCache } from '../../cache'
 
 /**
+ * The source answered and has no rate for this currency and period (as
+ * opposed to the source being unreachable). A stale cached rate must not
+ * stand in for it: it may be a value the source deliberately leaves out.
+ */
+export class RateNotPublishedError extends Error {
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options)
+    this.name = 'RateNotPublishedError'
+  }
+}
+
+/**
  * Abstract base class for FX providers
  *
  * Provides common functionality for caching and result creation.
@@ -24,12 +36,26 @@ export abstract class BaseFXProvider implements FXProvider {
 
     // Check cache first
     const cached = await getFxRateCache().get(cacheKey)
-    if (cached) {
-      return this.createResult(cached.rate, date, currency)
+    if (cached && this.isCachedRateUsable(cached.source)) {
+      return this.createResult(cached.rate, date, currency, cached.source)
     }
 
-    // Fetch from API
-    const rate = await this.fetchRate(date, currency)
+    // Fetch from API. A cached rate the provider wanted to refresh still
+    // beats no rate when the source can't be reached (offline), but not when
+    // the source says it has no such rate, or the provider rules it out
+    let rate: number
+    try {
+      rate = await this.fetchRate(date, currency)
+    } catch (error) {
+      if (
+        cached &&
+        !(error instanceof RateNotPublishedError) &&
+        this.canFallBackToCachedRate(this.getDateKey(date))
+      ) {
+        return this.createResult(cached.rate, date, currency, cached.source)
+      }
+      throw error
+    }
 
     // Cache the result
     await this.cacheRate(cacheKey, date, currency, rate)
@@ -56,15 +82,43 @@ export abstract class BaseFXProvider implements FXProvider {
   protected abstract fetchRate(date: string, currency: string): Promise<number>
 
   /**
-   * Create a standardized FX rate result
+   * Whether a cached rate can be reused. Providers override this to refetch
+   * rates cached by an older version from a source they no longer prefer.
    */
-  protected createResult(rate: number, date: string, currency: string): FXRateResult {
+  protected isCachedRateUsable(_source: string | undefined): boolean {
+    return true
+  }
+
+  /**
+   * Whether a cached rate that isCachedRateUsable rejected may still be used
+   * when fetching fails. Providers return false for periods where the old
+   * cached values can't be trusted at all.
+   */
+  protected canFallBackToCachedRate(_dateKey: string): boolean {
+    return true
+  }
+
+  /**
+   * Where a rate for this date came from, shown next to converted values.
+   * Providers that can fall back to another host override this.
+   */
+  protected sourceAttribution(_dateKey: string): string {
+    return FXSourceAttributions[this.fxSource]
+  }
+
+  /**
+   * Create a standardized FX rate result
+   *
+   * @param source Attribution stored with a cached rate, if any
+   */
+  protected createResult(rate: number, date: string, currency: string, source?: string): FXRateResult {
+    const dateKey = this.getDateKey(date)
     return {
       rate,
-      dateKey: this.getDateKey(date),
+      dateKey,
       currency,
       fxSource: this.fxSource,
-      source: FXSourceAttributions[this.fxSource],
+      source: source || this.sourceAttribution(dateKey),
     }
   }
 
@@ -82,7 +136,7 @@ export abstract class BaseFXProvider implements FXProvider {
       date: this.getDateKey(date),
       currency,
       rate,
-      source: FXSourceAttributions[this.fxSource],
+      source: this.sourceAttribution(this.getDateKey(date)),
       fxSource: this.fxSource,
     })
   }

@@ -2,6 +2,7 @@ import type { DisposalRecord, Section104Pool, TaxYearSummary } from '../../types
 import type { EnrichedTransaction } from '../../types/transaction'
 import { isAcquisition, isDisposal, QUANTITY_EPSILON } from '../cgt/utils'
 import { withheldAmountGbp } from '../cgt/engine'
+import { combineFxAttributions } from '../fx/attribution'
 
 /**
  * Figures for the PDF report that the CGT engine doesn't produce itself.
@@ -148,7 +149,9 @@ export function poolBalancesAt(pools: Map<string, Section104Pool> | undefined, e
 
 /**
  * Exchange-rate sources behind this year's figures: the disposals, the
- * acquisitions matched to them, and the year's income. GBP rows are left out.
+ * acquisitions matched to them, and the year's income. GBP rows and failed
+ * conversions are left out, and each source is listed once (see
+ * combineFxAttributions).
  */
 export function fxSourcesUsed(
   taxYearSummary: TaxYearSummary,
@@ -157,7 +160,8 @@ export function fxSourcesUsed(
 ): string[] {
   const sources = new Set<string>()
   const add = (tx: EnrichedTransaction) => {
-    if (tx.fx_source && tx.currency !== 'GBP') sources.add(tx.fx_source)
+    // A failed conversion has no source (it's reported as a warning instead)
+    if (tx.fx_source && !tx.fx_error && tx.currency !== 'GBP') sources.add(tx.fx_source)
   }
   for (const d of disposals) {
     add(d.disposal)
@@ -166,5 +170,5 @@ export function fxSourcesUsed(
   for (const tx of transactions) {
     if (!tx.ignored && tx.tax_year === taxYearSummary.taxYear && INCOME_TYPES.has(tx.type)) add(tx)
   }
-  return [...sources].sort()
+  return combineFxAttributions(sources)
 }

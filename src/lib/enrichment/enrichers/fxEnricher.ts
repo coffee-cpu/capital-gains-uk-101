@@ -1,5 +1,5 @@
 import { EnrichedTransaction } from '../../../types/transaction'
-import { FXSource, FXSourceAttributions } from '../../../types/fxSource'
+import { FXSource } from '../../../types/fxSource'
 import { FXManager, convertToGBP } from '../../fx'
 import { Enricher } from '../types'
 import { isFiatCurrency } from '../../currencies'
@@ -57,7 +57,6 @@ export class FxEnricher implements Enricher {
     }
 
     const enriched: EnrichedTransaction[] = []
-    const fxSource = this.fxManager.getFXSource()
 
     for (const tx of transactions) {
       try {
@@ -109,7 +108,8 @@ export class FxEnricher implements Enricher {
           fee_gbp: feeGbp,
           grossDividend_gbp: grossDividendGbp,
           withholdingTax_gbp: withholdingTaxGbp,
-          fx_source: tx.currency === 'GBP' ? 'Native GBP' : FXSourceAttributions[fxSource],
+          // The rate's own attribution (e.g. gov.uk or the 2015-2020 archive)
+          fx_source: tx.currency === 'GBP' ? 'Native GBP' : fxResult.source,
           fx_error: null,
         })
       } catch (error) {

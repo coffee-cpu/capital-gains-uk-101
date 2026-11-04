@@ -24,10 +24,12 @@ const REPO_ROOT = join(__dirname, '../../../..')
 const FIXTURES = join(REPO_ROOT, 'e2e/fixtures')
 const fixture = (name: string) => join(FIXTURES, name)
 
+const CONSTANT_RATE_SOURCE = 'HMRC Monthly Exchange Rates (gov.uk)'
+
 /** FX cache that answers every lookup with the same rate, so no network is needed */
 class ConstantRateCache implements RecordCache<string, FXRate> {
   async get(key: string): Promise<FXRate> {
-    return { id: key, date: '', currency: '', rate: 1.25, source: 'test' }
+    return { id: key, date: '', currency: '', rate: 1.25, source: CONSTANT_RATE_SOURCE }
   }
   async put(): Promise<void> {}
   async bulkPut(): Promise<void> {}
@@ -278,6 +280,23 @@ describe('cgt-visualiser CLI', () => {
           .sort((a, b) => a.startDate.localeCompare(b.startDate))
           .map(s => [s.taxYear, s.totalDisposals, money(s.totalProceedsGbp), money(s.totalAllowableCostsGbp), money(s.netGainOrLossGbp), money(s.taxableGainGbp)]))
       expect(report.disposals.map(d => d.id).sort()).toEqual(expected!.disposals.map(d => d.disposal.id).sort())
+      // Every rate came from the fixed cache
+      expect(fetchSpy).not.toHaveBeenCalled()
+    })
+
+    it('names the FX source the same way the transactions do', async () => {
+      useConstantRates()
+      const csv = [
+        'date,type,symbol,currency,quantity,price,total,fee',
+        '2024-01-02,BUY,AAPL,USD,10,100,1000,0',
+        '2024-06-10,SELL,AAPL,USD,10,150,1500,0',
+      ].join('\n')
+      const options = { taxYear: null, fxSource: 'HMRC_MONTHLY' as const, autoSplits: false, offline: true, details: false }
+
+      const report = await calculate([{ path: 'in.csv', name: 'in.csv', text: csv, fileId: 'in' }], options)
+
+      expect(report.options.fxSourceName).toBe(CONSTANT_RATE_SOURCE)
+      expect(fetchSpy).not.toHaveBeenCalled()
     })
 
     it('uses the same transaction IDs as the web app', async () => {
