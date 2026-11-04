@@ -30,6 +30,11 @@ export function parseGovUkRatesCsv(csvText: string, minRates: number): GovUkRate
 
   const rates: GovUkRates = {}
   for (const row of rows) {
+    // A row cut off before its last column may hold a truncated rate. In the
+    // monthly files the rate is followed by the start and end dates, so this
+    // catches a download that stops mid-rate. (Every row of a real file is
+    // as wide as its header.)
+    if (row.length < header.length) continue
     const code = codeColumn !== -1
       ? row[codeColumn]?.trim().toUpperCase()
       : countryToCurrencyCode(row[countryColumn] ?? '')

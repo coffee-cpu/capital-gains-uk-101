@@ -30,6 +30,16 @@ describe('parseGovUkRatesCsv', () => {
     expect(parseGovUkRatesCsv(csv, 1)).toEqual({ KRW: 1745.12 })
   })
 
+  it('skips a row cut off before its last column, which may hold a truncated rate', () => {
+    const csv = [
+      'Country/Territories,Currency,Currency Code,Currency Units per £1,Start date,End date',
+      'Eurozone,Euro,EUR,1.1695,01/06/2024,30/06/2024',
+      'USA,Dollar,USD,1.2',
+    ].join('\n')
+
+    expect(parseGovUkRatesCsv(csv, 1)).toEqual({ EUR: 1.1695 })
+  })
+
   it('rejects unknown columns and files with too few rates', () => {
     expect(() => parseGovUkRatesCsv('a,b,c\n1,2,3', 1)).toThrow(/unexpected columns/)
     expect(() => parseGovUkRatesCsv('Country,Currency Code,Currency Units per £1\nUSA,USD,1.27', 2)).toThrow(/only 1 rates/)

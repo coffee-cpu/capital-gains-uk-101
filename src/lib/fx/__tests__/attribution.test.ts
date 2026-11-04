@@ -10,11 +10,11 @@ describe('combineFxAttributions', () => {
     ])).toEqual(['HMRC Monthly Exchange Rates (2015-2020 archive and gov.uk)'])
   })
 
-  it('folds a plain label cached by an earlier version into the same source', () => {
+  it('names a rate cached by an earlier version instead of hiding it', () => {
     expect(combineFxAttributions([
       'HMRC Monthly Exchange Rates',
       'HMRC Monthly Exchange Rates (gov.uk)',
-    ])).toEqual(['HMRC Monthly Exchange Rates (gov.uk)'])
+    ])).toEqual(['HMRC Monthly Exchange Rates (gov.uk and cached by an earlier version)'])
     expect(combineFxAttributions(['HMRC Monthly Exchange Rates'])).toEqual(['HMRC Monthly Exchange Rates'])
   })
 
