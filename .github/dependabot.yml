@@ -18,6 +18,12 @@ updates:
       interval: weekly
     allow:
       - dependency-type: development
+    ignore:
+      # TypeScript 7 (the Go rewrite) is outside typescript-eslint's supported
+      # range (<6.1.0), so its PR can't even npm install. Remove this once
+      # typescript-eslint supports it. Updates up to 6.x still come through.
+      - dependency-name: typescript
+        versions: [">=7.0.0"]
     groups:
       # Listed first so it wins: the vitest packages pin each other's exact
       # version, so every update to them (majors included) must be one PR
