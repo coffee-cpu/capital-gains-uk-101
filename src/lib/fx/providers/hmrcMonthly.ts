@@ -1,6 +1,6 @@
-import Papa from 'papaparse'
 import { FXSource, FXSourceAttributions } from '../../../types/fxSource'
 import { BaseFXProvider, RateNotPublishedError } from './base'
+import { GovUkRates, parseGovUkRatesCsv } from './govUkCsv'
 
 /** gov.uk monthly rates file (Trade Tariff service, published by HMRC) */
 export function govUkMonthlyCsvUrl(year: string, month: string): string {
@@ -20,12 +20,24 @@ export const GOV_UK_ATTRIBUTION = `${FXSourceAttributions.HMRC_MONTHLY} (gov.uk)
 export const ARCHIVE_ATTRIBUTION = `${FXSourceAttributions.HMRC_MONTHLY} (2015-2020 archive)`
 
 /**
- * A real monthly file lists well over 100 currencies. Fewer than this means
- * an error page or a truncated file.
+ * The label every rate cached by earlier versions (read from the
+ * hmrc.matchilling.com mirror) carries. Frozen here rather than taken from
+ * FXSourceAttributions, so rewording the labels never invalidates caches.
  */
-const MIN_RATES_IN_FILE = 20
+const MIRROR_ERA_ATTRIBUTION = 'HMRC Monthly Exchange Rates'
 
-type MonthRates = Record<string, number>
+/**
+ * A real monthly file lists 160+ currencies. Fewer than this means an error
+ * page or a truncated download; a truncated month must never be kept, or
+ * every currency past the cut would fail as "not published" all session.
+ */
+const MIN_RATES_IN_FILE = 100
+
+type MonthRates = GovUkRates
+
+interface MonthlyArchive {
+  months: Record<string, MonthRates>
+}
 
 /**
  * HMRC Monthly Rates Provider
@@ -70,12 +82,27 @@ export class HMRCMonthlyProvider extends BaseFXProvider {
 
   /**
    * Rates cached by earlier versions came from the hmrc.matchilling.com
-   * mirror and carry the plain label. Read them again from gov.uk or the
-   * archive: the mirror has differed from HMRC's current files for a few
-   * minor currencies.
+   * mirror. Read them again from gov.uk or the archive: the mirror has
+   * differed from HMRC's current files for a few minor currencies, and kept
+   * typos the archive leaves out.
    */
   protected isCachedRateUsable(source: string | undefined): boolean {
-    return source === GOV_UK_ATTRIBUTION || source === ARCHIVE_ATTRIBUTION
+    return source !== undefined && source !== MIRROR_ERA_ATTRIBUTION
+  }
+
+  /**
+   * Before 2021 a mirror-era cached rate may be one of the typos the archive
+   * deliberately leaves out (e.g. BRL 439943 for April 2019), so it must
+   * never stand in, even if loading the archive fails. From 2021 the mirror
+   * matched gov.uk for every major currency, so it beats no rate offline.
+   */
+  protected canFallBackToCachedRate(dateKey: string): boolean {
+    return dateKey >= FIRST_GOV_UK_MONTH
+  }
+
+  /** The bundled 2015-2020 archive: a separate chunk in the web build */
+  protected async loadArchive(): Promise<MonthlyArchive> {
+    return (await import('../data/hmrcMonthlyArchive.json')).default
   }
 
   /**
@@ -85,7 +112,7 @@ export class HMRCMonthlyProvider extends BaseFXProvider {
     const key = `${year}-${month}`
     let promise = this.monthlyResponseCache.get(key)
     if (!promise) {
-      promise = key < FIRST_GOV_UK_MONTH ? loadArchiveMonth(key) : fetchGovUkMonth(year, month)
+      promise = key < FIRST_GOV_UK_MONTH ? this.loadArchiveMonth(key) : fetchGovUkMonth(year, month)
       this.monthlyResponseCache.set(key, promise)
       // Evict failures so transient errors can be retried
       promise.catch(() => {
@@ -93,6 +120,15 @@ export class HMRCMonthlyProvider extends BaseFXProvider {
       })
     }
     return promise
+  }
+
+  private async loadArchiveMonth(key: string): Promise<MonthRates> {
+    if (key < FIRST_ARCHIVE_MONTH) {
+      throw new Error(`HMRC monthly rates are only available from ${FIRST_ARCHIVE_MONTH.slice(0, 4)}`)
+    }
+    const rates = (await this.loadArchive()).months[key]
+    if (!rates) throw new Error(`no archived HMRC rates for ${key}`)
+    return rates
   }
 
   /**
@@ -134,48 +170,9 @@ async function fetchGovUkMonth(year: string, month: string): Promise<MonthRates>
 }
 
 /**
- * Parse HMRC's monthly CSV: one row per country with "Currency Code" and
- * "Currency Units per £1" columns (found by header, so column order changes
- * don't break it). Throws unless it yields a credible set of rates.
+ * Parse HMRC's monthly CSV ("Currency Code" and "Currency Units per £1"
+ * columns, found by header). Throws unless it yields a full month of rates.
  */
 export function parseGovUkMonthlyCsv(csvText: string): MonthRates {
-  const parsed = Papa.parse<string[]>(csvText.trim(), { skipEmptyLines: true })
-  const [header, ...rows] = parsed.data
-  if (!header) throw new Error('empty file')
-
-  const columns = header.map(cell => cell.trim().toLowerCase())
-  const codeColumn = columns.findIndex(cell => cell.includes('currency code'))
-  const rateColumn = columns.findIndex(cell => cell.includes('units per'))
-  if (codeColumn === -1 || rateColumn === -1) {
-    throw new Error('unexpected columns: ' + header.join(', '))
-  }
-
-  const rates: MonthRates = {}
-  for (const row of rows) {
-    const code = row[codeColumn]?.trim().toUpperCase()
-    const rate = parseFloat(row[rateColumn]?.trim() ?? '')
-    if (code && /^[A-Z]{3}$/.test(code) && Number.isFinite(rate) && rate > 0) {
-      rates[code] = rate
-    }
-  }
-
-  if (Object.keys(rates).length < MIN_RATES_IN_FILE) {
-    throw new Error(`only ${Object.keys(rates).length} rates in file`)
-  }
-  return rates
-}
-
-interface MonthlyArchive {
-  months: Record<string, MonthRates>
-}
-
-async function loadArchiveMonth(key: string): Promise<MonthRates> {
-  if (key < FIRST_ARCHIVE_MONTH) {
-    throw new Error(`HMRC monthly rates are only available from ${FIRST_ARCHIVE_MONTH.slice(0, 4)}`)
-  }
-  // A separate chunk in the web build, fetched only when an old month is needed
-  const archive: MonthlyArchive = (await import('../data/hmrcMonthlyArchive.json')).default
-  const rates = archive.months[key]
-  if (!rates) throw new Error(`no archived HMRC rates for ${key}`)
-  return rates
+  return parseGovUkRatesCsv(csvText, MIN_RATES_IN_FILE)
 }

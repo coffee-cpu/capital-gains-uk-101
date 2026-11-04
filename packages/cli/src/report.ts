@@ -5,6 +5,7 @@ import { GainGroupType } from '../../../src/types/transaction'
 import { getEffectiveQuantity, QUANTITY_EPSILON } from '../../../src/lib/cgt/utils'
 import type { CGTRateChange2024Data } from '../../../src/lib/cgt/taxYearFeatures/cgtRateChange2024'
 import { sa108Rows, Sa108Category, Sa108Row } from '../../../src/lib/cgt/sa108'
+import { combineFxAttributions } from '../../../src/lib/fx/attribution'
 import { CLI_NAME, CLI_VERSION, DISCLAIMER } from './meta'
 
 /**
@@ -181,6 +182,18 @@ const RULE_NAMES: Record<GainGroupType, MatchRule> = {
   NONE: 'none',
 }
 
+/**
+ * The rate source as the transactions' own fxSource strings name it, combined
+ * into one label (e.g. "HMRC Monthly Exchange Rates (2015-2020 archive and
+ * gov.uk)"), so it matches them. The plain name when no rate was needed.
+ */
+function fxSourceName(result: CGTCalculationResult | null, fxSource: FXSource): string {
+  const used = (result?.transactions ?? [])
+    .filter(tx => tx.currency !== 'GBP' && tx.fx_source && !tx.fx_error)
+    .map(tx => tx.fx_source!)
+  return used.length > 0 ? combineFxAttributions(used).join(', ') : FXSourceAttributions[fxSource]
+}
+
 /** Round to pennies, avoiding float noise and negative zero */
 export function money(value: number): number {
   const rounded = Math.round(value * 100) / 100
@@ -224,7 +237,7 @@ export function buildCalculateReport(
     options: {
       taxYear: options.taxYear,
       fxSource: options.fxSource,
-      fxSourceName: FXSourceAttributions[options.fxSource],
+      fxSourceName: fxSourceName(result, options.fxSource),
       autoSplits: options.autoSplits,
       offline: options.offline,
       details: options.details,

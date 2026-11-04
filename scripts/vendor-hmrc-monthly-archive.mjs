@@ -19,7 +19,8 @@
  * (in HMRC's original file or the mirror's copy). They are left out, so a
  * trade in that currency and month gets a clear "rate not found" error
  * instead of a wildly wrong value. They are listed in EXCLUDED below, and the
- * script fails if it finds a new one, so each is reviewed by a person.
+ * script fails if it finds a new one, so each is reviewed by a person. Spikes
+ * that turned out to be real changes are listed in KEPT.
  *
  * Usage: node scripts/vendor-hmrc-monthly-archive.mjs
  */
@@ -32,10 +33,20 @@ const OUT = new URL('../src/lib/fx/data/hmrcMonthlyArchive.json', import.meta.ur
 /** Known typos: month, currency, the value published, and its neighbours */
 const EXCLUDED = [
   { month: '2015-04', currency: 'STD', published: 12101.8, note: 'neighbours 33196 and 33371.22' },
+  { month: '2015-04', currency: 'IRR', published: 8.8513, note: 'previous months about 42000, not listed after' },
   { month: '2018-04', currency: 'IQD', published: 843.06, note: 'neighbours 1655.06 and 1691.76' },
   { month: '2019-04', currency: 'BRL', published: 439943, note: 'neighbours 4.853 and 5.1227' },
+  { month: '2020-02', currency: 'MRO', published: 46.95, note: 'the new MRU rate filed as MRO (redenominated 10:1 in 2018); MRO about 460 before' },
   { month: '2020-04', currency: 'CVE', published: 302.96, note: 'neighbours 132.77 and 126.1' },
   { month: '2020-11', currency: 'STD', published: 274769, note: 'neighbours 26993.9 and 27603.7' },
+]
+
+/** Spikes reviewed and kept: real changes, not typos */
+const KEPT = [
+  {
+    month: '2015-01', currency: 'VEF', published: 18.7632,
+    note: 'next months about 9.5: Venezuela ran several official rates, and this matches the SICAD rate (about 12.4 VEF/USD) where later months use the official 6.3',
+  },
 ]
 
 const pad = m => String(m).padStart(2, '0')
@@ -61,7 +72,16 @@ async function govUkMonth(year, month) {
   // Country names can contain commas, so read the code and rate from the right
   const fromRight = header.length - header.findIndex(cell => /currency code/i.test(cell))
   const rates = {}
-  for (const row of rows) rates[row[row.length - fromRight]] = Number(row[row.length - fromRight + 1])
+  for (const row of rows) {
+    const code = row[row.length - fromRight]
+    const rate = Number(row[row.length - fromRight + 1])
+    // Fail rather than compare NaN, which would never register a difference
+    if (!/^[A-Z]{3}$/.test(code) || !Number.isFinite(rate) || rate <= 0) {
+      throw new Error(`gov.uk ${year}-${month}: unreadable row ${JSON.stringify(row)}`)
+    }
+    rates[code] = rate
+  }
+  if (Object.keys(rates).length < 100) throw new Error(`gov.uk ${year}-${month}: only ${Object.keys(rates).length} rates`)
   return rates
 }
 
@@ -92,17 +112,27 @@ async function checkMirrorAgainstGovUk() {
   if (majorDifferences.length > 0) throw new Error(`Major currencies differ: ${majorDifferences.join(', ')}`)
 }
 
-/** Rates that leave both neighbours by over 30% while the neighbours agree */
-function findSpikes(months) {
-  const keys = Object.keys(months)
+/**
+ * Rates that leave both neighbours by over 30% while the neighbours agree.
+ * The neighbours are the nearest months listing that currency, one on each
+ * side, or the nearest two on one side for the first month. `context` holds
+ * gov.uk months after the archive, so December 2020 is checked too.
+ */
+function findSpikes(months, context) {
+  const all = { ...months, ...context }
+  const keys = Object.keys(all).sort()
   const spikes = []
-  for (let i = 1; i < keys.length - 1; i++) {
-    for (const [code, rate] of Object.entries(months[keys[i]])) {
-      const before = months[keys[i - 1]][code]
-      const after = months[keys[i + 1]][code]
-      if (!before || !after) continue
-      if (Math.abs(rate / before - 1) > 0.3 && Math.abs(after / before - 1) < 0.1) {
-        spikes.push({ month: keys[i], currency: code, published: rate })
+  for (const month of Object.keys(months)) {
+    const i = keys.indexOf(month)
+    for (const [code, rate] of Object.entries(months[month])) {
+      const has = k => all[k][code] !== undefined
+      const before = keys.slice(0, i).reverse().filter(has)
+      const after = keys.slice(i + 1).filter(has)
+      const [a, b] = before.length && after.length ? [before[0], after[0]] : [...before, ...after].slice(0, 2)
+      if (!a || !b) continue
+      const [first, second] = [all[a][code], all[b][code]]
+      if (Math.abs(rate / first - 1) > 0.3 && Math.abs(second / first - 1) < 0.1) {
+        spikes.push({ month, currency: code, published: rate })
       }
     }
   }
@@ -120,8 +150,10 @@ for (let year = FIRST_YEAR; year <= LAST_YEAR; year++) {
   }
 }
 
-const unreviewed = findSpikes(months).filter(
-  s => !EXCLUDED.some(e => e.month === s.month && e.currency === s.currency && e.published === s.published)
+const context = { '2021-01': await govUkMonth(2021, '01'), '2021-02': await govUkMonth(2021, '02') }
+const reviewed = [...EXCLUDED, ...KEPT]
+const unreviewed = findSpikes(months, context).filter(
+  s => !reviewed.some(e => e.month === s.month && e.currency === s.currency && e.published === s.published)
 )
 if (unreviewed.length > 0) {
   throw new Error(`Unreviewed spikes, check and add to EXCLUDED: ${JSON.stringify(unreviewed)}`)

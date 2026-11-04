@@ -42,12 +42,16 @@ export abstract class BaseFXProvider implements FXProvider {
 
     // Fetch from API. A cached rate the provider wanted to refresh still
     // beats no rate when the source can't be reached (offline), but not when
-    // the source says it has no such rate
+    // the source says it has no such rate, or the provider rules it out
     let rate: number
     try {
       rate = await this.fetchRate(date, currency)
     } catch (error) {
-      if (cached && !(error instanceof RateNotPublishedError)) {
+      if (
+        cached &&
+        !(error instanceof RateNotPublishedError) &&
+        this.canFallBackToCachedRate(this.getDateKey(date))
+      ) {
         return this.createResult(cached.rate, date, currency, cached.source)
       }
       throw error
@@ -82,6 +86,15 @@ export abstract class BaseFXProvider implements FXProvider {
    * rates cached by an older version from a source they no longer prefer.
    */
   protected isCachedRateUsable(_source: string | undefined): boolean {
+    return true
+  }
+
+  /**
+   * Whether a cached rate that isCachedRateUsable rejected may still be used
+   * when fetching fails. Providers return false for periods where the old
+   * cached values can't be trusted at all.
+   */
+  protected canFallBackToCachedRate(_dateKey: string): boolean {
     return true
   }
 

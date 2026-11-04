@@ -11,7 +11,10 @@ import { FXSourceAttributions } from '../../../../types/fxSource'
 import { FxEnricher } from '../../../enrichment/enrichers/fxEnricher'
 import type { EnrichedTransaction } from '../../../../types/transaction'
 
-/** A gov.uk-style monthly CSV: USD 1.2711, EUR 1.1695 and filler currencies */
+/**
+ * A gov.uk-style monthly CSV: USD 1.2711, EUR 1.1695 and filler currencies,
+ * 160 rates in all like a real file
+ */
 function govUkCsv(): string {
   const rows = [
     'Country/Territories,Currency,Currency Code,Currency Units per £1,Start date,End date',
@@ -19,7 +22,7 @@ function govUkCsv(): string {
     'Eurozone,Euro,EUR,1.1695,01/06/2024,30/06/2024',
     '"Korea, South",Won,KRW,1745.12,01/06/2024,30/06/2024',
   ]
-  for (let i = 0; i < 25; i++) {
+  for (let i = 0; i < 157; i++) {
     const code = 'X' + String.fromCharCode(65 + Math.floor(i / 26)) + String.fromCharCode(65 + (i % 26))
     rows.push(`Somewhere ${i},Unit,${code},${(i + 1) * 1.5},01/06/2024,30/06/2024`)
   }
@@ -37,6 +40,11 @@ describe('parseGovUkMonthlyCsv', () => {
   it('rejects an error page or a file with too few rates', () => {
     expect(() => parseGovUkMonthlyCsv('<html>Not found</html>')).toThrow()
     expect(() => parseGovUkMonthlyCsv(govUkCsv().split('\n').slice(0, 4).join('\n'))).toThrow(/only 3 rates/)
+  })
+
+  it('rejects a truncated download instead of keeping a partial month', () => {
+    const truncated = govUkCsv().split('\n').slice(0, 41).join('\n')
+    expect(() => parseGovUkMonthlyCsv(truncated)).toThrow(/only 40 rates/)
   })
 })
 
@@ -103,6 +111,16 @@ describe('HMRCMonthlyProvider', () => {
 
       mockFetch(() => new Response('<html>Service unavailable</html>'))
       await expect(new HMRCMonthlyProvider().getRate('2024-06-14', 'USD')).rejects.toThrow()
+    })
+
+    it('does not keep a truncated month for the session', async () => {
+      let calls = 0
+      const truncated = govUkCsv().split('\n').slice(0, 41).join('\n')
+      mockFetch(() => new Response(++calls === 1 ? truncated : govUkCsv()))
+      const provider = new HMRCMonthlyProvider()
+
+      await expect(provider.getRate('2024-06-14', 'XEZ')).rejects.toThrow(/only 40 rates/)
+      expect((await provider.getRate('2024-06-14', 'XEZ')).rate).toBeGreaterThan(0)
     })
 
     it('retries a month after a failure', async () => {
@@ -190,6 +208,32 @@ describe('HMRCMonthlyProvider', () => {
       await cacheOldMirrorRate('HMRC_MONTHLY-2019-04-BRL', 439943)
 
       await expect(new HMRCMonthlyProvider().getRate('2019-04-10', 'BRL')).rejects.toThrow(/BRL not found/)
+    })
+
+    it('does not bring back a cached typo when the archive fails to load', async () => {
+      // e.g. a tab open across a deploy can't fetch the archive chunk any more
+      class ArchiveUnavailable extends HMRCMonthlyProvider {
+        protected loadArchive(): never {
+          throw new Error('Failed to fetch dynamically imported module')
+        }
+      }
+      await cacheOldMirrorRate('HMRC_MONTHLY-2019-04-BRL', 439943)
+
+      await expect(new ArchiveUnavailable().getRate('2019-04-10', 'BRL')).rejects.toThrow(/dynamically imported module/)
+    })
+
+    it('keeps rates cached under any label this version wrote, not just today\'s wording', async () => {
+      const { getFxRateCache } = await import('../../../cache')
+      await getFxRateCache().put({
+        id: 'HMRC_MONTHLY-2024-06-USD', date: '2024-06', currency: 'USD', rate: 1.2711,
+        source: 'HMRC monthly rates, reworded (gov.uk)', fxSource: 'HMRC_MONTHLY',
+      })
+      mockFetch(() => new Response(govUkCsv()))
+
+      const result = await new HMRCMonthlyProvider().getRate('2024-06-14', 'USD')
+
+      expect(result.source).toBe('HMRC monthly rates, reworded (gov.uk)')
+      expect(fetchSpy).not.toHaveBeenCalled()
     })
 
     it('does not use a cached rate for a currency gov.uk no longer lists', async () => {

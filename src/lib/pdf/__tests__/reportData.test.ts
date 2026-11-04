@@ -169,4 +169,20 @@ describe('fxSourcesUsed', () => {
       'HMRC Monthly Exchange Rates',
     ])
   })
+
+  it('lists HMRC monthly rates once across gov.uk and the archive, skipping failed conversions', () => {
+    const sell = tx({ id: 's', currency: 'USD', fx_source: 'HMRC Monthly Exchange Rates (gov.uk)' })
+    const disposal = record(sell, 50, 40)
+    disposal.matchings = [{
+      disposal: sell,
+      rule: 'SECTION_104',
+      quantityMatched: 10,
+      totalCostBasisGbp: 40,
+      acquisitions: [{ transaction: tx({ id: 'b', type: 'BUY', currency: 'USD', fx_source: 'HMRC Monthly Exchange Rates (2015-2020 archive)' }), quantityMatched: 10, costBasisGbp: 40 }],
+    }]
+    const failed = tx({ id: 'f', type: 'DIVIDEND', currency: 'BRL', fx_source: 'Failed', fx_error: 'Currency BRL not found' })
+    expect(fxSourcesUsed(summary2024, [disposal], [failed])).toEqual([
+      'HMRC Monthly Exchange Rates (2015-2020 archive and gov.uk)',
+    ])
+  })
 })

@@ -1,6 +1,7 @@
 import { FXSource } from '../../../types/fxSource'
 import { getFxRateCache } from '../../cache'
 import { BaseFXProvider } from './base'
+import { parseGovUkRatesCsv } from './govUkCsv'
 
 /**
  * HMRC Yearly Average Rates Provider
@@ -176,145 +177,12 @@ export class HMRCYearlyProvider extends BaseFXProvider {
   }
 
   /**
-   * Parse the HMRC yearly average rates CSV
-   *
-   * Two formats exist:
-   * - 2023+: Country, Currency, Currency Code, Sterling value, Units per £1 (5 columns)
-   * - 2022-: Country, Currency, Sterling value, Units per pound (4 columns, no code)
-   *
-   * We detect the format by checking if header contains "Currency Code"
+   * Parse the HMRC yearly average rates CSV. Two formats exist: 2023+ has a
+   * Currency Code column, 2022 and earlier only country names (see
+   * parseGovUkRatesCsv).
    */
   private parseYearlyRatesCSV(csvText: string): Record<string, number> {
-    const lines = csvText.split('\n')
-    const rates: Record<string, number> = {}
-
-    if (lines.length === 0) {
-      throw new Error('Empty CSV file')
-    }
-
-    // Detect format from header
-    const header = lines[0].toLowerCase()
-    const hasCurrencyCodeColumn = header.includes('currency code')
-
-    // Skip header line
-    for (let i = 1; i < lines.length; i++) {
-      const line = lines[i].trim()
-      if (!line) continue
-
-      // Parse CSV - handle quoted values
-      const parts = this.parseCSVLine(line)
-
-      let currencyCode: string
-      let rateStr: string
-
-      if (hasCurrencyCodeColumn) {
-        // New format (2023+): Country, Currency, Code, Sterling value, Units per £1
-        if (parts.length < 5) continue
-        currencyCode = parts[2]?.trim()
-        rateStr = parts[4]?.trim()
-      } else {
-        // Old format (2022-): Country, Currency, Sterling value, Units per pound
-        if (parts.length < 4) continue
-        const country = parts[0]?.trim()
-        currencyCode = this.countryToCurrencyCode(country)
-        rateStr = parts[3]?.trim()
-      }
-
-      if (!currencyCode || !rateStr) continue
-
-      const rate = parseFloat(rateStr)
-      if (!isNaN(rate) && rate > 0) {
-        rates[currencyCode] = rate
-      }
-    }
-
-    if (Object.keys(rates).length === 0) {
-      throw new Error('No rates found in HMRC average rates CSV')
-    }
-
-    return rates
-  }
-
-  /**
-   * Map country name to ISO 4217 currency code (for pre-2023 CSV format)
-   */
-  private countryToCurrencyCode(country: string): string {
-    const name = country?.toLowerCase().trim() || ''
-
-    // Map country names to their primary currency codes
-    const mappings: Record<string, string> = {
-      'usa': 'USD',
-      'euro zone': 'EUR',
-      'eurozone': 'EUR',
-      'japan': 'JPY',
-      'switzerland': 'CHF',
-      'china': 'CNY',
-      'india': 'INR',
-      'brazil': 'BRL',
-      'mexico': 'MXN',
-      'south korea': 'KRW',
-      'korea': 'KRW',
-      'south africa': 'ZAR',
-      'sweden': 'SEK',
-      'norway': 'NOK',
-      'denmark': 'DKK',
-      'abu dhabi': 'AED',
-      'uae': 'AED',
-      'malaysia': 'MYR',
-      'thailand': 'THB',
-      'turkey': 'TRY',
-      'poland': 'PLN',
-      'hungary': 'HUF',
-      'czech republic': 'CZK',
-      'czechia': 'CZK',
-      'israel': 'ILS',
-      'kuwait': 'KWD',
-      'saudi arabia': 'SAR',
-      'vietnam': 'VND',
-      'indonesia': 'IDR',
-      'taiwan': 'TWD',
-      'singapore': 'SGD',
-      'hong kong': 'HKD',
-      'canada': 'CAD',
-      'australia': 'AUD',
-      'new zealand': 'NZD',
-      'russia': 'RUB',
-      'philippines': 'PHP',
-      'pakistan': 'PKR',
-      'egypt': 'EGP',
-      'nigeria': 'NGN',
-      'colombia': 'COP',
-      'chile': 'CLP',
-      'argentina': 'ARS',
-      'peru': 'PEN',
-    }
-
-    return mappings[name] || ''
-  }
-
-  /**
-   * Simple CSV line parser that handles quoted values
-   */
-  private parseCSVLine(line: string): string[] {
-    const result: string[] = []
-    let current = ''
-    let inQuotes = false
-
-    for (let i = 0; i < line.length; i++) {
-      const char = line[i]
-
-      if (char === '"') {
-        inQuotes = !inQuotes
-      } else if (char === ',' && !inQuotes) {
-        result.push(current.trim())
-        current = ''
-      } else {
-        current += char
-      }
-    }
-
-    result.push(current.trim())
-    return result
+    return parseGovUkRatesCsv(csvText, 1)
   }
 
   /**
