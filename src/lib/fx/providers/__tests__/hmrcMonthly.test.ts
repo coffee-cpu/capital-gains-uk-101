@@ -184,6 +184,20 @@ describe('HMRCMonthlyProvider', () => {
       expect(result.rate).toBe(1.2711)
       expect(result.source).toBe(FXSourceAttributions.HMRC_MONTHLY)
     })
+
+    it('does not bring back a cached typo that the archive leaves out', async () => {
+      // The mirror-only version cached BRL 439943 for April 2019
+      await cacheOldMirrorRate('HMRC_MONTHLY-2019-04-BRL', 439943)
+
+      await expect(new HMRCMonthlyProvider().getRate('2019-04-10', 'BRL')).rejects.toThrow(/BRL not found/)
+    })
+
+    it('does not use a cached rate for a currency gov.uk no longer lists', async () => {
+      await cacheOldMirrorRate('HMRC_MONTHLY-2024-06-ZZZ', 2.5)
+      mockFetch(() => new Response(govUkCsv()))
+
+      await expect(new HMRCMonthlyProvider().getRate('2024-06-14', 'ZZZ')).rejects.toThrow(/ZZZ not found/)
+    })
   })
 })
 

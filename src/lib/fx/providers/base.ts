@@ -7,6 +7,18 @@ import { getFxRateCache } from '../../cache'
  * Provides common functionality for caching and result creation.
  * Each provider implements source-specific rate fetching.
  */
+/**
+ * The source answered and has no rate for this currency and period (as
+ * opposed to the source being unreachable). A stale cached rate must not
+ * stand in for it: it may be a value the source deliberately leaves out.
+ */
+export class RateNotPublishedError extends Error {
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options)
+    this.name = 'RateNotPublishedError'
+  }
+}
+
 export abstract class BaseFXProvider implements FXProvider {
   abstract readonly fxSource: FXSource
 
@@ -29,12 +41,15 @@ export abstract class BaseFXProvider implements FXProvider {
     }
 
     // Fetch from API. A cached rate the provider wanted to refresh still
-    // beats no rate when the fetch fails (offline, both sources down)
+    // beats no rate when the source can't be reached (offline), but not when
+    // the source says it has no such rate
     let rate: number
     try {
       rate = await this.fetchRate(date, currency)
     } catch (error) {
-      if (cached) return this.createResult(cached.rate, date, currency, cached.source)
+      if (cached && !(error instanceof RateNotPublishedError)) {
+        return this.createResult(cached.rate, date, currency, cached.source)
+      }
       throw error
     }
 

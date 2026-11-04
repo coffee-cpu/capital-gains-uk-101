@@ -1,6 +1,6 @@
 import Papa from 'papaparse'
 import { FXSource, FXSourceAttributions } from '../../../types/fxSource'
-import { BaseFXProvider } from './base'
+import { BaseFXProvider, RateNotPublishedError } from './base'
 
 /** gov.uk monthly rates file (Trade Tariff service, published by HMRC) */
 export function govUkMonthlyCsvUrl(year: string, month: string): string {
@@ -106,13 +106,14 @@ export class HMRCMonthlyProvider extends BaseFXProvider {
       const rate = rates[currency]
 
       if (rate === undefined) {
-        throw new Error(`Currency ${currency} not found in HMRC rates for ${year}/${month}`)
+        throw new RateNotPublishedError(`Currency ${currency} not found in HMRC rates for ${year}/${month}`)
       }
 
       // Rates are units of currency per 1 GBP: USD 1.27 means 1 GBP = 1.27 USD
       return rate
     } catch (error) {
-      throw new Error(
+      const Wrapped = error instanceof RateNotPublishedError ? RateNotPublishedError : Error
+      throw new Wrapped(
         `Failed to fetch HMRC FX rate for ${currency} in ${year}/${month}: ${error instanceof Error ? error.message : 'Unknown error'}`,
         { cause: error }
       )
