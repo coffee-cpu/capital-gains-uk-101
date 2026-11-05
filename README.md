@@ -78,7 +78,7 @@ All processing happens in your browser using IndexedDB for storage. Your transac
 
 | Service | Used for | What a request reveals |
 |---|---|---|
-| www.trade-tariff.service.gov.uk | HMRC monthly exchange rates from 2021 (default) and yearly average rates (optional). Monthly rates for 2015 to 2020 are built into the app | Year and month (monthly), year (yearly) |
+| www.trade-tariff.service.gov.uk | HMRC exchange rates newer than the app: monthly (default) or the current year's average (optional). Rates for past months and years are built into the app and need no request | Year and month (monthly), year (yearly) |
 | api.frankfurter.dev | ECB daily rates (optional) | Trade dates and currencies |
 | cdn.jsdelivr.net | Stock split data (can be turned off) | Years only, not which shares you hold |
 

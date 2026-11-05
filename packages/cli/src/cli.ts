@@ -35,7 +35,7 @@ calculate options:
   --fx <source>         hmrc-monthly (default), hmrc-yearly or daily-spot
   --details             JSON: add each disposal's matches, FX rate and pool before/after
   --no-auto-splits      Don't fetch stock split data (broker-provided splits still apply)
-  --offline             No network access: use cached exchange rates only
+  --offline             No network access: use bundled and cached exchange rates only
   --strict              Exit with code 3 if there are warnings
   --include-transactions  PDF: add a list of all transactions up to the year end
 
