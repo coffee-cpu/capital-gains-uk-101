@@ -174,14 +174,32 @@ describe('cgt-visualiser CLI', () => {
       expect(report.warnings.map(w => w.code)).toContain('INCOMPLETE_DISPOSAL')
     })
 
-    it('reports missing FX rates instead of failing when offline', async () => {
+    it('converts with the bundled HMRC rates when offline', async () => {
       const { code, stdout } = await run(['calculate', fixture('schwab-sample.csv'), ...OFFLINE])
+      const report: CalculateReport = JSON.parse(stdout)
+
+      expect(code).toBe(0)
+      expect(report.warnings.map(w => w.code)).not.toContain('FX_RATE_MISSING')
+      expect(report.options.fxSourceName).toBe('HMRC Monthly Exchange Rates (gov.uk)')
+      expect(fetchSpy).not.toHaveBeenCalled()
+    })
+
+    it('reports missing FX rates instead of failing when offline', async () => {
+      // A month after the bundled rates, which would need gov.uk
+      const file = join(tmp, 'later.csv')
+      writeFileSync(file, [
+        'date,type,symbol,currency,quantity,price,total,fee',
+        '2099-01-02,BUY,AAPL,USD,10,100,1000,0',
+        '2099-02-03,SELL,AAPL,USD,10,150,1500,0',
+      ].join('\n'))
+
+      const { code, stdout } = await run(['calculate', file, ...OFFLINE])
       const report: CalculateReport = JSON.parse(stdout)
       const fxWarning = report.warnings.find(w => w.code === 'FX_RATE_MISSING')!
 
       expect(code).toBe(0)
       expect(fxWarning.message).toContain('USD')
-      expect(fxWarning.transactionIds!.length).toBeGreaterThan(0)
+      expect(fxWarning.transactionIds!.length).toBe(2)
       expect(fetchSpy).not.toHaveBeenCalled()
     })
 

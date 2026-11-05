@@ -25,7 +25,7 @@ Run `cgt-visualiser --help` for all options. The main options are:
 - `--details`: for each disposal, show the matched acquisitions, the FX rate used and the Section 104 pool before and after.
 - `--format text|json|csv|pdf`: the output format. The default is `text` in a terminal and `json` when the output is piped.
 - `--format pdf --tax-year 2025/26 -o report.pdf`: write one tax year's PDF report, the same as the web app's Export PDF button. Add `--include-transactions` to list every transaction up to the year end.
-- `--offline`: make no network requests and use cached exchange rates only.
+- `--offline`: make no network requests. HMRC rates for past months and years are bundled, so they work offline; newer rates and daily rates come from the cache only.
 - `--strict`: exit with code 3 if there are any warnings.
 
 Exit codes: `0` success, `1` usage error, `2` a file couldn't be read or recognised, `3` warnings with `--strict`.

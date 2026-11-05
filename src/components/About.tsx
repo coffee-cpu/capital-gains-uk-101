@@ -437,13 +437,14 @@ export function About() {
                     >
                       HMRC's published rates
                     </a>
-                    {' '}on trade-tariff.service.gov.uk, for January 2021 onwards. Requests contain the
-                    year and month. gov.uk doesn't publish earlier months as files, so the 2015 to 2020
-                    rates are built into the app and need no request.
+                    {' '}on trade-tariff.service.gov.uk. Rates from 2015 up to the latest month when the
+                    app was built are included in the app and need no request; only newer months are
+                    fetched, and those requests contain the year and month.
                   </li>
                   <li>
                     <strong>HMRC yearly average rates</strong> from trade-tariff.service.gov.uk too, if you
-                    choose that source. Requests contain the year.
+                    choose that source. Past years are included in the app; only a year whose final
+                    (December) average isn't included yet is requested, and the request contains the year.
                   </li>
                   <li>
                     <strong>Daily spot rates</strong> from api.frankfurter.dev (European Central Bank

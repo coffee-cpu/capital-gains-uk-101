@@ -2,6 +2,16 @@ import { FXSource } from '../../../types/fxSource'
 import { getFxRateCache } from '../../cache'
 import { BaseFXProvider } from './base'
 import { parseGovUkRatesCsv } from './govUkCsv'
+import bundledYearly from '../data/hmrcYearly.json'
+
+interface BundledYearlyRates {
+  /** December: the calendar-year average (final). March: April to March, until December is out */
+  file: 'December' | 'March'
+  rates: Record<string, number>
+}
+
+/** Yearly averages shipped with the app (see scripts/vendor-hmrc-rates.mjs) */
+const BUNDLED_YEARS = bundledYearly.years as Record<string, BundledYearlyRates>
 
 /**
  * HMRC Yearly Average Rates Provider
@@ -13,6 +23,11 @@ import { parseGovUkRatesCsv } from './govUkCsv'
  *
  * Note: Average rates are published on 31st March and 31st December every year.
  * For a given calendar year, we use the rates published at the end of that year.
+ *
+ * Rates for past years are bundled with the app, so they need no network
+ * request. Only a year whose December file wasn't out when the app was built
+ * is checked on gov.uk; until December is published, its bundled March file
+ * stands in.
  */
 export class HMRCYearlyProvider extends BaseFXProvider {
   readonly fxSource: FXSource = 'HMRC_YEARLY_AVG'
@@ -33,6 +48,18 @@ export class HMRCYearlyProvider extends BaseFXProvider {
    */
   protected getDateKey(date: string): string {
     return date.split('-')[0]
+  }
+
+  /**
+   * A year with a bundled December file is always read from the bundle,
+   * which is final, so a correction in a later release applies at once
+   */
+  protected isCachedRateUsable(_source: string | undefined, year: string): boolean {
+    return BUNDLED_YEARS[year]?.file !== 'December'
+  }
+
+  protected canFallBackToCachedRate(year: string): boolean {
+    return BUNDLED_YEARS[year]?.file !== 'December'
   }
 
   /**
@@ -92,6 +119,9 @@ export class HMRCYearlyProvider extends BaseFXProvider {
    * /exchange_rates/view/files/ path returns 403 to non-browser clients)
    */
   private async fetchYearlyRates(year: string): Promise<Record<string, number>> {
+    const bundled = BUNDLED_YEARS[year]
+    if (bundled?.file === 'December') return bundled.rates
+
     // Try December file first (calendar year average: Jan 1 - Dec 31)
     const decUrl = `https://www.trade-tariff.service.gov.uk/api/v2/exchange_rates/files/average_csv_${year}-12.csv`
 
@@ -107,6 +137,9 @@ export class HMRCYearlyProvider extends BaseFXProvider {
     } catch (error) {
       console.warn(`December average rates not available for ${year}:`, error)
     }
+
+    // Until December is published, the bundled March file stands in
+    if (bundled) return bundled.rates
 
     // Try March file (tax year period: Apr 1 prev year - Mar 31 this year)
     // Useful for Jan-Mar transactions when December file not yet published

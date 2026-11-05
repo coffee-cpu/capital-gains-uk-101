@@ -328,8 +328,9 @@ PapaParse configuration:
 
 ### FX Rate Enrichment
 Three user-selectable FX sources (`src/lib/fx/providers/`):
-- **HMRC Monthly Rates** (default): HMRC's monthly CSV on trade-tariff.service.gov.uk for January 2021 onwards (no fallback: a failure is reported). gov.uk has no files before 2021, so 2015-2020 come from a bundled archive, `src/lib/fx/data/hmrcMonthlyArchive.json`, built once by `scripts/vendor-hmrc-monthly-archive.mjs`. `fx_source` says which
-- **HMRC Yearly Average**: annual average rates from HMRC CSV publications
+- **HMRC Monthly Rates** (default): bundled with the app up to the last bundled month, one lazily loaded file per year in `src/lib/fx/data/hmrcMonthly/` (2021 onwards from HMRC's gov.uk CSVs; 2015-2020, which gov.uk lacks, from an archive). Later months are fetched from trade-tariff.service.gov.uk (no fallback: a failure is reported). Known typos in HMRC's files are left out. `fx_source` says which
+- **HMRC Yearly Average**: annual average rates from HMRC's gov.uk CSVs, bundled in `src/lib/fx/data/hmrcYearly.json`; only a year whose December file isn't bundled yet is checked on gov.uk
+- The bundled rates are built by `scripts/vendor-hmrc-rates.mjs` (never edit the data by hand). `.github/workflows/update-hmrc-rates.yml` reruns it weekly and opens a PR when gov.uk has a new month or HMRC corrected a published one
 - **Daily Spot**: ECB daily reference rates via the Frankfurter API
 
 Rates are cached in the `fx_rates` IndexedDB table keyed by `SOURCE-dateKey-currency`.
