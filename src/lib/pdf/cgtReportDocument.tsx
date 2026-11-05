@@ -452,7 +452,8 @@ function createCGTReportDocument(
           {/* Disposal Records */}
           {disposals.length > 0 && (
             <>
-              <Text style={styles.subtitle}>Disposal Details</Text>
+              {/* Cards don't break across pages, so keep the heading with the first one */}
+              <Text style={styles.subtitle} minPresenceAhead={120}>Disposal Details</Text>
               {disposals.map((disposal) => {
                 const isGain = disposal.gainOrLossGbp >= 0
                 const tx = disposal.disposal
