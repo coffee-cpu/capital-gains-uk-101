@@ -153,8 +153,8 @@ async function checkMirrorAgainstGovUk(govMonths) {
  * Rates that leave both neighbours by over 30% while the neighbours agree.
  * The neighbours are the nearest months listing that currency, one on each
  * side, or the nearest two on one side for the first and last months.
- * Those edge months can't tell a typo from a real devaluation (the newest
- * month has no later one yet), so their spikes are marked `edge`.
+ * The newest month can't tell a typo from a real devaluation (it has no
+ * later month yet), so its spikes are marked `edge`.
  */
 function findSpikes(months) {
   const keys = Object.keys(months).sort()
@@ -164,8 +164,10 @@ function findSpikes(months) {
       const has = k => months[k][code] !== undefined
       const before = keys.slice(0, i).reverse().filter(has)
       const after = keys.slice(i + 1).filter(has)
-      const edge = !(before.length && after.length)
-      const [a, b] = edge ? [...before, ...after].slice(0, 2) : [before[0], after[0]]
+      const [a, b] = before.length && after.length ? [before[0], after[0]] : [...before, ...after].slice(0, 2)
+      // Only the newest month overall: a currency's own first or last listing
+      // (e.g. HRK 2023-02) never gets a later neighbour, so it must fail now
+      const edge = i === keys.length - 1
       if (!a || !b) continue
       const [first, second] = [months[a][code], months[b][code]]
       if (Math.abs(rate / first - 1) > 0.3 && Math.abs(second / first - 1) < 0.1) {

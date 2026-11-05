@@ -1,4 +1,4 @@
-import { FXSource } from '../../../types/fxSource'
+import { FXSource, FXSourceAttributions } from '../../../types/fxSource'
 import { getFxRateCache } from '../../cache'
 import { BaseFXProvider } from './base'
 import { parseGovUkRatesCsv } from './govUkCsv'
@@ -12,6 +12,13 @@ interface BundledYearlyRates {
 
 /** Yearly averages shipped with the app (see scripts/vendor-hmrc-rates.mjs) */
 const BUNDLED_YEARS = bundledYearly.years as Record<string, BundledYearlyRates>
+
+/**
+ * Label for a December (final) rate fetched from gov.uk. The only yearly
+ * rates cached, and distinct from the plain label older versions cached
+ * March rates under, so a cached rate with it is known to be final.
+ */
+export const GOV_UK_DECEMBER_ATTRIBUTION = `${FXSourceAttributions.HMRC_YEARLY_AVG} (gov.uk)`
 
 /** HMRC publishes a year's December (calendar-year) file on 31 December */
 function decemberFileMayBeOut(year: string, now = new Date()): boolean {
@@ -41,6 +48,9 @@ export class HMRCYearlyProvider extends BaseFXProvider {
   // Cache of fetched yearly rates to avoid repeated API calls
   private yearlyRatesCache = new Map<string, Promise<Record<string, number>>>()
 
+  /** Years whose rates this session came from gov.uk's December file */
+  private fetchedDecember = new Set<string>()
+
   /**
    * Generate cache key in format: HMRC_YEARLY_AVG-YYYY-CURRENCY
    */
@@ -59,13 +69,26 @@ export class HMRCYearlyProvider extends BaseFXProvider {
   /**
    * A year with a bundled December file is always read from the bundle,
    * which is final, so a correction in a later release applies at once.
-   * For other years a cached rate may come from the March file (April to
-   * March), so once December's file can be out, gov.uk is checked again
-   * (once per session; the cached rate stays the fallback).
+   * For other years a December rate cached from gov.uk is final. Any other
+   * cached rate may be a March one (April to March) cached by an older
+   * version, so once December's file can be out, gov.uk is checked again.
    */
-  protected isCachedRateUsable(_source: string | undefined, year: string): boolean {
+  protected isCachedRateUsable(source: string | undefined, year: string): boolean {
     if (BUNDLED_YEARS[year]?.file === 'December') return false
-    return !decemberFileMayBeOut(year)
+    return source === GOV_UK_DECEMBER_ATTRIBUTION || !decemberFileMayBeOut(year)
+  }
+
+  protected sourceAttribution(year: string): string {
+    return this.fetchedDecember.has(year) ? GOV_UK_DECEMBER_ATTRIBUTION : FXSourceAttributions.HMRC_YEARLY_AVG
+  }
+
+  /**
+   * Only a December rate fetched from gov.uk is cached. Bundled rates need no
+   * cache, and caching a March stand-in could overwrite a cached December
+   * rate when gov.uk can't be reached.
+   */
+  protected async cacheRate(cacheKey: string, date: string, currency: string, rate: number): Promise<void> {
+    if (this.fetchedDecember.has(this.getDateKey(date))) await super.cacheRate(cacheKey, date, currency, rate)
   }
 
   protected canFallBackToCachedRate(year: string): boolean {
@@ -141,6 +164,7 @@ export class HMRCYearlyProvider extends BaseFXProvider {
         const csvText = await response.text()
         const rates = this.parseYearlyRatesCSV(csvText)
 
+        this.fetchedDecember.add(year)
         await this.cacheYearlyRates(year, rates)
         return rates
       }
@@ -159,10 +183,7 @@ export class HMRCYearlyProvider extends BaseFXProvider {
       const response = await fetch(marUrl)
       if (response.ok) {
         const csvText = await response.text()
-        const rates = this.parseYearlyRatesCSV(csvText)
-
-        await this.cacheYearlyRates(year, rates)
-        return rates
+        return this.parseYearlyRatesCSV(csvText)
       }
     } catch (error) {
       console.warn(`March average rates not available for ${year}:`, error)
@@ -228,16 +249,14 @@ export class HMRCYearlyProvider extends BaseFXProvider {
     return parseGovUkRatesCsv(csvText, 1)
   }
 
-  /**
-   * Cache yearly rates
-   */
+  /** Cache every currency of a December file fetched from gov.uk */
   private async cacheYearlyRates(year: string, rates: Record<string, number>): Promise<void> {
     const entries = Object.entries(rates).map(([currency, rate]) => ({
       id: this.getCacheKey(`${year}-01-01`, currency),
       date: year,
       currency,
       rate,
-      source: 'HMRC Annual Average Rates',
+      source: GOV_UK_DECEMBER_ATTRIBUTION,
       fxSource: this.fxSource,
     }))
 

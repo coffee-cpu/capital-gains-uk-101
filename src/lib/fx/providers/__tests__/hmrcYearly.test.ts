@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { HMRCYearlyProvider } from '../hmrcYearly'
+import { GOV_UK_DECEMBER_ATTRIBUTION, HMRCYearlyProvider } from '../hmrcYearly'
 import bundledYearly from '../../data/hmrcYearly.json'
 import { createMemoryCacheBackends, getFxRateCache, setCacheBackends } from '../../../cache'
 
@@ -91,6 +91,23 @@ describe('HMRCYearlyProvider with bundled rates', () => {
       expect(String(fetchSpy.mock.calls[0][0])).toContain(`average_csv_${YEAR}-12.csv`)
     })
 
+    it('caches a December rate as final, and never asks gov.uk again', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date(`${Number(YEAR) + 1}-01-02T12:00:00`))
+      fetchSpy.mockImplementation(async () => new Response(decemberCsv, { status: 200 }))
+      await new HMRCYearlyProvider().getRate(`${YEAR}-07-01`, 'USD')
+
+      expect((await getFxRateCache().get(`HMRC_YEARLY_AVG-${YEAR}-USD`))?.source).toBe(GOV_UK_DECEMBER_ATTRIBUTION)
+
+      // A later session, with gov.uk rate-limiting
+      fetchSpy.mockClear()
+      fetchSpy.mockImplementation(async () => new Response('', { status: 429 }))
+      const result = await new HMRCYearlyProvider().getRate(`${YEAR}-07-01`, 'USD')
+      expect(result.rate).toBe(1.25)
+      expect(result.source).toBe(GOV_UK_DECEMBER_ATTRIBUTION)
+      expect(fetchSpy).not.toHaveBeenCalled()
+    })
+
     it('keeps the cached rate when gov.uk has no December file yet', async () => {
       vi.useFakeTimers({ toFake: ['Date'] })
       vi.setSystemTime(new Date(`${Number(YEAR) + 1}-01-02T12:00:00`))
@@ -98,5 +115,13 @@ describe('HMRCYearlyProvider with bundled rates', () => {
 
       expect((await new HMRCYearlyProvider().getRate(`${YEAR}-07-01`, 'USD')).rate).toBe(1.11)
     })
+  })
+
+  it.skipIf(!provisionalYear)('does not cache the bundled March stand-in', async () => {
+    const [year] = provisionalYear!
+
+    await new HMRCYearlyProvider().getRate(`${year}-02-01`, 'USD')
+
+    expect(await getFxRateCache().get(`HMRC_YEARLY_AVG-${year}-USD`)).toBeUndefined()
   })
 })
