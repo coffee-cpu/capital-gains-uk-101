@@ -155,6 +155,9 @@ export class HMRCYearlyProvider extends BaseFXProvider {
     const bundled = BUNDLED_YEARS[year]
     if (bundled?.file === 'December') return bundled.rates
 
+    // Before 31 December the year's December file can't exist yet
+    if (bundled && !decemberFileMayBeOut(year)) return bundled.rates
+
     // Try December file first (calendar year average: Jan 1 - Dec 31)
     const decUrl = `https://www.trade-tariff.service.gov.uk/api/v2/exchange_rates/files/average_csv_${year}-12.csv`
 

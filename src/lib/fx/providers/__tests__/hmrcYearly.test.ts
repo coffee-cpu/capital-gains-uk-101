@@ -16,6 +16,7 @@ describe('HMRCYearlyProvider with bundled rates', () => {
     fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => new Response('', { status: 404 }))
   })
   afterEach(() => {
+    vi.useRealTimers()
     vi.restoreAllMocks()
   })
 
@@ -47,8 +48,21 @@ describe('HMRCYearlyProvider with bundled rates', () => {
     expect((await new HMRCYearlyProvider().getRate(`${year}-07-01`, 'USD')).rate).toBe(rates.USD)
   })
 
-  it.skipIf(!provisionalYear)('checks gov.uk for December, then falls back to the bundled March file', async () => {
+  it.skipIf(!provisionalYear)('reads the bundled March file with no request before December can be out', async () => {
     const [year, { rates }] = provisionalYear!
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(`${year}-12-30T12:00:00`))
+
+    const result = await new HMRCYearlyProvider().getRate(`${year}-02-01`, 'USD')
+
+    expect(result.rate).toBe(rates.USD)
+    expect(fetchSpy).not.toHaveBeenCalled()
+  })
+
+  it.skipIf(!provisionalYear)('checks gov.uk for December once it can be out, then falls back to the bundled March file', async () => {
+    const [year, { rates }] = provisionalYear!
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(`${Number(year) + 1}-01-02T12:00:00`))
 
     const result = await new HMRCYearlyProvider().getRate(`${year}-02-01`, 'USD')
 
