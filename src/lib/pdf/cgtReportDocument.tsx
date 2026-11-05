@@ -372,7 +372,7 @@ function createCGTReportDocument(
                   return (
                     <View key={row.category} style={{ marginBottom: 8 }}>
                       <Text style={{ fontSize: 9, fontFamily: 'Helvetica-Bold', marginBottom: 3 }}>
-                        {row.section ? `${row.label}: "${row.section}" section` : `${row.label}: section not decided by this report`}
+                        {row.section ? `${row.label}: "${row.section}" section` : row.label}
                       </Text>
                       {([
                         ['Number of disposals', row.boxes?.number, String(row.numberOfDisposals)],
@@ -390,23 +390,10 @@ function createCGTReportDocument(
                   )
                 })}
                 <Text style={styles.note}>
-                  {'Assets are grouped by broker: disposals imported from Coinbase or Coinbase Pro are treated as cryptoassets, ' +
-                    'options as options, and everything else as listed shares and securities. Move any that belong elsewhere, ' +
-                    'such as unlisted shares or crypto bought through another broker. Same-day disposals of the same asset ' +
-                    'count as one disposal, so their gains and losses are netted; the gains and losses here can ' +
-                    'therefore be lower than in the summary above, with the same net. Losses are shown as positive ' +
-                    'amounts, as the form asks.'}
+                  {'Disposals of the same asset on the same day are one disposal (TCGA92/S105(1)(a)), so their gains ' +
+                    'and losses are netted: the gains and losses here can be lower than in the summary above, with the ' +
+                    'same net gain or loss. Losses are shown as positive amounts, as on the form.'}
                 </Text>
-                {sa108.some(row => row.category === 'OPTIONS') && (
-                  <Text style={styles.note}>
-                    Check HMRC's SA108 notes for the section your options belong in.
-                  </Text>
-                )}
-                {sa108.some(row => row.category !== 'OPTIONS' && !row.boxes) && (
-                  <Text style={styles.note}>
-                    {`Box numbers for ${taxYearSummary.taxYear} are not built into this report: find the boxes by their names on your SA108.`}
-                  </Text>
-                )}
               </View>
             </View>
           )}
