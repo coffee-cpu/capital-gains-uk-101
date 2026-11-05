@@ -4,7 +4,9 @@ name: Update bundled HMRC rates
 # gov.uk, and opens or updates a PR when anything changed: a new month, a new
 # yearly average, or a correction HMRC made to a published file. If the script
 # finds a rate that looks like a typo it hasn't seen, the run fails so a person
-# reviews it (add it to EXCLUDED or KEPT in scripts/vendor-hmrc-rates.mjs).
+# reviews it (add it to EXCLUDED or KEPT in scripts/vendor-hmrc-rates.mjs). In
+# the newest month a typo can't be told from a real move, so it's only flagged
+# in the PR.
 
 on:
   schedule:
@@ -78,6 +80,7 @@ jobs:
             echo "CI doesn't run automatically on PRs opened by this workflow: close and reopen the PR to run it."
             echo
             echo "**Review any \"changed\" line**: it means HMRC changed a month that was already bundled."
+            echo "**Review any \"Check\" line**: a big move in the newest month, which is either real or a typo to add to EXCLUDED in \`scripts/vendor-hmrc-rates.mjs\`."
           } > "$RUNNER_TEMP/body.md"
 
           if gh pr view "$BRANCH" --json state --jq .state 2>/dev/null | grep -q OPEN; then

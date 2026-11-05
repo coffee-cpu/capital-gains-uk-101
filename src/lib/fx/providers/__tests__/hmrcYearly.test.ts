@@ -56,4 +56,47 @@ describe('HMRCYearlyProvider with bundled rates', () => {
     expect(fetchSpy).toHaveBeenCalledTimes(1)
     expect(String(fetchSpy.mock.calls[0][0])).toContain(`average_csv_${year}-12.csv`)
   })
+
+  describe('a year whose December file is not bundled', () => {
+    const YEAR = '2099'
+    const cacheMarchRate = () => getFxRateCache().put({
+      id: `HMRC_YEARLY_AVG-${YEAR}-USD`, date: YEAR, currency: 'USD', rate: 1.11,
+      source: 'HMRC Annual Average Rates', fxSource: 'HMRC_YEARLY_AVG',
+    })
+    const decemberCsv = [
+      'Country,Unit Of Currency,Currency Code,Sterling value of Currency Unit £,Currency Units per £1',
+      'USA,Dollar,USD,0.8000,1.2500',
+    ].join('\n')
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it('uses a cached rate before December can be published', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date(`${YEAR}-12-30T12:00:00`))
+      await cacheMarchRate()
+
+      expect((await new HMRCYearlyProvider().getRate(`${YEAR}-07-01`, 'USD')).rate).toBe(1.11)
+      expect(fetchSpy).not.toHaveBeenCalled()
+    })
+
+    it('checks gov.uk for December once it can be out, instead of a cached March rate', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date(`${YEAR}-12-31T12:00:00`))
+      await cacheMarchRate()
+      fetchSpy.mockImplementation(async () => new Response(decemberCsv, { status: 200 }))
+
+      expect((await new HMRCYearlyProvider().getRate(`${YEAR}-07-01`, 'USD')).rate).toBe(1.25)
+      expect(String(fetchSpy.mock.calls[0][0])).toContain(`average_csv_${YEAR}-12.csv`)
+    })
+
+    it('keeps the cached rate when gov.uk has no December file yet', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date(`${Number(YEAR) + 1}-01-02T12:00:00`))
+      await cacheMarchRate()
+
+      expect((await new HMRCYearlyProvider().getRate(`${YEAR}-07-01`, 'USD')).rate).toBe(1.11)
+    })
+  })
 })

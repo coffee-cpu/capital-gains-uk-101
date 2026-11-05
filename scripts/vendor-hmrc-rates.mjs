@@ -153,6 +153,8 @@ async function checkMirrorAgainstGovUk(govMonths) {
  * Rates that leave both neighbours by over 30% while the neighbours agree.
  * The neighbours are the nearest months listing that currency, one on each
  * side, or the nearest two on one side for the first and last months.
+ * Those edge months can't tell a typo from a real devaluation (the newest
+ * month has no later one yet), so their spikes are marked `edge`.
  */
 function findSpikes(months) {
   const keys = Object.keys(months).sort()
@@ -162,11 +164,12 @@ function findSpikes(months) {
       const has = k => months[k][code] !== undefined
       const before = keys.slice(0, i).reverse().filter(has)
       const after = keys.slice(i + 1).filter(has)
-      const [a, b] = before.length && after.length ? [before[0], after[0]] : [...before, ...after].slice(0, 2)
+      const edge = !(before.length && after.length)
+      const [a, b] = edge ? [...before, ...after].slice(0, 2) : [before[0], after[0]]
       if (!a || !b) continue
       const [first, second] = [months[a][code], months[b][code]]
       if (Math.abs(rate / first - 1) > 0.3 && Math.abs(second / first - 1) < 0.1) {
-        spikes.push({ month, currency: code, published: rate })
+        spikes.push({ month, currency: code, published: rate, edge })
       }
     }
   })
@@ -220,9 +223,15 @@ const reviewed = [...EXCLUDED, ...KEPT]
 const unreviewed = findSpikes(months).filter(
   s => !reviewed.some(e => e.month === s.month && e.currency === s.currency && e.published === s.published)
 )
-if (unreviewed.length > 0) {
-  throw new Error(`Unreviewed spikes, check each and add it to EXCLUDED or KEPT: ${JSON.stringify(unreviewed)}`)
+// An interior spike fails the run until someone reviews it. An edge spike is
+// only reported: failing would hold back every other currency's new month
+// for what is often a real devaluation, and it becomes interior (and fails,
+// if it's a typo) once the next month is published
+const interior = unreviewed.filter(s => !s.edge)
+if (interior.length > 0) {
+  throw new Error(`Unreviewed spikes, check each and add it to EXCLUDED or KEPT: ${JSON.stringify(interior.map(({ edge, ...s }) => s))}`)
 }
+const edgeSpikes = unreviewed.filter(s => s.edge)
 for (const { month, currency } of EXCLUDED) delete months[month]?.[currency]
 
 const years = [...new Set(Object.keys(months).map(k => k.slice(0, 4)))].sort()
@@ -281,8 +290,11 @@ const changes = [
   ...describeChanges('Yearly', Object.fromEntries(Object.entries(bundledYearly).map(([y, v]) => [y, v.rates])),
     Object.fromEntries(Object.entries(yearly).map(([y, v]) => [y, v.rates]))),
 ]
-const report = changes.length
+const warnings = edgeSpikes.map(({ month, currency, published }) =>
+  `- **Check ${month} ${currency} ${published}**: over 30% from the previous months. A real move, or a typo to add to EXCLUDED`)
+const report = (changes.length
   ? `HMRC exchange rates changed on gov.uk:\n\n${changes.join('\n')}\n`
-  : 'No changes.\n'
+  : 'No changes.\n') +
+  (warnings.length ? `\nPossible typos in the newest month (the run fails next month if they look wrong then):\n\n${warnings.join('\n')}\n` : '')
 console.log(report)
 if (reportPath) writeFileSync(reportPath, report)

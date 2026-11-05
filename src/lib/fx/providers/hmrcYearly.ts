@@ -13,6 +13,12 @@ interface BundledYearlyRates {
 /** Yearly averages shipped with the app (see scripts/vendor-hmrc-rates.mjs) */
 const BUNDLED_YEARS = bundledYearly.years as Record<string, BundledYearlyRates>
 
+/** HMRC publishes a year's December (calendar-year) file on 31 December */
+function decemberFileMayBeOut(year: string, now = new Date()): boolean {
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+  return today >= `${year}-12-31`
+}
+
 /**
  * HMRC Yearly Average Rates Provider
  *
@@ -52,10 +58,14 @@ export class HMRCYearlyProvider extends BaseFXProvider {
 
   /**
    * A year with a bundled December file is always read from the bundle,
-   * which is final, so a correction in a later release applies at once
+   * which is final, so a correction in a later release applies at once.
+   * For other years a cached rate may come from the March file (April to
+   * March), so once December's file can be out, gov.uk is checked again
+   * (once per session; the cached rate stays the fallback).
    */
   protected isCachedRateUsable(_source: string | undefined, year: string): boolean {
-    return BUNDLED_YEARS[year]?.file !== 'December'
+    if (BUNDLED_YEARS[year]?.file === 'December') return false
+    return !decemberFileMayBeOut(year)
   }
 
   protected canFallBackToCachedRate(year: string): boolean {
