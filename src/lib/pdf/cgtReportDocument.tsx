@@ -293,11 +293,13 @@ export function formatTransactionType(type: string): string {
 /** Cash movements: their amount is the value, and a quantity or price would be noise */
 const CASH_ONLY_TYPES = new Set(['DIVIDEND', 'INTEREST', 'TAX', 'TAX_ON_DIVIDEND', 'TAX_ON_INTEREST', 'FEE'])
 
+/** For money: under half a penny rounds to £0.00 */
 const isZero = (value: number | null | undefined) => value == null || Math.abs(value) < 0.005
 
 /**
- * The cells of one row in the All Transactions table, or null for a row with
- * nothing to show (no quantity and no amounts, such as a £0.00 tax line).
+ * The cells of one row in the All Transactions table, or null for a cash row
+ * with nothing to show (a £0.00 amount and no fee, such as a £0.00 tax line).
+ * Other rows, such as a stock split with no amounts, are always kept.
  * Quantities are shown without sign, as the type already says the direction
  * (an expired option is "1", not "-1.00").
  */
@@ -309,12 +311,13 @@ export function transactionTableCells(tx: EnrichedTransaction): {
   fee: string
 } | null {
   const cashOnly = CASH_ONLY_TYPES.has(tx.type)
-  const quantity = cashOnly ? null : tx.quantity
   // The broker's own amounts, so a row whose GBP value is missing (no FX rate) is kept
-  if (isZero(quantity) && isZero(tx.total) && isZero(tx.fee)) return null
+  if (cashOnly && isZero(tx.total) && isZero(tx.fee)) return null
+  // Quantities are compared exactly: 0.001 BTC is not zero
+  const quantity = !cashOnly && tx.quantity ? Math.abs(tx.quantity) : null
   return {
     symbol: tx.symbol || '-',
-    quantity: isZero(quantity) ? '-' : formatQuantity(Math.abs(quantity!)),
+    quantity: quantity == null ? '-' : formatQuantity(quantity),
     price: cashOnly || tx.price_gbp == null ? '-' : formatGbp(tx.price_gbp),
     value: tx.value_gbp == null ? '-' : formatGbp(tx.value_gbp),
     fee: isZero(tx.fee_gbp) ? '-' : formatGbp(tx.fee_gbp!),

@@ -69,6 +69,14 @@ describe('transactionTableCells', () => {
     expect(transactionTableCells(tx({ type: 'BUY', quantity: 0.0086629, value_gbp: 50 }))?.quantity).toBe('0.0086629')
   })
 
+  it('keeps a tiny quantity, even with no amounts', () => {
+    expect(transactionTableCells(tx({ type: 'BUY', quantity: 0.001, total: 0 }))?.quantity).toBe('0.001')
+  })
+
+  it('keeps a stock split with no quantity or amounts', () => {
+    expect(transactionTableCells(tx({ type: 'STOCK_SPLIT' }))).toMatchObject({ quantity: '-', value: '-' })
+  })
+
   it('shows only the amount for a dividend', () => {
     expect(transactionTableCells(tx({ type: 'DIVIDEND', quantity: 10, price_gbp: 0.24, total: 3, value_gbp: 2.4 })))
       .toMatchObject({ quantity: '-', price: '-', value: '£2.40' })
