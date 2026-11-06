@@ -1,4 +1,4 @@
-import type { TaxYearSummary, DisposalRecord, Section104Pool } from '../../types/cgt'
+import type { TaxYearSummary, DisposalRecord, Section104Pool, MatchingResult } from '../../types/cgt'
 import type { EnrichedTransaction } from '../../types/transaction'
 import { renderAllFeaturePDFSections } from '../cgt/taxYearFeatures/pdfRenderers'
 import { formatGbp } from '../../utils/currency'
@@ -234,6 +234,41 @@ export function formatQuantity(value: number): string {
 function quantityWithUnit(value: number, tx: { underlying_symbol?: string | null }): string {
   const formatted = formatQuantity(value)
   return `${formatted} ${getUnitLabel(tx, formatted !== '1')}`
+}
+
+/**
+ * One line per acquisition date for a same-day or 30-day match. HMRC treats
+ * shares of the same company bought on the same day as one acquisition
+ * (TCGA92/S105(1)(b)), so a day bought in several lots shows its total, with
+ * the lots after it so each can still be checked against the broker:
+ * "10/06/2024: 25 shares at £100.00 (cost: £2,500.00), bought in 4 lots: 10, 4, 4, 7".
+ * Lots at different prices are listed with their price per unit, and the
+ * day's figure is called an average so it isn't read as a price paid.
+ */
+export function acquisitionLinesByDay(
+  acquisitions: MatchingResult['acquisitions'],
+  disposal: { underlying_symbol?: string | null }
+): string[] {
+  const days = new Map<string, MatchingResult['acquisitions']>()
+  for (const acq of acquisitions) {
+    if (acq.quantityMatched <= QUANTITY_EPSILON) continue
+    const lots = days.get(acq.transaction.date) ?? []
+    lots.push(acq)
+    days.set(acq.transaction.date, lots)
+  }
+  const perUnit = (cost: number, quantity: number) => formatGbp(cost / quantity)
+  return [...days].map(([date, lots]) => {
+    const quantity = lots.reduce((total, lot) => total + lot.quantityMatched, 0)
+    const cost = lots.reduce((total, lot) => total + lot.costBasisGbp, 0)
+    const samePrice = lots.every(lot => perUnit(lot.costBasisGbp, lot.quantityMatched) === perUnit(lots[0].costBasisGbp, lots[0].quantityMatched))
+    const line = `${formatReportDate(date)}: ${quantityWithUnit(quantity, disposal)} at ` +
+      `${samePrice ? '' : 'an average of '}${perUnit(cost, quantity)} (cost: ${formatGbp(cost)})`
+    if (lots.length === 1) return line
+    const lotList = lots
+      .map(lot => formatQuantity(lot.quantityMatched) + (samePrice ? '' : ` at ${perUnit(lot.costBasisGbp, lot.quantityMatched)}`))
+      .join(', ')
+    return `${line}, bought in ${lots.length} lots: ${lotList}`
+  })
 }
 
 /** Cards with more matching lines than this may split across pages rather than overflow one */
@@ -552,15 +587,14 @@ function createCGTReportDocument(
                                     {quantityWithUnit(matching.quantityMatched, tx)}
                                   </Text>
                                 </View>
-                                {matching.acquisitions
-                                  .filter(acq => acq.quantityMatched > QUANTITY_EPSILON)
-                                  .map((acq, acqIdx) => (
-                                    <Text key={acqIdx} style={{ fontSize: 7, color: '#4b5563' }}>
-                                      {matching.rule === 'SECTION_104'
-                                        ? `Pool average cost: ${formatCurrency(acq.costBasisGbp / acq.quantityMatched)} per ${unitSingular} (total: ${formatCurrency(acq.costBasisGbp)})`
-                                        : `${formatDate(acq.transaction.date)}: ${quantityWithUnit(acq.quantityMatched, tx)} at ${formatCurrency(acq.costBasisGbp / acq.quantityMatched)} (cost: ${formatCurrency(acq.costBasisGbp)})`}
-                                    </Text>
-                                  ))}
+                                {(matching.rule === 'SECTION_104'
+                                  ? matching.acquisitions
+                                      .filter(acq => acq.quantityMatched > QUANTITY_EPSILON)
+                                      .map(acq => `Pool average cost: ${formatCurrency(acq.costBasisGbp / acq.quantityMatched)} per ${unitSingular} (total: ${formatCurrency(acq.costBasisGbp)})`)
+                                  : acquisitionLinesByDay(matching.acquisitions, tx)
+                                ).map((line, lineIdx) => (
+                                  <Text key={lineIdx} style={{ fontSize: 7, color: '#4b5563' }}>{line}</Text>
+                                ))}
                               </View>
                             ))}
                           {disposal.isIncomplete && unmatched > 0 && (
