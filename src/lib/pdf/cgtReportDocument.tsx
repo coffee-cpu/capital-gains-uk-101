@@ -127,27 +127,27 @@ function createStyles(StyleSheet: PdfLibrary['StyleSheet']) {
   },
   footer: {
     position: 'absolute',
-    bottom: 24,
-    left: 40,
-    right: 40,
-    paddingTop: 6,
-    borderTopWidth: 1,
-    borderTopColor: '#d1d5db',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingVertical: 10,
+    paddingHorizontal: 40,
+    backgroundColor: '#0f766e',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   footerText: {
     fontSize: 8,
-    color: '#6b7280',
+    color: '#ffffff',
     lineHeight: 1.4,
   },
   pageNumber: {
     position: 'absolute',
-    bottom: 25,
+    bottom: 11,
     right: 40,
     fontSize: 8,
-    color: '#6b7280',
+    color: '#ffffff',
     textAlign: 'right',
   },
   footerBold: {
@@ -734,7 +734,7 @@ function createCGTReportDocument(
               <Text style={styles.footerText}> </Text>
             </View>
           </View>
-          {/* Page number, on the footer's second line. Its style must not set a unitless
+          {/* Page number, on top of the footer. Its style must not set a unitless
               lineHeight: react-pdf re-applies it on every page for fixed
               render-prop text, so it compounds until rendering fails. */}
           <Text
