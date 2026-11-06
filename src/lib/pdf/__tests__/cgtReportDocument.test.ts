@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import { acquisitionLinesByDay, formatReportDate } from '../cgtReportDocument'
+import { acquisitionLinesByDay, formatReportDate, transactionTableCells } from '../cgtReportDocument'
 import type { EnrichedTransaction } from '../../../types/transaction'
 
 describe('formatReportDate', () => {
@@ -55,5 +55,35 @@ describe('acquisitionLinesByDay', () => {
 
     expect(acquisitionLinesByDay(lots, { underlying_symbol: 'AAPL' }))
       .toEqual(['01/03/2024: 3 contracts at £120.00 (cost: £360.00), bought in 2 lots: 1, 2'])
+  })
+})
+
+describe('transactionTableCells', () => {
+  const tx = (fields: Partial<EnrichedTransaction>) =>
+    ({ symbol: 'ABC', quantity: null, total: null, fee: null, price_gbp: null, value_gbp: null, fee_gbp: null, ...fields }) as EnrichedTransaction
+
+  it('shows whole quantities without decimals or sign', () => {
+    expect(transactionTableCells(tx({ type: 'BUY', quantity: 100, price_gbp: 10, value_gbp: 1000, fee_gbp: 0 })))
+      .toEqual({ symbol: 'ABC', quantity: '100', price: '£10.00', value: '£1,000.00', fee: '-' })
+    expect(transactionTableCells(tx({ type: 'OPTIONS_EXPIRED', quantity: -1 }))?.quantity).toBe('1')
+    expect(transactionTableCells(tx({ type: 'BUY', quantity: 0.0086629, value_gbp: 50 }))?.quantity).toBe('0.0086629')
+  })
+
+  it('shows only the amount for a dividend', () => {
+    expect(transactionTableCells(tx({ type: 'DIVIDEND', quantity: 10, price_gbp: 0.24, total: 3, value_gbp: 2.4 })))
+      .toMatchObject({ quantity: '-', price: '-', value: '£2.40' })
+  })
+
+  it('leaves out a row with nothing to show', () => {
+    expect(transactionTableCells(tx({ type: 'TAX', total: 0, value_gbp: 0 }))).toBeNull()
+    expect(transactionTableCells(tx({ type: 'DIVIDEND', quantity: 10, total: 0, value_gbp: 0 }))).toBeNull()
+  })
+
+  it('keeps a row whose GBP value is missing', () => {
+    expect(transactionTableCells(tx({ type: 'TRANSFER', total: 500 }))?.value).toBe('-')
+  })
+
+  it('shows a dash for a missing symbol', () => {
+    expect(transactionTableCells(tx({ type: 'TRANSFER', symbol: '', total: 500, value_gbp: 500 }))?.symbol).toBe('-')
   })
 })
