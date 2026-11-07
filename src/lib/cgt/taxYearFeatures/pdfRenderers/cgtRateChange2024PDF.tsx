@@ -76,23 +76,23 @@ function AdjustmentRequiredContent({ data, context }: ContentProps): React.React
             Before 30 Oct 2024 ({data.oldRates.basic}%/{data.oldRates.higher}% rates)
           </Text>
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Gains:</Text>
-            <Text style={[styles.summaryValue, { color: '#059669' }]}>
+            <Text style={styles.summaryLabel}>Gains</Text>
+            <Text style={styles.summaryValue}>
               {formatCurrency(data.gainsBeforeRateChange)}
             </Text>
           </View>
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Losses:</Text>
+            <Text style={styles.summaryLabel}>Losses</Text>
             <Text style={[styles.summaryValue, data.lossesBeforeRateChange < 0 ? { color: '#dc2626' } : {}]}>
               {formatCurrency(data.lossesBeforeRateChange)}
             </Text>
           </View>
           <View style={[styles.summaryRow, { marginBottom: 8 }]}>
-            <Text style={styles.summaryLabel}>Net:</Text>
+            <Text style={styles.summaryLabel}>Net</Text>
             <Text
               style={[
                 styles.summaryValue,
-                { color: data.netGainOrLossBeforeRateChange >= 0 ? '#059669' : '#dc2626' },
+                { color: data.netGainOrLossBeforeRateChange >= 0 ? '#111827' : '#dc2626' },
               ]}
             >
               {formatCurrency(data.netGainOrLossBeforeRateChange)}
@@ -117,23 +117,23 @@ function AdjustmentRequiredContent({ data, context }: ContentProps): React.React
         From 30 Oct 2024 ({data.newRates.basic}%/{data.newRates.higher}% rates)
       </Text>
       <View style={styles.summaryRow}>
-        <Text style={styles.summaryLabel}>Gains:</Text>
-        <Text style={[styles.summaryValue, { color: '#059669' }]}>
+        <Text style={styles.summaryLabel}>Gains</Text>
+        <Text style={styles.summaryValue}>
           {formatCurrency(data.gainsAfterRateChange)}
         </Text>
       </View>
       <View style={styles.summaryRow}>
-        <Text style={styles.summaryLabel}>Losses:</Text>
+        <Text style={styles.summaryLabel}>Losses</Text>
         <Text style={[styles.summaryValue, data.lossesAfterRateChange < 0 ? { color: '#dc2626' } : {}]}>
           {formatCurrency(data.lossesAfterRateChange)}
         </Text>
       </View>
       <View style={styles.summaryRow}>
-        <Text style={styles.summaryLabel}>Net:</Text>
+        <Text style={styles.summaryLabel}>Net</Text>
         <Text
           style={[
             styles.summaryValue,
-            { color: data.netGainOrLossAfterRateChange >= 0 ? '#059669' : '#dc2626' },
+            { color: data.netGainOrLossAfterRateChange >= 0 ? '#111827' : '#dc2626' },
           ]}
         >
           {formatCurrency(data.netGainOrLossAfterRateChange)}

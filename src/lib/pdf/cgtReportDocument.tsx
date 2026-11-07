@@ -290,6 +290,40 @@ export function formatTransactionType(type: string): string {
   return words.charAt(0).toUpperCase() + words.slice(1)
 }
 
+/** Cash movements: their amount is the value, and a quantity or price would be noise */
+const CASH_ONLY_TYPES = new Set(['DIVIDEND', 'INTEREST', 'TAX', 'TAX_ON_DIVIDEND', 'TAX_ON_INTEREST', 'FEE'])
+
+/** For money: under half a penny rounds to £0.00 */
+const isZero = (value: number | null | undefined) => value == null || Math.abs(value) < 0.005
+
+/**
+ * The cells of one row in the All Transactions table, or null for a cash row
+ * with nothing to show (a £0.00 amount and no fee, such as a £0.00 tax line).
+ * Other rows, such as a stock split with no amounts, are always kept.
+ * Quantities are shown without sign, as the type already says the direction
+ * (an expired option is "1", not "-1.00").
+ */
+export function transactionTableCells(tx: EnrichedTransaction): {
+  symbol: string
+  quantity: string
+  price: string
+  value: string
+  fee: string
+} | null {
+  const cashOnly = CASH_ONLY_TYPES.has(tx.type)
+  // The broker's own amounts, so a row whose GBP value is missing (no FX rate) is kept
+  if (cashOnly && isZero(tx.total) && isZero(tx.fee)) return null
+  // Quantities are compared exactly: 0.001 BTC is not zero
+  const quantity = !cashOnly && tx.quantity ? Math.abs(tx.quantity) : null
+  return {
+    symbol: tx.symbol || '-',
+    quantity: quantity == null ? '-' : formatQuantity(quantity),
+    price: cashOnly || tx.price_gbp == null ? '-' : formatGbp(tx.price_gbp),
+    value: tx.value_gbp == null ? '-' : formatGbp(tx.value_gbp),
+    fee: isZero(tx.fee_gbp) ? '-' : formatGbp(tx.fee_gbp!),
+  }
+}
+
 export const REPORT_DISCLAIMER =
   'This report is an estimate produced by Capital Gains Tax Visualiser from the transactions you imported, ' +
   "using HMRC's same-day, 30-day and Section 104 matching rules. It is not tax advice and may be wrong or " +
@@ -366,41 +400,41 @@ function createCGTReportDocument(
           <Text style={styles.subtitle}>Tax Year Summary</Text>
           <View style={styles.summaryBox}>
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Total Disposals:</Text>
+              <Text style={styles.summaryLabel}>Total Disposals</Text>
               <Text style={styles.summaryValue}>{taxYearSummary.totalDisposals}</Text>
             </View>
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Total Proceeds:</Text>
+              <Text style={styles.summaryLabel}>Total Proceeds</Text>
               <Text style={styles.summaryValue}>{formatCurrency(taxYearSummary.totalProceedsGbp)}</Text>
             </View>
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Total Allowable Costs:</Text>
+              <Text style={styles.summaryLabel}>Total Allowable Costs</Text>
               <Text style={styles.summaryValue}>{formatCurrency(taxYearSummary.totalAllowableCostsGbp)}</Text>
             </View>
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Total Gains:</Text>
+              <Text style={styles.summaryLabel}>Total Gains</Text>
               <Text style={styles.summaryValue}>
                 {formatCurrency(taxYearSummary.totalGainsGbp)}
               </Text>
             </View>
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Total Losses:</Text>
+              <Text style={styles.summaryLabel}>Total Losses</Text>
               <Text style={[styles.summaryValue, taxYearSummary.totalLossesGbp < 0 ? { color: LOSS } : {}]}>
                 {formatCurrency(taxYearSummary.totalLossesGbp)}
               </Text>
             </View>
             <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Net Gain/Loss:</Text>
+              <Text style={styles.totalLabel}>Net Gain/Loss</Text>
               <Text style={[styles.totalValue, { color: taxYearSummary.netGainOrLossGbp >= 0 ? TEXT : LOSS }]}>
                 {formatCurrency(taxYearSummary.netGainOrLossGbp)}
               </Text>
             </View>
             <View style={[styles.summaryRow, { marginTop: 6 }]}>
-              <Text style={styles.summaryLabel}>Annual Exempt Amount:</Text>
+              <Text style={styles.summaryLabel}>Annual Exempt Amount</Text>
               <Text style={styles.summaryValue}>{formatCurrency(taxYearSummary.annualExemptAmount)}</Text>
             </View>
             <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Taxable Gain:</Text>
+              <Text style={styles.totalLabel}>Taxable Gain</Text>
               <Text style={styles.totalValue}>
                 {formatCurrency(taxYearSummary.taxableGainGbp)}
               </Text>
@@ -662,25 +696,21 @@ function createCGTReportDocument(
                   <Text style={[styles.tableHeaderCell, { width: '11%', textAlign: 'right' }]}>Fee</Text>
                 </View>
                 {/* Table Rows */}
-                {filteredTransactions.map((tx) => (
-                  <View key={tx.id} style={styles.tableRow} wrap={false}>
-                    <Text style={[styles.tableCell, { width: '11%' }]}>{formatDate(tx.date)}</Text>
-                    <Text style={[styles.tableCell, { width: '23%' }]}>{formatTransactionType(tx.type)}</Text>
-                    <Text style={[styles.tableCell, { width: '20%' }]}>{tx.symbol}</Text>
-                    <Text style={[styles.tableCell, { width: '11%', textAlign: 'right' }]}>
-                      {tx.quantity?.toFixed(2) ?? '-'}
-                    </Text>
-                    <Text style={[styles.tableCell, { width: '12%', textAlign: 'right' }]}>
-                      {tx.price_gbp != null ? formatCurrency(tx.price_gbp) : '-'}
-                    </Text>
-                    <Text style={[styles.tableCell, { width: '12%', textAlign: 'right' }]}>
-                      {tx.value_gbp != null ? formatCurrency(tx.value_gbp) : '-'}
-                    </Text>
-                    <Text style={[styles.tableCell, { width: '11%', textAlign: 'right' }]}>
-                      {tx.fee_gbp != null ? formatCurrency(tx.fee_gbp) : '-'}
-                    </Text>
-                  </View>
-                ))}
+                {filteredTransactions.map(tx => {
+                  const cells = transactionTableCells(tx)
+                  if (!cells) return null
+                  return (
+                    <View key={tx.id} style={styles.tableRow} wrap={false}>
+                      <Text style={[styles.tableCell, { width: '11%' }]}>{formatDate(tx.date)}</Text>
+                      <Text style={[styles.tableCell, { width: '23%' }]}>{formatTransactionType(tx.type)}</Text>
+                      <Text style={[styles.tableCell, { width: '20%' }]}>{cells.symbol}</Text>
+                      <Text style={[styles.tableCell, { width: '11%', textAlign: 'right' }]}>{cells.quantity}</Text>
+                      <Text style={[styles.tableCell, { width: '12%', textAlign: 'right' }]}>{cells.price}</Text>
+                      <Text style={[styles.tableCell, { width: '12%', textAlign: 'right' }]}>{cells.value}</Text>
+                      <Text style={[styles.tableCell, { width: '11%', textAlign: 'right' }]}>{cells.fee}</Text>
+                    </View>
+                  )
+                })}
               </View>
             </>
           )}
