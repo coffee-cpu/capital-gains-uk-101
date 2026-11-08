@@ -60,6 +60,15 @@ const SIMILAR_TOOLS: SimilarTool[] = [
     input: 'Manual entry',
   },
   {
+    name: 'CGT Calculator (cgtcalculator.io)',
+    url: 'https://cgtcalculator.io/',
+    tags: ['Free', 'Paid', 'Web'],
+    description:
+      'Online calculator that turns broker exports into a CGT report with SA108 figures, applying the same-day, bed and breakfast and Section 104 rules. Also covers options, crypto and offshore fund excess reportable income. Free for up to 10 disposals, then an annual subscription; needs a sign-in.',
+    processing: 'Calculates on their server (it says files are not stored); in-browser processing on its business plan',
+    input: 'Broker CSV/Excel exports (Interactive Brokers, Schwab, Trading 212, Freetrade, Revolut, Coinbase and more)',
+  },
+  {
     name: 'AllInvestView',
     url: 'https://www.allinvestview.com/capital-gains-tax-calculator-shares-uk/',
     tags: ['Paid', 'Web'],
