@@ -145,7 +145,7 @@ ${renderResultTable(WORKED_EXAMPLES.thirtyDay)}
 <h2 id="bed-and-isa">Bed and ISA: does the 30-day rule apply?</h2>
 <p>No. “Bed and ISA” means selling shares you hold in an ordinary account and buying the same shares back inside your ISA, often on the same day. Shares in an ISA are held separately from the ones you own directly, so the ISA purchase isn’t matched with the sale by the same-day or 30-day rules.</p>
 <ul>
-<li>The sale is an ordinary disposal: its gain or loss is worked out against your Section 104 pool, as if you hadn’t bought back.</li>
+<li>The sale is an ordinary disposal and the ISA purchase is ignored. Unless you also buy in your ordinary account on the same day or within 30 days, its gain or loss is worked out against your Section 104 pool.</li>
 <li>That lets you use your annual exempt amount (or realise a loss) while keeping the investment, now sheltered from future Capital Gains Tax.</li>
 <li>The same applies to buying back in a pension (“bed and SIPP”).</li>
 <li>The purchase uses your ISA subscription allowance for the year.</li>
