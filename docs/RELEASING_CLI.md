@@ -110,6 +110,8 @@ On https://www.npmjs.com/package/cgt-visualiser → **Settings** → **Publishin
 
 The workflow fails before publishing if the tag doesn't match `packages/cli/package.json`.
 
+After publishing to npm, the workflow creates a GitHub Release named `CLI <version>`. Its notes are generated from the PRs merged since the previous `cli-v*` tag. If a Release for the tag already exists, the workflow leaves it alone; edit the notes on GitHub if you want to tidy them.
+
 If you change the JSON output in a breaking way, bump `SCHEMA_VERSION` in `packages/cli/src/report.ts`, update `public/agents.md`, and release a new major version.
 
 The agent guide (`public/agents.md`), `public/llms.txt` and `index.html` use `cgt-visualiser@latest`, so a new release reaches agents straight away, including a new major version. The `schemaVersion` check in the agent guide protects them from breaking changes to the JSON output, but nothing protects them from changes to commands, flags or exit codes. A release that changes any of those must keep the old ones working, or update `public/agents.md` and `public/llms.txt` in the same release. Don't switch them to a range such as `@0`: npx caches each install under the exact spec it was given and keeps reusing a cached version that still satisfies the range, so someone who ran `@0` once would stay on that version indefinitely. `@latest` is checked against the registry on every run.
