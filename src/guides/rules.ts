@@ -123,7 +123,7 @@ const thirtyDay = rulePage({
   path: THIRTY_DAY_PATH,
   title: 'The 30-day “bed and breakfast” rule for shares, with a worked example',
   navTitle: '30-day rule (bed and breakfasting)',
-  description: 'If you buy back shares within 30 days after selling them, HMRC matches the sale with the new purchase. How the bed and breakfast rule works, with an example.',
+  description: 'Buy back shares within 30 days of selling and HMRC matches the sale with the new purchase. How the rule works, a worked example, and why bed and ISA isn’t caught.',
   h1: 'The 30-day “bed and breakfast” rule',
   bodyHtml: `
 <p class="lead">If you sell shares and buy shares of the same company again within the <strong>next 30 days</strong>, HMRC matches the sale with the new purchase instead of with the shares you already held. This stops people selling and immediately buying back just to create a gain or a loss for tax purposes (“bed and breakfasting”).</p>
@@ -133,7 +133,7 @@ const thirtyDay = rulePage({
 <li>It applies to shares bought in the 30 days <em>after</em> the sale, not before. Purchases before the sale go into the Section 104 pool.</li>
 <li>It comes after the <a href="${SAME_DAY_PATH}">same-day rule</a> and before the <a href="${SECTION_104_PATH}">Section 104 pool</a> (TCGA 1992 section 106A(5)).</li>
 <li>If there are several purchases in the 30 days, the earliest is matched first.</li>
-<li>Buying back inside an ISA or pension is a different holding, so it isn’t matched with a sale outside it.</li>
+<li>Buying back inside an ISA or pension is a different holding, so it isn’t matched with a sale outside it (see <a href="#bed-and-isa">bed and ISA</a> below).</li>
 </ul>
 
 <h2>Worked example</h2>
@@ -142,6 +142,16 @@ ${renderTransactionsTable(WORKED_EXAMPLES.thirtyDay)}
 <p>Without the 30-day rule, the sale would show a £1,000 loss against the pool. Because you bought back within 30 days, the sale is matched with the new shares instead, so the loss is only £100. The original £5,000 cost stays in the Section 104 pool for the 1,000 shares you now hold.</p>
 ${renderResultTable(WORKED_EXAMPLES.thirtyDay)}
 
+<h2 id="bed-and-isa">Bed and ISA: does the 30-day rule apply?</h2>
+<p>No. “Bed and ISA” means selling shares you hold in an ordinary account and buying the same shares back inside your ISA, often on the same day. Shares in an ISA are held separately from the ones you own directly, so the ISA purchase isn’t matched with the sale by the same-day or 30-day rules.</p>
+<ul>
+<li>The sale is an ordinary disposal and the ISA purchase is ignored. Unless you also buy in your ordinary account on the same day or within 30 days, its gain or loss is worked out against your Section 104 pool.</li>
+<li>That lets you use your annual exempt amount (or realise a loss) while keeping the investment, now sheltered from future Capital Gains Tax.</li>
+<li>The same applies to buying back in a pension (“bed and SIPP”).</li>
+<li>The purchase uses your ISA subscription allowance for the year.</li>
+<li>When you calculate, include only the transactions from your ordinary (taxable) account. Leave out ISA and pension transactions.</li>
+</ul>
+
 <div class="callout warn"><p>A 30-day purchase can fall in the next tax year, so a sale near 5 April can be matched with shares bought after the year ends. Include transactions after the year end when you calculate.</p></div>
 <div class="callout info"><p>HMRC reference: <a href="${CG51560}">CG51560</a> and helpsheet <a href="${HS284}">HS284</a>.</p></div>
 `,
@@ -149,14 +159,14 @@ ${renderResultTable(WORKED_EXAMPLES.thirtyDay)}
 
 const section104 = rulePage({
   path: SECTION_104_PATH,
-  title: 'Section 104 pool: how average cost works for UK Capital Gains Tax on shares',
+  title: 'Section 104 holding (pool): how to work out average cost for UK Capital Gains Tax',
   navTitle: 'Section 104 pool',
   description: 'Shares of the same company are pooled at their average cost. How the Section 104 holding works, what goes in it, and a worked example of a sale from the pool.',
-  h1: 'The Section 104 pool',
+  h1: 'The Section 104 holding (pool)',
   bodyHtml: `
 <p class="lead">For most sales, HMRC treats all the shares you hold in one company as a single “Section 104 holding” with one total cost. When you sell from it, the cost of the shares sold is their share of that total: in effect, the <strong>average cost</strong>.</p>
 
-<h2>How it works</h2>
+<h2>How to work out a Section 104 holding</h2>
 <ul>
 <li>Each purchase adds its shares and its cost (including fees and stamp duty) to the pool, unless the shares are used by the <a href="${SAME_DAY_PATH}">same-day</a> or <a href="${THIRTY_DAY_PATH}">30-day</a> rules.</li>
 <li>When you sell from the pool, the allowable cost is: total pool cost × shares sold ÷ shares in the pool.</li>

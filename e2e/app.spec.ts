@@ -5,7 +5,7 @@ test.describe('Capital Gains Tax Visualiser App', () => {
     await page.goto('/')
 
     // Check page title
-    await expect(page).toHaveTitle(/Capital Gains Tax Visualiser/)
+    await expect(page).toHaveTitle(/CGT Visualiser/)
 
     // Check that sidebar has branding
     const branding = page.getByRole('complementary').getByText(/Capital Gains Tax/i)

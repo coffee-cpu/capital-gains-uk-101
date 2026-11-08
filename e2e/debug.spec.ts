@@ -68,7 +68,7 @@ test.describe('Debug - Console Logs', () => {
     }
 
     // Assert page loaded successfully (basic checks)
-    await expect(page).toHaveTitle(/Capital Gains Tax Visualiser/)
+    await expect(page).toHaveTitle(/CGT Visualiser/)
 
     // Assert no critical errors occurred
     expect(pageErrors, 'Page should not have uncaught errors').toHaveLength(0)
@@ -90,7 +90,7 @@ test.describe('Debug - Console Logs', () => {
     await page.goto('/')
 
     // Check page title and main components render
-    await expect(page).toHaveTitle(/Capital Gains Tax Visualiser/)
+    await expect(page).toHaveTitle(/CGT Visualiser/)
     await expect(page.getByText(/Import Transactions/i)).toBeVisible()
 
     console.log(`\nCaptured ${consoleLogs.length} console messages`)
