@@ -93,6 +93,8 @@ npx cgt-visualiser calculate my-broker-export.csv --tax-year 2024/25 --format js
       "disposals": 2,
       "proceedsGbp": 5440,
       "allowableCostsGbp": 4810.33,
+      "gainsGbp": 629.67,
+      "lossesGbp": 0,
       "netGainOrLossGbp": 629.67,
       "annualExemptAmountGbp": 3000,
       "taxableGainGbp": 0,
