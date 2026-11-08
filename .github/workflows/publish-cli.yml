@@ -2,7 +2,9 @@ name: Publish CLI to npm
 
 # Publishes packages/cli (cgt-visualiser) when a tag like cli-v0.1.0 is pushed.
 # The tag version must match packages/cli/package.json. Uses npm trusted
-# publishing (OIDC), so no npm token is stored in the repository.
+# publishing (OIDC), so no npm token is stored in the repository. After
+# publishing, it creates a GitHub Release with notes generated from the PRs
+# merged since the previous cli-v tag.
 
 on:
   push:
@@ -46,3 +48,34 @@ jobs:
         run: bash packages/cli/scripts/smoke-test.sh
 
       - run: npm publish -w packages/cli --provenance --access public
+
+  release:
+    # Separate job so only this step gets write access to the repository.
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Required to create the GitHub Release
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0  # Tags are needed to find the previous CLI release
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          VERSION=${TAG#cli-v}
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            echo "Release $TAG already exists"
+            exit 0
+          fi
+          # Notes cover PRs merged since the previous CLI tag (other tags are ignored)
+          PREVIOUS_TAG=$(git tag --list 'cli-v*' --sort=-v:refname | grep -vx "$TAG" | head -n 1)
+          NOTES="Published to npm as [\`cgt-visualiser@$VERSION\`](https://www.npmjs.com/package/cgt-visualiser/v/$VERSION)."
+          gh release create "$TAG" \
+            --verify-tag \
+            --title "CLI $VERSION" \
+            --notes "$NOTES" \
+            --generate-notes \
+            ${PREVIOUS_TAG:+--notes-start-tag "$PREVIOUS_TAG"}
