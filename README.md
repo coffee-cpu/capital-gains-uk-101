@@ -1,80 +1,72 @@
-# Capital Gains Tax Visualiser
+# Capital Gains Tax Visualiser: free UK CGT calculator for shares
 
-**UK Capital Gains Tax made easy**
+[![npm](https://img.shields.io/npm/v/cgt-visualiser?label=cgt-visualiser%20CLI)](https://www.npmjs.com/package/cgt-visualiser)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
+**Free, open-source UK Capital Gains Tax calculator for shares.** Import your broker CSV exports, apply HMRC's same-day, 30-day ("bed and breakfast") and Section 104 rules, and get SA108-ready figures, either in your browser or from the command line. Your transactions never leave your device.
 
 **Try it now at [cgtvisualiser.co.uk](https://cgtvisualiser.co.uk)**
 
-A free, privacy-focused web application that helps UK taxpayers understand and calculate capital gains tax on share transactions. All calculations happen in your browser - your data never leaves your device.
+![Capital Gains Tax Visualiser showing a tax year summary](public/og-image.png)
 
-## Features
+## What it does
 
-- ✅ CSV import from popular brokers (Charles Schwab, Trading 212, Interactive Brokers, Freetrade, EquatePlus, Revolut, Coinbase, Generic CSV format)
-- ✅ Transaction management with persistent storage
-- ✅ Support for all transaction types (buys, sells, dividends, transfers, stock splits, etc.)
-- ✅ Stock split handling (TCGA92/S127) with split-adjusted quantities
-- ✅ Duplicate file detection
-- ✅ Privacy-first: all data stored locally in your browser
-- ✅ Automatic FX rate conversion using HMRC official exchange rates
-- ✅ Tax year calculations (UK tax years: 6 April to 5 April)
-- ✅ HMRC-compliant CGT calculation engine:
-  - ✅ Same-day matching rule (TCGA92/S105(1))
-  - ✅ 30-day "bed and breakfast" rule (TCGA92/S106A(5))
-  - ✅ Section 104 pooled holdings (TCGA92/S104)
-- ✅ Capital gains/loss calculations with full disposal records
-- ✅ Tax year summary dashboard with key metrics and CGT calculations
-- ✅ PDF export for tax returns with detailed disposal records
-- ✅ Context-sensitive help panel with interactive CGT rule explanations, examples, and HMRC references
+1. **Imports your transaction history** from broker CSV exports. You can mix several brokers; the same share is matched across them.
+2. **Converts to GBP** using HMRC's official monthly exchange rates (or HMRC yearly averages, or ECB daily rates).
+3. **Adjusts for stock splits** (TCGA92/S127). Original quantities are kept, so you can check them against your statements.
+4. **Applies HMRC's matching rules** in the right order:
+   - **Same-day rule** (TCGA92/S105(1), CG51560): shares bought and sold on the same day are matched first.
+   - **30-day "bed and breakfast" rule** (TCGA92/S106A(5) and (5A), CG51560): shares bought back within 30 days after a sale are matched next.
+   - **Section 104 pool** (TCGA92/S104, CG51620): everything else is matched against the average cost of your holding.
+5. **Works out the gain or loss on every disposal**, showing which rule matched which shares, and totals each UK tax year (6 April to 5 April) against the annual exempt amount.
+6. **Exports a PDF report** with the SA108 figures and the details of every disposal.
 
-## Getting Started
+### What it covers
 
-### Prerequisites
+- Shares, ETFs and funds, in pounds or foreign currencies
+- RSUs, ESPP and other employee share plans (Charles Schwab Equity Awards, EquatePlus)
+- Cryptoassets (reported in the SA108 Cryptoassets section)
+- Options (Interactive Brokers, Charles Schwab), each contract treated as its own asset
+- Short sells and stock splits
+- The 30 October 2024 rate change: 2024/25 gains are split before and after the change
 
-- Node.js 18+ and npm
+### What it doesn't cover
 
-### Installation
+- **ISAs and pensions (SIPPs)**: their gains are free of CGT. Leave those accounts out of what you import.
+- Excess reportable income from offshore reporting funds
+- Corporate actions other than stock splits, such as mergers, spin-offs and rights issues. You can enter their effect by hand in a Generic CSV.
+- Property and other non-share assets
 
-```bash
-npm install
-```
+## Supported brokers
 
-### Development
+| Broker | Notes |
+|---|---|
+| Charles Schwab | Brokerage account and Equity Awards (RSUs, ESPP), including options |
+| Interactive Brokers | Activity statement CSV, including options |
+| Trading 212 | Including stock splits |
+| Freetrade | |
+| EquatePlus | Employee share plans: RSUs, RSPs, ESPP |
+| Revolut | |
+| Coinbase and Coinbase Pro | |
+| Generic CSV | Any other broker: `date,type,symbol,currency,quantity,price,total,fee` |
 
-```bash
-npm run dev
-```
+The app explains how to export the right file from each broker.
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+## Guides
 
-### Testing
+Plain-English guides to the rules, with worked examples checked against the calculation engine:
 
-```bash
-# Run unit tests
-npm test
+- [How to calculate Capital Gains Tax on shares in the UK](https://cgtvisualiser.co.uk/guides/how-to-calculate-capital-gains-tax-on-shares/)
+- [The same-day rule](https://cgtvisualiser.co.uk/guides/same-day-rule/)
+- [The 30-day "bed and breakfast" rule, and bed and ISA](https://cgtvisualiser.co.uk/guides/30-day-rule/)
+- [The Section 104 holding (pool)](https://cgtvisualiser.co.uk/guides/section-104-pool/)
+- [Stock splits](https://cgtvisualiser.co.uk/guides/stock-splits/)
+- [US and other foreign shares: converting to pounds](https://cgtvisualiser.co.uk/guides/foreign-currency-shares/)
+- [All guides, including how to export from each broker](https://cgtvisualiser.co.uk/guides/)
 
-# Run E2E tests
-npm run test:e2e
-```
+## Privacy
 
-### Build
-
-```bash
-npm run build
-```
-
-## How It Works
-
-Capital Gains Tax Visualiser helps you understand and calculate your capital gains tax obligations by:
-
-1. **Importing your transaction history** from broker CSV exports
-2. **Converting to GBP** using HMRC official monthly exchange rates
-3. **Applying HMRC matching rules** in the correct order:
-   - Same-day rule: Matches buys and sells on the same day
-   - 30-day rule: Matches disposals with repurchases within 30 days
-   - Section 104 pool: Remaining shares pooled for average cost basis
-4. **Calculating gains and losses** for each disposal with full audit trail
-5. **Generating tax year summaries** with total gains, losses, and taxable amounts
-
-All processing happens in your browser using IndexedDB for storage. Your transactions are never uploaded. The app only fetches public reference data, and its Content Security Policy blocks connections to anywhere else:
+All processing happens in your browser, and imported data is stored only in your browser (IndexedDB). Your transactions are never uploaded. The app only fetches public reference data, and its Content Security Policy blocks connections to anywhere else:
 
 | Service | Used for | What a request reveals |
 |---|---|---|
@@ -84,68 +76,60 @@ All processing happens in your browser using IndexedDB for storage. Your transac
 
 Like any web request, these reveal your IP address to the service.
 
-### CGT Calculation Engine
+## Command-line tool and AI agents
 
-The app implements the complete HMRC share matching rules as specified in the Capital Gains Manual:
-
-- **Same-Day Rule** (TCGA92/S105(1) - CG51560): Shares bought and sold on the same day are matched first
-- **30-Day Rule** (TCGA92/S106A(5) and (5A) - CG51560): Shares repurchased within 30 days after a sale are matched next ("bed and breakfast" anti-avoidance)
-- **Section 104 Pool** (TCGA92/S104 - CG51620): All remaining shares are pooled with average cost basis
-
-Each disposal generates a detailed record showing:
-- Proceeds from sale (including fees)
-- Cost basis from matched acquisitions
-- Gain or loss calculation
-- Tax year allocation
-- Which HMRC rule was applied
-
-## Supported Brokers
-
-- ✅ Charles Schwab (standard transactions + equity awards)
-- ✅ EquatePlus (employee stock plans: RSUs, RSPs, ESPP)
-- ✅ Trading 212 (with stock split support)
-- ✅ Interactive Brokers
-- ✅ Freetrade
-- ✅ Revolut
-- ✅ Coinbase
-- ✅ Coinbase Pro
-- ✅ Generic CSV format (universal import)
-
-## Command-Line Tool and AI Agents
-
-The calculation engine is also published as a command-line tool, [`cgt-visualiser`](packages/cli/README.md). It runs locally and outputs text, CSV or versioned JSON, which makes it suitable for scripts and AI agents:
+The same calculation engine is published as a command-line tool, [`cgt-visualiser`](packages/cli/README.md). It runs locally (Node.js 22 or later) and outputs text, CSV, versioned JSON or a PDF report, so it works well in scripts and for AI agents:
 
 ```bash
-npx cgt-visualiser calculate my-broker-export.csv --tax-year 2025/26
+npx cgt-visualiser calculate my-broker-export.csv --tax-year 2024/25 --format json
 ```
 
-- [CLI README](packages/cli/README.md): commands, options and the JSON schema
-- [Agent guide](public/agents.md), served at https://cgtvisualiser.co.uk/agents.md: step-by-step instructions for AI agents
+```json
+{
+  "schemaVersion": 1,
+  "taxYears": [
+    {
+      "taxYear": "2024/25",
+      "disposals": 2,
+      "proceedsGbp": 5440,
+      "allowableCostsGbp": 4810.33,
+      "gainsGbp": 629.67,
+      "lossesGbp": 0,
+      "netGainOrLossGbp": 629.67,
+      "annualExemptAmountGbp": 3000,
+      "taxableGainGbp": 0,
+      ...
+```
+
+- [CLI README](packages/cli/README.md): commands, options and the full JSON schema
+- [Agent guide](public/agents.md), also served at https://cgtvisualiser.co.uk/agents.md: step-by-step instructions for AI agents (Claude Code, Codex, Cursor, Gemini CLI and others)
 - [`llms.txt`](public/llms.txt), served at https://cgtvisualiser.co.uk/llms.txt
 
-The CLI lives in the `packages/cli` npm workspace. Build it with `npm run build:cli`. To release it, set the version in `packages/cli/package.json` and push a matching `cli-v<version>` tag (e.g. `cli-v0.1.0`); the `Publish CLI to npm` workflow tests, builds and publishes it. See [docs/RELEASING_CLI.md](docs/RELEASING_CLI.md), including the one-time npm setup.
+## Development
 
-## Tech Stack
+Requires Node.js 22 or later.
 
-- **React 19** - UI framework
-- **TypeScript** - Type safety
-- **Vite** - Build tool
-- **TailwindCSS v4** - Styling
-- **Zustand** - State management
-- **Dexie** - IndexedDB wrapper
-- **Zod** - Schema validation
-- **@react-pdf/renderer** - PDF export
-- **Vitest** - Unit testing
-- **Playwright** - E2E testing
+```bash
+npm install
+npm run dev        # http://localhost:3000
+npm test           # unit tests (Vitest)
+npm run test:e2e   # end-to-end tests (Playwright)
+npm run build      # production build
+npm run build:cli  # build the command-line tool
+```
+
+Built with React 19, TypeScript, Vite, Tailwind CSS v4, Zustand, Dexie (IndexedDB), Zod and @react-pdf/renderer. The HMRC rules are specified in [docs/SPECIFICATION.md](docs/SPECIFICATION.md).
+
+The CLI lives in the `packages/cli` npm workspace. To release it, set the version in `packages/cli/package.json` and push a matching `cli-v<version>` tag (e.g. `cli-v0.1.0`). The `Publish CLI to npm` workflow tests, builds and publishes it, then creates a GitHub Release. See [docs/RELEASING_CLI.md](docs/RELEASING_CLI.md), including the one-time npm setup.
 
 ## Contributing
 
-Contributions are welcome! Please open an issue or pull request on GitHub.
+Contributions are welcome: open an issue or pull request. To add a broker, see "Adding a New Broker Parser" in [CLAUDE.md](CLAUDE.md).
 
 ## Disclaimer
 
-This tool is for informational purposes only. It is not financial or tax advice. Always consult with a qualified tax professional for your specific situation. The developers are not responsible for any errors in calculations or tax reporting.
+This tool is for information only. It is not financial or tax advice. Always check your figures, and consult a qualified tax professional for your situation. The developers are not responsible for any errors in calculations or tax reporting.
 
 ## License
 
-MIT
+[MIT](LICENSE)
