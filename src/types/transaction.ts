@@ -115,18 +115,17 @@ export const TransactionType = {
 } as const
 
 /**
- * Gain group type enum
+ * The HMRC matching rule that matched a disposal to its acquisitions
  */
-export const GainGroup = {
+export const MatchingRule = {
   SAME_DAY: 'SAME_DAY',
   THIRTY_DAY: '30_DAY',
   SECTION_104: 'SECTION_104',
   SHORT_SELL: 'SHORT_SELL',
-  NONE: 'NONE',
 } as const
 
-/** Type alias for GainGroup values */
-export type GainGroupType = typeof GainGroup[keyof typeof GainGroup]
+/** Type alias for MatchingRule values */
+export type MatchingRule = typeof MatchingRule[keyof typeof MatchingRule]
 
 /**
  * Stock Split Event

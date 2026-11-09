@@ -8,14 +8,14 @@ import { runPipeline } from '../../lib/pipeline'
 import { createMemoryCacheBackends, setCacheBackends } from '../../lib/cache'
 import { getEnabledBrokerDefinitions } from '../../config/brokers'
 import { brokerGuidePath } from '../brokers'
-import { GainGroup } from '../../types/transaction'
+import { MatchingRule } from '../../types/transaction'
 
 const PUBLIC_DIR = join(__dirname, '../../../public')
 
 const RULE_IDS = {
-  [GainGroup.SAME_DAY]: 'same-day',
-  [GainGroup.THIRTY_DAY]: '30-day',
-  [GainGroup.SECTION_104]: 'section-104',
+  [MatchingRule.SAME_DAY]: 'same-day',
+  [MatchingRule.THIRTY_DAY]: '30-day',
+  [MatchingRule.SECTION_104]: 'section-104',
 } as const
 
 describe('guide worked examples', () => {
