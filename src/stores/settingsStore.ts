@@ -26,6 +26,9 @@ export const LEGACY_SETTINGS_KEY = 'cgt-settings'
 
 let initialization: Promise<void> | null = null
 
+/** Settings the user changed while they were loading; loading must not overwrite them */
+const changedDuringLoad = new Set<keyof StoredSettings>()
+
 /**
  * Zustand store for user settings. IndexedDB (`settings` table) is the only
  * persisted copy; this store holds the values in memory once loaded.
@@ -36,17 +39,25 @@ export const useSettingsStore = create<SettingsState>()((set) => ({
   isInitialized: false,
 
   setFXSource: async (fxSource) => {
+    changedDuringLoad.add('fxSource')
     set({ fxSource })
     await saveSetting('fxSource', fxSource)
   },
 
   setAutoSplitsEnabled: async (enabled) => {
+    changedDuringLoad.add('autoSplitsEnabled')
     set({ autoSplitsEnabled: enabled })
     await saveSetting('autoSplitsEnabled', String(enabled))
   },
 
   initializeFromDB: () => {
-    initialization ??= loadSettings().then(settings => set({ ...settings, isInitialized: true }))
+    if (!initialization) {
+      changedDuringLoad.clear()
+      initialization = loadSettings().then(settings => {
+        for (const key of changedDuringLoad) delete settings[key]
+        set({ ...settings, isInitialized: true })
+      })
+    }
     return initialization
   },
 }))
@@ -73,7 +84,7 @@ async function loadSettings(): Promise<StoredSettings> {
  * IndexedDB, then drop the localStorage copy. IndexedDB wins where both exist.
  */
 async function migrateLegacySettings(stored: StoredSettings): Promise<StoredSettings> {
-  let legacy: StoredSettings = {}
+  const legacy: StoredSettings = {}
   try {
     const raw = localStorage.getItem(LEGACY_SETTINGS_KEY)
     if (!raw) return {}
@@ -81,23 +92,34 @@ async function migrateLegacySettings(stored: StoredSettings): Promise<StoredSett
     const state = (parsed as { state?: Record<string, unknown> } | null)?.state ?? {}
     if (isFXSource(state.fxSource)) legacy.fxSource = state.fxSource
     if (typeof state.autoSplitsEnabled === 'boolean') legacy.autoSplitsEnabled = state.autoSplitsEnabled
-    localStorage.removeItem(LEGACY_SETTINGS_KEY)
   } catch {
-    legacy = {}
+    return {}
   }
 
-  if (legacy.fxSource && !stored.fxSource) await saveSetting('fxSource', legacy.fxSource)
+  // Only drop the legacy copy once everything it holds is in IndexedDB
+  let saved = true
+  if (legacy.fxSource && !stored.fxSource) saved = await saveSetting('fxSource', legacy.fxSource)
   if (legacy.autoSplitsEnabled !== undefined && stored.autoSplitsEnabled === undefined) {
-    await saveSetting('autoSplitsEnabled', String(legacy.autoSplitsEnabled))
+    saved = (await saveSetting('autoSplitsEnabled', String(legacy.autoSplitsEnabled))) && saved
+  }
+  if (saved) {
+    try {
+      localStorage.removeItem(LEGACY_SETTINGS_KEY)
+    } catch {
+      // Storage unavailable: the copy is read again next time
+    }
   }
   return legacy
 }
 
-async function saveSetting(key: string, value: string): Promise<void> {
+/** Persist one setting; false if IndexedDB refused the write */
+async function saveSetting(key: string, value: string): Promise<boolean> {
   try {
     await db.settings.put({ key, value, updatedAt: new Date().toISOString() })
+    return true
   } catch (error) {
     console.error(`Failed to persist setting ${key} to IndexedDB:`, error)
+    return false
   }
 }
 

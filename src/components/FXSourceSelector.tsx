@@ -71,8 +71,11 @@ export function FXSourceSelector() {
       await recalculate()
     } catch (error) {
       console.error('Failed to change FX source:', error)
-      // Revert to previous source on error
+      // Revert to previous source on error, and recalculate with it: the
+      // failed run may have superseded one (e.g. an import) whose result
+      // was never applied
       await setFXSource(fxSource)
+      await recalculate().catch(retryError => console.error('Recalculation failed:', retryError))
     } finally {
       setIsChanging(false)
     }

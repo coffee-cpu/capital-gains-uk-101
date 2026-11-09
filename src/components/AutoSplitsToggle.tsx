@@ -28,7 +28,10 @@ export function AutoSplitsToggle() {
       await recalculate()
     } catch (error) {
       console.error('Failed to toggle auto-splits:', error)
+      // Revert, and recalculate with the restored setting: the failed run
+      // may have superseded one (e.g. an import) whose result was never applied
       await setAutoSplitsEnabled(!newValue)
+      await recalculate().catch(retryError => console.error('Recalculation failed:', retryError))
     } finally {
       setIsChanging(false)
     }

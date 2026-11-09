@@ -3,11 +3,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { CGTCalculationResult } from '../../types/cgt'
 
 const settingsTable = new Map<string, { key: string; value: string }>()
+const dbState = { failWrites: false }
 vi.mock('../../lib/db', () => ({
   db: {
     settings: {
       get: async (key: string) => settingsTable.get(key),
-      put: async (row: { key: string; value: string }) => { settingsTable.set(row.key, row) },
+      put: async (row: { key: string; value: string }) => {
+        if (dbState.failWrites) throw new Error('write failed')
+        settingsTable.set(row.key, row)
+      },
     },
   },
 }))
@@ -35,6 +39,7 @@ async function loadStores() {
 }
 
 beforeEach(() => {
+  dbState.failWrites = false
   settingsTable.clear()
   localStorage.clear()
   processTransactionsFromDB.mockReset()
@@ -130,5 +135,28 @@ describe('settingsStore', () => {
     await useSettingsStore.getState().initializeFromDB()
 
     expect(useSettingsStore.getState().fxSource).toBe('HMRC_MONTHLY')
+  })
+
+  it('keeps a setting the user changes while settings are loading', async () => {
+    settingsTable.set('fxSource', { key: 'fxSource', value: 'HMRC_YEARLY_AVG' })
+    const { useSettingsStore } = await loadStores()
+
+    const loading = useSettingsStore.getState().initializeFromDB()
+    await useSettingsStore.getState().setFXSource('DAILY_SPOT')
+    await loading
+
+    expect(useSettingsStore.getState().fxSource).toBe('DAILY_SPOT')
+    expect(settingsTable.get('fxSource')?.value).toBe('DAILY_SPOT')
+  })
+
+  it('keeps the legacy copy when IndexedDB refuses the migrated values', async () => {
+    const { useSettingsStore, LEGACY_SETTINGS_KEY } = await loadStores()
+    localStorage.setItem(LEGACY_SETTINGS_KEY, JSON.stringify({ state: { fxSource: 'DAILY_SPOT' } }))
+    dbState.failWrites = true
+
+    await useSettingsStore.getState().initializeFromDB()
+
+    expect(useSettingsStore.getState().fxSource).toBe('DAILY_SPOT')
+    expect(localStorage.getItem(LEGACY_SETTINGS_KEY)).not.toBeNull()
   })
 })
