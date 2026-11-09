@@ -5,8 +5,6 @@ import {
   buildTransactionTimeline,
   formatDateLabel,
   formatMonthYear,
-  formatCurrency,
-  formatCurrencyPrecise,
   generateSymbolColors,
   getRuleColor,
   CHART_COLORS,
@@ -77,26 +75,6 @@ describe('chartData', () => {
   describe('formatMonthYear', () => {
     it('formats date as month year', () => {
       expect(formatMonthYear('2024-01-15')).toBe('Jan 24')
-    })
-  })
-
-  describe('formatCurrency', () => {
-    it('formats positive amounts', () => {
-      expect(formatCurrency(1234)).toBe('£1,234')
-    })
-
-    it('formats negative amounts', () => {
-      expect(formatCurrency(-5000)).toBe('-£5,000')
-    })
-
-    it('formats zero', () => {
-      expect(formatCurrency(0)).toBe('£0')
-    })
-  })
-
-  describe('formatCurrencyPrecise', () => {
-    it('formats with decimal places', () => {
-      expect(formatCurrencyPrecise(1234.56)).toBe('£1,234.56')
     })
   })
 
