@@ -29,6 +29,26 @@ describe('buildCalculateReport - rejected split data', () => {
   })
 })
 
+describe('buildCalculateReport - stock splits without a ratio', () => {
+  it('warns with SPLIT_WITHOUT_RATIO and the split rows', () => {
+    const result = calculateCGT([])
+    result.dataNotices = {
+      overlappingRows: [],
+      splitConflicts: [],
+      splitsWithoutRatio: [{ id: 'f-3', symbol: 'AAPL', date: '2024-06-10', source: 'Trading 212' }],
+    }
+
+    const report = buildCalculateReport(result, {
+      taxYear: null, fxSource: 'HMRC_MONTHLY', autoSplits: false, offline: false,
+      details: false, inputs: [], warnings: [],
+    })
+    const warning = report.warnings.find(w => w.code === 'SPLIT_WITHOUT_RATIO')!
+
+    expect(warning.message).toContain('AAPL on 2024-06-10 (Trading 212)')
+    expect(warning.transactionIds).toEqual(['f-3'])
+  })
+})
+
 describe('buildCalculateReport - ISIN matching', () => {
   it('warns when tickers were matched by ISIN or one ticker has two ISINs', () => {
     const result = calculateCGT([])

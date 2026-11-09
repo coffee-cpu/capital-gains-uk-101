@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { JsDelivrSplitSource } from '../splits/splitDataSource'
 import { createMemoryCacheBackends, setCacheBackends } from '../cache'
-import { runPipeline } from '../pipeline'
+import { runPipeline, findSplitsWithoutRatio } from '../pipeline'
+import type { GenericTransaction } from '../../types/transaction'
+import type { SplitDataSource } from '../splits/splitDataSource'
 import { importCSVText } from '../import'
 
 describe('runPipeline', () => {
@@ -184,3 +186,60 @@ describe('runPipeline', () => {
     vi.restoreAllMocks()
   })
 })
+
+function tx(id: string, date: string, type: GenericTransaction['type'], extra: Partial<GenericTransaction> = {}): GenericTransaction {
+  return {
+    id, source: 'Trading 212', symbol: 'AAPL', name: null, date, type, quantity: 10, price: 100,
+    currency: 'GBP', total: 1000, fee: null, notes: null, ...extra,
+  }
+}
+
+describe('findSplitsWithoutRatio', () => {
+  const noRatio = tx('split', '2024-06-10', 'STOCK_SPLIT', { ratio: null, quantity: null, price: null, total: null })
+
+  it('reports a split row with no ratio that nothing covers', () => {
+    expect(findSplitsWithoutRatio([noRatio])).toEqual([
+      { id: 'split', symbol: 'AAPL', date: '2024-06-10', source: 'Trading 212' },
+    ])
+  })
+
+  it('reports a ratio that cannot be parsed', () => {
+    expect(findSplitsWithoutRatio([{ ...noRatio, ratio: 'two for one' }])).toHaveLength(1)
+  })
+
+  it('does not report it when a usable split for the same share is within a week', () => {
+    const covering = tx('community', '2024-06-07', 'STOCK_SPLIT', { source: 'Community', ratio: '4:1' })
+    expect(findSplitsWithoutRatio([noRatio, covering])).toEqual([])
+  })
+
+  it('still reports it when the only usable split is for another share or further away', () => {
+    const otherShare = tx('o', '2024-06-10', 'STOCK_SPLIT', { symbol: 'MSFT', ratio: '2:1' })
+    const tooFar = tx('f', '2024-06-20', 'STOCK_SPLIT', { ratio: '4:1' })
+    expect(findSplitsWithoutRatio([noRatio, otherShare, tooFar]).map(s => s.id)).toEqual(['split'])
+  })
+})
+
+describe('runPipeline - stock splits without a ratio', () => {
+  const rows = [
+    tx('buy', '2024-01-10', 'BUY'),
+    tx('split', '2024-06-10', 'STOCK_SPLIT', { ratio: null, quantity: null, price: null, total: null }),
+    tx('sell', '2024-09-10', 'SELL', { quantity: 40, price: 30, total: 1200 }),
+  ]
+
+  it('reports the split when auto-splits is off', async () => {
+    const result = await runPipeline(rows, { autoSplits: false })
+    expect(result!.dataNotices!.splitsWithoutRatio!.map(s => s.id)).toEqual(['split'])
+  })
+
+  it('does not report it when community split data covers it, and applies that ratio', async () => {
+    const source: SplitDataSource = {
+      fetchSplitsForYears: async () => [{ symbol: 'AAPL', date: '2024-06-10', ratioFrom: 1, ratioTo: 4 }],
+    }
+    const result = await runPipeline(rows, { autoSplits: true, splitSource: source })
+
+    expect(result!.dataNotices!.splitsWithoutRatio).toEqual([])
+    // 10 shares bought become 40, so the sale of 40 is fully matched
+    expect(result!.disposals[0].isIncomplete).toBe(false)
+  })
+})
+

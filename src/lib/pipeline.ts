@@ -83,6 +83,7 @@ export async function runPipeline(
     rejectedSplitRecords,
     symbolMerges,
     tickerConflicts,
+    splitsWithoutRatio: findSplitsWithoutRatio(withAutoSplits),
   }
 
   return result
@@ -108,4 +109,26 @@ function mayBeMissedSplit(record: { symbol: string; date: string }, transactions
     Math.abs(new Date(tx.date).getTime() - recordMs) <= SPLIT_MATCH_WINDOW_MS
   )
   return !coveredByBroker
+}
+
+/**
+ * Stock split rows with no usable ratio that no usable split record (the
+ * user's own, or fetched community data) covers within the same window. The
+ * split enricher can't apply them, so without this they would be skipped
+ * with no sign on screen.
+ */
+export function findSplitsWithoutRatio(
+  transactions: GenericTransaction[]
+): { id: string; symbol: string; date: string; source: string }[] {
+  const usable = transactions.filter(tx => tx.type === 'STOCK_SPLIT' && hasUsableRatio(tx.ratio))
+  return transactions
+    .filter(tx => tx.type === 'STOCK_SPLIT' && !hasUsableRatio(tx.ratio))
+    .filter(tx => {
+      const ms = new Date(tx.date).getTime()
+      return !usable.some(split =>
+        split.symbol === tx.symbol &&
+        Math.abs(new Date(split.date).getTime() - ms) <= SPLIT_MATCH_WINDOW_MS
+      )
+    })
+    .map(({ id, symbol, date, source }) => ({ id, symbol, date, source }))
 }
