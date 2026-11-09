@@ -141,18 +141,27 @@ export async function ensureDatabaseCompatible(): Promise<void> {
 
     if (needsReset) {
       console.warn('Database schema incompatible, clearing and recreating:', errorMessage)
-      // FX rates and split data are re-fetchable, but user transactions are
-      // not — salvage them before deleting the incompatible database
-      const salvaged = await salvageTransactions()
+      // FX rates and split data are re-fetchable, but user transactions and
+      // settings are not — salvage them before deleting the incompatible
+      // database. Losing settings would silently switch the FX source back
+      // to the default, changing the figures.
+      const salvaged = await salvageUserData()
       await db.delete()
       // Reopen with fresh schema
       await db.open()
-      if (salvaged.length > 0) {
+      if (salvaged.transactions.length > 0) {
         try {
-          await db.transactions.bulkPut(salvaged)
-          console.warn(`Restored ${salvaged.length} transactions after database reset`)
+          await db.transactions.bulkPut(salvaged.transactions)
+          console.warn(`Restored ${salvaged.transactions.length} transactions after database reset`)
         } catch (restoreError) {
           console.error('Failed to restore transactions after database reset:', restoreError)
+        }
+      }
+      if (salvaged.settings.length > 0) {
+        try {
+          await db.settings.bulkPut(salvaged.settings)
+        } catch (restoreError) {
+          console.error('Failed to restore settings after database reset:', restoreError)
         }
       }
     } else {
@@ -163,23 +172,32 @@ export async function ensureDatabaseCompatible(): Promise<void> {
 }
 
 /**
- * Best-effort read of the transactions table from an incompatible database.
+ * Best-effort read of the transactions and settings tables from an incompatible database.
  *
  * Opens the existing database in Dexie's dynamic mode (no schema declaration),
  * which works regardless of how the stored schema diverges from the current
- * code. Returns an empty array if anything fails.
+ * code. A table that can't be read comes back empty.
  */
-async function salvageTransactions(): Promise<GenericTransaction[]> {
+async function salvageUserData(): Promise<{ transactions: GenericTransaction[]; settings: UserSetting[] }> {
   const legacyDb = new Dexie('cgt-visualizer')
   try {
     await legacyDb.open()
-    if (!legacyDb.tables.some(t => t.name === 'transactions')) {
-      return []
+    const readTable = async <T>(name: string): Promise<T[]> => {
+      if (!legacyDb.tables.some(t => t.name === name)) return []
+      try {
+        return await legacyDb.table<T>(name).toArray()
+      } catch (error) {
+        console.warn(`Could not salvage ${name} from incompatible database:`, error)
+        return []
+      }
     }
-    return await legacyDb.table<GenericTransaction, string>('transactions').toArray()
+    return {
+      transactions: await readTable<GenericTransaction>('transactions'),
+      settings: await readTable<UserSetting>('settings'),
+    }
   } catch (error) {
-    console.warn('Could not salvage transactions from incompatible database:', error)
-    return []
+    console.warn('Could not salvage data from incompatible database:', error)
+    return { transactions: [], settings: [] }
   } finally {
     legacyDb.close()
   }

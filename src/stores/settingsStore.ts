@@ -18,12 +18,6 @@ interface SettingsState {
   initializeFromDB: () => Promise<void>
 }
 
-/**
- * Settings were persisted to localStorage under this key (Zustand persist)
- * before IndexedDB became their only store. Read once to migrate them.
- */
-export const LEGACY_SETTINGS_KEY = 'cgt-settings'
-
 let initialization: Promise<void> | null = null
 
 /** Settings the user changed while they were loading; loading must not overwrite them */
@@ -75,51 +69,14 @@ async function loadSettings(): Promise<StoredSettings> {
   } catch (error) {
     console.error('Failed to load settings from IndexedDB:', error)
   }
-
-  return { ...(await migrateLegacySettings(settings)), ...settings }
+  return settings
 }
 
-/**
- * Move settings that exist only in the legacy localStorage copy into
- * IndexedDB, then drop the localStorage copy. IndexedDB wins where both exist.
- */
-async function migrateLegacySettings(stored: StoredSettings): Promise<StoredSettings> {
-  const legacy: StoredSettings = {}
-  try {
-    const raw = localStorage.getItem(LEGACY_SETTINGS_KEY)
-    if (!raw) return {}
-    const parsed: unknown = JSON.parse(raw)
-    const state = (parsed as { state?: Record<string, unknown> } | null)?.state ?? {}
-    if (isFXSource(state.fxSource)) legacy.fxSource = state.fxSource
-    if (typeof state.autoSplitsEnabled === 'boolean') legacy.autoSplitsEnabled = state.autoSplitsEnabled
-  } catch {
-    return {}
-  }
-
-  // Only drop the legacy copy once everything it holds is in IndexedDB
-  let saved = true
-  if (legacy.fxSource && !stored.fxSource) saved = await saveSetting('fxSource', legacy.fxSource)
-  if (legacy.autoSplitsEnabled !== undefined && stored.autoSplitsEnabled === undefined) {
-    saved = (await saveSetting('autoSplitsEnabled', String(legacy.autoSplitsEnabled))) && saved
-  }
-  if (saved) {
-    try {
-      localStorage.removeItem(LEGACY_SETTINGS_KEY)
-    } catch {
-      // Storage unavailable: the copy is read again next time
-    }
-  }
-  return legacy
-}
-
-/** Persist one setting; false if IndexedDB refused the write */
-async function saveSetting(key: string, value: string): Promise<boolean> {
+async function saveSetting(key: string, value: string): Promise<void> {
   try {
     await db.settings.put({ key, value, updatedAt: new Date().toISOString() })
-    return true
   } catch (error) {
     console.error(`Failed to persist setting ${key} to IndexedDB:`, error)
-    return false
   }
 }
 

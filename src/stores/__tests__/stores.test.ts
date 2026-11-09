@@ -1,17 +1,12 @@
-// @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { CGTCalculationResult } from '../../types/cgt'
 
 const settingsTable = new Map<string, { key: string; value: string }>()
-const dbState = { failWrites: false }
 vi.mock('../../lib/db', () => ({
   db: {
     settings: {
       get: async (key: string) => settingsTable.get(key),
-      put: async (row: { key: string; value: string }) => {
-        if (dbState.failWrites) throw new Error('write failed')
-        settingsTable.set(row.key, row)
-      },
+      put: async (row: { key: string; value: string }) => { settingsTable.set(row.key, row) },
     },
   },
 }))
@@ -34,14 +29,12 @@ function results(...taxYears: string[]): CGTCalculationResult {
 async function loadStores() {
   vi.resetModules()
   const { useTransactionStore } = await import('../transactionStore')
-  const { useSettingsStore, LEGACY_SETTINGS_KEY } = await import('../settingsStore')
-  return { useTransactionStore, useSettingsStore, LEGACY_SETTINGS_KEY }
+  const { useSettingsStore } = await import('../settingsStore')
+  return { useTransactionStore, useSettingsStore }
 }
 
 beforeEach(() => {
-  dbState.failWrites = false
   settingsTable.clear()
-  localStorage.clear()
   processTransactionsFromDB.mockReset()
 })
 
@@ -114,29 +107,6 @@ describe('settingsStore', () => {
     })
   })
 
-  it('moves settings found only in legacy localStorage into IndexedDB', async () => {
-    const { useSettingsStore, LEGACY_SETTINGS_KEY } = await loadStores()
-    localStorage.setItem(LEGACY_SETTINGS_KEY, JSON.stringify({ state: { fxSource: 'DAILY_SPOT', autoSplitsEnabled: false }, version: 0 }))
-
-    await useSettingsStore.getState().initializeFromDB()
-
-    expect(useSettingsStore.getState().fxSource).toBe('DAILY_SPOT')
-    expect(useSettingsStore.getState().autoSplitsEnabled).toBe(false)
-    expect(settingsTable.get('fxSource')?.value).toBe('DAILY_SPOT')
-    expect(settingsTable.get('autoSplitsEnabled')?.value).toBe('false')
-    expect(localStorage.getItem(LEGACY_SETTINGS_KEY)).toBeNull()
-  })
-
-  it('prefers IndexedDB over the legacy copy', async () => {
-    settingsTable.set('fxSource', { key: 'fxSource', value: 'HMRC_MONTHLY' })
-    const { useSettingsStore, LEGACY_SETTINGS_KEY } = await loadStores()
-    localStorage.setItem(LEGACY_SETTINGS_KEY, JSON.stringify({ state: { fxSource: 'DAILY_SPOT' } }))
-
-    await useSettingsStore.getState().initializeFromDB()
-
-    expect(useSettingsStore.getState().fxSource).toBe('HMRC_MONTHLY')
-  })
-
   it('keeps a setting the user changes while settings are loading', async () => {
     settingsTable.set('fxSource', { key: 'fxSource', value: 'HMRC_YEARLY_AVG' })
     const { useSettingsStore } = await loadStores()
@@ -147,16 +117,5 @@ describe('settingsStore', () => {
 
     expect(useSettingsStore.getState().fxSource).toBe('DAILY_SPOT')
     expect(settingsTable.get('fxSource')?.value).toBe('DAILY_SPOT')
-  })
-
-  it('keeps the legacy copy when IndexedDB refuses the migrated values', async () => {
-    const { useSettingsStore, LEGACY_SETTINGS_KEY } = await loadStores()
-    localStorage.setItem(LEGACY_SETTINGS_KEY, JSON.stringify({ state: { fxSource: 'DAILY_SPOT' } }))
-    dbState.failWrites = true
-
-    await useSettingsStore.getState().initializeFromDB()
-
-    expect(useSettingsStore.getState().fxSource).toBe('DAILY_SPOT')
-    expect(localStorage.getItem(LEGACY_SETTINGS_KEY)).not.toBeNull()
   })
 })

@@ -134,7 +134,8 @@ The `enrichTransactions()` function (in `index.ts`) uses the `EnrichmentEngine` 
     the auto-splits toggle) calls `recalculate()`, which re-runs the pipeline on IndexedDB with the current
     settings; when runs overlap only the latest is applied. Don't call `processTransactionsFromDB` from components
   - `settingsStore.ts` holds the FX source and auto-splits toggle. IndexedDB (`settings` table) is their only
-    persisted copy; settings from the old localStorage copy (`cgt-settings`) are migrated once
+    persisted copy (older versions also kept one in localStorage, which is no longer read). A database reset
+    after a schema upgrade error keeps settings as well as transactions
   - `helpPanelStore.ts` holds the help panel's open state and topic
 - **Persistence**: Dexie database (`src/lib/db.ts`, schema v5) with five tables:
   - `transactions`: Indexed by id, source, symbol, date, type
