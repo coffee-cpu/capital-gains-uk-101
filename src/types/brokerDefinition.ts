@@ -32,8 +32,12 @@ export interface SkippedRow {
   /**
    * Row number as shown in a spreadsheet, with the header as row 1. Completely
    * empty lines are removed before parsing, so rows after one are reported one lower.
+   * Absent when a parsed transaction failed validation after parsing, which
+   * no longer knows its row; `transactionId` names it instead.
    */
-  row: number
+  row?: number
+  /** ID of a parsed transaction that failed schema validation */
+  transactionId?: string
   reason: string
 }
 

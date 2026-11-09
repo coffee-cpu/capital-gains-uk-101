@@ -1,4 +1,4 @@
-import { EnrichedTransaction } from '../../../types/transaction'
+import { EnrichedTransaction, FX_STATUS } from '../../../types/transaction'
 import { FXSource } from '../../../types/fxSource'
 import { FXManager, convertToGBP } from '../../fx'
 import { Enricher } from '../types'
@@ -73,7 +73,7 @@ export class FxEnricher implements Enricher {
             split_adjusted_price_gbp: null,
             value_gbp: null,
             fee_gbp: null,
-            fx_source: 'Not supported',
+            fx_source: FX_STATUS.NOT_SUPPORTED,
             fx_error: cryptoErrorMessage,
           })
           continue
@@ -109,7 +109,7 @@ export class FxEnricher implements Enricher {
           grossDividend_gbp: grossDividendGbp,
           withholdingTax_gbp: withholdingTaxGbp,
           // The rate's own attribution (e.g. gov.uk or the 2015-2020 archive)
-          fx_source: tx.currency === 'GBP' ? 'Native GBP' : fxResult.source,
+          fx_source: tx.currency === 'GBP' ? FX_STATUS.NATIVE_GBP : fxResult.source,
           fx_error: null,
         })
       } catch (error) {
@@ -126,7 +126,7 @@ export class FxEnricher implements Enricher {
           split_adjusted_price_gbp: null,
           value_gbp: null,
           fee_gbp: null,
-          fx_source: 'Failed',
+          fx_source: FX_STATUS.FAILED,
           fx_error: errorMessage,
         })
       }

@@ -75,7 +75,7 @@ export const EnrichedTransactionSchema = GenericTransactionSchema.extend({
   split_adjusted_price_gbp: z.number().nullable().optional().describe('Split-adjusted price per unit in GBP (price_gbp adjusted for stock splits)'),
   value_gbp: z.number().nullable().describe('Total value in GBP'),
   fee_gbp: z.number().nullable().describe('Fee amount in GBP'),
-  fx_source: z.string().describe('Source of FX rate (e.g. HMRC Monthly Exchange Rates)'),
+  fx_source: z.string().describe('Source of FX rate: the provider attribution (e.g. HMRC Monthly Exchange Rates) or one of FX_STATUS'),
   fx_error: z.string().nullable().optional().describe('Error message if FX rate fetch failed'),
 
   // Dividend withholding tax in GBP (for SA106 reporting)
@@ -88,6 +88,21 @@ export const EnrichedTransactionSchema = GenericTransactionSchema.extend({
 })
 
 export type EnrichedTransaction = z.infer<typeof EnrichedTransactionSchema>
+
+/**
+ * `fx_source` values that describe the conversion's status rather than name
+ * a rate provider (which gives its own attribution text)
+ */
+export const FX_STATUS = {
+  /** Set before the FX pass runs */
+  PENDING: 'Pending',
+  /** GBP transaction: no conversion needed */
+  NATIVE_GBP: 'Native GBP',
+  /** The rate lookup failed; see fx_error */
+  FAILED: 'Failed',
+  /** Not a fiat currency (e.g. crypto-to-crypto trades) */
+  NOT_SUPPORTED: 'Not supported',
+} as const
 
 /**
  * Transaction type enum for easier use

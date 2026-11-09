@@ -10,7 +10,7 @@ import { getEffectiveQuantity, isAcquisition, isDisposal, calculateGrossProceeds
 import { netSameDayGains, splitGainsAndLosses } from './sa108'
 import { calculateTaxYearFeatures } from './taxYearFeatures/registry'
 import { getAnnualExemptAmount, getDividendAllowance } from './allowances'
-import { withheldAmountGbp } from './withholding'
+import { summarizeDividends, summarizeInterest } from './income'
 
 /**
  * CGT Calculation Engine
@@ -96,16 +96,7 @@ export function calculateCGT(
  * Groups matchings by disposal transaction and calculates gain/loss
  */
 function createDisposalRecords(matchings: MatchingResult[]): DisposalRecord[] {
-  // Group matchings by disposal transaction ID
-  const disposalMap = new Map<string, MatchingResult[]>()
-
-  for (const matching of matchings) {
-    const disposalId = matching.disposal.id
-    if (!disposalMap.has(disposalId)) {
-      disposalMap.set(disposalId, [])
-    }
-    disposalMap.get(disposalId)!.push(matching)
-  }
+  const disposalMap = groupBy(matchings, matching => matching.disposal.id)
 
   // Create disposal record for each unique disposal
   const records: DisposalRecord[] = []
@@ -177,156 +168,86 @@ function generateTaxYearSummaries(
   disposals: DisposalRecord[],
   transactions: EnrichedTransaction[]
 ): TaxYearSummary[] {
-  // Group disposals by tax year
-  const byTaxYear = new Map<string, DisposalRecord[]>()
+  const disposalsByYear = groupBy(disposals, d => d.taxYear)
+  const transactionsByYear = groupBy(transactions, tx => tx.tax_year)
+  const allTaxYears = new Set([...disposalsByYear.keys(), ...transactionsByYear.keys()])
 
-  for (const disposal of disposals) {
-    const taxYear = disposal.taxYear
-    if (!byTaxYear.has(taxYear)) {
-      byTaxYear.set(taxYear, [])
-    }
-    byTaxYear.get(taxYear)!.push(disposal)
-  }
+  const summaries = [...allTaxYears].map(taxYear => summarizeTaxYear(
+    taxYear,
+    disposalsByYear.get(taxYear) ?? [],
+    transactionsByYear.get(taxYear) ?? []
+  ))
 
-  // Get all unique tax years from both disposals and transactions
-  const allTaxYears = new Set<string>()
-  disposals.forEach(d => allTaxYears.add(d.taxYear))
-  transactions.forEach(tx => allTaxYears.add(tx.tax_year))
-
-  // Create summary for each tax year
-  const summaries: TaxYearSummary[] = []
-
-  for (const taxYear of allTaxYears) {
-    const { startDate, endDate } = getTaxYearBounds(taxYear)
-    const yearDisposals = byTaxYear.get(taxYear) || []
-
-    // Calculate CGT totals. Same-day disposals of one asset count as one
-    // disposal, with their gains and losses netted (TCGA92/S105(1)(a)), so
-    // these match the SA108 figures in the PDF and CLI.
-    const sameDayNets = netSameDayGains(yearDisposals)
-    const totalDisposals = sameDayNets.length
-    const totalProceeds = yearDisposals.reduce((sum, d) => sum + d.proceedsGbp, 0)
-    const totalAllowableCosts = yearDisposals.reduce((sum, d) => sum + d.allowableCostsGbp, 0)
-
-    const { gainsGbp: totalGains, lossesGbp } = splitGainsAndLosses(sameDayNets)
-    const totalLosses = -lossesGbp || 0 // avoid -0 when there are no losses
-
-    const netGainOrLoss = totalGains + totalLosses
-
-    // Get annual exempt amount for this tax year
-    const annualExemptAmount = getAnnualExemptAmount(taxYear)
-
-    // Calculate taxable gain (cannot be negative)
-    const taxableGain = Math.max(0, netGainOrLoss - annualExemptAmount)
-
-    // Calculate dividend totals for this tax year
-    const yearDividends = transactions.filter(
-      tx => tx.tax_year === taxYear && tx.type === 'DIVIDEND'
-    )
-    const totalDividends = yearDividends.length
-
-    // Gross dividends: use grossDividend_gbp when available (IB/Freetrade),
-    // otherwise value_gbp (Schwab dividends where total IS gross)
-    const grossDividendsGbp = yearDividends.reduce(
-      (sum, tx) => sum + (tx.grossDividend_gbp ?? tx.value_gbp ?? 0),
-      0
-    )
-
-    // Withholding tax from two sources:
-    // 1. withholdingTax_gbp on DIVIDEND (IB/Freetrade set this directly)
-    // 2. TAX_ON_DIVIDEND transactions (Schwab NRA Tax Adj, IB Foreign Tax
-    //    Withholding), counted via withheldAmountGbp
-    const dividendWithholdingFromIncome = yearDividends.reduce(
-      (sum, tx) => sum + (tx.withholdingTax_gbp ?? 0),
-      0
-    )
-    const yearTaxOnDividend = transactions.filter(
-      tx => tx.tax_year === taxYear && tx.type === 'TAX_ON_DIVIDEND'
-    )
-    const dividendWithholdingFromTax = yearTaxOnDividend.reduce(
-      (sum, tx) => sum + withheldAmountGbp(tx),
-      0
-    )
-    const totalWithholdingTaxGbp = dividendWithholdingFromIncome + dividendWithholdingFromTax
-
-    // Net dividends = gross - all withholding
-    const totalDividendsGbp = grossDividendsGbp - totalWithholdingTaxGbp
-
-    // Get dividend allowance for this tax year
-    const dividendAllowance = getDividendAllowance(taxYear)
-
-    // Calculate interest totals for this tax year
-    const yearInterest = transactions.filter(
-      tx => tx.tax_year === taxYear && tx.type === 'INTEREST'
-    )
-    const totalInterest = yearInterest.length
-
-    // Same pattern for interest withholding
-    const interestWithholdingFromIncome = yearInterest.reduce(
-      (sum, tx) => sum + (tx.withholdingTax_gbp ?? 0),
-      0
-    )
-    const yearTaxOnInterest = transactions.filter(
-      tx => tx.tax_year === taxYear && tx.type === 'TAX_ON_INTEREST'
-    )
-    // Same sign handling as TAX_ON_DIVIDEND
-    const interestWithholdingFromTax = yearTaxOnInterest.reduce(
-      (sum, tx) => sum + withheldAmountGbp(tx),
-      0
-    )
-    const interestWithholdingTaxGbp = interestWithholdingFromIncome + interestWithholdingFromTax
-
-    // Gross interest: value_gbp + any withholding already subtracted by parser (IB/Freetrade)
-    const grossInterestGbp = yearInterest.reduce(
-      (sum, tx) => sum + (tx.value_gbp || 0),
-      0
-    ) + interestWithholdingFromIncome
-
-    // Net interest = gross - all withholding
-    const totalInterestGbp = grossInterestGbp - interestWithholdingTaxGbp
-
-    // Count incomplete disposals (those with missing acquisition data)
-    const incompleteDisposals = yearDisposals.filter(d => d.isIncomplete).length
-    const missingFxDisposals = yearDisposals.filter(d => d.missingFx).length
-
-    // Create the summary (without features first)
-    const summary: TaxYearSummary = {
-      taxYear,
-      startDate,
-      endDate,
-      disposals: yearDisposals,
-      totalDisposals,
-      totalProceedsGbp: totalProceeds,
-      totalAllowableCostsGbp: totalAllowableCosts,
-      totalGainsGbp: totalGains,
-      totalLossesGbp: totalLosses,
-      netGainOrLossGbp: netGainOrLoss,
-      annualExemptAmount,
-      taxableGainGbp: taxableGain,
-      totalDividends,
-      totalDividendsGbp,
-      grossDividendsGbp,
-      totalWithholdingTaxGbp,
-      dividendAllowance,
-      totalInterest,
-      totalInterestGbp,
-      grossInterestGbp,
-      interestWithholdingTaxGbp,
-      incompleteDisposals,
-      missingFxDisposals,
-    }
-
-    // Calculate tax year-specific features
-    const features = calculateTaxYearFeatures(summary, yearDisposals)
-    if (Object.keys(features).length > 0) {
-      summary.features = features
-    }
-
-    summaries.push(summary)
-  }
-
-  // Sort by tax year (most recent first)
+  // Most recent first
   return summaries.sort((a, b) => b.taxYear.localeCompare(a.taxYear))
+}
+
+/**
+ * Summarise one tax year: capital gains, then dividend and interest income
+ */
+function summarizeTaxYear(
+  taxYear: string,
+  yearDisposals: DisposalRecord[],
+  yearTransactions: EnrichedTransaction[]
+): TaxYearSummary {
+  const { startDate, endDate } = getTaxYearBounds(taxYear)
+
+  // Same-day disposals of one asset count as one disposal, with their gains
+  // and losses netted (TCGA92/S105(1)(a)), so these match the SA108 figures
+  // in the PDF and CLI.
+  const sameDayNets = netSameDayGains(yearDisposals)
+  const { gainsGbp: totalGains, lossesGbp } = splitGainsAndLosses(sameDayNets)
+  const totalLosses = -lossesGbp || 0 // avoid -0 when there are no losses
+  const netGainOrLoss = totalGains + totalLosses
+  const annualExemptAmount = getAnnualExemptAmount(taxYear)
+
+  const dividends = summarizeDividends(yearTransactions)
+  const interest = summarizeInterest(yearTransactions)
+
+  const summary: TaxYearSummary = {
+    taxYear,
+    startDate,
+    endDate,
+    disposals: yearDisposals,
+    totalDisposals: sameDayNets.length,
+    totalProceedsGbp: yearDisposals.reduce((sum, d) => sum + d.proceedsGbp, 0),
+    totalAllowableCostsGbp: yearDisposals.reduce((sum, d) => sum + d.allowableCostsGbp, 0),
+    totalGainsGbp: totalGains,
+    totalLossesGbp: totalLosses,
+    netGainOrLossGbp: netGainOrLoss,
+    annualExemptAmount,
+    // Taxable gain cannot be negative
+    taxableGainGbp: Math.max(0, netGainOrLoss - annualExemptAmount),
+    totalDividends: dividends.count,
+    totalDividendsGbp: dividends.netGbp,
+    grossDividendsGbp: dividends.grossGbp,
+    totalWithholdingTaxGbp: dividends.withholdingGbp,
+    dividendAllowance: getDividendAllowance(taxYear),
+    totalInterest: interest.count,
+    totalInterestGbp: interest.netGbp,
+    grossInterestGbp: interest.grossGbp,
+    interestWithholdingTaxGbp: interest.withholdingGbp,
+    incompleteDisposals: yearDisposals.filter(d => d.isIncomplete).length,
+    missingFxDisposals: yearDisposals.filter(d => d.missingFx).length,
+  }
+
+  const features = calculateTaxYearFeatures(summary, yearDisposals)
+  if (Object.keys(features).length > 0) {
+    summary.features = features
+  }
+
+  return summary
+}
+
+function groupBy<T>(items: T[], keyOf: (item: T) => string): Map<string, T[]> {
+  const groups = new Map<string, T[]>()
+  for (const item of items) {
+    const key = keyOf(item)
+    const group = groups.get(key)
+    if (group) group.push(item)
+    else groups.set(key, [item])
+  }
+  return groups
 }
 
 /**
