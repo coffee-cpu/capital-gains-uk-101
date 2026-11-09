@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { normalizeRevolutTransactions } from '../revolut'
 import { TransactionType } from '../../../types/transaction'
+import type { SkippedRow } from '../../../types/brokerDefinition'
 
 describe('Revolut Parser', () => {
   describe('normalizeRevolutTransactions', () => {
@@ -341,7 +342,7 @@ describe('Revolut Parser', () => {
       expect(result[1].total).toBe(-617.11)
     })
 
-    it('should default to USD if no currency specified', () => {
+    it('skips a row with amounts but no currency instead of guessing one', () => {
       const rows = [
         {
           'Date': '2024-01-15T10:30:45.123Z',
@@ -354,11 +355,12 @@ describe('Revolut Parser', () => {
           'FX Rate': '1.2751',
         },
       ]
+      const skipped: SkippedRow[] = []
 
-      const result = normalizeRevolutTransactions(rows, 'test-file')
+      const result = normalizeRevolutTransactions(rows, 'test-file', skipped)
 
-      expect(result).toHaveLength(1)
-      expect(result[0].currency).toBe('USD')
+      expect(result).toEqual([])
+      expect(skipped).toEqual([{ row: 2, reason: 'no currency in the Currency column or the amount' }])
     })
   })
 })
@@ -392,5 +394,36 @@ describe('Revolut Parser - amounts with currency codes', () => {
 
     expect(tx.price).toBe(182.5)
     expect(tx.total).toBe(1871.87)
+  })
+})
+
+describe('Revolut Parser - currency', () => {
+  const row = (overrides: Record<string, string>) => ({
+    'Date': '2024-01-15T10:30:45.123Z', 'Ticker': 'SHOP', 'Type': 'BUY - MARKET', 'Quantity': '10',
+    'Price per share': '$100.00', 'Total Amount': '$1,000.00', 'Currency': 'CAD', 'FX Rate': '1.70',
+    ...overrides,
+  })
+
+  it('takes the Currency column over the "$" sign, which other dollars share', () => {
+    expect(normalizeRevolutTransactions([row({})], 'f')[0].currency).toBe('CAD')
+  })
+
+  it('falls back to a currency code or an unambiguous sign in the amount', () => {
+    expect(normalizeRevolutTransactions([row({ 'Currency': '', 'Total Amount': 'USD 1,000.00' })], 'f')[0].currency).toBe('USD')
+    expect(normalizeRevolutTransactions([row({ 'Currency': '', 'Total Amount': '£1,000.00', 'Price per share': '£100.00' })], 'f')[0].currency).toBe('GBP')
+  })
+
+  it('does not guess from "$" alone', () => {
+    const skipped: SkippedRow[] = []
+    expect(normalizeRevolutTransactions([row({ 'Currency': '' })], 'f', skipped)).toEqual([])
+    expect(skipped).toHaveLength(1)
+  })
+
+  it('uses GBP for a row with no amounts, such as a stock split', () => {
+    const [tx] = normalizeRevolutTransactions([row({
+      'Type': 'STOCK SPLIT', 'Currency': '', 'Price per share': '', 'Total Amount': '', 'Quantity': '30',
+    })], 'f')
+    expect(tx.type).toBe(TransactionType.STOCK_SPLIT)
+    expect(tx.currency).toBe('GBP')
   })
 })

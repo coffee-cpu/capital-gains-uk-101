@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { normalizeGenericTransactions } from '../generic'
 import { TransactionType } from '../../../types/transaction'
+import type { SkippedRow } from '../../../types/brokerDefinition'
 
 describe('Generic CSV Parser', () => {
   describe('normalizeGenericTransactions', () => {
@@ -336,27 +337,33 @@ describe('Generic CSV Parser', () => {
       expect(result[1].type).toBe(TransactionType.STOCK_SPLIT)
     })
 
-    it('should default to USD currency if not specified', () => {
+    it('skips a row with no currency instead of guessing one', () => {
       const rows = [
-        {
-          date: '2024-01-15',
-          type: 'BUY',
-          symbol: 'AAPL',
-          currency: '',
-          quantity: '',
-          price: '',
-          total: '',
-          fee: '',
-          split_ratio: '',
-          name: '',
-          notes: '',
-        },
+        { date: '2024-01-15', type: 'BUY', symbol: 'AAPL', currency: '', quantity: '10', price: '100', total: '1000', fee: '' },
+      ]
+      const skipped: SkippedRow[] = []
+
+      const result = normalizeGenericTransactions(rows, 'test-file', skipped)
+
+      expect(result).toEqual([])
+      expect(skipped).toEqual([{ row: 2, reason: 'missing currency (e.g. GBP or USD)' }])
+    })
+
+    it('lets a STOCK_SPLIT row leave the currency blank', () => {
+      const rows = [
+        { date: '2024-06-10', type: 'STOCK_SPLIT', symbol: 'NVDA', currency: '', split_ratio: '10:1' },
       ]
 
       const result = normalizeGenericTransactions(rows, 'test-file')
 
       expect(result).toHaveLength(1)
-      expect(result[0].currency).toBe('USD')
+      expect(result[0].currency).toBe('GBP')
+      expect(result[0].ratio).toBe('10:1')
+    })
+
+    it('reads the currency code in any letter case', () => {
+      const rows = [{ date: '2024-01-15', type: 'BUY', symbol: 'AAPL', currency: 'usd', quantity: '1', price: '1', total: '1' }]
+      expect(normalizeGenericTransactions(rows, 'test-file')[0].currency).toBe('USD')
     })
   })
 })
