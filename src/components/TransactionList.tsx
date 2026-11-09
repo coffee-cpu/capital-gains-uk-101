@@ -4,6 +4,7 @@ import { useTransactionStore, selectTransactions } from '../stores/transactionSt
 import { useHelpPanelStore } from '../stores/helpPanelStore'
 import { ClearDataButton } from './ClearDataButton'
 import { Tooltip } from './Tooltip'
+import { IssuePointer } from './IssuePointer'
 import { FXSourceSelector } from './FXSourceSelector'
 import { AutoSplitsToggle } from './AutoSplitsToggle'
 import { exportTransactionsToCSV } from '../utils/csvExport'
@@ -86,9 +87,8 @@ export function TransactionList() {
       ? sortedTransactions.filter(needsAttention)
       : sortedTransactions
 
-  // Check for FX rate errors
-  const fxErrorTransactions = transactions.filter(tx => tx.fx_error)
-  const fxErrorCount = fxErrorTransactions.length
+  const fxErrorCount = transactions.filter(tx => tx.fx_error).length
+
 
   if (isLoading) {
     return (
@@ -165,39 +165,12 @@ export function TransactionList() {
         </div>
       </div>
 
-      {/* Warning for FX rate errors */}
       {fxErrorCount > 0 && (
-        <div className="px-6 py-4 bg-red-50 border-b border-red-200">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-red-800">FX Rate Error</h3>
-              <div className="mt-2 text-sm text-red-700">
-                <p>
-                  Failed to fetch exchange rates for {fxErrorCount} transaction{fxErrorCount !== 1 ? 's' : ''}. GBP values cannot be calculated.
-                </p>
-                {/* Check if any errors are crypto-related */}
-                {fxErrorTransactions.some(tx => tx.fx_error?.includes('Crypto currency')) ? (
-                  <div className="mt-2 p-2 bg-red-100 rounded">
-                    <p className="font-medium">Crypto currency detected:</p>
-                    <p className="mt-1">
-                      Automatic FX conversion is not supported for crypto currencies. For Coinbase Pro crypto-to-crypto trades,
-                      add a <code className="bg-red-200 px-1 rounded">gbp_value</code> column to your CSV with the GBP spot price
-                      of the quote currency at the time of the trade, then re-import.
-                    </p>
-                  </div>
-                ) : (
-                  <p className="mt-1">
-                    <strong>Try a different FX source</strong> using the dropdown on the right. Some sources have limited historical data availability.
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
+        <div className="px-6 py-3 border-b border-gray-200">
+          <IssuePointer testId="fx-errors-pointer">
+            {fxErrorCount} transaction{fxErrorCount !== 1 ? 's have' : ' has'} no GBP exchange rate and {fxErrorCount !== 1 ? 'show' : 'shows'} "Error" below.
+            See "FX Rate Errors" in the Issues panel above.
+          </IssuePointer>
         </div>
       )}
 

@@ -51,7 +51,8 @@ test.describe('IssuesPanel', () => {
     await expandIssuesPanel(page)
 
     // Check for FX Rate Errors issue
-    await expect(page.getByText('FX Rate Errors')).toBeVisible()
+    // exact: the pointer above the transaction list also mentions "FX Rate Errors"
+    await expect(page.getByText('FX Rate Errors', { exact: true })).toBeVisible()
     await expect(page.getByText(/Crypto currencies require manual GBP values/i)).toBeVisible()
   })
 
