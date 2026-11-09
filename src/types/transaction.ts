@@ -75,7 +75,7 @@ export const EnrichedTransactionSchema = GenericTransactionSchema.extend({
   split_adjusted_price_gbp: z.number().nullable().optional().describe('Split-adjusted price per unit in GBP (price_gbp adjusted for stock splits)'),
   value_gbp: z.number().nullable().describe('Total value in GBP'),
   fee_gbp: z.number().nullable().describe('Fee amount in GBP'),
-  fx_source: z.string().describe('Source of FX rate (e.g. HMRC Monthly Exchange Rates)'),
+  fx_source: z.string().describe('Source of FX rate: the provider attribution (e.g. HMRC Monthly Exchange Rates) or one of FX_STATUS'),
   fx_error: z.string().nullable().optional().describe('Error message if FX rate fetch failed'),
 
   // Dividend withholding tax in GBP (for SA106 reporting)
@@ -88,6 +88,21 @@ export const EnrichedTransactionSchema = GenericTransactionSchema.extend({
 })
 
 export type EnrichedTransaction = z.infer<typeof EnrichedTransactionSchema>
+
+/**
+ * `fx_source` values that describe the conversion's status rather than name
+ * a rate provider (which gives its own attribution text)
+ */
+export const FX_STATUS = {
+  /** Set before the FX pass runs */
+  PENDING: 'Pending',
+  /** GBP transaction: no conversion needed */
+  NATIVE_GBP: 'Native GBP',
+  /** The rate lookup failed; see fx_error */
+  FAILED: 'Failed',
+  /** Not a fiat currency (e.g. crypto-to-crypto trades) */
+  NOT_SUPPORTED: 'Not supported',
+} as const
 
 /**
  * Transaction type enum for easier use
@@ -115,18 +130,17 @@ export const TransactionType = {
 } as const
 
 /**
- * Gain group type enum
+ * The HMRC matching rule that matched a disposal to its acquisitions
  */
-export const GainGroup = {
+export const MatchingRule = {
   SAME_DAY: 'SAME_DAY',
   THIRTY_DAY: '30_DAY',
   SECTION_104: 'SECTION_104',
   SHORT_SELL: 'SHORT_SELL',
-  NONE: 'NONE',
 } as const
 
-/** Type alias for GainGroup values */
-export type GainGroupType = typeof GainGroup[keyof typeof GainGroup]
+/** Type alias for MatchingRule values */
+export type MatchingRule = typeof MatchingRule[keyof typeof MatchingRule]
 
 /**
  * Stock Split Event

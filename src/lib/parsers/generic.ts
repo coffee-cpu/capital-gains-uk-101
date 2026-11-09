@@ -1,5 +1,5 @@
 import { GenericTransaction, TransactionType } from '../../types/transaction'
-import { RawCSVRow } from '../../types/broker'
+import { RawCSVRow, BrokerType } from '../../types/broker'
 import { SkippedRow } from '../../types/brokerDefinition'
 import { parseNumber } from './parsingUtils'
 
@@ -104,7 +104,7 @@ function normalizeGenericRow(
 
   return {
     id: `${fileId}-${rowIndex}`,
-    source: 'Generic CSV',
+    source: BrokerType.GENERIC,
     symbol,
     name,
     date: dateStr,

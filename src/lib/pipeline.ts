@@ -74,11 +74,9 @@ export async function runPipeline(
   const result = calculateCGT(enriched)
 
   // Report data choices that change the figures, so the UI and CLI can show them
-  const rejectedSplitRecords = source instanceof JsDelivrSplitSource
-    ? source.rejectedRecords
-        .filter(r => mayBeMissedSplit(r, deduplicated))
-        .map(({ symbol, date, reason }) => ({ symbol, date, reason }))
-    : []
+  const rejectedSplitRecords = (source.rejectedRecords ?? [])
+    .filter(r => mayBeMissedSplit(r, deduplicated))
+    .map(({ symbol, date, reason }) => ({ symbol, date, reason }))
   result.dataNotices = {
     overlappingRows,
     splitConflicts: findSplitConflicts(withAutoSplits),

@@ -1,4 +1,4 @@
-import { GenericTransaction, EnrichedTransaction } from '../../types/transaction'
+import { GenericTransaction, EnrichedTransaction, FX_STATUS } from '../../types/transaction'
 import { Enricher } from './types'
 
 /**
@@ -55,7 +55,7 @@ export class EnrichmentEngine {
       price_gbp: null,
       value_gbp: null,
       fee_gbp: null,
-      fx_source: 'Pending',
+      fx_source: FX_STATUS.PENDING,
       fx_error: null,
       // Tax year and CGT matching (enrichment pass 3)
       tax_year: '',

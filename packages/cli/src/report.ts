@@ -1,9 +1,8 @@
 import { CGTCalculationResult, DisposalRecord, Section104Pool, TaxYearSummary } from '../../../src/types/cgt'
 import { FXSource, FXSourceAttributions } from '../../../src/types/fxSource'
 import { BrokerType } from '../../../src/types/broker'
-import { GainGroupType } from '../../../src/types/transaction'
+import { MatchingRule } from '../../../src/types/transaction'
 import { getEffectiveQuantity, QUANTITY_EPSILON } from '../../../src/lib/cgt/utils'
-import type { CGTRateChange2024Data } from '../../../src/lib/cgt/taxYearFeatures/cgtRateChange2024'
 import { sa108Rows, Sa108Category, Sa108Row } from '../../../src/lib/cgt/sa108'
 import { combineFxAttributions } from '../../../src/lib/fx/attribution'
 import { CLI_NAME, CLI_VERSION, DISCLAIMER } from './meta'
@@ -14,7 +13,7 @@ import { CLI_NAME, CLI_VERSION, DISCLAIMER } from './meta'
  */
 export const SCHEMA_VERSION = 1
 
-export type MatchRule = 'same-day' | '30-day' | 'section-104' | 'short-sell' | 'none'
+export type MatchRule = 'same-day' | '30-day' | 'section-104' | 'short-sell'
 
 export interface ReportWarning {
   code:
@@ -174,12 +173,11 @@ export interface BuildReportOptions {
   warnings: ReportWarning[]
 }
 
-const RULE_NAMES: Record<GainGroupType, MatchRule> = {
+const RULE_NAMES: Record<MatchingRule, MatchRule> = {
   SAME_DAY: 'same-day',
   '30_DAY': '30-day',
   SECTION_104: 'section-104',
   SHORT_SELL: 'short-sell',
-  NONE: 'none',
 }
 
 /**
@@ -314,7 +312,7 @@ function toTaxYearReport(summary: TaxYearSummary): TaxYearReport {
     },
   }
 
-  const rateChange = summary.features?.['cgt-rate-change-2024'] as CGTRateChange2024Data | undefined
+  const rateChange = summary.features?.['cgt-rate-change-2024']
   if (rateChange) {
     report.rateChange2024 = {
       rateChangeDate: rateChange.rateChangeDate,

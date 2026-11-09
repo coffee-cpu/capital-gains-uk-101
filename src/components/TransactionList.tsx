@@ -1,5 +1,7 @@
+import { COMMUNITY_SPLIT_SOURCE } from '../types/broker'
 import { useMemo, useState } from 'react'
-import { useTransactionStore } from '../stores/transactionStore'
+import { useTransactionStore, selectTransactions } from '../stores/transactionStore'
+import { useHelpPanelStore } from '../stores/helpPanelStore'
 import { ClearDataButton } from './ClearDataButton'
 import { Tooltip } from './Tooltip'
 import { FXSourceSelector } from './FXSourceSelector'
@@ -7,6 +9,8 @@ import { AutoSplitsToggle } from './AutoSplitsToggle'
 import { exportTransactionsToCSV } from '../utils/csvExport'
 import type { HelpContext } from '../utils/helpContent'
 import { isAcquisition, isDisposal, getUnitLabel } from '../lib/cgt/utils'
+import { buildBadgeIndex, buildCGTBadges } from '../lib/cgtBadges'
+import { formatQuantity } from '../utils/quantity'
 import { formatGbp } from '../utils/currency'
 
 // Helper to get currency symbol
@@ -37,55 +41,24 @@ function formatFxDate(date: string, fxSource: string): string {
 }
 
 export function TransactionList() {
-  const transactions = useTransactionStore((state) => state.transactions)
+  const transactions = useTransactionStore(selectTransactions)
   const isLoading = useTransactionStore((state) => state.isLoading)
-  const getDisposals = useTransactionStore((state) => state.getDisposals)
   const cgtResults = useTransactionStore((state) => state.cgtResults)
-  const getSection104Pools = useTransactionStore((state) => state.getSection104Pools)
-  const toggleHelpPanelWithContext = useTransactionStore((state) => state.toggleHelpPanelWithContext)
+  const toggleHelpPanelWithContext = useHelpPanelStore((state) => state.toggleWithContext)
   const [showFxInfo, setShowFxInfo] = useState(false)
   const [hoveredMatchGroup, setHoveredMatchGroup] = useState<string | null>(null)
   const [filterMode, setFilterMode] = useState<'all' | 'attention'>('all')
 
-  // Get disposal records and Section 104 pools
-  const disposals = getDisposals()
-  const section104Pools = getSection104Pools()
+  // Lookups for each row's CGT badges, built once per calculation
+  const badgeIndex = useMemo(
+    () => buildBadgeIndex(cgtResults?.disposals ?? [], cgtResults?.section104Pools ?? new Map()),
+    [cgtResults]
+  )
 
-  // Helper to get help context for a badge label
-  const getContextForBadge = (label: string): HelpContext => {
-    if (label === 'Same Day') return 'same-day'
-    if (label === '30-Day') return '30-day'
-    if (label === 'Section 104') return 'section104'
-    if (label === 'Incomplete') return 'incomplete'
-    return 'default'
-  }
-
-  // Handle badge click - toggle help panel with context
-  const handleBadgeClick = (e: React.MouseEvent, badgeLabel: string) => {
+  // Badge click: toggle the help panel on that rule
+  const handleBadgeClick = (e: React.MouseEvent, context: HelpContext) => {
     e.stopPropagation() // Prevent click from bubbling to document (which would close the panel)
-    const context = getContextForBadge(badgeLabel)
     toggleHelpPanelWithContext(context)
-  }
-
-  // Helper to find disposal record for a transaction
-  const getDisposalForTransaction = (txId: string) => {
-    return disposals.find(d => d.disposal.id === txId)
-  }
-
-  // Helper to get pool details for a BUY transaction
-  const getPoolDetailsForBuy = (txId: string, symbol: string) => {
-    const pool = section104Pools.get(symbol)
-    if (!pool || !pool.history) return null
-
-    const historyEntry = pool.history.find(h => h.transactionId === txId && h.type === 'BUY')
-    if (!historyEntry) return null
-
-    return {
-      quantity: historyEntry.balanceQuantity,
-      averageCost: historyEntry.balanceQuantity > 0
-        ? historyEntry.balanceCost / historyEntry.balanceQuantity
-        : 0,
-    }
   }
 
   // Sort transactions by date (oldest first)
@@ -412,206 +385,7 @@ export function TransactionList() {
 
               const nonRelevantTooltip = getNonRelevantTooltip()
 
-              // Get CGT badges - Both disposal and acquisition transactions can have multiple rules
-              const getCGTBadges = () => {
-                const badges: Array<{ className: string; label: string; title: string }> = []
-
-                if (isDisposal(tx)) {
-                  // For disposal transactions, show all matching rules from DisposalRecord
-                  const disposal = getDisposalForTransaction(tx.id)
-
-                  // Add warning badge if disposal is incomplete (insufficient acquisition data)
-                  if (disposal?.isIncomplete && disposal.unmatchedQuantity) {
-                    const hasSplit = tx.split_multiplier && tx.split_multiplier !== 1.0
-                    let tooltip: string
-                    if (hasSplit && tx.split_multiplier) {
-                      const originalUnmatched = disposal.unmatchedQuantity / tx.split_multiplier
-                      tooltip = `Warning: ${originalUnmatched.toFixed(2)} ${getUnitLabel(tx)} (${disposal.unmatchedQuantity.toFixed(2)} split-adjusted) could not be matched to any acquisitions. Missing acquisition data - did you buy ${getUnitLabel(tx)} before you started importing transactions?`
-                    } else {
-                      tooltip = `Warning: ${disposal.unmatchedQuantity.toFixed(2)} ${getUnitLabel(tx)} could not be matched to any acquisitions. Missing acquisition data - did you buy ${getUnitLabel(tx)} before you started importing transactions?`
-                    }
-                    badges.push({
-                      className: 'bg-red-100 text-red-800 border-red-300',
-                      label: 'Incomplete',
-                      title: tooltip
-                    })
-                  }
-
-                  if (disposal && disposal.matchings.length > 0) {
-                    for (const matching of disposal.matchings) {
-                      if (matching.rule === 'SAME_DAY') {
-                        const quantityMatched = matching.quantityMatched
-                        const hasSplit = tx.split_multiplier && tx.split_multiplier !== 1.0
-                        let tooltip: string
-                        if (hasSplit && tx.split_multiplier) {
-                          const originalMatched = quantityMatched / tx.split_multiplier
-                          tooltip = `Same Day: Matched ${originalMatched.toFixed(2)} ${getUnitLabel(tx)} (${quantityMatched.toFixed(2)} split-adjusted) bought on same day (TCGA92/S105(1))`
-                        } else {
-                          tooltip = `Same Day: Matched ${quantityMatched.toFixed(2)} ${getUnitLabel(tx)} bought on same day (TCGA92/S105(1))`
-                        }
-                        badges.push({
-                          className: 'bg-blue-100 text-blue-800 border-blue-300',
-                          label: 'Same Day',
-                          title: tooltip
-                        })
-                      } else if (matching.rule === '30_DAY') {
-                        const quantityMatched = matching.quantityMatched
-                        const hasSplit = tx.split_multiplier && tx.split_multiplier !== 1.0
-                        let tooltip: string
-                        if (hasSplit && tx.split_multiplier) {
-                          const originalMatched = quantityMatched / tx.split_multiplier
-                          tooltip = `30-Day: Matched ${originalMatched.toFixed(2)} ${getUnitLabel(tx)} (${quantityMatched.toFixed(2)} split-adjusted) repurchased within 30 days (TCGA92/S106A(5))`
-                        } else {
-                          tooltip = `30-Day: Matched ${quantityMatched.toFixed(2)} ${getUnitLabel(tx)} repurchased within 30 days (TCGA92/S106A(5))`
-                        }
-                        badges.push({
-                          className: 'bg-orange-100 text-orange-800 border-orange-300',
-                          label: '30-Day',
-                          title: tooltip
-                        })
-                      } else if (matching.rule === 'SHORT_SELL') {
-                        const quantityMatched = matching.quantityMatched
-                        const hasSplit = tx.split_multiplier && tx.split_multiplier !== 1.0
-                        let tooltip: string
-                        if (hasSplit && tx.split_multiplier) {
-                          const originalMatched = quantityMatched / tx.split_multiplier
-                          tooltip = `Short Sell: ${originalMatched.toFixed(2)} ${getUnitLabel(tx)} (${quantityMatched.toFixed(2)} split-adjusted) sold short and covered by subsequent purchase`
-                        } else {
-                          tooltip = `Short Sell: ${quantityMatched.toFixed(2)} ${getUnitLabel(tx)} sold short and covered by subsequent purchase`
-                        }
-                        badges.push({
-                          className: 'bg-pink-100 text-pink-800 border-pink-300',
-                          label: 'Short Sell',
-                          title: tooltip
-                        })
-                      } else if (matching.rule === 'SECTION_104' && matching.quantityMatched > 0) {
-                        // Only show Section 104 badge if some quantity was actually matched
-                        const quantityMatched = matching.quantityMatched
-                        const avgCost = matching.totalCostBasisGbp / quantityMatched
-
-                        // Check if disposal has split adjustments
-                        const hasSplit = tx.split_multiplier && tx.split_multiplier !== 1.0
-                        let tooltip: string
-
-                        if (hasSplit && tx.split_multiplier) {
-                          // quantityMatched is split-adjusted, calculate original
-                          const originalMatched = quantityMatched / tx.split_multiplier
-                          tooltip = `Section 104: Matched ${originalMatched.toFixed(2)} ${getUnitLabel(tx)} (${quantityMatched.toFixed(2)} split-adjusted) at average cost ${formatGbp(avgCost)}/${getUnitLabel(tx, false)} from pooled holdings`
-                        } else {
-                          tooltip = `Section 104: Matched ${quantityMatched.toFixed(2)} ${getUnitLabel(tx)} at average cost ${formatGbp(avgCost)}/${getUnitLabel(tx, false)} from pooled holdings`
-                        }
-
-                        badges.push({
-                          className: 'bg-green-100 text-green-800 border-green-300',
-                          label: 'Section 104',
-                          title: tooltip
-                        })
-                      }
-                    }
-                  }
-                } else if (isAcquisition(tx)) {
-                  // For acquisition transactions, find all matchings where this is an acquisition
-                  const allDisposals = disposals // Use cached disposals instead of calling getDisposals() again
-                  let totalMatched = 0
-                  const ruleQuantities: Map<string, number> = new Map()
-
-                  // Find all matchings that use this BUY transaction
-                  for (const disposal of allDisposals) {
-                    for (const matching of disposal.matchings) {
-                      for (const acq of matching.acquisitions) {
-                        if (acq.transaction.id === tx.id) {
-                          totalMatched += acq.quantityMatched
-                          const existingQty = ruleQuantities.get(matching.rule) || 0
-                          ruleQuantities.set(matching.rule, existingQty + acq.quantityMatched)
-                        }
-                      }
-                    }
-                  }
-
-                  // Add badges for each rule this BUY participates in
-                  const hasSplit = tx.split_multiplier && tx.split_multiplier !== 1.0
-                  for (const [rule, qty] of ruleQuantities.entries()) {
-                    if (rule === 'SAME_DAY') {
-                      let tooltip: string
-                      if (hasSplit && tx.split_multiplier) {
-                        const originalQty = qty / tx.split_multiplier
-                        tooltip = `Same Day: ${originalQty.toFixed(2)} ${getUnitLabel(tx)} (${qty.toFixed(2)} split-adjusted) matched to same-day disposal (TCGA92/S105(1))`
-                      } else {
-                        tooltip = `Same Day: ${qty.toFixed(2)} ${getUnitLabel(tx)} matched to same-day disposal (TCGA92/S105(1))`
-                      }
-                      badges.push({
-                        className: 'bg-blue-100 text-blue-800 border-blue-300',
-                        label: 'Same Day',
-                        title: tooltip
-                      })
-                    } else if (rule === '30_DAY') {
-                      let tooltip: string
-                      if (hasSplit && tx.split_multiplier) {
-                        const originalQty = qty / tx.split_multiplier
-                        tooltip = `30-Day: ${originalQty.toFixed(2)} ${getUnitLabel(tx)} (${qty.toFixed(2)} split-adjusted) matched to disposal (bed & breakfast rule TCGA92/S106A(5))`
-                      } else {
-                        tooltip = `30-Day: ${qty.toFixed(2)} ${getUnitLabel(tx)} matched to disposal (bed & breakfast rule TCGA92/S106A(5))`
-                      }
-                      badges.push({
-                        className: 'bg-orange-100 text-orange-800 border-orange-300',
-                        label: '30-Day',
-                        title: tooltip
-                      })
-                    } else if (rule === 'SHORT_SELL') {
-                      let tooltip: string
-                      if (hasSplit && tx.split_multiplier) {
-                        const originalQty = qty / tx.split_multiplier
-                        tooltip = `Short Sell: ${originalQty.toFixed(2)} ${getUnitLabel(tx)} (${qty.toFixed(2)} split-adjusted) used to cover a short sell`
-                      } else {
-                        tooltip = `Short Sell: ${qty.toFixed(2)} ${getUnitLabel(tx)} used to cover a short sell`
-                      }
-                      badges.push({
-                        className: 'bg-pink-100 text-pink-800 border-pink-300',
-                        label: 'Short Sell',
-                        title: tooltip
-                      })
-                    }
-                  }
-
-                  // Check if remaining shares went to Section 104 pool
-                  const remainingQty = (tx.split_adjusted_quantity ?? tx.quantity ?? 0) - totalMatched
-                  if (remainingQty > 0) {
-                    const poolDetails = tx.symbol ? getPoolDetailsForBuy(tx.id, tx.symbol) : null
-                    const hasSplit = tx.split_multiplier && tx.split_multiplier !== 1.0
-
-                    let tooltip: string
-                    if (poolDetails) {
-                      if (hasSplit && tx.split_multiplier) {
-                        const originalRemaining = remainingQty / tx.split_multiplier
-                        tooltip = `Section 104: ${originalRemaining.toFixed(2)} ${getUnitLabel(tx)} (${remainingQty.toFixed(2)} split-adjusted) added to pool (new balance: ${poolDetails.quantity.toFixed(2)} split-adjusted ${getUnitLabel(tx)} at ${formatGbp(poolDetails.averageCost)}/${getUnitLabel(tx, false)} average cost)`
-                      } else {
-                        tooltip = `Section 104: ${remainingQty.toFixed(2)} ${getUnitLabel(tx)} added to pool (new balance: ${poolDetails.quantity.toFixed(2)} ${getUnitLabel(tx)} at ${formatGbp(poolDetails.averageCost)}/${getUnitLabel(tx, false)} average cost)`
-                      }
-                      badges.push({
-                        className: 'bg-green-100 text-green-800 border-green-300',
-                        label: 'Section 104',
-                        title: tooltip
-                      })
-                    } else {
-                      if (hasSplit && tx.split_multiplier) {
-                        const originalRemaining = remainingQty / tx.split_multiplier
-                        tooltip = `Section 104: ${originalRemaining.toFixed(2)} ${getUnitLabel(tx)} (${remainingQty.toFixed(2)} split-adjusted) added to pooled holdings (TCGA92/S104)`
-                      } else {
-                        tooltip = `Section 104: ${remainingQty.toFixed(2)} ${getUnitLabel(tx)} added to pooled holdings (TCGA92/S104)`
-                      }
-                      badges.push({
-                        className: 'bg-green-100 text-green-800 border-green-300',
-                        label: 'Section 104',
-                        title: tooltip
-                      })
-                    }
-                  }
-                }
-
-                return badges.length > 0 ? badges : null
-              }
-
-              const cgtBadges = getCGTBadges()
+              const cgtBadges = buildCGTBadges(tx, badgeIndex)
 
               // Check if this transaction is part of a match group
               const matchGroups = tx.match_groups || []
@@ -639,13 +413,13 @@ export function TransactionList() {
                     isHighlighted ? 'bg-blue-100' :
                     'bg-blue-50'
                   }`}>
-                    {cgtBadges ? (
+                    {cgtBadges.length > 0 ? (
                       <div className="flex flex-wrap gap-1">
                         {cgtBadges.map((badge, index) => (
                           <Tooltip key={index} content={badge.title}>
                             <span
                               className={`inline-flex px-1.5 py-0.5 text-[10px] font-semibold rounded-full border whitespace-nowrap cursor-pointer hover:ring-2 hover:ring-offset-1 transition-all ${badge.className}`}
-                              onClick={(e) => handleBadgeClick(e, badge.label)}
+                              onClick={(e) => handleBadgeClick(e, badge.helpContext)}
                             >
                               {badge.label}
                             </span>
@@ -732,7 +506,7 @@ export function TransactionList() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {tx.quantity !== null ? (
                       <div className="flex items-center gap-2">
-                        <span>{tx.quantity.toFixed(2)}</span>
+                        <span>{formatQuantity(tx.quantity)}</span>
                         {tx.split_multiplier && tx.split_multiplier !== 1.0 && tx.split_adjusted_quantity != null && (() => {
                           // Get split dates by looking up split transaction IDs
                           const splitDates = tx.applied_splits
@@ -744,7 +518,7 @@ export function TransactionList() {
                           const dateText = splitDates ? ` on ${splitDates}` : ''
 
                           return (
-                            <Tooltip content={`Split-adjusted quantity: ${tx.split_adjusted_quantity.toFixed(2)} ${getUnitLabel(tx)} (${tx.split_multiplier}x multiplier from ${splitCount} ${splitText}${dateText})`}>
+                            <Tooltip content={`Split-adjusted quantity: ${formatQuantity(tx.split_adjusted_quantity)} ${getUnitLabel(tx)} (${tx.split_multiplier}x multiplier from ${splitCount} ${splitText}${dateText})`}>
                               <div className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 bg-purple-50 text-purple-700 rounded border border-purple-200 cursor-help">
                                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
@@ -846,7 +620,7 @@ export function TransactionList() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <div className="flex items-center gap-1.5">
                       {tx.source}
-                      {tx.type === 'STOCK_SPLIT' && tx.source === 'Community' && (
+                      {tx.type === 'STOCK_SPLIT' && tx.source === COMMUNITY_SPLIT_SOURCE && (
                         <Tooltip content="This stock split was fetched from community-maintained split data (coffee-cpu/stock-splits-data). It was not included in your broker CSV.">
                           <span className="inline-flex px-1.5 py-0.5 text-[10px] font-semibold rounded-full bg-teal-100 text-teal-800 border border-teal-300">
                             Community

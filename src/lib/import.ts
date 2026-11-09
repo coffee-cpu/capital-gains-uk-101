@@ -3,7 +3,7 @@ import { detectBroker } from './brokerDetector'
 import { getParser } from './parsers/parserRegistry'
 import { normalizeTransactionSymbols } from '../utils/symbolNormalization'
 import { BrokerType } from '../types/broker'
-import { GenericTransaction } from '../types/transaction'
+import { GenericTransaction, GenericTransactionSchema } from '../types/transaction'
 import { SkippedRow } from '../types/brokerDefinition'
 
 /** Minimum detection confidence required to accept a file's broker format */
@@ -19,7 +19,9 @@ export interface CSVImportResult {
 
 /** Short description of skipped rows for messages, e.g. 'row 3: unrecognised type "SEL"' */
 export function describeSkippedRows(skippedRows: SkippedRow[], limit = 3): string {
-  const shown = skippedRows.slice(0, limit).map(s => `row ${s.row}: ${s.reason}`)
+  const shown = skippedRows.slice(0, limit).map(s =>
+    `${s.row !== undefined ? `row ${s.row}` : `transaction ${s.transactionId}`}: ${s.reason}`
+  )
   const more = skippedRows.length > limit ? `, and ${skippedRows.length - limit} more` : ''
   return shown.join('; ') + more
 }
@@ -59,7 +61,7 @@ export function importCSVText(text: string, fileId: string): CSVImportResult {
   }
 
   const skippedRows: SkippedRow[] = []
-  const transactions = parser(rawRows, fileId, skippedRows)
+  const transactions = validateTransactions(parser(rawRows, fileId, skippedRows), skippedRows)
   if (transactions.length === 0) {
     const detail = skippedRows.length > 0 ? ` (${describeSkippedRows(skippedRows)})` : ''
     throw new Error(`No valid transactions found in CSV${detail}`)
@@ -72,4 +74,23 @@ export function importCSVText(text: string, fileId: string): CSVImportResult {
     transactions: normalizeTransactionSymbols(transactions),
     skippedRows,
   }
+}
+
+/**
+ * Keep only transactions that match GenericTransactionSchema; report the
+ * others in `skippedRows`, so a bad value (e.g. an impossible date) drops one
+ * row with a reason instead of reaching the calculation or the database.
+ */
+export function validateTransactions(
+  transactions: GenericTransaction[],
+  skippedRows: SkippedRow[]
+): GenericTransaction[] {
+  return transactions.filter(tx => {
+    const result = GenericTransactionSchema.safeParse(tx)
+    if (result.success) return true
+    const issue = result.error.issues[0]
+    const field = issue.path.join('.') || 'transaction'
+    skippedRows.push({ transactionId: tx.id, reason: `invalid ${field}: ${issue.message}` })
+    return false
+  })
 }

@@ -1,5 +1,5 @@
 import { GenericTransaction, TransactionType } from '../../types/transaction'
-import { RawCSVRow } from '../../types/broker'
+import { RawCSVRow, BrokerType } from '../../types/broker'
 import { parseISODate, parseNumber } from './parsingUtils'
 
 /**
@@ -61,7 +61,7 @@ function normalizeFreetradeRow(row: RawCSVRow, fileId: string, rowIndex: number)
   console.warn(`Unknown Freetrade type: "${type}", marking as UNKNOWN`)
   return {
     id: `${fileId}-${rowIndex}`,
-    source: 'Freetrade',
+    source: BrokerType.FREETRADE,
     symbol: ticker || '',
     isin: isin || null,
     name: title || null,
@@ -140,7 +140,7 @@ function parseOrderTransaction(
 
   return {
     id: `${fileId}-${rowIndex}`,
-    source: 'Freetrade',
+    source: BrokerType.FREETRADE,
     symbol: ticker || '',
     isin: isin || null,
     name: title || null,
@@ -189,7 +189,7 @@ function parseDividendTransaction(
 
   return {
     id: `${fileId}-${rowIndex}`,
-    source: 'Freetrade',
+    source: BrokerType.FREETRADE,
     symbol: ticker || '',
     isin: isin || null,
     name: title || null,
@@ -224,7 +224,7 @@ function parseInterestTransaction(
 
   return {
     id: `${fileId}-${rowIndex}`,
-    source: 'Freetrade',
+    source: BrokerType.FREETRADE,
     symbol: 'CASH',
     name: 'Interest from Cash',
     date,
@@ -256,7 +256,7 @@ function parseTransferTransaction(
 
   return {
     id: `${fileId}-${rowIndex}`,
-    source: 'Freetrade',
+    source: BrokerType.FREETRADE,
     symbol: 'CASH',
     name: type === 'TOP_UP' ? 'Top up' : 'Withdrawal',
     date,
@@ -297,7 +297,7 @@ function parseStockSplitTransaction(
 
   return {
     id: `${fileId}-${rowIndex}`,
-    source: 'Freetrade',
+    source: BrokerType.FREETRADE,
     symbol: ticker || '',
     isin: isin || null,
     name: title || null,

@@ -1,3 +1,4 @@
+import { BrokerType } from '../types/broker'
 import { GenericTransaction } from '../types/transaction'
 
 /**
@@ -122,7 +123,7 @@ export function deduplicateTransactions(allTransactions: GenericTransaction[]): 
 
     const txDate = new Date(tx.date)
     return transactions.some(other => {
-      if (other.source !== 'Charles Schwab Equity Awards') return false
+      if (other.source !== BrokerType.SCHWAB_EQUITY_AWARDS) return false
       if (other.symbol !== tx.symbol) return false
 
       const otherDate = new Date(other.date)
@@ -142,7 +143,7 @@ export function deduplicateTransactions(allTransactions: GenericTransaction[]): 
 
   // Check if a transaction is Stock Plan Activity from standard Schwab export
   const isStockPlanActivity = (tx: GenericTransaction) => {
-    return tx.source === 'Charles Schwab' &&
+    return tx.source === BrokerType.SCHWAB &&
            tx.notes?.includes('Stock Plan Activity')
   }
 

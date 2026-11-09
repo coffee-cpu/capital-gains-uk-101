@@ -11,6 +11,8 @@ export type {
   TaxYearFeature,
   TaxYearFeatureData,
   TaxYearFeaturesMap,
+  TaxYearFeatureDataById,
+  TaxYearFeatureId,
   PDFRenderContext,
   FeaturePDFRenderer,
 } from './types'
@@ -18,10 +20,7 @@ export type {
 // Registry functions
 export {
   getApplicableFeatures,
-  getFeatureById,
   calculateTaxYearFeatures,
-  hasApplicableFeatures,
-  getAllFeatureIds,
 } from './registry'
 
 // Individual features and their data types

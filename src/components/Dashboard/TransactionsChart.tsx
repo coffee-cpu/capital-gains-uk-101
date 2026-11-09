@@ -1,3 +1,4 @@
+import { formatGbpWhole } from '../../utils/currency'
 import { useMemo } from 'react'
 import {
   ComposedChart,
@@ -14,7 +15,6 @@ import {
 import {
   TransactionTimelinePoint,
   CHART_COLORS,
-  formatCurrency,
   getTaxYearBoundaries,
   formatDateLabel,
   calculateTradeStats,
@@ -73,13 +73,13 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
         )}
         <div className="flex justify-between gap-4">
           <span className="text-gray-500">Value:</span>
-          <span className="text-gray-900">{formatCurrency(data.valueGbp)}</span>
+          <span className="text-gray-900">{formatGbpWhole(data.valueGbp)}</span>
         </div>
         {!isBuy && data.gainLoss !== undefined && (
           <div className="flex justify-between gap-4 pt-1 border-t border-gray-100">
             <span className="text-gray-500">{data.isGain ? 'Gain:' : 'Loss:'}</span>
             <span className={data.isGain ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
-              {formatCurrency(Math.abs(data.gainLoss))}
+              {formatGbpWhole(Math.abs(data.gainLoss))}
               {data.gainLossPercent !== undefined && (
                 <span className="ml-1 opacity-75">
                   ({data.gainLossPercent >= 0 ? '+' : ''}{data.gainLossPercent.toFixed(1)}%)
@@ -170,7 +170,7 @@ export function TradeStatsPanel({ stats }: TradeStatsPanelProps) {
       <div className="text-center mb-3">
         <p className="text-xs text-gray-500 uppercase tracking-wide">Total Gain/Loss</p>
         <p className={`text-xl font-bold ${stats.totalGainLossGbp >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-          {stats.totalGainLossGbp >= 0 ? '+' : ''}{formatCurrency(stats.totalGainLossGbp)}
+          {stats.totalGainLossGbp >= 0 ? '+' : ''}{formatGbpWhole(stats.totalGainLossGbp)}
         </p>
         {hasStats && (
           <p className="text-xs text-gray-400">
@@ -195,7 +195,7 @@ export function TradeStatsPanel({ stats }: TradeStatsPanelProps) {
                     {formatPercent(stats.bestTrade.gainLossPercent)}
                   </span>
                   <span className="text-green-600 text-xs ml-1">
-                    {formatCurrency(stats.bestTrade.gainLossGbp)}
+                    {formatGbpWhole(stats.bestTrade.gainLossGbp)}
                   </span>
                 </div>
               </div>
@@ -216,7 +216,7 @@ export function TradeStatsPanel({ stats }: TradeStatsPanelProps) {
                     {formatPercent(stats.worstTrade.gainLossPercent)}
                   </span>
                   <span className="text-red-600 text-xs ml-1">
-                    {formatCurrency(stats.worstTrade.gainLossGbp)}
+                    {formatGbpWhole(stats.worstTrade.gainLossGbp)}
                   </span>
                 </div>
               </div>

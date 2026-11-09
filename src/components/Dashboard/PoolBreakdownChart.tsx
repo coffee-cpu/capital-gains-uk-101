@@ -1,3 +1,4 @@
+import { formatGbpWhole } from '../../utils/currency'
 import { useMemo } from 'react'
 import {
   AreaChart,
@@ -17,7 +18,6 @@ import {
   CurrentHoldingsResult,
   CurrentHoldingPoint,
   generateSymbolColors,
-  formatCurrency,
   getTaxYearBoundaries,
   formatDateLabel,
 } from '../../lib/chartData'
@@ -71,7 +71,7 @@ function TimelineTooltip({ active, payload }: TimelineTooltipProps) {
               <span className="text-gray-600">{entry.dataKey}</span>
             </div>
             <span className="font-medium text-gray-900">
-              {formatCurrency(entry.value)}
+              {formatGbpWhole(entry.value)}
             </span>
           </div>
         ))}
@@ -108,7 +108,7 @@ function PieTooltip({ active, payload }: PieTooltipProps) {
         </div>
         <div className="flex justify-between gap-4">
           <span className="text-gray-500">Cost Basis:</span>
-          <span className="text-gray-900">{formatCurrency(data.valueGbp)}</span>
+          <span className="text-gray-900">{formatGbpWhole(data.valueGbp)}</span>
         </div>
         <div className="flex justify-between gap-4">
           <span className="text-gray-500">Avg Cost:</span>
@@ -304,7 +304,7 @@ export function PoolBreakdownChart({ data, holdingsData }: PoolBreakdownChartPro
         <div className="text-center mb-2">
           <p className="text-xs text-gray-500 uppercase tracking-wide">Current Holdings</p>
           <p className="text-2xl font-bold text-gray-900">
-            {hasHoldings ? formatCurrency(holdingsData.totalValueGbp) : '£0'}
+            {hasHoldings ? formatGbpWhole(holdingsData.totalValueGbp) : '£0'}
           </p>
           {holdingsData.lastTransactionDate && (
             <p className="text-xs text-gray-400">

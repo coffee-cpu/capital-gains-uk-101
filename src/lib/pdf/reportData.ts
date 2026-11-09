@@ -1,7 +1,7 @@
 import type { DisposalRecord, Section104Pool, TaxYearSummary } from '../../types/cgt'
 import type { EnrichedTransaction } from '../../types/transaction'
 import { isAcquisition, isDisposal, QUANTITY_EPSILON } from '../cgt/utils'
-import { withheldAmountGbp } from '../cgt/engine'
+import { withheldAmountGbp } from '../cgt/withholding'
 import { combineFxAttributions } from '../fx/attribution'
 
 /**

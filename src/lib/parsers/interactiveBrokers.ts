@@ -1,5 +1,5 @@
 import { GenericTransaction, TransactionType } from '../../types/transaction'
-import { RawCSVRow } from '../../types/broker'
+import { RawCSVRow, BrokerType } from '../../types/broker'
 import { CSVPreprocessor } from './fileUtils'
 import { parseNumber } from './parsingUtils'
 
@@ -173,7 +173,7 @@ function createBaseTransaction(
 ): Omit<GenericTransaction, 'type' | 'symbol' | 'quantity' | 'price' | 'total' | 'fee' | 'notes'> {
   return {
     id: `${fileId}-${rowIndex}`,
-    source: 'Interactive Brokers',
+    source: BrokerType.INTERACTIVE_BROKERS,
     name: description || null,
     date,
     currency: baseCurrency,
@@ -237,7 +237,7 @@ export function normalizeInteractiveBrokersTransactions(
     const absQty = Math.abs(netPosition)
     transactions.push({
       id: `${fileId}-exp-${rowIndex}`,
-      source: 'Interactive Brokers',
+      source: BrokerType.INTERACTIVE_BROKERS,
       name: `${parsed.underlying} ${parsed.optionType} $${parsed.strikePrice} expired`,
       date: parsed.expirationDate,
       currency: baseCurrency,

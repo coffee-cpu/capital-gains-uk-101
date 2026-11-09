@@ -1,4 +1,4 @@
-import { EnrichedTransaction, GainGroupType, GenericTransaction } from './transaction'
+import { EnrichedTransaction, MatchingRule, GenericTransaction } from './transaction'
 import type { TaxYearFeaturesMap } from '../lib/cgt/taxYearFeatures/types'
 
 /**
@@ -25,7 +25,7 @@ export interface MatchingResult {
     costBasisGbp: number
   }>
   /** Which HMRC rule was applied */
-  rule: GainGroupType
+  rule: MatchingRule
   /** Total quantity matched under this rule */
   quantityMatched: number
   /** Total cost basis in GBP for the matched quantity */

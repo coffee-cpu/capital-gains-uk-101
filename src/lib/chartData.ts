@@ -396,30 +396,6 @@ export function getTaxYearBoundaries(
 // Utility Functions
 // ============================================================================
 
-/**
- * Format currency for chart tooltips
- */
-export function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('en-GB', {
-    style: 'currency',
-    currency: 'GBP',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value)
-}
-
-/**
- * Format currency with more precision
- */
-export function formatCurrencyPrecise(value: number): string {
-  return new Intl.NumberFormat('en-GB', {
-    style: 'currency',
-    currency: 'GBP',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value)
-}
-
 // ============================================================================
 // Current Holdings Pie Chart Data
 // ============================================================================

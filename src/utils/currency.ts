@@ -11,3 +11,16 @@ export function formatGbp(value: number): string {
   const isNegative = value < 0 && formatted.replace(/[0.,]/g, '') !== ''
   return isNegative ? `(£${formatted})` : `£${formatted}`
 }
+
+/**
+ * Format a GBP amount in whole pounds, for chart labels and summary figures
+ * where pence are noise: 1234.56 → "£1,235", -5000 → "-£5,000".
+ */
+export function formatGbpWhole(value: number): string {
+  return new Intl.NumberFormat('en-GB', {
+    style: 'currency',
+    currency: 'GBP',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(value)
+}

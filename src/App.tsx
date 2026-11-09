@@ -12,9 +12,8 @@ import { SessionResumeDialog } from './components/SessionResumeDialog'
 import { IssuesPanel } from './components/IssuesPanel'
 import { MobileHeader } from './components/MobileHeader'
 import { useTransactionStore } from './stores/transactionStore'
-import { useSettingsStore, useInitializeSettings } from './stores/settingsStore'
+import { useSettingsStore } from './stores/settingsStore'
 import { db, clearAllData, ensureDatabaseCompatible } from './lib/db'
-import { processTransactionsFromDB } from './lib/transactionProcessor'
 
 function App() {
   const [currentPage, setCurrentPage] = useState<'calculator' | 'about'>('calculator')
@@ -24,20 +23,17 @@ function App() {
   const [pendingTransactionCount, setPendingTransactionCount] = useState(0)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [fileSources, setFileSources] = useState<string[]>([])
-  const setTransactions = useTransactionStore((state) => state.setTransactions)
-  const setCGTResults = useTransactionStore((state) => state.setCGTResults)
-  const setIsLoading = useTransactionStore((state) => state.setIsLoading)
-  const fxSource = useSettingsStore((state) => state.fxSource)
-  const autoSplitsEnabled = useSettingsStore((state) => state.autoSplitsEnabled)
+  const recalculate = useTransactionStore((state) => state.recalculate)
 
-  // Ensure database is compatible before anything else
-  // (automatically clears incompatible schemas)
+  // Ensure database is compatible before anything else (automatically
+  // clears incompatible schemas). Settings load alongside the session check;
+  // recalculate() waits for them.
   useEffect(() => {
-    ensureDatabaseCompatible().then(() => setDbReady(true))
+    ensureDatabaseCompatible().then(() => {
+      setDbReady(true)
+      useSettingsStore.getState().initializeFromDB()
+    })
   }, [])
-
-  // Initialize settings from IndexedDB (only after DB is ready)
-  useInitializeSettings()
 
   // Handle hash-based routing
   useEffect(() => {
@@ -60,7 +56,10 @@ function App() {
 
     const checkExistingSession = async () => {
       const count = await db.transactions.count()
-      if (count > 0) {
+      // Transactions imported (or already loaded) in this session aren't a
+      // previous session: an import can start before this check runs
+      const { cgtResults, isLoading, hasImportedThisSession } = useTransactionStore.getState()
+      if (count > 0 && !cgtResults && !isLoading && !hasImportedThisSession) {
         setPendingTransactionCount(count)
 
         const files = await db.imported_files.toArray()
@@ -79,18 +78,7 @@ function App() {
   }, [dbReady])
 
   // Load and process transactions from IndexedDB
-  const loadTransactions = async () => {
-    setIsLoading(true)
-    try {
-      const cgtResults = await processTransactionsFromDB(fxSource, autoSplitsEnabled)
-      if (cgtResults) {
-        setTransactions(cgtResults.transactions)
-        setCGTResults(cgtResults)
-      }
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  const loadTransactions = () => recalculate()
 
   const handleContinueSession = async () => {
     setShowSessionDialog(false)

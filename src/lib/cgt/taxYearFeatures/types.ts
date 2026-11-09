@@ -12,6 +12,21 @@
 
 import type { TaxYearSummary, DisposalRecord } from '../../../types/cgt'
 import type { Styles, Text, View } from '@react-pdf/renderer'
+import type { CGTRateChange2024Data } from './cgtRateChange2024'
+
+/**
+ * The data each feature produces, by feature ID. Every table of features
+ * (calculation in registry.ts, the UI panels and the PDF sections) is keyed
+ * by these IDs and must cover all of them, so adding a feature here without
+ * its panel or PDF section is a compile error rather than a silent omission.
+ *
+ * To add a feature: add its entry here, then to each of those tables.
+ */
+export interface TaxYearFeatureDataById {
+  'cgt-rate-change-2024': CGTRateChange2024Data
+}
+
+export type TaxYearFeatureId = keyof TaxYearFeatureDataById
 
 /**
  * Base interface for tax year feature data.
@@ -19,7 +34,7 @@ import type { Styles, Text, View } from '@react-pdf/renderer'
  */
 export interface TaxYearFeatureData {
   /** Unique feature identifier */
-  featureId: string
+  featureId: TaxYearFeatureId
 }
 
 /**
@@ -53,7 +68,7 @@ export type FeaturePDFRenderer<TData extends TaxYearFeatureData> = (
  */
 export interface TaxYearFeature<TData extends TaxYearFeatureData = TaxYearFeatureData> {
   /** Unique identifier for this feature (e.g., 'cgt-rate-change-2024') */
-  id: string
+  id: TData['featureId']
 
   /** Human-readable name for the feature */
   name: string
@@ -80,4 +95,5 @@ export interface TaxYearFeature<TData extends TaxYearFeatureData = TaxYearFeatur
  * Container for all calculated feature data for a tax year.
  * Keyed by feature ID.
  */
-export type TaxYearFeaturesMap = Record<string, TaxYearFeatureData>
+export type TaxYearFeaturesMap = Partial<TaxYearFeatureDataById>
+

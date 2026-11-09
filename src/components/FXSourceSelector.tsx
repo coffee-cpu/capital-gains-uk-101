@@ -6,8 +6,7 @@ import {
   FXSourceUrls,
 } from '../types/fxSource'
 import { useSettingsStore } from '../stores/settingsStore'
-import { useTransactionStore } from '../stores/transactionStore'
-import { processTransactionsFromDB } from '../lib/transactionProcessor'
+import { useTransactionStore, selectTransactions } from '../stores/transactionStore'
 
 /**
  * FX Source Selector Component
@@ -20,8 +19,10 @@ import { processTransactionsFromDB } from '../lib/transactionProcessor'
  * It is, however, expected that a reasonable and consistent method is used."
  */
 export function FXSourceSelector() {
-  const { fxSource, setFXSource, autoSplitsEnabled } = useSettingsStore()
-  const { setTransactions, setCGTResults, setIsLoading, transactions } = useTransactionStore()
+  const fxSource = useSettingsStore((state) => state.fxSource)
+  const setFXSource = useSettingsStore((state) => state.setFXSource)
+  const transactions = useTransactionStore(selectTransactions)
+  const recalculate = useTransactionStore((state) => state.recalculate)
   const [isChanging, setIsChanging] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
   const [openUpward, setOpenUpward] = useState(false)
@@ -63,25 +64,20 @@ export function FXSourceSelector() {
 
     setIsOpen(false)
     setIsChanging(true)
-    setIsLoading(true)
 
     try {
-      // Update the setting
       await setFXSource(newSource)
-
       // Re-process all transactions with the new FX source
-      const cgtResults = await processTransactionsFromDB(newSource, autoSplitsEnabled)
-      if (cgtResults) {
-        setTransactions(cgtResults.transactions)
-        setCGTResults(cgtResults)
-      }
+      await recalculate()
     } catch (error) {
       console.error('Failed to change FX source:', error)
-      // Revert to previous source on error
+      // Revert to previous source on error, and recalculate with it: the
+      // failed run may have superseded one (e.g. an import) whose result
+      // was never applied
       await setFXSource(fxSource)
+      await recalculate().catch(retryError => console.error('Recalculation failed:', retryError))
     } finally {
       setIsChanging(false)
-      setIsLoading(false)
     }
   }
 

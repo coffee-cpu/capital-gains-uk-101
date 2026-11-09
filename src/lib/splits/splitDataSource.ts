@@ -45,6 +45,11 @@ interface CdnSplitYearData {
  */
 export interface SplitDataSource {
   fetchSplitsForYears(years: number[]): Promise<SplitRecord[]>
+  /**
+   * Records the last fetch left out as bad data, so callers can report them.
+   * Optional: sources that don't validate their data leave it out.
+   */
+  readonly rejectedRecords?: readonly RejectedSplitRecord[]
 }
 
 /** Cache TTL: 7 days in milliseconds */

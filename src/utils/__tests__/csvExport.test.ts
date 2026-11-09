@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach, type MockInstance } from 'vitest'
 import { exportTransactionsToCSV, transactionsToGenericCSV } from '../csvExport'
 import { GenericTransaction } from '../../types/transaction'

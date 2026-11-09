@@ -2,9 +2,7 @@ import { useState } from 'react'
 import { createFileId, describeSkippedRows, importCSVText } from '../lib/import'
 import { readFileAsText } from '../lib/parsers/fileUtils'
 import { useTransactionStore } from '../stores/transactionStore'
-import { useSettingsStore } from '../stores/settingsStore'
 import { db } from '../lib/db'
-import { processTransactionsFromDB } from '../lib/transactionProcessor'
 import { BrokerFormatsList } from './BrokerFormatsList'
 import { getEnabledBrokerDefinitions } from '../config/brokers'
 
@@ -15,10 +13,8 @@ export function CSVImporter() {
   const [isDragging, setIsDragging] = useState(false)
   const [showImportInfo, setShowImportInfo] = useState(false)
   const [processingStatus, setProcessingStatus] = useState<string>('')
-  const setTransactions = useTransactionStore((state) => state.setTransactions)
-  const setCGTResults = useTransactionStore((state) => state.setCGTResults)
-  const fxSource = useSettingsStore((state) => state.fxSource)
-  const autoSplitsEnabled = useSettingsStore((state) => state.autoSplitsEnabled)
+  const recalculate = useTransactionStore((state) => state.recalculate)
+  const markImportStarted = useTransactionStore((state) => state.markImportStarted)
 
   // Build supported brokers text for the upload area
   const supportedBrokers = getEnabledBrokerDefinitions()
@@ -81,6 +77,9 @@ export function CSVImporter() {
   }
 
   const processFiles = async (files: File[]) => {
+    // Before any file reaches IndexedDB, so the startup check doesn't offer
+    // to resume (or clear) what is being imported now
+    markImportStarted()
     setIsProcessing(true)
     setError(null)
     setSuccess(null)
@@ -107,11 +106,7 @@ export function CSVImporter() {
     }
 
     // Process all transactions from DB (deduplicate, enrich, calculate CGT)
-    const cgtResults = await processTransactionsFromDB(fxSource, autoSplitsEnabled)
-    if (cgtResults) {
-      setTransactions(cgtResults.transactions)
-      setCGTResults(cgtResults)
-    }
+    await recalculate()
 
     setIsProcessing(false)
     setProcessingStatus('')

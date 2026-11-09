@@ -1,6 +1,6 @@
 import type { GenericTransaction } from '../../types/transaction'
 import { TransactionType } from '../../types/transaction'
-import type { RawCSVRow } from '../../types/broker'
+import { BrokerType, type RawCSVRow } from '../../types/broker'
 import { parseNumber, extractCurrencyFromAmount } from './parsingUtils'
 
 /**
@@ -104,7 +104,7 @@ export function normalizeRevolutTransactions(
 
       const transaction: GenericTransaction = {
         id: `${fileId}-${index + 1}`,
-        source: 'Revolut',
+        source: BrokerType.REVOLUT,
         date: parseDate(date),
         type: transactionType,
         symbol,

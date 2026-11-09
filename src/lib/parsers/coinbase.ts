@@ -1,6 +1,6 @@
 import type { GenericTransaction } from '../../types/transaction'
 import { TransactionType } from '../../types/transaction'
-import type { RawCSVRow } from '../../types/broker'
+import { BrokerType, type RawCSVRow } from '../../types/broker'
 import { parseCurrency } from './parsingUtils'
 import { CSVPreprocessor } from './fileUtils'
 
@@ -241,7 +241,7 @@ export function normalizeCoinbaseTransactions(
       // Create INTEREST transaction for income tax purposes
       const interestTransaction: GenericTransaction = {
         id: `${fileId}-${transactionIndex++}`,
-        source: 'Coinbase',
+        source: BrokerType.COINBASE,
         date: parseDate(timestamp),
         type: 'INTEREST',
         symbol: asset,
@@ -258,7 +258,7 @@ export function normalizeCoinbaseTransactions(
       // Create BUY transaction for CGT cost basis
       const buyTransaction: GenericTransaction = {
         id: `${fileId}-${transactionIndex++}`,
-        source: 'Coinbase',
+        source: BrokerType.COINBASE,
         date: parseDate(timestamp),
         type: TransactionType.BUY,
         symbol: asset,
@@ -284,7 +284,7 @@ export function normalizeCoinbaseTransactions(
       // Create SELL transaction for the disposed asset
       const sellTransaction: GenericTransaction = {
         id: `${fileId}-${transactionIndex++}`,
-        source: 'Coinbase',
+        source: BrokerType.COINBASE,
         date: parseDate(timestamp),
         type: TransactionType.SELL,
         symbol: asset,
@@ -308,7 +308,7 @@ export function normalizeCoinbaseTransactions(
 
         const buyTransaction: GenericTransaction = {
           id: `${fileId}-${transactionIndex++}`,
-          source: 'Coinbase',
+          source: BrokerType.COINBASE,
           date: parseDate(timestamp),
           type: TransactionType.BUY,
           symbol: convertInfo.acquiredAsset,
@@ -340,7 +340,7 @@ export function normalizeCoinbaseTransactions(
 
     const transaction: GenericTransaction = {
       id: `${fileId}-${transactionIndex++}`,
-      source: 'Coinbase',
+      source: BrokerType.COINBASE,
       date: parseDate(timestamp),
       type,
       symbol: asset,
