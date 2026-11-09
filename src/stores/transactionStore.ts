@@ -16,6 +16,13 @@ interface TransactionState {
   selectedTaxYear: string
   hasExportedPDF: boolean
   isLoading: boolean
+  /**
+   * True once this page session has started importing files, so data in
+   * IndexedDB isn't mistaken for a previous session's
+   */
+  hasImportedThisSession: boolean
+  /** Call before an import's first database write */
+  markImportStarted: () => void
   setSelectedTaxYear: (year: string) => void
   setCGTResults: (results: CGTCalculationResult | null) => void
   setHasExportedPDF: (hasExported: boolean) => void
@@ -41,6 +48,9 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
   selectedTaxYear: getTaxYear(new Date()),
   hasExportedPDF: false,
   isLoading: false,
+  hasImportedThisSession: false,
+
+  markImportStarted: () => set({ hasImportedThisSession: true }),
 
   setSelectedTaxYear: (year) => set({ selectedTaxYear: year }),
 

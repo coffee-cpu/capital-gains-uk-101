@@ -57,9 +57,9 @@ function App() {
     const checkExistingSession = async () => {
       const count = await db.transactions.count()
       // Transactions imported (or already loaded) in this session aren't a
-      // previous session: an import can finish before this check runs
-      const { cgtResults, isLoading } = useTransactionStore.getState()
-      if (count > 0 && !cgtResults && !isLoading) {
+      // previous session: an import can start before this check runs
+      const { cgtResults, isLoading, hasImportedThisSession } = useTransactionStore.getState()
+      if (count > 0 && !cgtResults && !isLoading && !hasImportedThisSession) {
         setPendingTransactionCount(count)
 
         const files = await db.imported_files.toArray()

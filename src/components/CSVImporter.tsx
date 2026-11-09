@@ -14,6 +14,7 @@ export function CSVImporter() {
   const [showImportInfo, setShowImportInfo] = useState(false)
   const [processingStatus, setProcessingStatus] = useState<string>('')
   const recalculate = useTransactionStore((state) => state.recalculate)
+  const markImportStarted = useTransactionStore((state) => state.markImportStarted)
 
   // Build supported brokers text for the upload area
   const supportedBrokers = getEnabledBrokerDefinitions()
@@ -76,6 +77,9 @@ export function CSVImporter() {
   }
 
   const processFiles = async (files: File[]) => {
+    // Before any file reaches IndexedDB, so the startup check doesn't offer
+    // to resume (or clear) what is being imported now
+    markImportStarted()
     setIsProcessing(true)
     setError(null)
     setSuccess(null)
