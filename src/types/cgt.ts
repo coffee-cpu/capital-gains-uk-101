@@ -214,5 +214,17 @@ export interface DataNotices {
    * followed the other and the rows stayed in one pool.
    */
   tickerConflicts?: { symbol: string; isins: string[]; pooledSeparately: boolean }[]
+  /**
+   * Stock split rows from the user's files with no usable ratio (some
+   * exports leave it out, e.g. Trading 212 and Revolut, and Schwab when the
+   * description doesn't state it) for shares the user holds, that no other
+   * split record covers. They can't be applied, so quantities before and
+   * after the split don't line up.
+   */
+  splitsWithoutRatio?: { id: string; symbol: string; date: string; source: string }[]
+  /** Whether community split data was looked up (the auto-splits setting) */
+  autoSplits?: boolean
+  /** Some years of community split data could not be downloaded or read from the cache */
+  splitDataUnavailable?: boolean
 }
 

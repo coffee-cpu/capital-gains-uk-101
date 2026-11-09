@@ -50,6 +50,11 @@ export interface SplitDataSource {
    * Optional: sources that don't validate their data leave it out.
    */
   readonly rejectedRecords?: readonly RejectedSplitRecord[]
+  /**
+   * Years whose data could not be fetched (nor read from the cache), so
+   * splits in them may be missing. Optional, like rejectedRecords.
+   */
+  readonly unavailableYears?: ReadonlySet<number>
 }
 
 /** Cache TTL: 7 days in milliseconds */

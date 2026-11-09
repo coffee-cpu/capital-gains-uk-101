@@ -126,6 +126,20 @@ export function detectIssues(
     })
   }
 
+  const splitsWithoutRatio = cgtResults?.dataNotices?.splitsWithoutRatio ?? []
+  if (splitsWithoutRatio.length > 0) {
+    issues.push({
+      id: 'splits-without-ratio',
+      type: 'warning',
+      title: 'Stock Split Without a Ratio',
+      description: `Your files record a stock split for ${splitsWithoutRatio.map(s => `${s.symbol} (${s.date}, ${s.source})`).join(', ')} without saying what the ratio was, and no split data covers it, so it could not be applied. Quantities before and after the split won't line up, which can show as incomplete disposals or wrong gains.`,
+      count: splitsWithoutRatio.length,
+      affectedItems: [...new Set(splitsWithoutRatio.map(s => s.symbol))],
+      action: splitsWithoutRatioAction(cgtResults?.dataNotices),
+      actionLabel: 'Add Split Ratio',
+    })
+  }
+
   const rejectedSplits = cgtResults?.dataNotices?.rejectedSplitRecords ?? []
   if (rejectedSplits.length > 0) {
     issues.push({
@@ -243,4 +257,19 @@ export function useIssues(): Issue[] {
     () => detectIssues(transactions, cgtResults),
     [transactions, cgtResults]
   )
+}
+
+/**
+ * What to do about a split row without a ratio, depending on whether
+ * community split data was looked up, and whether it could be downloaded
+ */
+function splitsWithoutRatioAction(notices: CGTCalculationResult['dataNotices']): string {
+  const addRow = 'add a STOCK_SPLIT row with the ratio (e.g. 10:1) in a Generic CSV file.'
+  if (notices?.autoSplits === false) {
+    return `Turn on "Community split data" in the Transactions section, which may have the ratio. Otherwise ${addRow}`
+  }
+  if (notices?.splitDataUnavailable) {
+    return `Community split data couldn't be downloaded, so it may still have this split: reload the page to try again. If the warning stays, ${addRow}`
+  }
+  return `Community split data doesn't have this split, so ${addRow}`
 }
