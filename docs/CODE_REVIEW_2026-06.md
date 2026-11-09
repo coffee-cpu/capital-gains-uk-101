@@ -3,7 +3,8 @@
 A full-repo review covering correctness, robustness, performance, dead code,
 duplication, and documentation staleness. Items marked ✅ were fixed on the
 `claude/fable-model-review-v2klc2` branch alongside this report; unmarked items
-remain open.
+remain open. Items marked ✅ (Nov 2026) were fixed in the November 2026
+maintainability pass (`claude/intelligent-fermi-g5nmg1`).
 
 **Health check:** build passes, all 498 unit tests pass. 5 of 65 E2E tests fail
 in offline environments because several specs assert exact GBP figures fetched
@@ -80,14 +81,17 @@ from live HMRC/ECB rate APIs — the suite is inherently network-dependent.
     matcher. Now uses an incremental `Map<txId, matchedQty>` carried in the
     pipeline context.
 
-13. **TransactionList re-renders the entire table on every mouse hover** —
+13. ✅ (Nov 2026, badges) **TransactionList re-renders the entire table on every mouse hover** —
     hover state at table level plus per-row triple-nested matching scans
     (`TransactionList.tsx:448-465, 674-675`). Needs a precomputed badge map and
-    memoized rows — open.
+    memoized rows. Badges now come from a per-calculation index
+    (`src/lib/cgtBadges.ts`), so a hover no longer rescans every matching;
+    rows are still re-rendered on hover.
 
-14. **FX enrichment is serial** — `fxEnricher.ts:62-84` awaits one rate per
+14. ✅ (Nov 2026) **FX enrichment is serial** — `fxEnricher.ts:62-84` awaits one rate per
     transaction; `hmrcMonthly.ts` downloads the same all-currency month file
-    once per currency — open.
+    once per currency. Enrichment now runs up to 8 lookups at once; the
+    monthly provider already shared one download per month.
     ✅ The crypto leak into prefetch (`manager.ts:97-100`), which forced a full
     time-series re-download on every run for Coinbase users, is fixed
     (non-fiat currencies now filtered).
@@ -110,10 +114,12 @@ from live HMRC/ECB rate APIs — the suite is inherently network-dependent.
     (`transactionStore.ts`): never called, hardcoded `tax_year: '2024/25'` and
     `fx_rate: 1`. Removed, along with unused `setHelpContext`.
 
-19. **taxYearFeatures "registry" is three registries** — calculation registry,
+19. ✅ (Nov 2026) **taxYearFeatures "registry" is three registries** — calculation registry,
     PDF renderer map (features without an entry are silently skipped in PDFs),
     and a hardcoded UI lookup in `TaxYearFeaturesRenderer.tsx:48`. ~270 lines of
-    plumbing for one feature — open.
+    plumbing for one feature. The three tables stay (the calculation must not
+    import React), but all are typed over one `TaxYearFeatureId`, so a feature
+    missing a UI panel or PDF section no longer compiles.
 
 20. **Parsers reimplement shared utils** — date-part extraction exists 5 times
     (three with no validation), `parsingUtils.parseISODate` /
@@ -121,23 +127,29 @@ from live HMRC/ECB rate APIs — the suite is inherently network-dependent.
     them, freetrade/IB use bare `parseFloat` (a `"1,500"` silently becomes `1`)
     — open.
 
-21. **Other duplication (open)**: same-day and 30-day matchers share a ~40-line
+21. **Other duplication (partly fixed Nov 2026)**: same-day and 30-day matchers share a ~40-line
     FIFO loop; currency formatting reimplemented 5+ ways with inconsistent
     output; `TaxYearSummary.tsx` (751 lines) contains two structurally identical
     ~150-line panels; `IssuesPanel` centralizes warnings but the superseded
-    per-component banners still render alongside it.
+    per-component banners still render alongside it. Fixed: the two
+    TaxYearSummary panels (now `IncomeDetailsPanels.tsx`) and the currency
+    formatting (`formatGbp`, `formatGbpWhole`, `formatQuantity`). Still open:
+    the matchers' shared loop and the duplicate banners.
 
-22. **Test-only exports (open)**: `buildDisposalGainsData`, `formatMonthYear`,
+22. **Test-only exports (partly fixed Nov 2026: `formatCurrencyPrecise` and the
+    registry helpers removed)**: `buildDisposalGainsData`, `formatMonthYear`,
     `formatCurrencyPrecise`, `getRuleColor` (chartData),
     `getIncompleteStockPlanActivity`, `parseCSVText`, `getDefaultFXManager`,
     several taxYearFeatures registry helpers.
 
-23. **Parser convention drift (open)**: ID generation deviates from the
+23. **Parser convention drift (partly fixed Nov 2026)**: ID generation deviates from the
     documented `${fileId}-${rowIndex}` pattern in three different ways;
     STOCK_SPLIT ratio extraction inconsistent across brokers (T212/Revolut emit
     splits with no ratio and no `incomplete` flag); default currency
     inconsistent (GBP vs USD); `GenericTransactionSchema` (Zod) is never
-    actually enforced at import time despite CLAUDE.md's claim.
+    actually enforced at import time despite CLAUDE.md's claim. The schema is
+    now enforced in `importCSVText`, and the ID patterns are documented in
+    CLAUDE.md; split ratios and default currencies are unchanged.
 
 ## 5. React correctness
 
@@ -147,14 +159,14 @@ from live HMRC/ECB rate APIs — the suite is inherently network-dependent.
     `eslint-plugin-react-hooks` added to catch this class of bug
     (`npm run lint`).
 
-25. **`useInitializeSettings` runs an async side effect during render**
-    (`settingsStore.ts:100-107`), racing `ensureDatabaseCompatible()` — open.
+25. ✅ (Nov 2026) **`useInitializeSettings` runs an async side effect during render**
+    (`settingsStore.ts:100-107`), racing `ensureDatabaseCompatible()`.
 
-26. **`setCGTResults` resets the selected tax year** on every FX-source or
-    auto-splits change, bouncing the user off the year they were viewing — open.
+26. ✅ (Nov 2026) **`setCGTResults` resets the selected tax year** on every FX-source or
+    auto-splits change, bouncing the user off the year they were viewing.
 
-27. **Settings persisted to both localStorage and IndexedDB** with read-back
-    overwrite at startup — two sources of truth — open.
+27. ✅ (Nov 2026) **Settings persisted to both localStorage and IndexedDB** with read-back
+    overwrite at startup — two sources of truth. IndexedDB is now the only copy.
 
 ## 6. Stale documentation
 

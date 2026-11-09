@@ -57,7 +57,7 @@ npx playwright test e2e/csv-import.spec.ts
 - **Dexie** for IndexedDB persistence (local storage)
 - **Zod** for schema validation
 - **PapaParse** for CSV parsing
-- **Vitest** for unit tests (jsdom environment)
+- **Vitest** for unit tests (node environment by default; files that need a DOM start with `// @vitest-environment jsdom`)
 - **Playwright** for E2E tests
 
 ### Core Data Flow
@@ -115,7 +115,7 @@ The `detectBroker()` function inspects CSV headers to identify the source format
 Each broker definition in `src/config/brokers/*.ts` specifies required headers, optional custom detector function, and parser function.
 
 Each parser must:
-- Generate unique IDs (pattern: `${fileId}-${rowIndex}`)
+- Generate unique IDs (pattern: `${fileId}-${rowIndex}`, see Transaction ID Generation)
 - Convert dates to ISO format (YYYY-MM-DD)
 - Parse currency amounts (handle $, commas, etc.)
 - Map broker-specific actions to standard TransactionType
@@ -128,7 +128,14 @@ The `enrichTransactions()` function (in `index.ts`) uses the `EnrichmentEngine` 
 3. **Tax year calculation** (sync) - assigns UK tax years
 
 #### 4. State Management
-- **Runtime state**: Zustand store (`src/stores/transactionStore.ts`) holds currently loaded transactions and selected tax year
+- **Runtime state**: Zustand stores in `src/stores/`:
+  - `transactionStore.ts` holds the latest `cgtResults` (read transactions with the `selectTransactions`
+    selector) and the selected tax year. Anything that changes the inputs (an import, the FX source,
+    the auto-splits toggle) calls `recalculate()`, which re-runs the pipeline on IndexedDB with the current
+    settings; when runs overlap only the latest is applied. Don't call `processTransactionsFromDB` from components
+  - `settingsStore.ts` holds the FX source and auto-splits toggle. IndexedDB (`settings` table) is their only
+    persisted copy; settings from the old localStorage copy (`cgt-settings`) are migrated once
+  - `helpPanelStore.ts` holds the help panel's open state and topic
 - **Persistence**: Dexie database (`src/lib/db.ts`, schema v5) with five tables:
   - `transactions`: Indexed by id, source, symbol, date, type
   - `fx_rates`: Primary key `id` (format `SOURCE-dateKey-currency`, e.g. `HMRC_MONTHLY-2025-05-USD`)
@@ -210,19 +217,29 @@ is a generic engine that iterates the registry — no per-broker code goes there
 
 ### Transaction ID Generation
 IDs must be unique within a session. Pattern: `${fileId}-${rowIndex}` where:
-- `fileId`: Unique identifier for the uploaded file (e.g. hash of filename + timestamp)
-- `rowIndex`: Sequential number starting from 1
+- `fileId`: Unique identifier for the uploaded file (`createFileId` in `src/lib/import.ts`: sanitised file name + byte size)
+- `rowIndex`: Sequential number starting from 1. Most parsers use the data row's number; parsers that emit
+  more than one transaction per row (Coinbase, Coinbase Pro) use a running counter instead
+- Synthetic rows a parser adds that have no row of their own get a marker, e.g. Interactive Brokers'
+  options expiries: `${fileId}-exp-${rowIndex}`
+- A row's `source` is its broker's `BrokerType` value (e.g. `BrokerType.SCHWAB`). Code that depends on the
+  broker compares against `BrokerType`, never a typed-out name
 
 ### Date Formats
 Always store dates as ISO 8601: `YYYY-MM-DD`. Parsers must convert from broker-specific formats.
 
 ### Type Safety
-- All transaction types must validate against GenericTransactionSchema (Zod)
+- Parser output must validate against GenericTransactionSchema (Zod): `importCSVText` checks every
+  transaction and reports failures as skipped rows. `src/lib/__tests__/exampleFilesSchema.test.ts` runs every
+  example and E2E fixture file through it
 - Use strict TypeScript - compiler options enforce `strict: true`, `noUnusedLocals`, `noUnusedParameters`
 - Never use `any` - prefer `unknown` and type guards if needed
 
 ### Code Quality
-- **Always address linter warnings** before committing code: run `npm run lint` (ESLint with typescript-eslint and react-hooks rules)
+- **Always address linter warnings** before committing code: run `npm run lint` (ESLint with typescript-eslint and react-hooks rules; CI runs it too)
+- The lint config also enforces the engine boundary: `src/lib`, `src/utils`, `src/types`, `src/config`, `src/guides`
+  and the CLI can't import React, Dexie, Zustand, the stores, components, hooks or `db.ts` (only
+  `db.ts` and `transactionProcessor.ts` are exempt)
 - Remove unused variables, imports, and parameters
 - Fix TypeScript errors and warnings (e.g., TS6133 for unused declarations)
 - Ensure proper JSX structure (adjacent elements must be wrapped)
