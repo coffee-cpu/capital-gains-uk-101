@@ -4,6 +4,7 @@ import { useTransactionStore, selectTransactions } from '../stores/transactionSt
 import { useHelpPanelStore } from '../stores/helpPanelStore'
 import { ClearDataButton } from './ClearDataButton'
 import { Tooltip } from './Tooltip'
+import { IssuePointer } from './IssuePointer'
 import { FXSourceSelector } from './FXSourceSelector'
 import { AutoSplitsToggle } from './AutoSplitsToggle'
 import { exportTransactionsToCSV } from '../utils/csvExport'
@@ -86,6 +87,8 @@ export function TransactionList() {
       ? sortedTransactions.filter(needsAttention)
       : sortedTransactions
 
+  const fxErrorCount = transactions.filter(tx => tx.fx_error).length
+
 
   if (isLoading) {
     return (
@@ -161,6 +164,15 @@ export function TransactionList() {
           </div>
         </div>
       </div>
+
+      {fxErrorCount > 0 && (
+        <div className="px-6 py-3 border-b border-gray-200">
+          <IssuePointer testId="fx-errors-pointer">
+            {fxErrorCount} transaction{fxErrorCount !== 1 ? 's have' : ' has'} no GBP exchange rate and show "Error" below.
+            See "FX Rate Errors" in the Issues panel above.
+          </IssuePointer>
+        </div>
+      )}
 
       {/* Mobile viewing notice */}
       <div className="px-6 py-4 bg-gray-50 border-b border-gray-200 md:hidden">

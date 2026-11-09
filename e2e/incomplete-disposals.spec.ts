@@ -82,6 +82,10 @@ test.describe('Incomplete Disposal Tracking', () => {
 
     // The note about gains/losses only including matched portions
     await expect(issue).toContainText('Gains/losses are only calculated for matched portions')
+
+    // Next to the figures, a one-line pointer counts the selected year's
+    await page.locator('select').filter({ hasText: /2024\/25/ }).first().selectOption('2024/25')
+    await expect(page.getByTestId('incomplete-disposals-pointer')).toContainText('1 disposal this tax year could')
   })
 
   test('should show correct disposal counts in tax year summary', async ({ page }) => {
@@ -125,6 +129,7 @@ test.describe('Incomplete Disposal Tracking', () => {
     // The Issues panel counts 2 for 2025/26 (GlobalBank and TravelGroup)
     const issue = await incompleteDisposalsIssue(page)
     await expect(issue).toContainText('2025/26: 2')
+    await expect(page.getByTestId('incomplete-disposals-pointer')).toContainText('2 disposals this tax year could')
   })
 
   test('should persist incomplete disposal state after page reload', async ({ page }) => {

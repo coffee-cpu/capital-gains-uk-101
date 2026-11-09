@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { DisposalRecords } from './DisposalRecords'
 import { Tooltip } from './Tooltip'
 import { DividendDetailsPanel, InterestDetailsPanel } from './IncomeDetailsPanels'
+import { IssuePointer } from './IssuePointer'
 import { ExportPDFButton } from './ExportPDFButton'
 import { BuyMeACoffee } from './BuyMeACoffee'
 import { TaxYearFeaturesRenderer } from './taxYearFeatures'
@@ -169,6 +170,13 @@ export function TaxYearSummary() {
               The gains and losses above are wrong until the rate is available. Try reloading, or choose a different FX source.
             </p>
           </div>
+        )}
+
+        {currentSummary.incompleteDisposals > 0 && (
+          <IssuePointer testId="incomplete-disposals-pointer">
+            {currentSummary.incompleteDisposals} disposal{currentSummary.incompleteDisposals !== 1 ? 's' : ''} this tax year could
+            not be fully matched, so the figures above cover only the matched shares. See "Incomplete Disposal Data" in the Issues panel above.
+          </IssuePointer>
         )}
 
         {/* Disposal Records Panel */}
