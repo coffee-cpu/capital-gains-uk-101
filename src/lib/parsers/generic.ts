@@ -11,7 +11,7 @@ import { parseNumber } from './parsingUtils'
  * - type (required, one of: BUY, SELL, DIVIDEND, FEE, INTEREST, TRANSFER, TAX, STOCK_SPLIT)
  * - quantity (optional, number)
  * - price (optional, number)
- * - currency (required, e.g., USD, GBP, EUR)
+ * - currency (required, e.g., USD, GBP, EUR; may be blank on STOCK_SPLIT rows, which have no amounts)
  * - total (optional, number)
  * - fee (optional, number)
  * - split_ratio (optional, for STOCK_SPLIT only, e.g., "10:1", "2:1")
@@ -64,7 +64,7 @@ function normalizeGenericRow(
   const symbol = row['symbol']?.trim() || ''
   const dateStr = row['date']?.trim()
   const typeStr = row['type']?.trim()
-  const currency = row['currency']?.trim() || 'USD'
+  const currencyText = row['currency']?.trim().toUpperCase()
 
   if (!dateStr) {
     return 'missing date'
@@ -80,6 +80,13 @@ function normalizeGenericRow(
   const type = parseGenericType(typeStr)
   if (!type) {
     return `unrecognised type "${typeStr}"`
+  }
+
+  // Amounts can't be converted to GBP without knowing their currency. A
+  // split row has none, so it may leave it blank (GBP needs no exchange rate).
+  const currency = currencyText || (type === TransactionType.STOCK_SPLIT ? 'GBP' : '')
+  if (!currency) {
+    return 'missing currency (e.g. GBP or USD)'
   }
 
   // Optional fields

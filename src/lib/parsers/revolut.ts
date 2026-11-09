@@ -1,6 +1,7 @@
 import type { GenericTransaction } from '../../types/transaction'
 import { TransactionType } from '../../types/transaction'
 import { BrokerType, type RawCSVRow } from '../../types/broker'
+import type { SkippedRow } from '../../types/brokerDefinition'
 import { parseNumber, extractCurrencyFromAmount } from './parsingUtils'
 
 /**
@@ -64,19 +65,23 @@ function parseDate(dateStr: string): string {
 }
 
 /**
- * Extract currency symbol from amount string (e.g., "$1,000" -> "USD")
- * Falls back to the Currency column if no symbol detected
+ * The row's currency: the Currency column, or else the code or sign written
+ * in the amounts. Null when neither says, rather than guessing.
  */
-function extractCurrency(amount: string | undefined, currencyColumn: string): string {
-  return extractCurrencyFromAmount(amount, currencyColumn || 'USD')
+function rowCurrency(row: RawCSVRow): string | null {
+  const column = row['Currency']?.trim().toUpperCase()
+  if (column) return column
+  return extractCurrencyFromAmount(row['Total Amount']) ?? extractCurrencyFromAmount(row['Price per share'])
 }
 
 /**
  * Normalize Revolut transactions to GenericTransaction format
+ * @param skippedRows If given, receives every row that was dropped and why
  */
 export function normalizeRevolutTransactions(
   rows: RawCSVRow[],
-  fileId: string
+  fileId: string,
+  skippedRows?: SkippedRow[]
 ): GenericTransaction[] {
   return rows
     .map((row, index) => {
@@ -84,7 +89,6 @@ export function normalizeRevolutTransactions(
       const ticker = row['Ticker']
       const type = row['Type']
       const totalAmount = row['Total Amount']
-      const currencyColumn = row['Currency']
 
       // Skip rows without essential data
       if (!date || !type) return null
@@ -96,8 +100,15 @@ export function normalizeRevolutTransactions(
       const pricePerShare = parseNumber(row['Price per share'])
       const total = parseNumber(totalAmount)
 
-      // Determine currency from Total Amount column (has currency symbol) or Currency column
-      const currency = extractCurrency(totalAmount, currencyColumn)
+      // A row with amounts needs a currency to convert them to GBP. A row
+      // without (e.g. a stock split) uses GBP, which needs no exchange rate.
+      const hasAmounts = total !== undefined || pricePerShare !== undefined
+      const currency = rowCurrency(row) ?? (hasAmounts ? null : 'GBP')
+      if (!currency) {
+        // +2: spreadsheet row number (rows are 1-based and the header is row 1)
+        skippedRows?.push({ row: index + 2, reason: 'no currency in the Currency column or the amount' })
+        return null
+      }
 
       // For transfers and fees, there's no ticker
       const symbol = ticker?.trim() || ''

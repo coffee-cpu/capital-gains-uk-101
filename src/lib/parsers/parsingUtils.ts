@@ -67,17 +67,20 @@ export function parseUSDate(dateStr: string | undefined | null): string | null {
 }
 
 /**
- * Extract currency code from amount string with currency symbol
- * Falls back to provided default if no symbol detected
+ * The currency an amount is written in, when it says so unambiguously: an
+ * ISO code ("USD 1,871.87", "12.50 GBP") or the £ or € sign. "$" alone is
+ * not enough (US, Canadian, Australian dollars...), so it gives null, as
+ * does a bare number: callers decide what to do rather than guess.
  */
-export function extractCurrencyFromAmount(amount: string | undefined | null, defaultCurrency = 'USD'): string {
-  if (!amount) return defaultCurrency
+export function extractCurrencyFromAmount(amount: string | undefined | null): string | null {
+  if (!amount) return null
 
-  if (amount.includes('$')) return 'USD'
+  const code = /(?:^|[^A-Z])([A-Z]{3})(?![A-Z])/.exec(amount)
+  if (code) return code[1]
   if (amount.includes('£')) return 'GBP'
   if (amount.includes('€')) return 'EUR'
 
-  return defaultCurrency
+  return null
 }
 
 /**

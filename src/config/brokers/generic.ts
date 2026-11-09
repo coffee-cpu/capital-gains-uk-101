@@ -15,7 +15,7 @@ export const genericDefinition: BrokerDefinition = {
   instructions: {
     steps: [],
     notes: [
-      'Always required: date, type, symbol, currency',
+      'Always required: date, type, symbol, currency (currency may be left blank on STOCK_SPLIT rows)',
       'Required for BUY/SELL: quantity, price',
       'Required for DIVIDEND/FEE: total',
       'Required for STOCK_SPLIT: split_ratio (e.g., "10:1", "2:1", "1:10" for reverse splits)',
