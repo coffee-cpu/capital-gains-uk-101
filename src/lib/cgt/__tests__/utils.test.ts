@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { addDaysToISODate, allocateProRata, calculateCostBasis, calculateDisposalFees, calculateGrossProceeds, getFeePerUnit, isFullyUnmatched } from '../utils'
+import { addDaysToISODate, allocateProRata, calculateCostBasis, calculateDisposalFees, calculateGrossProceeds, createMatching, getFeePerUnit, groupBy, isFullyUnmatched, matchedAcquisition, MatchedQuantityTracker } from '../utils'
 import { EnrichedTransaction, TransactionType } from '../../../types/transaction'
 import type { DisposalRecord } from '../../../types/cgt'
 
@@ -126,3 +126,40 @@ describe('isFullyUnmatched', () => {
     expect(isFullyUnmatched(record(disposal({})))).toBe(false)
   })
 })
+
+describe('groupBy', () => {
+  it('keeps input order within groups and first-seen order of keys', () => {
+    const groups = groupBy(['b1', 'a1', 'b2', 'a2'], s => s[0])
+    expect([...groups.keys()]).toEqual(['b', 'a'])
+    expect(groups.get('b')).toEqual(['b1', 'b2'])
+  })
+})
+
+describe('MatchedQuantityTracker.withRemaining', () => {
+  it('lists unmatched quantities and drops fully matched transactions', () => {
+    const buyA = makeTx({ id: 'a', type: TransactionType.BUY, quantity: 10 })
+    const buyB = makeTx({ id: 'b', type: TransactionType.BUY, quantity: 5 })
+    const sell = makeTx({ id: 's', type: TransactionType.SELL, quantity: 9 })
+    const tracker = new MatchedQuantityTracker([
+      createMatching('SAME_DAY', sell, [matchedAcquisition(buyA, 4), matchedAcquisition(buyB, 5)], 9),
+    ])
+
+    expect(tracker.withRemaining([buyA, buyB])).toEqual([{ transaction: buyA, available: 6 }])
+  })
+})
+
+describe('createMatching', () => {
+  it('totals the acquisitions\' cost basis and keeps the stated quantity', () => {
+    const buy = makeTx({ id: 'b', type: TransactionType.BUY, quantity: 10 })
+    const sell = makeTx({ id: 's', type: TransactionType.SELL, quantity: 3 })
+    const acquisitions = [matchedAcquisition(buy, 1), matchedAcquisition(buy, 2)]
+
+    const matching = createMatching('30_DAY', sell, acquisitions, 3)
+
+    expect(matching.rule).toBe('30_DAY')
+    expect(matching.quantityMatched).toBe(3)
+    expect(matching.totalCostBasisGbp).toBeCloseTo(acquisitions[0].costBasisGbp + acquisitions[1].costBasisGbp)
+    expect(acquisitions[1].costBasisGbp).toBeCloseTo(calculateCostBasis(buy, 2))
+  })
+})
+

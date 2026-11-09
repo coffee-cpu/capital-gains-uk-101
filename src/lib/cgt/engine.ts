@@ -6,7 +6,7 @@ import { sameDayStage } from './sameDayMatcher'
 import { thirtyDayStage } from './thirtyDayMatcher'
 import { section104Stage } from './section104Pool'
 import { getTaxYearBounds } from '../../utils/taxYear'
-import { getEffectiveQuantity, isAcquisition, isDisposal, calculateGrossProceeds, calculateDisposalFees, hasGbpPrice, QUANTITY_EPSILON } from './utils'
+import { getEffectiveQuantity, groupBy, isAcquisition, isDisposal, calculateGrossProceeds, calculateDisposalFees, hasGbpPrice, QUANTITY_EPSILON } from './utils'
 import { netSameDayGains, splitGainsAndLosses } from './sa108'
 import { calculateTaxYearFeatures } from './taxYearFeatures/registry'
 import { getAnnualExemptAmount, getDividendAllowance } from './allowances'
@@ -237,17 +237,6 @@ function summarizeTaxYear(
   }
 
   return summary
-}
-
-function groupBy<T>(items: T[], keyOf: (item: T) => string): Map<string, T[]> {
-  const groups = new Map<string, T[]>()
-  for (const item of items) {
-    const key = keyOf(item)
-    const group = groups.get(key)
-    if (group) group.push(item)
-    else groups.set(key, [item])
-  }
-  return groups
 }
 
 /**
