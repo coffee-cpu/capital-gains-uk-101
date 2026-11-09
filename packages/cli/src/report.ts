@@ -486,10 +486,13 @@ function collectWarnings(result: CGTCalculationResult, disposals: DisposalRecord
         `Stock split rows with no ratio could not be applied: ` +
         `${splitsWithoutRatio.map(s => `${s.symbol} on ${s.date} (${s.source})`).join(', ')}. ` +
         'Quantities before and after the split don\'t line up. ' +
-        (result.dataNotices?.autoSplits !== false
-          ? 'Community split data doesn\'t have it, so add a STOCK_SPLIT row with the ratio (e.g. 10:1) in a Generic CSV.'
-          : 'Run again without --no-auto-splits (community split data may have the ratio), or add a STOCK_SPLIT row ' +
-            'with the ratio (e.g. 10:1) in a Generic CSV.'),
+        (result.dataNotices?.autoSplits === false
+          ? 'Run again without --no-auto-splits (community split data may have the ratio), or add a STOCK_SPLIT row ' +
+            'with the ratio (e.g. 10:1) in a Generic CSV.'
+          : result.dataNotices?.splitDataUnavailable
+            ? 'Split data could not be fetched (see SPLIT_DATA_UNAVAILABLE), so it may still have the ratio: run again ' +
+              'online, or add a STOCK_SPLIT row with the ratio (e.g. 10:1) in a Generic CSV.'
+            : 'Community split data doesn\'t have it, so add a STOCK_SPLIT row with the ratio (e.g. 10:1) in a Generic CSV.'),
       transactionIds: splitsWithoutRatio.map(s => s.id),
     })
   }

@@ -49,13 +49,14 @@ describe('buildCalculateReport - stock splits without a ratio', () => {
   })
 
   it('suggests dropping --no-auto-splits only when auto-splits was off', () => {
-    const messageFor = (autoSplits: boolean) => {
+    const messageFor = (autoSplits: boolean, splitDataUnavailable = false) => {
       const result = calculateCGT([])
       result.dataNotices = {
         overlappingRows: [],
         splitConflicts: [],
         splitsWithoutRatio: [{ id: 'f-3', symbol: 'AAPL', date: '2024-06-10', source: 'Trading 212' }],
         autoSplits,
+        splitDataUnavailable,
       }
       const report = buildCalculateReport(result, {
         taxYear: null, fxSource: 'HMRC_MONTHLY', autoSplits, offline: false,
@@ -67,6 +68,10 @@ describe('buildCalculateReport - stock splits without a ratio', () => {
     expect(messageFor(false)).toContain('without --no-auto-splits')
     expect(messageFor(true)).not.toContain('--no-auto-splits')
     expect(messageFor(true)).toContain("Community split data doesn't have it")
+
+    // Offline or a failed fetch: agree with SPLIT_DATA_UNAVAILABLE instead
+    expect(messageFor(true, true)).toContain('could not be fetched')
+    expect(messageFor(true, true)).not.toContain("doesn't have it")
   })
 })
 

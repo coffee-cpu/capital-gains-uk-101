@@ -432,12 +432,13 @@ describe('detectIssues - data notices', () => {
 })
 
 describe('detectIssues - stock splits without a ratio', () => {
-  const issueFor = (autoSplits: boolean) => detectIssues([createMockTransaction()], createMockCGTResults({
+  const issueFor = (autoSplits: boolean, splitDataUnavailable = false) => detectIssues([createMockTransaction()], createMockCGTResults({
     dataNotices: {
       overlappingRows: [],
       splitConflicts: [],
       splitsWithoutRatio: [{ id: 's', symbol: 'AAPL', date: '2024-06-10', source: 'Trading 212' }],
       autoSplits,
+      splitDataUnavailable,
     },
   })).find(i => i.id === 'splits-without-ratio')!
 
@@ -454,6 +455,13 @@ describe('detectIssues - stock splits without a ratio', () => {
     expect(issueFor(false).action).toContain('Turn on "Community split data"')
     expect(issueFor(true).action).not.toContain('Turn on')
     expect(issueFor(true).action).toContain("Community split data doesn't have this split")
+  })
+
+  it('does not claim the data lacks the split when it could not be downloaded', () => {
+    const action = issueFor(true, true).action!
+    expect(action).toContain("couldn't be downloaded")
+    expect(action).toContain('reload the page')
+    expect(action).not.toContain("doesn't have this split")
   })
 })
 

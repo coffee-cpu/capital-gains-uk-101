@@ -224,5 +224,7 @@ export interface DataNotices {
   splitsWithoutRatio?: { id: string; symbol: string; date: string; source: string }[]
   /** Whether community split data was looked up (the auto-splits setting) */
   autoSplits?: boolean
+  /** Some years of community split data could not be downloaded or read from the cache */
+  splitDataUnavailable?: boolean
 }
 

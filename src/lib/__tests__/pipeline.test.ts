@@ -237,6 +237,17 @@ describe('runPipeline - stock splits without a ratio', () => {
     expect(result!.dataNotices!.autoSplits).toBe(false)
   })
 
+  it('says when community split data could not be downloaded', async () => {
+    const source: SplitDataSource = {
+      fetchSplitsForYears: async () => [],
+      unavailableYears: new Set([2024]),
+    }
+    const result = await runPipeline(rows, { autoSplits: true, splitSource: source })
+
+    expect(result!.dataNotices!.splitsWithoutRatio!.map(s => s.id)).toEqual(['split'])
+    expect(result!.dataNotices!.splitDataUnavailable).toBe(true)
+  })
+
   it('does not report it when community split data covers it, and applies that ratio', async () => {
     const source: SplitDataSource = {
       fetchSplitsForYears: async () => [{ symbol: 'AAPL', date: '2024-06-10', ratioFrom: 1, ratioTo: 4 }],
