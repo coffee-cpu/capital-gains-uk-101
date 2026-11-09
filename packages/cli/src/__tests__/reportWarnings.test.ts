@@ -47,6 +47,27 @@ describe('buildCalculateReport - stock splits without a ratio', () => {
     expect(warning.message).toContain('AAPL on 2024-06-10 (Trading 212)')
     expect(warning.transactionIds).toEqual(['f-3'])
   })
+
+  it('suggests dropping --no-auto-splits only when auto-splits was off', () => {
+    const messageFor = (autoSplits: boolean) => {
+      const result = calculateCGT([])
+      result.dataNotices = {
+        overlappingRows: [],
+        splitConflicts: [],
+        splitsWithoutRatio: [{ id: 'f-3', symbol: 'AAPL', date: '2024-06-10', source: 'Trading 212' }],
+        autoSplits,
+      }
+      const report = buildCalculateReport(result, {
+        taxYear: null, fxSource: 'HMRC_MONTHLY', autoSplits, offline: false,
+        details: false, inputs: [], warnings: [],
+      })
+      return report.warnings.find(w => w.code === 'SPLIT_WITHOUT_RATIO')!.message
+    }
+
+    expect(messageFor(false)).toContain('without --no-auto-splits')
+    expect(messageFor(true)).not.toContain('--no-auto-splits')
+    expect(messageFor(true)).toContain("Community split data doesn't have it")
+  })
 })
 
 describe('buildCalculateReport - ISIN matching', () => {

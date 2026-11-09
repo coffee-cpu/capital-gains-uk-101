@@ -432,21 +432,28 @@ describe('detectIssues - data notices', () => {
 })
 
 describe('detectIssues - stock splits without a ratio', () => {
-  it('warns about split rows that could not be applied', () => {
-    const results = createMockCGTResults({
-      dataNotices: {
-        overlappingRows: [],
-        splitConflicts: [],
-        splitsWithoutRatio: [{ id: 's', symbol: 'AAPL', date: '2024-06-10', source: 'Trading 212' }],
-      },
-    })
+  const issueFor = (autoSplits: boolean) => detectIssues([createMockTransaction()], createMockCGTResults({
+    dataNotices: {
+      overlappingRows: [],
+      splitConflicts: [],
+      splitsWithoutRatio: [{ id: 's', symbol: 'AAPL', date: '2024-06-10', source: 'Trading 212' }],
+      autoSplits,
+    },
+  })).find(i => i.id === 'splits-without-ratio')!
 
-    const issue = detectIssues([createMockTransaction()], results).find(i => i.id === 'splits-without-ratio')!
+  it('warns about split rows that could not be applied', () => {
+    const issue = issueFor(true)
 
     expect(issue.type).toBe('warning')
     expect(issue.description).toContain('AAPL (2024-06-10, Trading 212)')
     expect(issue.affectedItems).toEqual(['AAPL'])
     expect(issue.action).toContain('STOCK_SPLIT row with the ratio')
+  })
+
+  it('suggests Community split data only when it is off', () => {
+    expect(issueFor(false).action).toContain('Turn on "Community split data"')
+    expect(issueFor(true).action).not.toContain('Turn on')
+    expect(issueFor(true).action).toContain("Community split data doesn't have this split")
   })
 })
 

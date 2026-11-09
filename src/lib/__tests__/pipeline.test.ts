@@ -195,27 +195,32 @@ function tx(id: string, date: string, type: GenericTransaction['type'], extra: P
 }
 
 describe('findSplitsWithoutRatio', () => {
+  const buy = tx('buy', '2024-01-10', 'BUY')
   const noRatio = tx('split', '2024-06-10', 'STOCK_SPLIT', { ratio: null, quantity: null, price: null, total: null })
 
   it('reports a split row with no ratio that nothing covers', () => {
-    expect(findSplitsWithoutRatio([noRatio])).toEqual([
+    expect(findSplitsWithoutRatio([buy, noRatio])).toEqual([
       { id: 'split', symbol: 'AAPL', date: '2024-06-10', source: 'Trading 212' },
     ])
   })
 
   it('reports a ratio that cannot be parsed', () => {
-    expect(findSplitsWithoutRatio([{ ...noRatio, ratio: 'two for one' }])).toHaveLength(1)
+    expect(findSplitsWithoutRatio([buy, { ...noRatio, ratio: 'two for one' }])).toHaveLength(1)
   })
 
   it('does not report it when a usable split for the same share is within a week', () => {
     const covering = tx('community', '2024-06-07', 'STOCK_SPLIT', { source: 'Community', ratio: '4:1' })
-    expect(findSplitsWithoutRatio([noRatio, covering])).toEqual([])
+    expect(findSplitsWithoutRatio([buy, noRatio, covering])).toEqual([])
   })
 
   it('still reports it when the only usable split is for another share or further away', () => {
     const otherShare = tx('o', '2024-06-10', 'STOCK_SPLIT', { symbol: 'MSFT', ratio: '2:1' })
     const tooFar = tx('f', '2024-06-20', 'STOCK_SPLIT', { ratio: '4:1' })
-    expect(findSplitsWithoutRatio([noRatio, otherShare, tooFar]).map(s => s.id)).toEqual(['split'])
+    expect(findSplitsWithoutRatio([buy, noRatio, otherShare, tooFar]).map(s => s.id)).toEqual(['split'])
+  })
+
+  it('does not report a split for a share the user never bought or sold', () => {
+    expect(findSplitsWithoutRatio([noRatio])).toEqual([])
   })
 })
 
@@ -226,9 +231,10 @@ describe('runPipeline - stock splits without a ratio', () => {
     tx('sell', '2024-09-10', 'SELL', { quantity: 40, price: 30, total: 1200 }),
   ]
 
-  it('reports the split when auto-splits is off', async () => {
+  it('reports the split when auto-splits is off, and says auto-splits was off', async () => {
     const result = await runPipeline(rows, { autoSplits: false })
     expect(result!.dataNotices!.splitsWithoutRatio!.map(s => s.id)).toEqual(['split'])
+    expect(result!.dataNotices!.autoSplits).toBe(false)
   })
 
   it('does not report it when community split data covers it, and applies that ratio', async () => {

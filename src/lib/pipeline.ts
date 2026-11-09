@@ -84,6 +84,7 @@ export async function runPipeline(
     symbolMerges,
     tickerConflicts,
     splitsWithoutRatio: findSplitsWithoutRatio(withAutoSplits),
+    autoSplits,
   }
 
   return result
@@ -112,17 +113,19 @@ function mayBeMissedSplit(record: { symbol: string; date: string }, transactions
 }
 
 /**
- * Stock split rows with no usable ratio that no usable split record (the
- * user's own, or fetched community data) covers within the same window. The
- * split enricher can't apply them, so without this they would be skipped
- * with no sign on screen.
+ * Stock split rows with no usable ratio, for shares the user holds, that no
+ * usable split record (the user's own, or fetched community data) covers
+ * within the same window. The split enricher can't apply them, so without
+ * this they would be skipped with no sign on screen. A share with no buys or
+ * sells is left out: its split can't change any figure.
  */
 export function findSplitsWithoutRatio(
   transactions: GenericTransaction[]
 ): { id: string; symbol: string; date: string; source: string }[] {
   const usable = transactions.filter(tx => tx.type === 'STOCK_SPLIT' && hasUsableRatio(tx.ratio))
+  const held = new Set(transactions.filter(tx => HOLDING_TYPES.has(tx.type)).map(tx => tx.symbol))
   return transactions
-    .filter(tx => tx.type === 'STOCK_SPLIT' && !hasUsableRatio(tx.ratio))
+    .filter(tx => tx.type === 'STOCK_SPLIT' && !hasUsableRatio(tx.ratio) && held.has(tx.symbol))
     .filter(tx => {
       const ms = new Date(tx.date).getTime()
       return !usable.some(split =>

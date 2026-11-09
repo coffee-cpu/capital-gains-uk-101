@@ -216,10 +216,13 @@ export interface DataNotices {
   tickerConflicts?: { symbol: string; isins: string[]; pooledSeparately: boolean }[]
   /**
    * Stock split rows from the user's files with no usable ratio (some
-   * exports, e.g. Trading 212 and Revolut, can leave it out) that no other
+   * exports leave it out, e.g. Trading 212 and Revolut, and Schwab when the
+   * description doesn't state it) for shares the user holds, that no other
    * split record covers. They can't be applied, so quantities before and
    * after the split don't line up.
    */
   splitsWithoutRatio?: { id: string; symbol: string; date: string; source: string }[]
+  /** Whether community split data was looked up (the auto-splits setting) */
+  autoSplits?: boolean
 }
 
