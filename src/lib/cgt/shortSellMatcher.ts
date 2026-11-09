@@ -6,7 +6,8 @@ import {
   isAcquisition,
   isDisposal,
   groupBySymbol,
-  calculateCostBasis,
+  matchedAcquisition,
+  createMatching,
 } from './utils'
 
 /**
@@ -128,21 +129,7 @@ function createShortSellMatching(
   acquisition: EnrichedTransaction,
   quantity: number
 ): MatchingResult {
-  const costBasisGbp = calculateCostBasis(acquisition, quantity)
-
-  return {
-    disposal,
-    acquisitions: [
-      {
-        transaction: acquisition,
-        quantityMatched: quantity,
-        costBasisGbp,
-      },
-    ],
-    rule: 'SHORT_SELL',
-    quantityMatched: quantity,
-    totalCostBasisGbp: costBasisGbp,
-  }
+  return createMatching('SHORT_SELL', disposal, [matchedAcquisition(acquisition, quantity)], quantity)
 }
 
 

@@ -180,16 +180,50 @@ export function isDisposal(transaction: EnrichedTransaction): boolean {
 export function groupBySymbol(
   transactions: EnrichedTransaction[]
 ): Map<string, EnrichedTransaction[]> {
-  const groups = new Map<string, EnrichedTransaction[]>()
+  return groupBy(transactions, tx => tx.symbol)
+}
 
-  for (const tx of transactions) {
-    if (!groups.has(tx.symbol)) {
-      groups.set(tx.symbol, [])
-    }
-    groups.get(tx.symbol)!.push(tx)
+/**
+ * Group items by a key, keeping each group in input order and the groups in
+ * the order their keys first appear
+ */
+export function groupBy<T>(items: T[], keyOf: (item: T) => string): Map<string, T[]> {
+  const groups = new Map<string, T[]>()
+  for (const item of items) {
+    const key = keyOf(item)
+    const group = groups.get(key)
+    if (group) group.push(item)
+    else groups.set(key, [item])
   }
-
   return groups
+}
+
+/** One acquisition's part in a matching, with its cost basis */
+export function matchedAcquisition(
+  transaction: EnrichedTransaction,
+  quantityMatched: number
+): MatchingResult['acquisitions'][number] {
+  return { transaction, quantityMatched, costBasisGbp: calculateCostBasis(transaction, quantityMatched) }
+}
+
+/**
+ * A matching of a disposal to its acquisitions under one rule. The total
+ * cost basis is the sum of the acquisitions' costs; the matched quantity is
+ * passed in, since some rules state it rather than add it up.
+ */
+export function createMatching(
+  rule: MatchingResult['rule'],
+  disposal: EnrichedTransaction,
+  acquisitions: MatchingResult['acquisitions'],
+  quantityMatched: number
+): MatchingResult {
+  return {
+    disposal,
+    acquisitions,
+    rule,
+    quantityMatched,
+    totalCostBasisGbp: acquisitions.reduce((sum, acq) => sum + acq.costBasisGbp, 0),
+  }
 }
 
 /**
@@ -252,6 +286,13 @@ export class MatchedQuantityTracker {
     for (const acq of matching.acquisitions) {
       this.increment(acq.transaction.id, acq.quantityMatched)
     }
+  }
+
+  /** The transactions that still have unmatched quantity, with that quantity */
+  withRemaining(transactions: EnrichedTransaction[]): { transaction: EnrichedTransaction; available: number }[] {
+    return transactions
+      .map(transaction => ({ transaction, available: this.getRemaining(transaction) }))
+      .filter(item => item.available > 0)
   }
 
   /** Remaining unmatched quantity for a transaction (always >= 0) */

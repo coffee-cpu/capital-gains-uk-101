@@ -4,9 +4,11 @@ import { MatchingStage } from './pipeline'
 import {
   isAcquisition,
   isDisposal,
+  groupBy,
   groupBySymbol,
   MatchedQuantityTracker,
-  calculateCostBasis,
+  matchedAcquisition,
+  createMatching,
   allocateProRata,
   QUANTITY_EPSILON,
 } from './utils'
@@ -46,7 +48,7 @@ export function applySameDayRule(
   // Process each symbol independently
   for (const symbolTransactions of bySymbol.values()) {
     // Group by date
-    const byDate = groupByDate(symbolTransactions)
+    const byDate = groupBy(symbolTransactions, tx => tx.date)
 
     // For each date, match buys and sells
     for (const dateTransactions of byDate.values()) {
@@ -81,12 +83,8 @@ function matchSameDayTransactions(
   tracker: MatchedQuantityTracker
 ): MatchingResult[] {
   // Quantities still available after prior rules (e.g. short sells)
-  const openSells = sells
-    .map(transaction => ({ transaction, available: tracker.getRemaining(transaction) }))
-    .filter(item => item.available > 0)
-  const openBuys = buys
-    .map(transaction => ({ transaction, available: tracker.getRemaining(transaction) }))
-    .filter(item => item.available > 0)
+  const openSells = tracker.withRemaining(sells)
+  const openBuys = tracker.withRemaining(buys)
 
   const totalSell = openSells.reduce((sum, item) => sum + item.available, 0)
   const totalBuy = openBuys.reduce((sum, item) => sum + item.available, 0)
@@ -114,41 +112,12 @@ function matchSameDayTransactions(
       buyRemaining[buyIndex] -= quantityMatched
       if (quantityMatched <= QUANTITY_EPSILON) return
 
-      acquisitions.push({
-        transaction: buy,
-        quantityMatched,
-        costBasisGbp: calculateCostBasis(buy, quantityMatched),
-      })
+      acquisitions.push(matchedAcquisition(buy, quantityMatched))
     })
 
-    return {
-      disposal: sell,
-      acquisitions,
-      rule: 'SAME_DAY',
-      quantityMatched: sellQuantity,
-      totalCostBasisGbp: acquisitions.reduce((sum, acq) => sum + acq.costBasisGbp, 0),
-    }
+    return createMatching('SAME_DAY', sell, acquisitions, sellQuantity)
   })
 }
-
-/**
- * Group transactions by date
- */
-function groupByDate(
-  transactions: EnrichedTransaction[]
-): Map<string, EnrichedTransaction[]> {
-  const groups = new Map<string, EnrichedTransaction[]>()
-
-  for (const tx of transactions) {
-    if (!groups.has(tx.date)) {
-      groups.set(tx.date, [])
-    }
-    groups.get(tx.date)!.push(tx)
-  }
-
-  return groups
-}
-
 
 /**
  * Same-Day Rule Pipeline Stage (TCGA92/S105(1))

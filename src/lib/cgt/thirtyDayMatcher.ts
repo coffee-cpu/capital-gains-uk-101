@@ -6,7 +6,8 @@ import {
   isDisposal,
   groupBySymbol,
   MatchedQuantityTracker,
-  calculateCostBasis,
+  matchedAcquisition,
+  createMatching,
   allocateProRata,
   addDaysToISODate,
   QUANTITY_EPSILON,
@@ -143,9 +144,7 @@ function matchSellAgainstBuys(
       break
     }
 
-    const available = dayBuys
-      .map(transaction => ({ transaction, available: tracker.getRemaining(transaction) }))
-      .filter(item => item.available > 0)
+    const available = tracker.withRemaining(dayBuys)
     const dayAvailable = available.reduce((sum, item) => sum + item.available, 0)
     if (dayAvailable <= QUANTITY_EPSILON) {
       continue
@@ -155,11 +154,7 @@ function matchSellAgainstBuys(
 
     for (const { transaction: buy, quantity } of allocateProRata(available, quantityFromDay)) {
       if (quantity <= QUANTITY_EPSILON) continue
-      acquisitions.push({
-        transaction: buy,
-        quantityMatched: quantity,
-        costBasisGbp: calculateCostBasis(buy, quantity),
-      })
+      acquisitions.push(matchedAcquisition(buy, quantity))
     }
 
     remainingSellQuantity -= quantityFromDay
@@ -168,15 +163,7 @@ function matchSellAgainstBuys(
   // Return matching result if we matched any quantity
   if (acquisitions.length > 0) {
     const quantityMatched = acquisitions.reduce((sum, acq) => sum + acq.quantityMatched, 0)
-    const totalCostBasisGbp = acquisitions.reduce((sum, acq) => sum + acq.costBasisGbp, 0)
-
-    return {
-      disposal: sell,
-      acquisitions,
-      rule: '30_DAY',
-      quantityMatched,
-      totalCostBasisGbp,
-    }
+    return createMatching('30_DAY', sell, acquisitions, quantityMatched)
   }
 
   return null
