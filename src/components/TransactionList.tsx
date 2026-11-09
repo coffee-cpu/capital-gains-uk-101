@@ -168,7 +168,7 @@ export function TransactionList() {
       {fxErrorCount > 0 && (
         <div className="px-6 py-3 border-b border-gray-200">
           <IssuePointer testId="fx-errors-pointer">
-            {fxErrorCount} transaction{fxErrorCount !== 1 ? 's have' : ' has'} no GBP exchange rate and show "Error" below.
+            {fxErrorCount} transaction{fxErrorCount !== 1 ? 's have' : ' has'} no GBP exchange rate and {fxErrorCount !== 1 ? 'show' : 'shows'} "Error" below.
             See "FX Rate Errors" in the Issues panel above.
           </IssuePointer>
         </div>

@@ -250,7 +250,8 @@ describe('detectIssues', () => {
     expect(incompleteDisposalIssue?.type).toBe('error')
     expect(incompleteDisposalIssue?.count).toBe(2) // Both tax years
     expect(incompleteDisposalIssue?.affectedItems).toContain('MSFT')
-    expect(incompleteDisposalIssue?.affectedItems).toContain('AAPL')    // Counted per tax year, since the summary shows one year at a time
+    expect(incompleteDisposalIssue?.affectedItems).toContain('AAPL')
+    // Counted per tax year, since the summary shows one year at a time
     expect(incompleteDisposalIssue?.description).toContain('(2023/24: 1, 2024/25: 1)')
   })
 
