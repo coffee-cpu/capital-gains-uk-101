@@ -1,37 +1,23 @@
 /**
  * PDF Renderer Registry for Tax Year Features
  *
- * Maps feature IDs to their PDF rendering functions.
- * This registry enables the PDF export to dynamically render
- * feature-specific sections without hardcoding each feature.
- *
- * To add a new feature's PDF renderer:
- * 1. Create the renderer module in this directory
- * 2. Import and add it to the PDF_RENDERERS map below
+ * Maps feature IDs to their PDF rendering functions, so the PDF export
+ * renders feature-specific sections without hardcoding each feature.
+ * The table's type requires a renderer for every TaxYearFeatureId.
  */
 
-import type { PDFRenderContext, FeaturePDFRenderer, TaxYearFeatureData, TaxYearFeaturesMap } from '../types'
+import type { PDFRenderContext, FeaturePDFRenderer, TaxYearFeatureDataById, TaxYearFeatureId, TaxYearFeaturesMap } from '../types'
 import { renderCGTRateChange2024PDF } from './cgtRateChange2024PDF'
 
-/**
- * Registry mapping feature IDs to their PDF renderer functions.
- */
-// Each renderer is keyed by the ID of the feature whose data it receives
-const PDF_RENDERERS: Record<string, FeaturePDFRenderer<TaxYearFeatureData>> = {
-  'cgt-rate-change-2024': renderCGTRateChange2024PDF as FeaturePDFRenderer<TaxYearFeatureData>,
-  // Future features can be added here, e.g.:
-  // 'cgt-rate-change-2028': renderCGTRateChange2028PDF,
+const PDF_RENDERERS: { [K in TaxYearFeatureId]: FeaturePDFRenderer<TaxYearFeatureDataById[K]> } = {
+  'cgt-rate-change-2024': renderCGTRateChange2024PDF,
 }
 
 /**
- * Render all feature PDF sections for a given features map.
- *
- * Iterates through all features and calls their PDF renderers,
- * returning an array of rendered elements.
+ * Render the PDF section of every feature with data, in a stable order.
  *
  * @param features - Map of feature ID to feature data
  * @param context - PDF rendering context with components and styles
- * @returns Array of rendered PDF elements
  */
 export function renderAllFeaturePDFSections(
   features: TaxYearFeaturesMap | undefined,
@@ -39,17 +25,9 @@ export function renderAllFeaturePDFSections(
 ): React.ReactElement[] {
   if (!features) return []
 
-  const elements: React.ReactElement[] = []
-
-  for (const [featureId, data] of Object.entries(features)) {
-    const renderer = PDF_RENDERERS[featureId]
-    if (renderer) {
-      const element = renderer(data, context)
-      if (element) {
-        elements.push(element)
-      }
-    }
-  }
-
-  return elements
+  return (Object.keys(PDF_RENDERERS) as TaxYearFeatureId[]).flatMap(id => {
+    const data = features[id]
+    const element = data ? PDF_RENDERERS[id](data, context) : null
+    return element ? [element] : []
+  })
 }

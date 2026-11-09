@@ -1,69 +1,39 @@
 /**
  * Tax Year Features Renderer
  *
- * Maps feature IDs to their UI components and renders all applicable
- * features for a given tax year summary.
- *
- * This component acts as a registry for feature UI components,
- * keeping the main TaxYearSummary component clean.
+ * Renders the UI panel of every tax year feature that has data for a
+ * summary. The table's type requires a panel for every TaxYearFeatureId.
  */
 
-import type { ReactElement } from 'react'
+import type { ComponentType } from 'react'
 import type { TaxYearSummary } from '../../types/cgt'
-import type { CGTRateChange2024Data } from '../../lib/cgt/taxYearFeatures'
+import type { TaxYearFeatureDataById, TaxYearFeatureId } from '../../lib/cgt/taxYearFeatures'
 import { CGTRateChange2024Panel } from './CGTRateChange2024Panel'
+
+const FEATURE_PANELS: { [K in TaxYearFeatureId]: ComponentType<{ data: TaxYearFeatureDataById[K] }> } = {
+  'cgt-rate-change-2024': CGTRateChange2024Panel,
+}
 
 interface TaxYearFeaturesRendererProps {
   summary: TaxYearSummary
 }
 
 /**
- * Type guard to check if data is CGTRateChange2024Data
+ * Renders all applicable tax year features for a summary, in a consistent
+ * order and only if they have data to display.
  */
-function isCGTRateChange2024Data(data: unknown): data is CGTRateChange2024Data {
-  return (
-    typeof data === 'object' &&
-    data !== null &&
-    'featureId' in data &&
-    (data as { featureId: string }).featureId === 'cgt-rate-change-2024'
-  )
-}
+export function TaxYearFeaturesRenderer({ summary }: TaxYearFeaturesRendererProps) {
+  const features = summary.features
+  if (!features) return null
 
-/**
- * Renders all applicable tax year features for a summary.
- *
- * Features are rendered in a consistent order and only if they
- * have data to display.
- */
-export function TaxYearFeaturesRenderer({
-  summary,
-}: TaxYearFeaturesRendererProps) {
-  if (!summary.features || Object.keys(summary.features).length === 0) {
-    return null
-  }
+  const panels = (Object.keys(FEATURE_PANELS) as TaxYearFeatureId[]).flatMap(id => {
+    const data = features[id]
+    if (!data) return []
+    const Panel = FEATURE_PANELS[id]
+    return [<Panel key={id} data={data} />]
+  })
 
-  const renderedFeatures: ReactElement[] = []
+  if (panels.length === 0) return null
 
-  // Render CGT Rate Change 2024 feature if present
-  const rateChangeData = summary.features['cgt-rate-change-2024']
-  if (rateChangeData && isCGTRateChange2024Data(rateChangeData)) {
-    renderedFeatures.push(
-      <CGTRateChange2024Panel
-        key="cgt-rate-change-2024"
-        data={rateChangeData}
-      />
-    )
-  }
-
-  // Future features can be added here following the same pattern:
-  // const otherFeatureData = summary.features['other-feature-id']
-  // if (otherFeatureData && isOtherFeatureData(otherFeatureData)) {
-  //   renderedFeatures.push(<OtherFeaturePanel key="other-feature-id" data={otherFeatureData} />)
-  // }
-
-  if (renderedFeatures.length === 0) {
-    return null
-  }
-
-  return <div className="space-y-4">{renderedFeatures}</div>
+  return <div className="space-y-4">{panels}</div>
 }

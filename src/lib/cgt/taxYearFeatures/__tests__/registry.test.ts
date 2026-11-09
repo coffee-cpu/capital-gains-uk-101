@@ -1,10 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   getApplicableFeatures,
-  getFeatureById,
   calculateTaxYearFeatures,
-  hasApplicableFeatures,
-  getAllFeatureIds,
 } from '../registry'
 import { cgtRateChange2024Feature } from '../cgtRateChange2024'
 import type { TaxYearSummary, DisposalRecord } from '../../../../types/cgt'
@@ -41,25 +38,6 @@ function createSummary(taxYear: string): TaxYearSummary {
 }
 
 describe('Tax Year Features Registry', () => {
-  describe('getAllFeatureIds()', () => {
-    it('should return all registered feature IDs', () => {
-      const ids = getAllFeatureIds()
-      expect(ids).toContain('cgt-rate-change-2024')
-    })
-  })
-
-  describe('getFeatureById()', () => {
-    it('should return the feature for a valid ID', () => {
-      const feature = getFeatureById('cgt-rate-change-2024')
-      expect(feature).toBe(cgtRateChange2024Feature)
-    })
-
-    it('should return undefined for an invalid ID', () => {
-      const feature = getFeatureById('non-existent-feature')
-      expect(feature).toBeUndefined()
-    })
-  })
-
   describe('getApplicableFeatures()', () => {
     it('should return CGT rate change feature for 2024/25', () => {
       const features = getApplicableFeatures('2024/25')
@@ -75,20 +53,6 @@ describe('Tax Year Features Registry', () => {
     it('should return empty array for 2025/26', () => {
       const features = getApplicableFeatures('2025/26')
       expect(features).toHaveLength(0)
-    })
-  })
-
-  describe('hasApplicableFeatures()', () => {
-    it('should return true for 2024/25', () => {
-      expect(hasApplicableFeatures('2024/25')).toBe(true)
-    })
-
-    it('should return false for 2023/24', () => {
-      expect(hasApplicableFeatures('2023/24')).toBe(false)
-    })
-
-    it('should return false for 2022/23', () => {
-      expect(hasApplicableFeatures('2022/23')).toBe(false)
     })
   })
 

@@ -3,7 +3,6 @@ import { FXSource, FXSourceAttributions } from '../../../src/types/fxSource'
 import { BrokerType } from '../../../src/types/broker'
 import { MatchingRule } from '../../../src/types/transaction'
 import { getEffectiveQuantity, QUANTITY_EPSILON } from '../../../src/lib/cgt/utils'
-import type { CGTRateChange2024Data } from '../../../src/lib/cgt/taxYearFeatures/cgtRateChange2024'
 import { sa108Rows, Sa108Category, Sa108Row } from '../../../src/lib/cgt/sa108'
 import { combineFxAttributions } from '../../../src/lib/fx/attribution'
 import { CLI_NAME, CLI_VERSION, DISCLAIMER } from './meta'
@@ -313,7 +312,7 @@ function toTaxYearReport(summary: TaxYearSummary): TaxYearReport {
     },
   }
 
-  const rateChange = summary.features?.['cgt-rate-change-2024'] as CGTRateChange2024Data | undefined
+  const rateChange = summary.features?.['cgt-rate-change-2024']
   if (rateChange) {
     report.rateChange2024 = {
       rateChangeDate: rateChange.rateChangeDate,
