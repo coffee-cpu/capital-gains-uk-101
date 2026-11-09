@@ -1,6 +1,6 @@
 import type { GenericTransaction } from '../../types/transaction'
 import { TransactionType } from '../../types/transaction'
-import type { RawCSVRow } from '../../types/broker'
+import { BrokerType, type RawCSVRow } from '../../types/broker'
 import { parseNumber } from './parsingUtils'
 
 /**
@@ -208,7 +208,7 @@ export function normalizeTrading212Transactions(
 
       const transaction: GenericTransaction = {
         id: `${fileId}-${index + 1}`,
-        source: 'Trading 212',
+        source: BrokerType.TRADING212,
         date: parseDate(time),
         type,
         symbol: ticker || '',

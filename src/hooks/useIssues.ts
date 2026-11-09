@@ -1,3 +1,4 @@
+import { BrokerType } from '../types/broker'
 import { useMemo } from 'react'
 import { useTransactionStore } from '../stores/transactionStore'
 import type { EnrichedTransaction } from '../types/transaction'
@@ -175,7 +176,7 @@ export function detectIssues(
 
     // Check if incomplete transactions are from Schwab to provide specific advice
     const hasSchwabIncomplete = incompleteTransactions.some(
-      tx => tx.source === 'Charles Schwab' || tx.source === 'Charles Schwab Equity Awards'
+      tx => tx.source === BrokerType.SCHWAB || tx.source === BrokerType.SCHWAB_EQUITY_AWARDS
     )
 
     issues.push({
@@ -198,7 +199,7 @@ export function detectIssues(
     if (totalBuys > 0 && totalSells === 0) {
       // Check if any transactions are from Schwab Equity Awards
       const hasSchwabEquityAwards = transactions.some(
-        tx => tx.source === 'Charles Schwab Equity Awards'
+        tx => tx.source === BrokerType.SCHWAB_EQUITY_AWARDS
       )
 
       issues.push({

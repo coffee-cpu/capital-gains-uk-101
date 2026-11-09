@@ -17,6 +17,12 @@ export enum BrokerType {
 }
 
 /**
+ * `source` of stock split rows fetched from the community split dataset
+ * (not imported from a broker file)
+ */
+export const COMMUNITY_SPLIT_SOURCE = 'Community'
+
+/**
  * Raw CSV row - any key-value pairs from parsed CSV
  */
 export type RawCSVRow = Record<string, string>

@@ -1,5 +1,5 @@
 import { GenericTransaction, TransactionType } from '../../types/transaction'
-import { RawCSVRow } from '../../types/broker'
+import { RawCSVRow, BrokerType } from '../../types/broker'
 import { calculateTotal, parseCurrency, parseUSDate } from './parsingUtils'
 
 /**
@@ -152,7 +152,7 @@ function normalizeSchwabRow(
 
   return {
     id: `${fileId}-${rowIndex}`,
-    source: 'Charles Schwab',
+    source: BrokerType.SCHWAB,
     symbol: effectiveSymbol,
     name: effectiveName,
     date,

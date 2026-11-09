@@ -1,5 +1,5 @@
 import { GenericTransaction, TransactionType } from '../../types/transaction'
-import { RawCSVRow } from '../../types/broker'
+import { RawCSVRow, BrokerType } from '../../types/broker'
 import { parseUSDate, parseCurrency, parseNumber } from './parsingUtils'
 
 /**
@@ -93,7 +93,7 @@ function normalizeSchwabEquityAwardsPair(
     // truncated export. Flag the row rather than record a 0-share purchase.
     return {
       id: `${fileId}-${rowIndex}`,
-      source: 'Charles Schwab Equity Awards',
+      source: BrokerType.SCHWAB_EQUITY_AWARDS,
       symbol,
       name: description,
       date,
@@ -122,7 +122,7 @@ function normalizeSchwabEquityAwardsPair(
 
   return {
     id: `${fileId}-${rowIndex}`,
-    source: 'Charles Schwab Equity Awards',
+    source: BrokerType.SCHWAB_EQUITY_AWARDS,
     symbol,
     name: description,
     date,

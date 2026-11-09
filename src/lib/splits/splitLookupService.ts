@@ -1,3 +1,4 @@
+import { COMMUNITY_SPLIT_SOURCE } from '../../types/broker'
 import { GenericTransaction, parseRatioMultiplier } from '../../types/transaction'
 import { SplitDataSource, SplitRecord, JsDelivrSplitSource } from './splitDataSource'
 
@@ -141,7 +142,7 @@ function getYearRange(transactions: GenericTransaction[]): number[] {
 function splitRecordToTransaction(split: SplitRecord): GenericTransaction {
   return {
     id: `auto-split-${split.symbol}-${split.date}`,
-    source: 'Community',
+    source: COMMUNITY_SPLIT_SOURCE,
     symbol: split.symbol,
     name: split.name ?? null,
     date: split.date,

@@ -1,3 +1,4 @@
+import { BrokerType } from '../types/broker'
 import Dexie, { Table } from 'dexie'
 import { GenericTransaction } from '../types/transaction'
 import { FXRate, CachedSplitYear, setCacheBackends } from './cache'
@@ -95,7 +96,7 @@ export class CGTDatabase extends Dexie {
  */
 export function isImportedIBDebitInterest(row: GenericTransaction): boolean {
   return (
-    row.source === 'Interactive Brokers' &&
+    row.source === BrokerType.INTERACTIVE_BROKERS &&
     row.type === 'INTEREST' &&
     row.notes === 'Debit Interest' &&
     /debit interest/i.test(row.name ?? '')

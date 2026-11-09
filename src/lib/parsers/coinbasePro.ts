@@ -1,6 +1,6 @@
 import type { GenericTransaction } from '../../types/transaction'
 import { TransactionType } from '../../types/transaction'
-import type { RawCSVRow } from '../../types/broker'
+import { BrokerType, type RawCSVRow } from '../../types/broker'
 import { isFiatCurrency } from '../currencies'
 import { parseCurrency } from './parsingUtils'
 
@@ -130,7 +130,7 @@ export function normalizeCoinbaseProTransactions(
 
       const transaction: GenericTransaction = {
         id: `${fileId}-${transactionIndex++}`,
-        source: 'Coinbase Pro',
+        source: BrokerType.COINBASE_PRO,
         date,
         type,
         symbol: base,
@@ -171,7 +171,7 @@ export function normalizeCoinbaseProTransactions(
         // 1. SELL transaction for quote currency (ETH being spent)
         const sellTransaction: GenericTransaction = {
           id: `${fileId}-${transactionIndex++}`,
-          source: 'Coinbase Pro',
+          source: BrokerType.COINBASE_PRO,
           date,
           type: TransactionType.SELL,
           symbol: quote,
@@ -192,7 +192,7 @@ export function normalizeCoinbaseProTransactions(
           : null
         const buyTransaction: GenericTransaction = {
           id: `${fileId}-${transactionIndex++}`,
-          source: 'Coinbase Pro',
+          source: BrokerType.COINBASE_PRO,
           date,
           type: TransactionType.BUY,
           symbol: base,
@@ -215,7 +215,7 @@ export function normalizeCoinbaseProTransactions(
         // 1. SELL transaction for base currency (LINK being sold)
         const sellTransaction: GenericTransaction = {
           id: `${fileId}-${transactionIndex++}`,
-          source: 'Coinbase Pro',
+          source: BrokerType.COINBASE_PRO,
           date,
           type: TransactionType.SELL,
           symbol: base,
@@ -232,7 +232,7 @@ export function normalizeCoinbaseProTransactions(
         // 2. BUY transaction for quote currency (ETH being acquired)
         const buyTransaction: GenericTransaction = {
           id: `${fileId}-${transactionIndex++}`,
-          source: 'Coinbase Pro',
+          source: BrokerType.COINBASE_PRO,
           date,
           type: TransactionType.BUY,
           symbol: quote,

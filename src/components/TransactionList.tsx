@@ -1,3 +1,4 @@
+import { COMMUNITY_SPLIT_SOURCE } from '../types/broker'
 import { useMemo, useState } from 'react'
 import { useTransactionStore } from '../stores/transactionStore'
 import { ClearDataButton } from './ClearDataButton'
@@ -846,7 +847,7 @@ export function TransactionList() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <div className="flex items-center gap-1.5">
                       {tx.source}
-                      {tx.type === 'STOCK_SPLIT' && tx.source === 'Community' && (
+                      {tx.type === 'STOCK_SPLIT' && tx.source === COMMUNITY_SPLIT_SOURCE && (
                         <Tooltip content="This stock split was fetched from community-maintained split data (coffee-cpu/stock-splits-data). It was not included in your broker CSV.">
                           <span className="inline-flex px-1.5 py-0.5 text-[10px] font-semibold rounded-full bg-teal-100 text-teal-800 border border-teal-300">
                             Community

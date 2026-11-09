@@ -1,5 +1,5 @@
 import { GenericTransaction, TransactionType } from '../../types/transaction'
-import { RawCSVRow } from '../../types/broker'
+import { RawCSVRow, BrokerType } from '../../types/broker'
 import { parseCurrency } from './parsingUtils'
 
 /**
@@ -78,7 +78,7 @@ function parseSellTransaction(
 
     return {
         id: `${fileId}-${rowIndex}`,
-        source: 'EquatePlus',
+        source: BrokerType.EQUATE_PLUS,
         symbol: symbol || '',
         name: instrument || null,
         date,
@@ -130,7 +130,7 @@ function parseWithholdToCoverTransaction(
     // The quantity is the net shares received after withholding
     return {
         id: `${fileId}-${rowIndex}`,
-        source: 'EquatePlus',
+        source: BrokerType.EQUATE_PLUS,
         symbol: symbol || '',
         name: instrument || null,
         date,
@@ -168,7 +168,7 @@ function parseDividendTransaction(
 
     return {
         id: `${fileId}-${rowIndex}`,
-        source: 'EquatePlus',
+        source: BrokerType.EQUATE_PLUS,
         symbol: symbol || '',
         name: instrument || null,
         date,

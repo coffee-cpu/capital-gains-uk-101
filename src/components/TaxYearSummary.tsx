@@ -1,3 +1,4 @@
+import { BrokerType } from '../types/broker'
 import { useTransactionStore } from '../stores/transactionStore'
 import type { EnrichedTransaction } from '../types/transaction'
 import { useState } from 'react'
@@ -11,7 +12,7 @@ import { formatGbp } from '../utils/currency'
 function BuyOnlyInfoBanner({ transactions }: { transactions: EnrichedTransaction[] }) {
   // Check if any transactions are from Schwab Equity Awards
   const hasSchwabEquityAwards = transactions.some(
-    tx => tx.source === 'Charles Schwab Equity Awards'
+    tx => tx.source === BrokerType.SCHWAB_EQUITY_AWARDS
   )
 
   return (

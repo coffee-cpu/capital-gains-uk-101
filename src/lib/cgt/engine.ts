@@ -10,6 +10,7 @@ import { getEffectiveQuantity, isAcquisition, isDisposal, calculateGrossProceeds
 import { netSameDayGains, splitGainsAndLosses } from './sa108'
 import { calculateTaxYearFeatures } from './taxYearFeatures/registry'
 import { getAnnualExemptAmount, getDividendAllowance } from './allowances'
+import { withheldAmountGbp } from './withholding'
 
 /**
  * CGT Calculation Engine
@@ -326,19 +327,6 @@ function generateTaxYearSummaries(
 
   // Sort by tax year (most recent first)
   return summaries.sort((a, b) => b.taxYear.localeCompare(a.taxYear))
-}
-
-/**
- * Tax withheld by a TAX_ON_DIVIDEND or TAX_ON_INTEREST row, in GBP.
- *
- * Interactive Brokers keeps the cash-movement sign: negative is tax withheld,
- * positive is a reversal of earlier withholding. Schwab's parser already
- * stores withholding as a positive amount, so for other sources any sign
- * counts as tax withheld.
- */
-export function withheldAmountGbp(tx: EnrichedTransaction): number {
-  const value = tx.value_gbp ?? 0
-  return tx.source === 'Interactive Brokers' ? -value : Math.abs(value)
 }
 
 /**
