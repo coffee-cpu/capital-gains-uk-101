@@ -16,7 +16,7 @@ export function MobileHeader({ onMenuToggle }: { onMenuToggle: () => void }) {
         </button>
         <div className="flex items-center gap-2 flex-1">
           <img
-            src="/favicon/favicon-96x96.png"
+            src="/favicon/favicon.svg"
             alt="Logo"
             className="w-8 h-8 flex-shrink-0"
           />

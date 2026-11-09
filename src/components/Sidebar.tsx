@@ -45,7 +45,7 @@ export function Sidebar({ currentPage, isOpen, onClose }: SidebarProps) {
             {/* Logo and title */}
             <div className="flex items-center gap-2 lg:gap-3 flex-1">
               <img
-                src="/favicon/favicon-96x96.png"
+                src="/favicon/favicon.svg"
                 alt="Logo"
                 className="w-8 h-8 lg:w-10 lg:h-10 flex-shrink-0"
               />
