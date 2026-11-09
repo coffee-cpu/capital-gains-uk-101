@@ -56,82 +56,105 @@ export class FxEnricher implements Enricher {
       console.warn('FX rate prefetch failed, will fetch individually:', error)
     }
 
-    const enriched: EnrichedTransaction[] = []
+    // Rates are looked up in parallel (FXManager shares each in-flight
+    // lookup), a few at a time so a long history doesn't flood the network
+    return mapWithConcurrency(transactions, FX_LOOKUP_CONCURRENCY, tx => this.enrichOne(tx))
+  }
 
-    for (const tx of transactions) {
-      try {
-        // Check if currency is a supported fiat currency
-        if (!isFiatCurrency(tx.currency)) {
-          // Crypto currency detected - cannot fetch FX rates for crypto
-          const cryptoErrorMessage = `Crypto currency "${tx.currency}" is not supported for automatic FX conversion. ` +
-            `For Coinbase Pro crypto-to-crypto trades, add a "gbp_value" column to your CSV with the GBP spot price of ${tx.currency} at the time of the trade.`
+  /** Convert one transaction's amounts to GBP; failures are recorded on it */
+  private async enrichOne(tx: EnrichedTransaction): Promise<EnrichedTransaction> {
+    try {
+      // Check if currency is a supported fiat currency
+      if (!isFiatCurrency(tx.currency)) {
+        // Crypto currency detected - cannot fetch FX rates for crypto
+        const cryptoErrorMessage = `Crypto currency "${tx.currency}" is not supported for automatic FX conversion. ` +
+          `For Coinbase Pro crypto-to-crypto trades, add a "gbp_value" column to your CSV with the GBP spot price of ${tx.currency} at the time of the trade.`
 
-          enriched.push({
-            ...tx,
-            fx_rate: null,
-            price_gbp: null,
-            split_adjusted_price_gbp: null,
-            value_gbp: null,
-            fee_gbp: null,
-            fx_source: FX_STATUS.NOT_SUPPORTED,
-            fx_error: cryptoErrorMessage,
-          })
-          continue
-        }
-
-        // Fetch FX rate for this transaction's date and currency
-        const fxResult = await this.fxManager.getRate(tx.date, tx.currency)
-        const fxRate = fxResult.rate
-
-        // Convert prices to GBP (using != null to check both null and undefined)
-        const priceGbp = tx.price != null ? convertToGBP(tx.price, fxRate) : null
-        const splitAdjustedPriceGbp = tx.split_adjusted_price != null
-          ? convertToGBP(tx.split_adjusted_price, fxRate)
-          : null
-        const valueGbp = tx.total != null ? convertToGBP(tx.total, fxRate) : null
-        const feeGbp = tx.fee != null ? convertToGBP(tx.fee, fxRate) : null
-
-        // Convert SA106 dividend withholding fields to GBP
-        const grossDividendGbp = tx.grossDividend != null
-          ? convertToGBP(tx.grossDividend, fxRate)
-          : null
-        const withholdingTaxGbp = tx.withholdingTax != null
-          ? convertToGBP(tx.withholdingTax, fxRate)
-          : null
-
-        enriched.push({
-          ...tx,
-          fx_rate: fxRate,
-          price_gbp: priceGbp,
-          split_adjusted_price_gbp: splitAdjustedPriceGbp,
-          value_gbp: valueGbp,
-          fee_gbp: feeGbp,
-          grossDividend_gbp: grossDividendGbp,
-          withholdingTax_gbp: withholdingTaxGbp,
-          // The rate's own attribution (e.g. gov.uk or the 2015-2020 archive)
-          fx_source: tx.currency === 'GBP' ? FX_STATUS.NATIVE_GBP : fxResult.source,
-          fx_error: null,
-        })
-      } catch (error) {
-        console.error(`Failed to enrich transaction ${tx.id}:`, error)
-
-        const errorMessage =
-          error instanceof Error ? error.message : 'Unknown error fetching FX rate'
-
-        // Mark transaction with error - no fallback values
-        enriched.push({
+        return {
           ...tx,
           fx_rate: null,
           price_gbp: null,
           split_adjusted_price_gbp: null,
           value_gbp: null,
           fee_gbp: null,
-          fx_source: FX_STATUS.FAILED,
-          fx_error: errorMessage,
-        })
+          fx_source: FX_STATUS.NOT_SUPPORTED,
+          fx_error: cryptoErrorMessage,
+        }
+      }
+
+      // Fetch FX rate for this transaction's date and currency
+      const fxResult = await this.fxManager.getRate(tx.date, tx.currency)
+      const fxRate = fxResult.rate
+
+      // Convert prices to GBP (using != null to check both null and undefined)
+      const priceGbp = tx.price != null ? convertToGBP(tx.price, fxRate) : null
+      const splitAdjustedPriceGbp = tx.split_adjusted_price != null
+        ? convertToGBP(tx.split_adjusted_price, fxRate)
+        : null
+      const valueGbp = tx.total != null ? convertToGBP(tx.total, fxRate) : null
+      const feeGbp = tx.fee != null ? convertToGBP(tx.fee, fxRate) : null
+
+      // Convert SA106 dividend withholding fields to GBP
+      const grossDividendGbp = tx.grossDividend != null
+        ? convertToGBP(tx.grossDividend, fxRate)
+        : null
+      const withholdingTaxGbp = tx.withholdingTax != null
+        ? convertToGBP(tx.withholdingTax, fxRate)
+        : null
+
+      return {
+        ...tx,
+        fx_rate: fxRate,
+        price_gbp: priceGbp,
+        split_adjusted_price_gbp: splitAdjustedPriceGbp,
+        value_gbp: valueGbp,
+        fee_gbp: feeGbp,
+        grossDividend_gbp: grossDividendGbp,
+        withholdingTax_gbp: withholdingTaxGbp,
+        // The rate's own attribution (e.g. gov.uk or the 2015-2020 archive)
+        fx_source: tx.currency === 'GBP' ? FX_STATUS.NATIVE_GBP : fxResult.source,
+        fx_error: null,
+      }
+    } catch (error) {
+      console.error(`Failed to enrich transaction ${tx.id}:`, error)
+
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error fetching FX rate'
+
+      // Mark transaction with error - no fallback values
+      return {
+        ...tx,
+        fx_rate: null,
+        price_gbp: null,
+        split_adjusted_price_gbp: null,
+        value_gbp: null,
+        fee_gbp: null,
+        fx_source: FX_STATUS.FAILED,
+        fx_error: errorMessage,
       }
     }
-
-    return enriched
   }
+}
+
+/** Rate lookups in flight at once */
+const FX_LOOKUP_CONCURRENCY = 8
+
+/**
+ * Map over items with at most `limit` calls running at once, keeping order
+ */
+export async function mapWithConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T) => Promise<R>
+): Promise<R[]> {
+  const results = new Array<R>(items.length)
+  let next = 0
+  const worker = async () => {
+    while (next < items.length) {
+      const index = next++
+      results[index] = await fn(items[index])
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker))
+  return results
 }
