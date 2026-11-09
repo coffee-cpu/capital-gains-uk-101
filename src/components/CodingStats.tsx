@@ -86,7 +86,7 @@ export function CodingStats() {
           href="https://github.com/coffee-cpu/capital-gains-uk-101"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-blue-600 hover:underline"
+          className="text-blue-600 underline hover:text-blue-800"
         >
           GitHub commit history
         </a>
@@ -95,7 +95,7 @@ export function CodingStats() {
           href="https://github.com/coffee-cpu/vibe-coding-stats"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-blue-600 hover:underline"
+          className="text-blue-600 underline hover:text-blue-800"
         >
           vibe-coding-stats
         </a>

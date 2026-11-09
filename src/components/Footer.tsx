@@ -11,7 +11,7 @@ export function Footer() {
             href="https://github.com/coffee-cpu/capital-gains-uk-101/issues/new"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-600 hover:underline"
+            className="text-blue-600 underline hover:text-blue-800"
           >
             Report an issue on GitHub
           </a>

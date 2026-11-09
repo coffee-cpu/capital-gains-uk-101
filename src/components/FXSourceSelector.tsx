@@ -143,7 +143,7 @@ export function FXSourceSelector() {
                     href="https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg78310"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline"
+                    className="text-blue-600 underline hover:text-blue-800"
                   >
                     Learn more
                   </a>
@@ -190,7 +190,7 @@ export function FXSourceSelector() {
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={(e) => e.stopPropagation()}
-                    className="text-xs text-blue-600 hover:underline mt-1 inline-block"
+                    className="text-xs text-blue-600 underline hover:text-blue-800 mt-1 inline-block"
                   >
                     View source
                   </a>

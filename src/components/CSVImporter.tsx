@@ -185,7 +185,7 @@ export function CSVImporter() {
               href="https://github.com/coffee-cpu/capital-gains-uk-101/tree/main/packages/cli#readme"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-600 hover:underline"
+              className="text-blue-600 underline hover:text-blue-800"
             >
               Use the command-line tool
             </a>
@@ -241,6 +241,7 @@ export function CSVImporter() {
             id="csv-upload"
             type="file"
             title=""
+            aria-label="Upload broker CSV files"
             accept=".csv"
             multiple
             onChange={handleFileUpload}

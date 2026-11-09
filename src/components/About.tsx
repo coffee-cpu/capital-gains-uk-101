@@ -167,7 +167,7 @@ export function About() {
                   href="https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51500p"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline font-semibold"
+                  className="text-blue-600 underline hover:text-blue-800 font-semibold"
                 >
                   HMRC Capital Gains Manual
                 </a>.
@@ -184,7 +184,7 @@ export function About() {
                       href="https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51560"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline"
+                      className="text-blue-600 underline hover:text-blue-800"
                     >
                       HMRC CG51560
                     </a>
@@ -202,7 +202,7 @@ export function About() {
                       href="https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51560"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline"
+                      className="text-blue-600 underline hover:text-blue-800"
                     >
                       HMRC CG51560
                     </a>
@@ -220,7 +220,7 @@ export function About() {
                       href="https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51620"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline"
+                      className="text-blue-600 underline hover:text-blue-800"
                     >
                       HMRC CG51620
                     </a>
@@ -254,7 +254,7 @@ export function About() {
                     href="https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51700"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline"
+                    className="text-blue-600 underline hover:text-blue-800"
                   >
                     HMRC CG51700
                   </a>
@@ -308,7 +308,7 @@ export function About() {
                   href="https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg78310"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline"
+                  className="text-blue-600 underline hover:text-blue-800"
                 >
                   HMRC CG78310
                 </a>
@@ -338,7 +338,7 @@ export function About() {
                         href="https://www.trade-tariff.service.gov.uk/exchange_rates/monthly"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline"
+                        className="text-blue-600 underline hover:text-blue-800"
                       >
                         HMRC Trade Tariff Service
                       </a>
@@ -357,7 +357,7 @@ export function About() {
                         href="https://www.trade-tariff.service.gov.uk/exchange_rates/average"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline"
+                        className="text-blue-600 underline hover:text-blue-800"
                       >
                         HMRC Trade Tariff Service
                       </a>
@@ -376,7 +376,7 @@ export function About() {
                         href="https://frankfurter.dev/"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline"
+                        className="text-blue-600 underline hover:text-blue-800"
                       >
                         European Central Bank (via Frankfurter API)
                       </a>
@@ -419,7 +419,7 @@ export function About() {
                       href="https://github.com/coffee-cpu/capital-gains-uk-101"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline"
+                      className="text-blue-600 underline hover:text-blue-800"
                     >
                       GitHub
                     </a>
@@ -442,7 +442,7 @@ export function About() {
                       href="https://www.trade-tariff.service.gov.uk/exchange_rates"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline"
+                      className="text-blue-600 underline hover:text-blue-800"
                     >
                       HMRC's published rates
                     </a>
@@ -529,7 +529,7 @@ export function About() {
                   href="/agents.md"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline font-semibold"
+                  className="text-blue-600 underline hover:text-blue-800 font-semibold"
                 >
                   Agent guide
                 </a>
@@ -538,7 +538,7 @@ export function About() {
                   href="https://github.com/coffee-cpu/capital-gains-uk-101/tree/main/packages/cli#readme"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline"
+                  className="text-blue-600 underline hover:text-blue-800"
                 >
                   CLI documentation
                 </a>
@@ -547,7 +547,7 @@ export function About() {
                   href="https://www.npmjs.com/package/cgt-visualiser"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline"
+                  className="text-blue-600 underline hover:text-blue-800"
                 >
                   npm package
                 </a>
@@ -582,7 +582,7 @@ export function About() {
                           href={tool.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline"
+                          className="text-blue-600 underline hover:text-blue-800"
                         >
                           {tool.name}
                         </a>
