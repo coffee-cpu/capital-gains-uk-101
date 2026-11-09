@@ -26,11 +26,13 @@ function App() {
   const recalculate = useTransactionStore((state) => state.recalculate)
 
   // Ensure database is compatible before anything else (automatically
-  // clears incompatible schemas), then load settings from it
+  // clears incompatible schemas). Settings load alongside the session check;
+  // recalculate() waits for them.
   useEffect(() => {
-    ensureDatabaseCompatible()
-      .then(() => useSettingsStore.getState().initializeFromDB())
-      .then(() => setDbReady(true))
+    ensureDatabaseCompatible().then(() => {
+      setDbReady(true)
+      useSettingsStore.getState().initializeFromDB()
+    })
   }, [])
 
   // Handle hash-based routing
@@ -54,7 +56,10 @@ function App() {
 
     const checkExistingSession = async () => {
       const count = await db.transactions.count()
-      if (count > 0) {
+      // Transactions imported (or already loaded) in this session aren't a
+      // previous session: an import can finish before this check runs
+      const { cgtResults, isLoading } = useTransactionStore.getState()
+      if (count > 0 && !cgtResults && !isLoading) {
         setPendingTransactionCount(count)
 
         const files = await db.imported_files.toArray()
