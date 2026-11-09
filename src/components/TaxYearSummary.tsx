@@ -1,7 +1,5 @@
-import { BrokerType } from '../types/broker'
 import { useTransactionStore } from '../stores/transactionStore'
 import { useHelpPanelStore } from '../stores/helpPanelStore'
-import type { EnrichedTransaction } from '../types/transaction'
 import { useState } from 'react'
 import { DisposalRecords } from './DisposalRecords'
 import { Tooltip } from './Tooltip'
@@ -11,49 +9,17 @@ import { BuyMeACoffee } from './BuyMeACoffee'
 import { TaxYearFeaturesRenderer } from './taxYearFeatures'
 import { formatGbp, formatGbpWhole } from '../utils/currency'
 
-function BuyOnlyInfoBanner({ transactions }: { transactions: EnrichedTransaction[] }) {
-  // Check if any transactions are from Schwab Equity Awards
-  const hasSchwabEquityAwards = transactions.some(
-    tx => tx.source === BrokerType.SCHWAB_EQUITY_AWARDS
-  )
-
+/**
+ * Shown instead of the summary when only acquisitions were imported. What to
+ * import next is in the Issues panel ("No Disposals Found").
+ */
+function BuyOnlyNote() {
   return (
-    <div className="bg-white shadow rounded-lg overflow-hidden">
-      <div className="p-6">
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-          <div className="flex">
-            <svg className="h-5 w-5 text-blue-400 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-            </svg>
-            <div className="ml-3">
-              <h3 className="text-lg font-semibold text-blue-900 mb-2">
-                No Capital Gains Tax Calculations Available
-              </h3>
-              <div className="text-sm text-blue-800 space-y-3">
-                <p>
-                  You've imported BUY transactions (purchases, RSU vests), but CGT
-                  calculations also require SELL transactions (disposals).
-                </p>
-                <div>
-                  <p className="font-medium mb-2">To calculate your capital gains tax:</p>
-                  <ul className="list-disc list-inside space-y-1 ml-2">
-                    <li>Upload your brokerage statements containing SELL transactions</li>
-                    {hasSchwabEquityAwards && (
-                      <li>
-                        Upload "Transactions" history from Schwab.com in addition to Equity Awards statements
-                      </li>
-                    )}
-                  </ul>
-                </div>
-                <p className="text-xs text-blue-700 italic mt-4">
-                  Your imported BUY transactions are shown in the table below and will
-                  be used for cost basis calculations once you upload SELL transactions.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div className="bg-white shadow rounded-lg p-6" data-testid="buy-only-note">
+      <p className="text-sm text-gray-700">
+        <span className="font-medium text-gray-900">No capital gains to calculate yet.</span>{' '}
+        Your imported transactions include purchases but no sales. See the Issues panel above for what to import.
+      </p>
     </div>
   )
 }
@@ -103,7 +69,7 @@ export function TaxYearSummary() {
   const hasBuysOnly = metadata && metadata.totalBuys > 0 && metadata.totalSells === 0
 
   if (hasBuysOnly) {
-    return <BuyOnlyInfoBanner transactions={cgtResults.transactions} />
+    return <BuyOnlyNote />
   }
 
   const hasTaxableGain = currentSummary.taxableGainGbp > 0
@@ -202,28 +168,6 @@ export function TaxYearSummary() {
               {currentSummary.missingFxDisposals} disposal{currentSummary.missingFxDisposals !== 1 ? 's' : ''} use a transaction with no GBP exchange rate, valued at £0.
               The gains and losses above are wrong until the rate is available. Try reloading, or choose a different FX source.
             </p>
-          </div>
-        )}
-
-        {/* Warning for incomplete disposals */}
-        {currentSummary.incompleteDisposals > 0 && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <div className="flex">
-              <svg className="h-5 w-5 text-red-400 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-              </svg>
-              <div className="ml-3">
-                <h4 className="text-sm font-medium text-red-800">Incomplete Disposal Data</h4>
-                <p className="mt-1 text-sm text-red-700">
-                  {currentSummary.incompleteDisposals} disposal{currentSummary.incompleteDisposals !== 1 ? 's' : ''} could not be fully matched to acquisition data.
-                  This typically occurs when you sold shares that were purchased before you started importing transactions.
-                  Look for disposals with the red "Incomplete" badge in the transaction list below.
-                </p>
-                <p className="mt-2 text-sm text-red-700">
-                  <strong>Note:</strong> Gains/losses shown above only include matched portions. You may need to manually calculate gains for unmatched shares using your original purchase records.
-                </p>
-              </div>
-            </div>
           </div>
         )}
 

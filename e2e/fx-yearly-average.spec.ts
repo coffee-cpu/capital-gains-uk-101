@@ -37,8 +37,11 @@ test.describe('HMRC Yearly Average FX Source', () => {
     await fxSelector.click()
     await page.getByRole('button', { name: /HMRC Yearly Average/i }).click()
 
-    // Should show FX Rate Error banner
-    await expect(page.getByText(/FX Rate Error/i)).toBeVisible({ timeout: 15000 })
+    // The Issues panel should report the FX rate errors
+    const issuesPanel = page.locator('button:has(h2:text-matches("Issue.*Requiring Attention"))').first()
+    await expect(issuesPanel).toBeVisible({ timeout: 15000 })
+    await issuesPanel.click()
+    await expect(page.getByText('FX Rate Errors', { exact: true })).toBeVisible()
 
     // Transactions should show "Error" in GBP columns
     await expect(page.getByText('Error').first()).toBeVisible()

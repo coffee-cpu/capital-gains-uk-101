@@ -5,6 +5,13 @@ import { fileURLToPath } from 'url'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
+/** Expand the Issues panel (collapsed on each page load) and return its "Incomplete Disposal Data" entry */
+async function incompleteDisposalsIssue(page: import('@playwright/test').Page) {
+  await page.locator('button:has(h2:text-matches("Issue.*Requiring Attention"))').first().click()
+  return page.locator('div', { has: page.getByText('Incomplete Disposal Data', { exact: true }) })
+    .filter({ hasText: 'could not be fully matched' }).last()
+}
+
 test.describe('Incomplete Disposal Tracking', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/')
@@ -66,23 +73,15 @@ test.describe('Incomplete Disposal Tracking', () => {
     await expect(foodRow.locator('.bg-green-100.text-green-800').filter({ hasText: 'Section 104' })).not.toBeVisible()
   })
 
-  test('should show correct tax year summary with incomplete disposal warning', async ({ page }) => {
-    // Select tax year 2024/25 which has the FOOD disposal
-    const taxYearSelect = page.locator('select').filter({ hasText: /2024\/25/ }).first()
-    await taxYearSelect.selectOption('2024/25')
+  test('should report incomplete disposals per tax year in the Issues panel', async ({ page }) => {
+    const issue = await incompleteDisposalsIssue(page)
+    await expect(issue).toBeVisible()
 
-    // Wait for the tax year summary to update
-    await page.waitForTimeout(500)
+    // 2024/25 has the FOOD disposal
+    await expect(issue).toContainText('2024/25: 1')
 
-    // Check for the "Incomplete Disposal Data" warning banner
-    const warningBanner = page.locator('.bg-red-50.border-red-200').filter({ hasText: 'Incomplete Disposal Data' })
-    await expect(warningBanner).toBeVisible()
-
-    // Verify the warning message mentions 1 disposal
-    await expect(warningBanner).toContainText('1 disposal could not be fully matched')
-
-    // Verify the note about gains/losses only including matched portions
-    await expect(warningBanner).toContainText('Gains/losses shown above only include matched portions')
+    // The note about gains/losses only including matched portions
+    await expect(issue).toContainText('Gains/losses are only calculated for matched portions')
   })
 
   test('should show correct disposal counts in tax year summary', async ({ page }) => {
@@ -123,12 +122,9 @@ test.describe('Incomplete Disposal Tracking', () => {
 
     await page.waitForTimeout(500)
 
-    // Check for the warning banner mentioning multiple disposals
-    const warningBanner = page.locator('.bg-red-50.border-red-200').filter({ hasText: 'Incomplete Disposal Data' })
-    await expect(warningBanner).toBeVisible()
-
-    // Should mention 2 disposals (GlobalBank and TravelGroup)
-    await expect(warningBanner).toContainText('2 disposals could not be fully matched')
+    // The Issues panel counts 2 for 2025/26 (GlobalBank and TravelGroup)
+    const issue = await incompleteDisposalsIssue(page)
+    await expect(issue).toContainText('2025/26: 2')
   })
 
   test('should persist incomplete disposal state after page reload', async ({ page }) => {
@@ -161,8 +157,8 @@ test.describe('Incomplete Disposal Tracking', () => {
     const foodRowAfterReload = page.locator('tr').filter({ hasText: 'FOOD' }).filter({ hasText: '2025-01-20' })
     await expect(foodRowAfterReload.locator('.bg-red-100.text-red-800').filter({ hasText: 'Incomplete' })).toBeVisible()
 
-    // Warning banner should still be visible
-    const warningBanner = page.locator('.bg-red-50.border-red-200').filter({ hasText: 'Incomplete Disposal Data' })
-    await expect(warningBanner).toBeVisible()
+    // The Issues panel should still report it
+    const issue = await incompleteDisposalsIssue(page)
+    await expect(issue).toContainText('2024/25: 1')
   })
 })

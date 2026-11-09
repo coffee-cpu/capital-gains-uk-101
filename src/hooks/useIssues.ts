@@ -62,7 +62,7 @@ export function detectIssues(
       count: fxErrorTransactions.length,
       affectedItems: affectedSymbols,
       action: hasCryptoError
-        ? 'Add a gbp_value column to your CSV with the GBP spot price for crypto transactions.'
+        ? 'Automatic FX conversion is not supported for crypto. For crypto-to-crypto trades, add a gbp_value column to your CSV with the GBP spot price of the quote currency at the time of each trade, then re-import.'
         : 'Try selecting a different FX source from the dropdown in the Transactions section.',
       actionLabel: hasCryptoError ? 'Manual Fix Required' : 'Change FX Source',
     })
@@ -74,12 +74,16 @@ export function detectIssues(
     const allIncompleteDisposals = cgtResults.disposals.filter(d => d.isIncomplete)
     if (allIncompleteDisposals.length > 0) {
       const affectedSymbols = [...new Set(allIncompleteDisposals.map(d => d.disposal.symbol).filter(Boolean))]
+      // Per tax year, e.g. "2024/25: 1, 2025/26: 2", since the summary shows one year at a time
+      const countsByYear = new Map<string, number>()
+      for (const d of allIncompleteDisposals) countsByYear.set(d.taxYear, (countsByYear.get(d.taxYear) ?? 0) + 1)
+      const byYear = [...countsByYear].sort(([a], [b]) => a.localeCompare(b)).map(([year, n]) => `${year}: ${n}`).join(', ')
 
       issues.push({
         id: 'incomplete-disposals',
         type: 'error',
         title: 'Incomplete Disposal Data',
-        description: `${allIncompleteDisposals.length} disposal${allIncompleteDisposals.length !== 1 ? 's' : ''} could not be fully matched to acquisition data. Gains/losses are only calculated for matched portions.`,
+        description: `${allIncompleteDisposals.length} disposal${allIncompleteDisposals.length !== 1 ? 's' : ''} (${byYear}) could not be fully matched to acquisition data, usually because the shares were bought before your imported history starts. Gains/losses are only calculated for matched portions; look for the red "Incomplete" badge in the transaction list.`,
         count: allIncompleteDisposals.length,
         affectedItems: affectedSymbols,
         action: 'Import earlier transaction history that includes the original purchases, or manually calculate gains using your original records.',

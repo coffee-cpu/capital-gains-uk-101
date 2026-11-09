@@ -17,13 +17,13 @@ test.describe('BUY-Only Transaction Imports', () => {
     // Wait for processing
     await expect(page.getByText(/file\(s\) imported successfully/i)).toBeVisible({ timeout: 10000 })
 
-    // Verify banner appears with correct heading
-    await expect(page.getByText('No Capital Gains Tax Calculations Available')).toBeVisible()
+    // The tax year summary shows a short note instead of the figures
+    await expect(page.getByTestId('buy-only-note')).toContainText('No capital gains to calculate yet')
 
-    // Verify guidance text is present
-    await expect(page.getByText(/Upload your brokerage statements containing SELL transactions/i)).toBeVisible()
-    // Schwab-specific guidance should appear (without "For Schwab users:" prefix)
-    await expect(page.getByText(/Upload "Transactions" history from Schwab.com in addition to Equity Awards statements/i)).toBeVisible()
+    // The Issues panel says what to import, with Schwab-specific guidance
+    await page.locator('button:has(h2:text-matches("Issue.*Requiring Attention"))').first().click()
+    await expect(page.getByText('No Disposals Found', { exact: true })).toBeVisible()
+    await expect(page.getByText(/Upload your "Transactions" history from Schwab.com/i)).toBeVisible()
 
     // Verify transaction list still shows the imported BUY transactions
     await expect(page.getByRole('table').getByText('AAPL').first()).toBeVisible()
@@ -39,16 +39,16 @@ test.describe('BUY-Only Transaction Imports', () => {
     await fileInput.setInputFiles(buyOnlyPath)
     await expect(page.getByText(/file\(s\) imported successfully/i)).toBeVisible({ timeout: 10000 })
 
-    // Verify banner shows
-    await expect(page.getByText('No Capital Gains Tax Calculations Available')).toBeVisible()
+    // Verify the note shows
+    await expect(page.getByTestId('buy-only-note')).toBeVisible()
 
     // Now upload regular Schwab file with SELLs
     const schwabPath = path.join(__dirname, 'fixtures', 'schwab-sample.csv')
     await fileInput.setInputFiles(schwabPath)
     await expect(page.getByText(/file\(s\) imported successfully/i)).toBeVisible({ timeout: 10000 })
 
-    // Banner should disappear
-    await expect(page.getByText('No Capital Gains Tax Calculations Available')).not.toBeVisible()
+    // Note should disappear
+    await expect(page.getByTestId('buy-only-note')).not.toBeVisible()
 
     // Tax summary should appear
     await expect(page.getByRole('heading', { name: 'CGT Calculation' })).toBeVisible()
@@ -63,8 +63,8 @@ test.describe('BUY-Only Transaction Imports', () => {
     await fileInput.setInputFiles(filePath)
     await expect(page.getByText(/file\(s\) imported successfully/i)).toBeVisible({ timeout: 10000 })
 
-    // No info banner
-    await expect(page.getByText('No Capital Gains Tax Calculations Available')).not.toBeVisible()
+    // No buy-only note
+    await expect(page.getByTestId('buy-only-note')).not.toBeVisible()
 
     // Tax summary shows
     await expect(page.getByRole('heading', { name: 'CGT Calculation' })).toBeVisible()
