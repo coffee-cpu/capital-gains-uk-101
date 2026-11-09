@@ -151,7 +151,7 @@ ${(page.jsonLd ?? []).map(jsonLdScript).join('\n')}
 </head>
 <body>
 <header><div class="bar">
-<a class="logo" href="/"><img src="/favicon/apple-touch-icon.png" alt="" width="36" height="36">${SITE_NAME}</a>
+<a class="logo" href="/"><img src="/favicon/favicon.svg" alt="" width="36" height="36">${SITE_NAME}</a>
 <nav><a href="/guides/">Guides</a><a class="cta" href="/">Open the calculator</a></nav>
 </div></header>
 <main>
