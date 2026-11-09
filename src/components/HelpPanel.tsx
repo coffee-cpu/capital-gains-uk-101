@@ -1,14 +1,14 @@
 import { useState, useEffect, useRef } from 'react'
 import type { JSX } from 'react'
-import { useTransactionStore } from '../stores/transactionStore'
+import { useHelpPanelStore } from '../stores/helpPanelStore'
 import { getHelpContent, HelpContext } from '../utils/helpContent'
 
 type TabType = 'explanation' | 'example' | 'references'
 
 export function HelpPanel() {
-  const isOpen = useTransactionStore((state) => state.isHelpPanelOpen)
-  const context = useTransactionStore((state) => state.helpContext)
-  const setHelpPanelOpen = useTransactionStore((state) => state.setHelpPanelOpen)
+  const isOpen = useHelpPanelStore((state) => state.isOpen)
+  const context = useHelpPanelStore((state) => state.context)
+  const setHelpPanelOpen = useHelpPanelStore((state) => state.setOpen)
   const [activeTab, setActiveTab] = useState<TabType>('explanation')
   const panelRef = useRef<HTMLElement>(null)
 

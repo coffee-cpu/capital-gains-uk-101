@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useSettingsStore } from '../stores/settingsStore'
-import { useTransactionStore } from '../stores/transactionStore'
-import { processTransactionsFromDB } from '../lib/transactionProcessor'
+import { useTransactionStore, selectTransactions } from '../stores/transactionStore'
 import { Tooltip } from './Tooltip'
 
 /**
@@ -9,8 +8,10 @@ import { Tooltip } from './Tooltip'
  * When toggled, re-processes all transactions to include/exclude auto-splits.
  */
 export function AutoSplitsToggle() {
-  const { autoSplitsEnabled, setAutoSplitsEnabled, fxSource } = useSettingsStore()
-  const { setTransactions, setCGTResults, setIsLoading, transactions } = useTransactionStore()
+  const autoSplitsEnabled = useSettingsStore((state) => state.autoSplitsEnabled)
+  const setAutoSplitsEnabled = useSettingsStore((state) => state.setAutoSplitsEnabled)
+  const transactions = useTransactionStore(selectTransactions)
+  const recalculate = useTransactionStore((state) => state.recalculate)
   const [isChanging, setIsChanging] = useState(false)
 
   // Only show when there are transactions
@@ -21,22 +22,15 @@ export function AutoSplitsToggle() {
 
     const newValue = !autoSplitsEnabled
     setIsChanging(true)
-    setIsLoading(true)
 
     try {
       await setAutoSplitsEnabled(newValue)
-
-      const cgtResults = await processTransactionsFromDB(fxSource, newValue)
-      if (cgtResults) {
-        setTransactions(cgtResults.transactions)
-        setCGTResults(cgtResults)
-      }
+      await recalculate()
     } catch (error) {
       console.error('Failed to toggle auto-splits:', error)
       await setAutoSplitsEnabled(!newValue)
     } finally {
       setIsChanging(false)
-      setIsLoading(false)
     }
   }
 

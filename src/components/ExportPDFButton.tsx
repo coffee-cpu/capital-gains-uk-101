@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { useTransactionStore } from '../stores/transactionStore'
+import { useTransactionStore, selectTransactions } from '../stores/transactionStore'
 import { generatePDFReport } from './PDFExport'
 
 export function ExportPDFButton() {
@@ -26,7 +26,7 @@ export function ExportPDFButton() {
   const cgtResults = useTransactionStore((state) => state.cgtResults)
   const getTaxYearSummary = useTransactionStore((state) => state.getTaxYearSummary)
   const getDisposals = useTransactionStore((state) => state.getDisposals)
-  const transactions = useTransactionStore((state) => state.transactions)
+  const transactions = useTransactionStore(selectTransactions)
   const setHasExportedPDF = useTransactionStore((state) => state.setHasExportedPDF)
 
   const handleExport = async () => {

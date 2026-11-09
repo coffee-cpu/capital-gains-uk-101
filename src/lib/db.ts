@@ -193,7 +193,7 @@ export async function clearAllData(): Promise<void> {
   // Delete entire IndexedDB database (handles schema migration issues)
   await db.delete()
 
-  // Clear localStorage (Zustand persist)
+  // Clear settings saved to localStorage by versions before IndexedDB held them
   localStorage.removeItem('cgt-settings')
 
   // Reload page to ensure clean state

@@ -1,5 +1,6 @@
 import { BrokerType } from '../types/broker'
 import { useTransactionStore } from '../stores/transactionStore'
+import { useHelpPanelStore } from '../stores/helpPanelStore'
 import type { EnrichedTransaction } from '../types/transaction'
 import { useState } from 'react'
 import { DisposalRecords } from './DisposalRecords'
@@ -62,7 +63,7 @@ export function TaxYearSummary() {
   const selectedTaxYear = useTransactionStore((state) => state.selectedTaxYear)
   const setSelectedTaxYear = useTransactionStore((state) => state.setSelectedTaxYear)
   const hasExportedPDF = useTransactionStore((state) => state.hasExportedPDF)
-  const toggleHelpPanelWithContext = useTransactionStore((state) => state.toggleHelpPanelWithContext)
+  const toggleHelpPanelWithContext = useHelpPanelStore((state) => state.toggleWithContext)
   const [showDisposals, setShowDisposals] = useState(false)
   const [showDividends, setShowDividends] = useState(false)
   const [showInterest, setShowInterest] = useState(false)

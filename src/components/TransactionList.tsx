@@ -1,6 +1,7 @@
 import { COMMUNITY_SPLIT_SOURCE } from '../types/broker'
 import { useMemo, useState } from 'react'
-import { useTransactionStore } from '../stores/transactionStore'
+import { useTransactionStore, selectTransactions } from '../stores/transactionStore'
+import { useHelpPanelStore } from '../stores/helpPanelStore'
 import { ClearDataButton } from './ClearDataButton'
 import { Tooltip } from './Tooltip'
 import { FXSourceSelector } from './FXSourceSelector'
@@ -38,12 +39,12 @@ function formatFxDate(date: string, fxSource: string): string {
 }
 
 export function TransactionList() {
-  const transactions = useTransactionStore((state) => state.transactions)
+  const transactions = useTransactionStore(selectTransactions)
   const isLoading = useTransactionStore((state) => state.isLoading)
   const getDisposals = useTransactionStore((state) => state.getDisposals)
   const cgtResults = useTransactionStore((state) => state.cgtResults)
   const getSection104Pools = useTransactionStore((state) => state.getSection104Pools)
-  const toggleHelpPanelWithContext = useTransactionStore((state) => state.toggleHelpPanelWithContext)
+  const toggleHelpPanelWithContext = useHelpPanelStore((state) => state.toggleWithContext)
   const [showFxInfo, setShowFxInfo] = useState(false)
   const [hoveredMatchGroup, setHoveredMatchGroup] = useState<string | null>(null)
   const [filterMode, setFilterMode] = useState<'all' | 'attention'>('all')

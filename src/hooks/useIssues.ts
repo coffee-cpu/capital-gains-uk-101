@@ -1,6 +1,6 @@
 import { BrokerType } from '../types/broker'
 import { useMemo } from 'react'
-import { useTransactionStore } from '../stores/transactionStore'
+import { useTransactionStore, selectTransactions } from '../stores/transactionStore'
 import type { EnrichedTransaction } from '../types/transaction'
 import type { CGTCalculationResult } from '../types/cgt'
 
@@ -232,7 +232,7 @@ export function detectIssues(
  * Returns issues sorted by severity (errors first, then warnings, then info)
  */
 export function useIssues(): Issue[] {
-  const transactions = useTransactionStore((state) => state.transactions)
+  const transactions = useTransactionStore(selectTransactions)
   const cgtResults = useTransactionStore((state) => state.cgtResults)
 
   return useMemo(
