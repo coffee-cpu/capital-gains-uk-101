@@ -143,6 +143,7 @@ export function renderPage(page: GuidePage, context: RenderContext): string {
 <meta property="og:locale" content="en_GB">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" type="image/png" href="/favicon/favicon-96x96.png" sizes="96x96">
+<link rel="icon" type="image/svg+xml" href="/favicon/favicon.svg">
 <link rel="alternate" type="text/markdown" href="/agents.md" title="Guide for AI agents">
 <style>${STYLES.trim()}</style>
 ${jsonLdScript(breadcrumbLd)}
@@ -150,7 +151,7 @@ ${(page.jsonLd ?? []).map(jsonLdScript).join('\n')}
 </head>
 <body>
 <header><div class="bar">
-<a class="logo" href="/"><img src="/favicon/apple-touch-icon.png" alt="" width="36" height="36">${SITE_NAME}</a>
+<a class="logo" href="/"><img src="/favicon/favicon.svg" alt="" width="36" height="36">${SITE_NAME}</a>
 <nav><a href="/guides/">Guides</a><a class="cta" href="/">Open the calculator</a></nav>
 </div></header>
 <main>
