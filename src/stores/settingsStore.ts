@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { FXSource, FXSourceSchema, DEFAULT_FX_SOURCE } from '../types/fxSource'
 import { db } from '../lib/db'
+import { isTransactionHistoryScope, type TransactionHistoryScope } from '../lib/pdf/cgtReportDocument'
 
 interface SettingsState {
   fxSource: FXSource
@@ -8,6 +9,10 @@ interface SettingsState {
 
   autoSplitsEnabled: boolean
   setAutoSplitsEnabled: (enabled: boolean) => Promise<void>
+
+  /** The PDF report's transaction history appendix */
+  pdfTransactionHistory: TransactionHistoryScope
+  setPdfTransactionHistory: (scope: TransactionHistoryScope) => Promise<void>
 
   /** True once settings have been read from IndexedDB */
   isInitialized: boolean
@@ -30,6 +35,7 @@ const changedDuringLoad = new Set<keyof StoredSettings>()
 export const useSettingsStore = create<SettingsState>()((set) => ({
   fxSource: DEFAULT_FX_SOURCE,
   autoSplitsEnabled: true,
+  pdfTransactionHistory: 'none',
   isInitialized: false,
 
   setFXSource: async (fxSource) => {
@@ -44,6 +50,12 @@ export const useSettingsStore = create<SettingsState>()((set) => ({
     await saveSetting('autoSplitsEnabled', String(enabled))
   },
 
+  setPdfTransactionHistory: async (scope) => {
+    changedDuringLoad.add('pdfTransactionHistory')
+    set({ pdfTransactionHistory: scope })
+    await saveSetting('pdfTransactionHistory', scope)
+  },
+
   initializeFromDB: () => {
     if (!initialization) {
       changedDuringLoad.clear()
@@ -56,7 +68,7 @@ export const useSettingsStore = create<SettingsState>()((set) => ({
   },
 }))
 
-type StoredSettings = Partial<Pick<SettingsState, 'fxSource' | 'autoSplitsEnabled'>>
+type StoredSettings = Partial<Pick<SettingsState, 'fxSource' | 'autoSplitsEnabled' | 'pdfTransactionHistory'>>
 
 async function loadSettings(): Promise<StoredSettings> {
   const settings: StoredSettings = {}
@@ -66,6 +78,9 @@ async function loadSettings(): Promise<StoredSettings> {
 
     const autoSplitsSetting = await db.settings.get('autoSplitsEnabled')
     if (autoSplitsSetting?.value) settings.autoSplitsEnabled = autoSplitsSetting.value !== 'false'
+
+    const historySetting = await db.settings.get('pdfTransactionHistory')
+    if (isTransactionHistoryScope(historySetting?.value)) settings.pdfTransactionHistory = historySetting.value
   } catch (error) {
     console.error('Failed to load settings from IndexedDB:', error)
   }

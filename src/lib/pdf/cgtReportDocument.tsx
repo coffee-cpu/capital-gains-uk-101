@@ -209,9 +209,42 @@ export interface PDFDocumentProps {
   taxYearSummary: TaxYearSummary
   disposals: DisposalRecord[]
   transactions: EnrichedTransaction[]
-  includeTransactions?: boolean
+  /** Which transactions to list in the transaction history appendix (default: none) */
+  transactionHistory?: TransactionHistoryScope
   /** Section 104 pools from the CGT result, for the year-end holdings table */
   section104Pools?: Map<string, Section104Pool>
+}
+
+/**
+ * The transaction history appendix: none, the selected tax year's
+ * transactions, or every transaction from the first import to the year end
+ */
+export type TransactionHistoryScope = 'none' | 'tax-year' | 'all'
+
+export const TRANSACTION_HISTORY_SCOPES: readonly TransactionHistoryScope[] = ['none', 'tax-year', 'all']
+
+export function isTransactionHistoryScope(value: unknown): value is TransactionHistoryScope {
+  return TRANSACTION_HISTORY_SCOPES.includes(value as TransactionHistoryScope)
+}
+
+/**
+ * The rows of the transaction history appendix, oldest first: transactions that
+ * aren't ignored, within the scope, and not cash rows with nothing in them
+ */
+export function transactionHistoryRows(
+  transactions: EnrichedTransaction[],
+  taxYearSummary: Pick<TaxYearSummary, 'startDate' | 'endDate'>,
+  scope: TransactionHistoryScope
+): EnrichedTransaction[] {
+  if (scope === 'none') return []
+  return transactions
+    .filter(tx =>
+      !tx.ignored &&
+      tx.date <= taxYearSummary.endDate &&
+      (scope === 'all' || tx.date >= taxYearSummary.startDate) &&
+      transactionTableCells(tx) !== null
+    )
+    .sort((a, b) => a.date.localeCompare(b.date) || a.symbol.localeCompare(b.symbol))
 }
 
 /**
@@ -297,7 +330,7 @@ const CASH_ONLY_TYPES = new Set(['DIVIDEND', 'INTEREST', 'TAX', 'TAX_ON_DIVIDEND
 const isZero = (value: number | null | undefined) => value == null || Math.abs(value) < 0.005
 
 /**
- * The cells of one row in the All Transactions table, or null for a cash row
+ * The cells of one row in the transaction history table, or null for a cash row
  * with nothing to show (a £0.00 amount and no fee, such as a £0.00 tax line).
  * Other rows, such as a stock split with no amounts, are always kept.
  * Quantities are shown without sign, as the type already says the direction
@@ -338,16 +371,11 @@ function createCGTReportDocument(
   View: PdfLibrary['View'],
   styles: PdfStyles
 ) {
-  return ({ taxYearSummary, disposals, transactions, includeTransactions, section104Pools }: PDFDocumentProps) => {
+  return ({ taxYearSummary, disposals, transactions, transactionHistory = 'none', section104Pools }: PDFDocumentProps) => {
     const formatCurrency = formatGbp
     const formatDate = formatReportDate
 
-    // Filter transactions up to and including the tax year end date
-    const filteredTransactions = includeTransactions
-      ? transactions
-          .filter(tx => tx.date <= taxYearSummary.endDate && !tx.ignored)
-          .sort((a, b) => a.date.localeCompare(b.date) || a.symbol.localeCompare(b.symbol))
-      : []
+    const historyRows = transactionHistoryRows(transactions, taxYearSummary, transactionHistory)
 
     const issues = findReportDataIssues(taxYearSummary, disposals, transactions)
     const hasIssues = issues.missingFx.length > 0 || issues.incompleteDisposals.length > 0
@@ -680,10 +708,14 @@ function createCGTReportDocument(
             </View>
           )}
 
-          {/* All Transactions (optional) */}
-          {includeTransactions && filteredTransactions.length > 0 && (
+          {/* Transaction history appendix (optional) */}
+          {historyRows.length > 0 && (
             <>
-              <Text style={styles.subtitle} break>All Transactions (to {formatDate(taxYearSummary.endDate)})</Text>
+              <Text style={styles.subtitle} break>
+                {transactionHistory === 'tax-year'
+                  ? `Transaction History (${formatDate(taxYearSummary.startDate)} to ${formatDate(taxYearSummary.endDate)})`
+                  : `Transaction History (all imported transactions to ${formatDate(taxYearSummary.endDate)})`}
+              </Text>
               <View style={styles.table}>
                 {/* Table Header */}
                 <View style={styles.tableHeader}>
@@ -696,9 +728,8 @@ function createCGTReportDocument(
                   <Text style={[styles.tableHeaderCell, { width: '11%', textAlign: 'right' }]}>Fee</Text>
                 </View>
                 {/* Table Rows */}
-                {filteredTransactions.map(tx => {
-                  const cells = transactionTableCells(tx)
-                  if (!cells) return null
+                {historyRows.map(tx => {
+                  const cells = transactionTableCells(tx)!
                   return (
                     <View key={tx.id} style={styles.tableRow} wrap={false}>
                       <Text style={[styles.tableCell, { width: '11%' }]}>{formatDate(tx.date)}</Text>

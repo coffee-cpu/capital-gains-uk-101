@@ -27,7 +27,7 @@ export async function renderPdfReport(
       taxYearSummary,
       disposals: result.disposals.filter(d => d.taxYear === taxYear),
       transactions: result.transactions,
-      includeTransactions,
+      transactionHistory: includeTransactions ? 'all' : 'none',
       section104Pools: result.section104Pools,
     }
   )
