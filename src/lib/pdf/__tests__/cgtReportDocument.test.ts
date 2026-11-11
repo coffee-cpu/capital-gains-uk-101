@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { acquisitionLinesByDay, formatReportDate, transactionHistoryRows, transactionTableCells } from '../cgtReportDocument'
 import type { EnrichedTransaction } from '../../../types/transaction'
+import type { DisposalRecord } from '../../../types/cgt'
 
 describe('formatReportDate', () => {
   const originalTZ = process.env.TZ
@@ -120,5 +121,19 @@ describe('transactionHistoryRows', () => {
 
   it('lists everything up to the year end for all', () => {
     expect(ids(transactionHistoryRows(transactions, year, 'all'))).toEqual(['earlier', 'in-year', 'year-end'])
+  })
+
+  it('adds a later purchase that a disposal in the year was matched to', () => {
+    const laterBuy = tx('later-buy', '2025-04-20')
+    const disposal = {
+      matchings: [{ rule: '30_DAY', acquisitions: [{ transaction: laterBuy, quantityMatched: 1, costBasisGbp: 100 }] }],
+    } as unknown as DisposalRecord
+
+    for (const scope of ['tax-year', 'all'] as const) {
+      expect(ids(transactionHistoryRows([...transactions, laterBuy], year, scope, [disposal])))
+        .toEqual([...(scope === 'all' ? ['earlier'] : []), 'in-year', 'year-end', 'later-buy'])
+    }
+    // Not a row on its own: only with the disposal that was matched to it
+    expect(ids(transactionHistoryRows([...transactions, laterBuy], year, 'tax-year'))).not.toContain('later-buy')
   })
 })

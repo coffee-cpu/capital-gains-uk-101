@@ -228,20 +228,43 @@ export function isTransactionHistoryScope(value: unknown): value is TransactionH
 }
 
 /**
+ * Acquisitions after the year end that a disposal in the year was matched to
+ * (30-day rule, TCGA92/S106A(5), or a short sale's covering buy). They set
+ * that disposal's cost, so the appendix lists them too.
+ */
+export function laterMatchedAcquisitionIds(
+  disposals: DisposalRecord[],
+  taxYearSummary: Pick<TaxYearSummary, 'endDate'>
+): Set<string> {
+  const ids = new Set<string>()
+  for (const disposal of disposals) {
+    for (const matching of disposal.matchings) {
+      for (const { transaction } of matching.acquisitions) {
+        if (transaction.date > taxYearSummary.endDate) ids.add(transaction.id)
+      }
+    }
+  }
+  return ids
+}
+
+/**
  * The rows of the transaction history appendix, oldest first: transactions that
- * aren't ignored, within the scope, and not cash rows with nothing in them
+ * aren't ignored, within the scope, and not cash rows with nothing in them, plus
+ * any later acquisitions that the year's disposals were matched to
  */
 export function transactionHistoryRows(
   transactions: EnrichedTransaction[],
   taxYearSummary: Pick<TaxYearSummary, 'startDate' | 'endDate'>,
-  scope: TransactionHistoryScope
+  scope: TransactionHistoryScope,
+  disposals: DisposalRecord[] = []
 ): EnrichedTransaction[] {
   if (scope === 'none') return []
+  const laterMatched = laterMatchedAcquisitionIds(disposals, taxYearSummary)
   return transactions
     .filter(tx =>
       !tx.ignored &&
-      tx.date <= taxYearSummary.endDate &&
-      (scope === 'all' || tx.date >= taxYearSummary.startDate) &&
+      ((tx.date <= taxYearSummary.endDate && (scope === 'all' || tx.date >= taxYearSummary.startDate)) ||
+        laterMatched.has(tx.id)) &&
       transactionTableCells(tx) !== null
     )
     .sort((a, b) => a.date.localeCompare(b.date) || a.symbol.localeCompare(b.symbol))
@@ -375,7 +398,8 @@ function createCGTReportDocument(
     const formatCurrency = formatGbp
     const formatDate = formatReportDate
 
-    const historyRows = transactionHistoryRows(transactions, taxYearSummary, transactionHistory)
+    const historyRows = transactionHistoryRows(transactions, taxYearSummary, transactionHistory, disposals)
+    const laterMatchedRows = historyRows.filter(tx => tx.date > taxYearSummary.endDate).length
 
     const issues = findReportDataIssues(taxYearSummary, disposals, transactions)
     const hasIssues = issues.missingFx.length > 0 || issues.incompleteDisposals.length > 0
@@ -743,6 +767,13 @@ function createCGTReportDocument(
                   )
                 })}
               </View>
+              {laterMatchedRows > 0 && (
+                <Text style={styles.note}>
+                  {`The last ${laterMatchedRows === 1 ? 'row is a purchase' : `${laterMatchedRows} rows are purchases`} ` +
+                    `after ${formatDate(taxYearSummary.endDate)} that disposals in this tax year were matched to ` +
+                    `(30-day rule or a short sale's covering purchase), so ${laterMatchedRows === 1 ? 'it sets' : 'they set'} their cost.`}
+                </Text>
+              )}
             </>
           )}
 

@@ -96,13 +96,14 @@ export function ExportPDFButton() {
   // How many rows each appendix option would add, for the menu
   const historyCounts = useMemo(() => {
     if (!taxYearSummary) return null
-    const all = transactionHistoryRows(transactions, taxYearSummary, 'all')
+    const disposals = cgtResults?.disposals.filter(d => d.taxYear === taxYearSummary.taxYear) ?? []
+    const all = transactionHistoryRows(transactions, taxYearSummary, 'all', disposals)
     return {
-      taxYear: transactionHistoryRows(transactions, taxYearSummary, 'tax-year').length,
+      taxYear: transactionHistoryRows(transactions, taxYearSummary, 'tax-year', disposals).length,
       all: all.length,
       firstDate: all[0]?.date,
     }
-  }, [transactions, taxYearSummary])
+  }, [transactions, taxYearSummary, cgtResults])
 
   const historyOptions: { value: TransactionHistoryScope; label: string; description: string }[] = [
     {
@@ -238,8 +239,9 @@ export function ExportPDFButton() {
           <fieldset className="px-3 pt-3 pb-2">
             <legend className="float-left w-full text-sm font-medium text-gray-900">Transaction history appendix</legend>
             <p className="clear-left pt-0.5 text-xs text-gray-500">
-              A table at the end of the report listing the transactions behind the figures, for your
-              records or your accountant.
+              A table at the end of the report listing your transactions, for your records or your
+              accountant. Purchases after the year end that this year&apos;s sales were matched to
+              (30-day rule) are included.
             </p>
             <div className="mt-2 space-y-1">
               {historyOptions.map(option => (
