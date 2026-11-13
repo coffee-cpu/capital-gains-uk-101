@@ -373,7 +373,7 @@ export function transactionTableCells(tx: EnrichedTransaction): {
   fee: string
   /** The broker's own amounts, for a row in another currency */
   original?: { price: string; value: string; fee: string }
-  /** Units of the row's currency per £1, for a row in another currency */
+  /** Units of the row's currency per £1 ("1.2500 USD"), for a row in another currency */
   fxRate?: string
 } | null {
   const cashOnly = CASH_ONLY_TYPES.has(tx.type)
@@ -396,7 +396,7 @@ export function transactionTableCells(tx: EnrichedTransaction): {
       value: tx.total == null ? '-' : formatOriginalAmount(tx.total, tx.currency),
       fee: isZero(tx.fee) ? '-' : formatOriginalAmount(tx.fee!, tx.currency),
     },
-    fxRate: tx.fx_rate == null ? '-' : formatFxRate(tx.fx_rate),
+    fxRate: tx.fx_rate == null ? '-' : `${formatFxRate(tx.fx_rate)} ${tx.currency.toUpperCase()}`,
   }
 }
 
@@ -828,7 +828,7 @@ function createCGTReportDocument(
                       {amount(columns.fee, cells.fee, cells.original?.fee)}
                       {hasForeignRows && (
                         <Text style={[styles.tableCell, { width: columns.fxRate, textAlign: 'right' }]}>
-                          {cells.fxRate == null ? '-' : `${cells.fxRate} ${tx.currency.toUpperCase()}`}
+                          {cells.fxRate ?? '-'}
                         </Text>
                       )}
                     </View>

@@ -106,7 +106,7 @@ describe('transactionTableCells', () => {
     }))).toEqual({
       symbol: 'ABC', quantity: '10', price: '£121.84', value: '£1,218.40', fee: '£0.80',
       original: { price: '152.30 USD', value: '1,523.00 USD', fee: '1.00 USD' },
-      fxRate: '1.2500',
+      fxRate: '1.2500 USD',
     })
   })
 
@@ -118,6 +118,11 @@ describe('transactionTableCells', () => {
   it('shows the broker\'s amount when the GBP value is missing', () => {
     const cells = transactionTableCells(tx({ type: 'DIVIDEND', currency: 'EUR', total: 12.5, fx_rate: null }))
     expect(cells).toMatchObject({ value: '-', original: { price: '-', value: '12.50 EUR', fee: '-' }, fxRate: '-' })
+  })
+
+  it('shows a dash, with no currency code, for a crypto row (no FX rate)', () => {
+    expect(transactionTableCells(tx({ type: 'BUY', currency: 'BTC', quantity: 1, price: 0.05, total: 0.05, fx_rate: null }))?.fxRate)
+      .toBe('-')
   })
 
   it('adds nothing for a GBP row', () => {
