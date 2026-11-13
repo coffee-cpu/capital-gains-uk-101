@@ -98,13 +98,57 @@
     animation: coffee-shine 0.9s ease;
   }
 }
-.coffee-btn-steam {
-  animation: coffee-steam 2.4s ease-in-out infinite;
-  transform-box: fill-box;
-  transform-origin: bottom;
+/* Coffee inside the button: it fills the lower ~86%, so the white text sits
+   fully on dark coffee, with a band of the amber gradient showing above.
+   The layer bleeds 8px past the sides and 12px below (clipped by the button's
+   overflow: hidden) so no corner shows while it tilts in a slosh. */
+.coffee-btn {
+  text-shadow: 0 1px 1px rgb(60 30 10 / 0.35);
 }
-.coffee-btn-steam + .coffee-btn-steam {
-  animation-delay: 0.6s;
+.coffee-btn-liquid {
+  position: absolute;
+  left: -8px;
+  right: -8px;
+  bottom: -12px;
+  height: calc(86% + 12px);
+  pointer-events: none;
+  transform-origin: 50% 100%;
+  transition: height 0.4s ease;
+}
+.coffee-btn-wave {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 200%;
+  height: 100%;
+  animation: coffee-wave 7s linear infinite;
+}
+.coffee-btn-wave-back {
+  bottom: 0;
+  height: calc(100% + 3px);
+  opacity: 0.55;
+  animation-duration: 10s;
+  animation-direction: reverse;
+}
+.coffee-btn-slosh {
+  animation: coffee-slosh 1s ease-out;
+}
+@media (hover: hover) {
+  /* A little more coffee on hover */
+  .coffee-btn:hover .coffee-btn-liquid {
+    height: calc(92% + 12px);
+  }
+}
+@keyframes coffee-wave {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+@keyframes coffee-slosh {
+  0% { transform: rotate(0); }
+  20% { transform: rotate(-5deg) translateY(-2px); }
+  45% { transform: rotate(3.5deg); }
+  70% { transform: rotate(-1.5deg); }
+  100% { transform: rotate(0); }
 }
 @keyframes coffee-shine {
   to { transform: translateX(120%); }
@@ -132,7 +176,10 @@
   .coffee-stream { display: none; }
   .coffee-liquid, .coffee-mug { animation: none; transform: none; }
   .coffee-steam-group { animation: none; opacity: 1; }
-  .coffee-steam, .coffee-btn-steam { animation: none; opacity: 0.6; }
+  .coffee-steam { animation: none; opacity: 0.6; }
+  .coffee-btn-wave, .coffee-btn-slosh { animation: none; }
+  .coffee-btn-liquid { transition: none; }
+  .coffee-btn:hover .coffee-btn-liquid { height: calc(86% + 12px); }
   .coffee-btn, .coffee-btn:hover, .coffee-btn:active { transition: none; transform: none; }
   .coffee-btn::after { display: none; }
   .coffee-bean { display: none; }
