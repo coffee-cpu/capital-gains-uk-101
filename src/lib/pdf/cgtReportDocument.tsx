@@ -2,6 +2,7 @@ import type { TaxYearSummary, DisposalRecord, Section104Pool, MatchingResult } f
 import type { EnrichedTransaction } from '../../types/transaction'
 import { renderAllFeaturePDFSections } from '../cgt/taxYearFeatures/pdfRenderers'
 import { formatGbp } from '../../utils/currency'
+import { isFiatCurrency } from '../currencies'
 import {
   getEffectivePrice,
   getEffectiveQuantity,
@@ -77,6 +78,11 @@ function createStyles(StyleSheet: PdfLibrary['StyleSheet']) {
   },
   tableCell: {
     fontSize: 8,
+  },
+  originalAmount: {
+    fontSize: 7,
+    color: '#6b7280',
+    textAlign: 'right',
   },
   summaryBox: {
     backgroundColor: '#f9fafb',
@@ -365,19 +371,59 @@ export function transactionTableCells(tx: EnrichedTransaction): {
   price: string
   value: string
   fee: string
+  /** The broker's own amounts, for a row in another currency */
+  original?: { price: string; value: string; fee: string }
+  /** Units of the row's currency per £1 ("1.2500 USD"), for a row in another currency */
+  fxRate?: string
 } | null {
   const cashOnly = CASH_ONLY_TYPES.has(tx.type)
   // The broker's own amounts, so a row whose GBP value is missing (no FX rate) is kept
   if (cashOnly && isZero(tx.total) && isZero(tx.fee)) return null
   // Quantities are compared exactly: 0.001 BTC is not zero
   const quantity = !cashOnly && tx.quantity ? Math.abs(tx.quantity) : null
-  return {
+  const cells = {
     symbol: tx.symbol || '-',
     quantity: quantity == null ? '-' : formatQuantity(quantity),
     price: cashOnly || tx.price_gbp == null ? '-' : formatGbp(tx.price_gbp),
     value: tx.value_gbp == null ? '-' : formatGbp(tx.value_gbp),
     fee: isZero(tx.fee_gbp) ? '-' : formatGbp(tx.fee_gbp!),
   }
+  if (!tx.currency || tx.currency.toUpperCase() === 'GBP') return cells
+  return {
+    ...cells,
+    original: {
+      price: cashOnly || tx.price == null ? '-' : formatOriginalAmount(tx.price, tx.currency, PRICE_DECIMALS),
+      value: tx.total == null ? '-' : formatOriginalAmount(tx.total, tx.currency),
+      fee: isZero(tx.fee) ? '-' : formatOriginalAmount(tx.fee!, tx.currency),
+    },
+    fxRate: tx.fx_rate == null ? '-' : `${formatFxRate(tx.fx_rate)} ${tx.currency.toUpperCase()}`,
+  }
+}
+
+/** Up to this many decimal places for an original-currency price */
+const PRICE_DECIMALS = 6
+
+/**
+ * An amount in its original currency, with the currency code rather than a
+ * symbol (the PDF's built-in font has no glyphs for symbols such as ₹):
+ * "1,234.50 USD". Negatives use brackets, like the GBP figures. Fiat amounts
+ * keep at least 2 decimal places and up to `maxDecimals` (more for a price,
+ * so a penny stock's 0.0045 USD isn't shown as 0.00); crypto keeps up to 8.
+ */
+export function formatOriginalAmount(amount: number, currency: string, maxDecimals = 2): string {
+  const code = currency.toUpperCase()
+  const abs = Math.abs(amount)
+  const number = isFiatCurrency(code)
+    ? abs.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: Math.max(2, maxDecimals) })
+    : formatQuantity(abs)
+  // Amounts that round to zero (including -0) are shown without brackets
+  const isNegative = amount < 0 && number.replace(/[0.,]/g, '') !== ''
+  return isNegative ? `(${number} ${code})` : `${number} ${code}`
+}
+
+/** An FX rate (units of the currency per £1) to 4 decimal places */
+export function formatFxRate(rate: number): string {
+  return rate.toLocaleString('en-GB', { minimumFractionDigits: 4, maximumFractionDigits: 4 })
 }
 
 export const REPORT_DISCLAIMER =
@@ -400,6 +446,11 @@ function createCGTReportDocument(
 
     const historyRows = transactionHistoryRows(transactions, taxYearSummary, transactionHistory, disposals)
     const laterMatchedRows = historyRows.filter(tx => tx.date > taxYearSummary.endDate).length
+    const hasForeignRows = historyRows.some(tx => transactionTableCells(tx)?.original != null)
+    // Column widths; an FX rate column is added when any row is in another currency
+    const columns = hasForeignRows
+      ? { date: '10%', type: '18%', symbol: '14%', quantity: '9%', price: '13%', value: '14%', fee: '11%', fxRate: '11%' }
+      : { date: '11%', type: '23%', symbol: '20%', quantity: '11%', price: '12%', value: '12%', fee: '11%', fxRate: '0%' }
 
     const issues = findReportDataIssues(taxYearSummary, disposals, transactions)
     const hasIssues = issues.missingFx.length > 0 || issues.incompleteDisposals.length > 0
@@ -743,30 +794,54 @@ function createCGTReportDocument(
               <View style={styles.table}>
                 {/* Table Header */}
                 <View style={styles.tableHeader}>
-                  <Text style={[styles.tableHeaderCell, { width: '11%' }]}>Date</Text>
-                  <Text style={[styles.tableHeaderCell, { width: '23%' }]}>Type</Text>
-                  <Text style={[styles.tableHeaderCell, { width: '20%' }]}>Symbol</Text>
-                  <Text style={[styles.tableHeaderCell, { width: '11%', textAlign: 'right' }]}>Qty</Text>
-                  <Text style={[styles.tableHeaderCell, { width: '12%', textAlign: 'right' }]}>Price</Text>
-                  <Text style={[styles.tableHeaderCell, { width: '12%', textAlign: 'right' }]}>Value</Text>
-                  <Text style={[styles.tableHeaderCell, { width: '11%', textAlign: 'right' }]}>Fee</Text>
+                  <Text style={[styles.tableHeaderCell, { width: columns.date }]}>Date</Text>
+                  <Text style={[styles.tableHeaderCell, { width: columns.type }]}>Type</Text>
+                  <Text style={[styles.tableHeaderCell, { width: columns.symbol }]}>Symbol</Text>
+                  <Text style={[styles.tableHeaderCell, { width: columns.quantity, textAlign: 'right' }]}>Qty</Text>
+                  <Text style={[styles.tableHeaderCell, { width: columns.price, textAlign: 'right' }]}>Price</Text>
+                  <Text style={[styles.tableHeaderCell, { width: columns.value, textAlign: 'right' }]}>Value</Text>
+                  <Text style={[styles.tableHeaderCell, { width: columns.fee, textAlign: 'right' }]}>Fee</Text>
+                  {hasForeignRows && (
+                    <Text style={[styles.tableHeaderCell, { width: columns.fxRate, textAlign: 'right' }]}>FX rate</Text>
+                  )}
                 </View>
                 {/* Table Rows */}
                 {historyRows.map(tx => {
                   const cells = transactionTableCells(tx)!
+                  // A GBP figure, with the broker's own amount under it for a row in another currency
+                  const amount = (width: string, gbp: string, original: string | undefined) => (
+                    <View style={{ width }}>
+                      <Text style={[styles.tableCell, { textAlign: 'right' }]}>{gbp}</Text>
+                      {original != null && original !== '-' && (
+                        <Text style={[styles.tableCell, styles.originalAmount]}>{original}</Text>
+                      )}
+                    </View>
+                  )
                   return (
                     <View key={tx.id} style={styles.tableRow} wrap={false}>
-                      <Text style={[styles.tableCell, { width: '11%' }]}>{formatDate(tx.date)}</Text>
-                      <Text style={[styles.tableCell, { width: '23%' }]}>{formatTransactionType(tx.type)}</Text>
-                      <Text style={[styles.tableCell, { width: '20%' }]}>{cells.symbol}</Text>
-                      <Text style={[styles.tableCell, { width: '11%', textAlign: 'right' }]}>{cells.quantity}</Text>
-                      <Text style={[styles.tableCell, { width: '12%', textAlign: 'right' }]}>{cells.price}</Text>
-                      <Text style={[styles.tableCell, { width: '12%', textAlign: 'right' }]}>{cells.value}</Text>
-                      <Text style={[styles.tableCell, { width: '11%', textAlign: 'right' }]}>{cells.fee}</Text>
+                      <Text style={[styles.tableCell, { width: columns.date }]}>{formatDate(tx.date)}</Text>
+                      <Text style={[styles.tableCell, { width: columns.type }]}>{formatTransactionType(tx.type)}</Text>
+                      <Text style={[styles.tableCell, { width: columns.symbol }]}>{cells.symbol}</Text>
+                      <Text style={[styles.tableCell, { width: columns.quantity, textAlign: 'right' }]}>{cells.quantity}</Text>
+                      {amount(columns.price, cells.price, cells.original?.price)}
+                      {amount(columns.value, cells.value, cells.original?.value)}
+                      {amount(columns.fee, cells.fee, cells.original?.fee)}
+                      {hasForeignRows && (
+                        <Text style={[styles.tableCell, { width: columns.fxRate, textAlign: 'right' }]}>
+                          {cells.fxRate ?? '-'}
+                        </Text>
+                      )}
                     </View>
                   )
                 })}
               </View>
+              {hasForeignRows && (
+                <Text style={styles.note}>
+                  {'Amounts are in GBP. For a transaction in another currency, the amount from your broker\'s ' +
+                    'statement is shown under each GBP figure, and the FX rate is the number of units of that ' +
+                    'currency per £1 used to convert it.'}
+                </Text>
+              )}
               {laterMatchedRows > 0 && (
                 <Text style={styles.note}>
                   {`The last ${laterMatchedRows === 1 ? 'row is a purchase' : `${laterMatchedRows} rows are purchases`} ` +

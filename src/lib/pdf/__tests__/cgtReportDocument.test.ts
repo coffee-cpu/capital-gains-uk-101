@@ -1,5 +1,12 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import { acquisitionLinesByDay, formatReportDate, transactionHistoryRows, transactionTableCells } from '../cgtReportDocument'
+import {
+  acquisitionLinesByDay,
+  formatFxRate,
+  formatOriginalAmount,
+  formatReportDate,
+  transactionHistoryRows,
+  transactionTableCells,
+} from '../cgtReportDocument'
 import type { EnrichedTransaction } from '../../../types/transaction'
 import type { DisposalRecord } from '../../../types/cgt'
 
@@ -92,6 +99,38 @@ describe('transactionTableCells', () => {
     expect(transactionTableCells(tx({ type: 'TRANSFER', total: 500 }))?.value).toBe('-')
   })
 
+  it('adds the broker\'s own amounts and the FX rate for a row in another currency', () => {
+    expect(transactionTableCells(tx({
+      type: 'BUY', currency: 'USD', quantity: 10, price: 152.3, total: 1523, fee: 1,
+      fx_rate: 1.25, price_gbp: 121.84, value_gbp: 1218.4, fee_gbp: 0.8,
+    }))).toEqual({
+      symbol: 'ABC', quantity: '10', price: '£121.84', value: '£1,218.40', fee: '£0.80',
+      original: { price: '152.30 USD', value: '1,523.00 USD', fee: '1.00 USD' },
+      fxRate: '1.2500 USD',
+    })
+  })
+
+  it('shows a penny stock\'s price to more than 2 decimal places', () => {
+    const cells = transactionTableCells(tx({ type: 'BUY', currency: 'USD', quantity: 1000, price: 0.0045, total: 4.5, fx_rate: 1.25 }))
+    expect(cells?.original?.price).toBe('0.0045 USD')
+  })
+
+  it('shows the broker\'s amount when the GBP value is missing', () => {
+    const cells = transactionTableCells(tx({ type: 'DIVIDEND', currency: 'EUR', total: 12.5, fx_rate: null }))
+    expect(cells).toMatchObject({ value: '-', original: { price: '-', value: '12.50 EUR', fee: '-' }, fxRate: '-' })
+  })
+
+  it('shows a dash, with no currency code, for a crypto row (no FX rate)', () => {
+    expect(transactionTableCells(tx({ type: 'BUY', currency: 'BTC', quantity: 1, price: 0.05, total: 0.05, fx_rate: null }))?.fxRate)
+      .toBe('-')
+  })
+
+  it('adds nothing for a GBP row', () => {
+    const cells = transactionTableCells(tx({ type: 'BUY', currency: 'GBP', price: 10, total: 100, price_gbp: 10, value_gbp: 100, fx_rate: 1 }))
+    expect(cells?.original).toBeUndefined()
+    expect(cells?.fxRate).toBeUndefined()
+  })
+
   it('shows a dash for a missing symbol', () => {
     expect(transactionTableCells(tx({ type: 'TRANSFER', symbol: '', total: 500, value_gbp: 500 }))?.symbol).toBe('-')
   })
@@ -135,5 +174,33 @@ describe('transactionHistoryRows', () => {
     }
     // Not a row on its own: only with the disposal that was matched to it
     expect(ids(transactionHistoryRows([...transactions, laterBuy], year, 'tax-year'))).not.toContain('later-buy')
+  })
+})
+
+describe('formatOriginalAmount', () => {
+  it('uses the currency code, with 2 decimal places for fiat', () => {
+    expect(formatOriginalAmount(1234.5, 'usd')).toBe('1,234.50 USD')
+  })
+
+  it('puts negatives in brackets, like the GBP figures, but not an amount that rounds to zero', () => {
+    expect(formatOriginalAmount(-3, 'INR')).toBe('(3.00 INR)')
+    expect(formatOriginalAmount(-0.001, 'USD')).toBe('0.00 USD')
+  })
+
+  it('keeps more decimal places when asked, for a price', () => {
+    expect(formatOriginalAmount(0.0045, 'USD', 6)).toBe('0.0045 USD')
+    expect(formatOriginalAmount(152.3456, 'USD', 6)).toBe('152.3456 USD')
+    expect(formatOriginalAmount(152.3, 'USD', 6)).toBe('152.30 USD')
+  })
+
+  it('keeps up to 8 decimal places for crypto', () => {
+    expect(formatOriginalAmount(0.00012345, 'BTC')).toBe('0.00012345 BTC')
+  })
+})
+
+describe('formatFxRate', () => {
+  it('shows 4 decimal places', () => {
+    expect(formatFxRate(1.2)).toBe('1.2000')
+    expect(formatFxRate(190.12345)).toBe('190.1235')
   })
 })
