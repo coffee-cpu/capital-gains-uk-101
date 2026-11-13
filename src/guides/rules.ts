@@ -70,6 +70,9 @@ const overview = rulePage({
 <h2>3. Work out the gain or loss on each sale</h2>
 <p>Gain = sale proceeds − allowable costs. Allowable costs are what you paid for the matched shares, including dealing fees and stamp duty. Fees on the sale are allowable costs too: on the SA108 form you enter the proceeds before fees and include the selling fees in allowable costs, which gives the same gain. Amounts in other currencies are converted to pounds (see <a href="${FOREIGN_CURRENCY_PATH}">foreign currency shares</a>).</p>
 
+<h3>Trade date or settlement date?</h3>
+<p>Use the trade date: the day the deal was made, not the day it settled a day or two later. For Capital Gains Tax the date of a sale is when the contract is made (TCGA 1992 section 28). This decides which tax year a sale falls in, and which purchases the same-day and 30-day rules match it with.</p>
+
 <h2>4. Add up the year and deduct the allowance</h2>
 <p>Add the year’s gains, subtract the year’s losses, and then deduct the annual exempt amount. Losses from earlier years can reduce the rest, if you reported them to HMRC (you have 4 years from the end of the tax year to claim a loss).</p>
 <table>
@@ -121,7 +124,7 @@ ${renderResultTable(WORKED_EXAMPLES.sameDay)}
 
 const thirtyDay = rulePage({
   path: THIRTY_DAY_PATH,
-  title: 'The 30-day “bed and breakfast” rule for shares, with a worked example',
+  title: 'The 30-day “bed and breakfast” rule for shares: worked example and bed and ISA',
   navTitle: '30-day rule (bed and breakfasting)',
   description: 'Buy back shares within 30 days of selling and HMRC matches the sale with the new purchase. How the rule works, a worked example, and why bed and ISA isn’t caught.',
   h1: 'The 30-day “bed and breakfast” rule',
@@ -159,9 +162,9 @@ ${renderResultTable(WORKED_EXAMPLES.thirtyDay)}
 
 const section104 = rulePage({
   path: SECTION_104_PATH,
-  title: 'Section 104 holding (pool): how to work out average cost for UK Capital Gains Tax',
+  title: 'Section 104 holding: how to work out your pool’s average cost, with an example',
   navTitle: 'Section 104 pool',
-  description: 'Shares of the same company are pooled at their average cost. How the Section 104 holding works, what goes in it, and a worked example of a sale from the pool.',
+  description: 'How to work out a Section 104 holding: shares of one company are pooled at their average cost. What goes in the pool, and a worked example of a sale.',
   h1: 'The Section 104 holding (pool)',
   bodyHtml: `
 <p class="lead">For most sales, HMRC treats all the shares you hold in one company as a single “Section 104 holding” with one total cost. When you sell from it, the cost of the shares sold is their share of that total: in effect, the <strong>average cost</strong>.</p>
@@ -174,6 +177,9 @@ const section104 = rulePage({
 <li>Shares held in different accounts (for example two brokers) are in the same pool. ISA and pension holdings are not.</li>
 <li>A <a href="${STOCK_SPLITS_PATH}">stock split</a> changes the number of shares in the pool but not its total cost.</li>
 </ul>
+
+<h2>Moving shares to another platform</h2>
+<p>Transferring shares from one broker to another, still in your own name, isn’t a sale, so it doesn’t change your Section 104 holding. The pool keeps its original cost. The new broker often doesn’t know what you paid, so keep the old broker’s transaction history and include it when you calculate.</p>
 
 <h2>Worked example</h2>
 <p>You buy 100 ACME shares for £10 each, then 200 more for £13 each. The pool now holds 300 shares that cost £3,600, an average of £12 a share. You then sell 150.</p>
@@ -209,10 +215,10 @@ ${renderResultTable(WORKED_EXAMPLES.stockSplit)}
 
 const foreignCurrency = rulePage({
   path: FOREIGN_CURRENCY_PATH,
-  title: 'Capital Gains Tax on US and other foreign shares: converting to pounds',
+  title: 'Capital Gains Tax on US and other foreign shares: which exchange rate to use',
   navTitle: 'Foreign currency shares',
-  description: 'Gains on shares bought and sold in dollars or other currencies are worked out in pounds, converting each transaction separately. Which exchange rates you can use.',
-  h1: 'Foreign currency shares: converting to pounds',
+  description: 'Bought shares in dollars? Your gain is worked out in pounds, converting each purchase and sale at its own exchange rate. HMRC monthly, yearly or daily rates.',
+  h1: 'Capital Gains Tax on US and other foreign shares',
   bodyHtml: `
 <p class="lead">If you buy and sell shares in US dollars or another currency, the gain is worked out in <strong>pounds</strong>. Convert the cost at the exchange rate when you bought and the proceeds at the rate when you sold. The gain is not the dollar gain converted at today’s rate.</p>
 

@@ -61,7 +61,7 @@ Plain-English guides to the rules, with worked examples checked against the calc
 - [The 30-day "bed and breakfast" rule, and bed and ISA](https://cgtvisualiser.co.uk/guides/30-day-rule/)
 - [The Section 104 holding (pool)](https://cgtvisualiser.co.uk/guides/section-104-pool/)
 - [Stock splits](https://cgtvisualiser.co.uk/guides/stock-splits/)
-- [US and other foreign shares: converting to pounds](https://cgtvisualiser.co.uk/guides/foreign-currency-shares/)
+- [Capital Gains Tax on US and other foreign shares](https://cgtvisualiser.co.uk/guides/foreign-currency-shares/)
 - [All guides, including how to export from each broker](https://cgtvisualiser.co.uk/guides/)
 
 ## Privacy

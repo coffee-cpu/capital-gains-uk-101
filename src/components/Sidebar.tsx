@@ -50,19 +50,20 @@ export function Sidebar({ currentPage, isOpen, onClose }: SidebarProps) {
                 className="w-8 h-8 lg:w-10 lg:h-10 flex-shrink-0"
               />
 
-              <div className="flex flex-col gap-1">
-                <div className="text-sm lg:text-base font-bold leading-tight">
+              {/* The page's <h1>: the app's name, styled as before */}
+              <h1 className="flex flex-col gap-1">
+                <span className="block text-sm lg:text-base font-bold leading-tight">
                   <span className="text-blue-600">C</span>
                   <span className="text-gray-900">apital </span>
                   <span className="text-blue-600">G</span>
                   <span className="text-gray-900">ains </span>
                   <span className="text-blue-600">T</span>
                   <span className="text-gray-900">ax</span>
-                </div>
-                <div className="text-xs font-semibold text-gray-600">
+                </span>{' '}
+                <span className="block text-xs font-semibold text-gray-600">
                   Visualiser
-                </div>
-              </div>
+                </span>
+              </h1>
             </div>
           </div>
         </div>
