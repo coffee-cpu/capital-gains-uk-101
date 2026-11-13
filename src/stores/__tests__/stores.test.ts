@@ -118,4 +118,26 @@ describe('settingsStore', () => {
     expect(useSettingsStore.getState().fxSource).toBe('DAILY_SPOT')
     expect(settingsTable.get('fxSource')?.value).toBe('DAILY_SPOT')
   })
+
+  it('remembers the PDF transaction history choice', async () => {
+    const { useSettingsStore } = await loadStores()
+    await useSettingsStore.getState().initializeFromDB()
+    expect(useSettingsStore.getState().pdfTransactionHistory).toBe('none')
+
+    await useSettingsStore.getState().setPdfTransactionHistory('tax-year')
+    expect(settingsTable.get('pdfTransactionHistory')?.value).toBe('tax-year')
+
+    const reloaded = (await loadStores()).useSettingsStore
+    await reloaded.getState().initializeFromDB()
+    expect(reloaded.getState().pdfTransactionHistory).toBe('tax-year')
+  })
+
+  it('ignores an unknown stored PDF transaction history value', async () => {
+    settingsTable.set('pdfTransactionHistory', { key: 'pdfTransactionHistory', value: 'everything' })
+    const { useSettingsStore } = await loadStores()
+
+    await useSettingsStore.getState().initializeFromDB()
+
+    expect(useSettingsStore.getState().pdfTransactionHistory).toBe('none')
+  })
 })

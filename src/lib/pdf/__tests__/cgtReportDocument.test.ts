@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import { acquisitionLinesByDay, formatReportDate, transactionTableCells } from '../cgtReportDocument'
+import { acquisitionLinesByDay, formatReportDate, transactionHistoryRows, transactionTableCells } from '../cgtReportDocument'
 import type { EnrichedTransaction } from '../../../types/transaction'
+import type { DisposalRecord } from '../../../types/cgt'
 
 describe('formatReportDate', () => {
   const originalTZ = process.env.TZ
@@ -93,5 +94,46 @@ describe('transactionTableCells', () => {
 
   it('shows a dash for a missing symbol', () => {
     expect(transactionTableCells(tx({ type: 'TRANSFER', symbol: '', total: 500, value_gbp: 500 }))?.symbol).toBe('-')
+  })
+})
+
+describe('transactionHistoryRows', () => {
+  const year = { startDate: '2024-04-06', endDate: '2025-04-05' }
+  const tx = (id: string, date: string, extra: Partial<EnrichedTransaction> = {}) =>
+    ({ id, date, symbol: 'AAPL', type: 'BUY', quantity: 1, total: 100, fee: 0, ...extra }) as EnrichedTransaction
+  const transactions = [
+    tx('after', '2025-04-06'),
+    tx('in-year', '2024-04-06'),
+    tx('year-end', '2025-04-05'),
+    tx('earlier', '2020-01-01'),
+    tx('ignored', '2024-05-01', { ignored: true }),
+    tx('empty-cash', '2024-05-01', { type: 'DIVIDEND', quantity: 0, total: 0, fee: 0 }),
+  ]
+  const ids = (rows: EnrichedTransaction[]) => rows.map(row => row.id)
+
+  it('lists nothing for none', () => {
+    expect(transactionHistoryRows(transactions, year, 'none')).toEqual([])
+  })
+
+  it('lists only the tax year for tax-year, oldest first', () => {
+    expect(ids(transactionHistoryRows(transactions, year, 'tax-year'))).toEqual(['in-year', 'year-end'])
+  })
+
+  it('lists everything up to the year end for all', () => {
+    expect(ids(transactionHistoryRows(transactions, year, 'all'))).toEqual(['earlier', 'in-year', 'year-end'])
+  })
+
+  it('adds a later purchase that a disposal in the year was matched to', () => {
+    const laterBuy = tx('later-buy', '2025-04-20')
+    const disposal = {
+      matchings: [{ rule: '30_DAY', acquisitions: [{ transaction: laterBuy, quantityMatched: 1, costBasisGbp: 100 }] }],
+    } as unknown as DisposalRecord
+
+    for (const scope of ['tax-year', 'all'] as const) {
+      expect(ids(transactionHistoryRows([...transactions, laterBuy], year, scope, [disposal])))
+        .toEqual([...(scope === 'all' ? ['earlier'] : []), 'in-year', 'year-end', 'later-buy'])
+    }
+    // Not a row on its own: only with the disposal that was matched to it
+    expect(ids(transactionHistoryRows([...transactions, laterBuy], year, 'tax-year'))).not.toContain('later-buy')
   })
 })
