@@ -617,7 +617,7 @@ export function About() {
 
           {/* Support the Project */}
           <section>
-            <BuyMeACoffee showGitHub />
+            <BuyMeACoffee />
           </section>
 
           {/* Back to Calculator */}
