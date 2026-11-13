@@ -29,12 +29,34 @@ function CoffeeBean({ x, y, r }: { x: string; y: string; r: string }) {
   )
 }
 
-/** Small steaming cup shown inside the coffee button */
+// Two periods of a gentle wave per 100 units, drawn twice as wide as the
+// button so sliding it by half its width loops seamlessly
+const WAVE_TOP = 'M0 6 Q12.5 2 25 6 T50 6 T75 6 T100 6 T125 6 T150 6 T175 6 T200 6'
+
+/**
+ * Coffee sloshing inside the button: two slow wave layers with a crema line.
+ * Re-keying it plays a slosh (used on click).
+ */
+function ButtonCoffee({ slosh }: { slosh: boolean }) {
+  return (
+    <span className={`coffee-btn-liquid${slosh ? ' coffee-btn-slosh' : ''}`} aria-hidden="true">
+      <svg className="coffee-btn-wave coffee-btn-wave-back" viewBox="0 0 200 40" preserveAspectRatio="none">
+        <path d={`${WAVE_TOP} V40 H0 Z`} fill="#8b5a2b" />
+      </svg>
+      <svg className="coffee-btn-wave coffee-btn-wave-front" viewBox="0 0 200 40" preserveAspectRatio="none">
+        <path d={`${WAVE_TOP} V40 H0 Z`} fill="#6f3d1f" />
+        <path d={WAVE_TOP} fill="none" stroke="#d9a066" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+      </svg>
+    </span>
+  )
+}
+
+/** Small cup icon shown inside the coffee button */
 function ButtonCupIcon() {
   return (
     <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path className="coffee-btn-steam" d="M9 7c-1-1.5 1-2.5 0-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-      <path className="coffee-btn-steam" d="M13 7c-1-1.5 1-2.5 0-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      <path d="M9 7c-1-1.5 1-2.5 0-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" opacity="0.8" />
+      <path d="M13 7c-1-1.5 1-2.5 0-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" opacity="0.8" />
       <path d="M4 10h13v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5v-5Z" fill="currentColor" />
       <path d="M17 11.5h1.5a2.5 2.5 0 0 1 0 5H17" stroke="currentColor" strokeWidth="1.8" />
     </svg>
@@ -106,8 +128,11 @@ export function BuyMeACoffee() {
                 }}
                 className="coffee-btn inline-flex items-center justify-center gap-2 px-5 py-2 text-white text-sm font-semibold rounded-md"
               >
-                <ButtonCupIcon />
-                Buy me a coffee
+                <ButtonCoffee key={beanBursts} slosh={beanBursts > 0} />
+                <span className="relative inline-flex items-center gap-2">
+                  <ButtonCupIcon />
+                  Buy me a coffee
+                </span>
               </a>
               {beanBursts > 0 && (
                 <span key={beanBursts} aria-hidden="true">
