@@ -1,60 +1,139 @@
 @import "tailwindcss";
 
-/* Coffee cup animation (CoffeeCup.tsx) */
+/* Coffee cup animation (CoffeeCup.tsx)
+   One 12s loop shared by every part: pour (0-16%), full and steaming
+   (16-60%), sipped (60-82%), empty (82-100%), then pour again. */
 .coffee-cup {
   overflow: visible;
-}
-.coffee-body {
-  transform-box: view-box;
-  transform-origin: 31px 57px;
-  transition: transform 0.3s ease;
-}
-.coffee-card:hover .coffee-body {
-  transform: rotate(-6deg);
+  --coffee-cycle: 12s;
 }
 .coffee-stream {
   stroke-dasharray: 100 100;
   stroke-dashoffset: 100;
-  animation: coffee-pour 1.6s ease-in-out forwards;
+  animation: coffee-pour var(--coffee-cycle) ease-in-out infinite;
 }
 .coffee-liquid {
   transform: translateY(24px);
-  animation: coffee-fill 1.3s ease-out 0.25s forwards;
+  animation: coffee-level var(--coffee-cycle) ease-in-out infinite;
+}
+.coffee-mug {
+  transform-box: view-box;
+  transform-origin: 31px 53px;
+  animation: coffee-sip var(--coffee-cycle) ease-in-out infinite;
+}
+.coffee-steam-group {
+  opacity: 0;
+  animation: coffee-steam-visible var(--coffee-cycle) linear infinite;
 }
 .coffee-steam {
   opacity: 0;
   transform-box: fill-box;
   transform-origin: bottom;
-  animation: coffee-steam 2.8s ease-in-out 1.5s infinite;
+  animation: coffee-steam 2.8s ease-in-out infinite;
 }
 .coffee-steam-2 {
-  animation-delay: 1.9s;
+  animation-delay: 0.4s;
 }
 .coffee-steam-3 {
-  animation-delay: 2.3s;
-}
-.coffee-card:hover .coffee-steam {
-  stroke-width: 2.6;
+  animation-delay: 0.8s;
 }
 @keyframes coffee-pour {
   0% { stroke-dashoffset: 100; }
-  25% { stroke-dashoffset: 0; }
-  75% { stroke-dashoffset: 0; }
-  100% { stroke-dashoffset: -100; }
+  5% { stroke-dashoffset: 0; }
+  12% { stroke-dashoffset: 0; }
+  16%, 100% { stroke-dashoffset: -100; }
 }
-@keyframes coffee-fill {
-  from { transform: translateY(24px); }
-  to { transform: translateY(0); }
+@keyframes coffee-level {
+  0%, 2% { transform: translateY(24px); }
+  14%, 62% { transform: translateY(0); }
+  80%, 100% { transform: translateY(24px); }
+}
+@keyframes coffee-sip {
+  0%, 60% { transform: rotate(0); }
+  65%, 77% { transform: rotate(-14deg); }
+  82%, 100% { transform: rotate(0); }
+}
+@keyframes coffee-steam-visible {
+  0%, 15% { opacity: 0; }
+  20%, 58% { opacity: 1; }
+  64%, 100% { opacity: 0; }
 }
 @keyframes coffee-steam {
   0% { opacity: 0; transform: translateY(4px) scaleY(0.8); }
   40% { opacity: 0.9; }
   100% { opacity: 0; transform: translateY(-6px) scaleY(1.1); }
 }
+
+/* "Buy me a coffee" button (BuyMeACoffee.tsx) */
+.coffee-btn {
+  position: relative;
+  overflow: hidden;
+  background-image: linear-gradient(135deg, #fbbf24 0%, #f59e0b 45%, #ea580c 100%);
+  box-shadow: 0 2px 6px rgb(234 88 12 / 0.35);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.coffee-btn::after {
+  /* Light sweep across the button */
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 30%, rgb(255 255 255 / 0.45) 50%, transparent 70%);
+  transform: translateX(-120%);
+  pointer-events: none;
+}
+.coffee-btn:active {
+  transform: scale(0.96);
+}
+/* Unlayered box-shadow above would hide Tailwind's ring, so draw focus here */
+.coffee-btn:focus-visible {
+  outline: 2px solid #b45309; /* amber-700: 4.8:1 on the card background */
+  outline-offset: 2px;
+}
+@media (hover: hover) {
+  .coffee-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 14px rgb(234 88 12 / 0.4);
+  }
+  .coffee-btn:hover::after {
+    animation: coffee-shine 0.9s ease;
+  }
+}
+.coffee-btn-steam {
+  animation: coffee-steam 2.4s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: bottom;
+}
+.coffee-btn-steam + .coffee-btn-steam {
+  animation-delay: 0.6s;
+}
+@keyframes coffee-shine {
+  to { transform: translateX(120%); }
+}
+
+/* Coffee beans that pop out of the button on click */
+.coffee-bean {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 10px;
+  height: 14px;
+  margin: -7px 0 0 -5px;
+  pointer-events: none;
+  opacity: 0;
+  animation: coffee-bean 0.9s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+}
+@keyframes coffee-bean {
+  0% { opacity: 1; transform: translate(0, 0) rotate(0) scale(0.6); }
+  70% { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--bean-x), var(--bean-y)) rotate(var(--bean-r)) scale(1); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .coffee-stream { display: none; }
-  .coffee-liquid { animation: none; transform: none; }
-  .coffee-steam { animation: none; opacity: 0.6; }
-  .coffee-body { transition: none; }
-  .coffee-card:hover .coffee-body { transform: none; }
+  .coffee-liquid, .coffee-mug { animation: none; transform: none; }
+  .coffee-steam-group { animation: none; opacity: 1; }
+  .coffee-steam, .coffee-btn-steam { animation: none; opacity: 0.6; }
+  .coffee-btn, .coffee-btn:hover, .coffee-btn:active { transition: none; transform: none; }
+  .coffee-btn::after { display: none; }
+  .coffee-bean { display: none; }
 }
