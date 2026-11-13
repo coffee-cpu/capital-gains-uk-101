@@ -160,9 +160,9 @@ ${(page.jsonLd ?? []).map(jsonLdScript).join('\n')}
 <h1>${escapeHtml(page.h1)}</h1>
 ${page.bodyHtml}
 <div class="cta-box">
-<h2>Work it out from your own broker exports</h2>
-<p>The free calculator applies the same-day, 30-day and Section 104 rules, converts foreign currency to GBP and adjusts for stock splits. It runs in your browser: your transactions are never uploaded.</p>
-<a class="button" href="/">Open the calculator</a>
+<h2>Free UK Capital Gains Tax calculator</h2>
+<p>Work it out from your own broker exports. The calculator applies the same-day, 30-day and Section 104 rules, converts foreign currency to GBP and adjusts for stock splits. It runs in your browser: your transactions are never uploaded.</p>
+<a class="button" href="/">Open the CGT calculator</a>
 </div>
 ${relatedHtml}
 </article>
