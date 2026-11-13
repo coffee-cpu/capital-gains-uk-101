@@ -392,7 +392,7 @@ export function transactionTableCells(tx: EnrichedTransaction): {
   return {
     ...cells,
     original: {
-      price: cashOnly || tx.price == null ? '-' : formatOriginalAmount(tx.price, tx.currency),
+      price: cashOnly || tx.price == null ? '-' : formatOriginalAmount(tx.price, tx.currency, PRICE_DECIMALS),
       value: tx.total == null ? '-' : formatOriginalAmount(tx.total, tx.currency),
       fee: isZero(tx.fee) ? '-' : formatOriginalAmount(tx.fee!, tx.currency),
     },
@@ -400,17 +400,25 @@ export function transactionTableCells(tx: EnrichedTransaction): {
   }
 }
 
+/** Up to this many decimal places for an original-currency price */
+const PRICE_DECIMALS = 6
+
 /**
  * An amount in its original currency, with the currency code rather than a
  * symbol (the PDF's built-in font has no glyphs for symbols such as ₹):
- * "1,234.50 USD". Crypto keeps up to 8 decimal places.
+ * "1,234.50 USD". Negatives use brackets, like the GBP figures. Fiat amounts
+ * keep at least 2 decimal places and up to `maxDecimals` (more for a price,
+ * so a penny stock's 0.0045 USD isn't shown as 0.00); crypto keeps up to 8.
  */
-export function formatOriginalAmount(amount: number, currency: string): string {
+export function formatOriginalAmount(amount: number, currency: string, maxDecimals = 2): string {
   const code = currency.toUpperCase()
+  const abs = Math.abs(amount)
   const number = isFiatCurrency(code)
-    ? amount.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-    : formatQuantity(amount)
-  return `${number} ${code}`
+    ? abs.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: Math.max(2, maxDecimals) })
+    : formatQuantity(abs)
+  // Amounts that round to zero (including -0) are shown without brackets
+  const isNegative = amount < 0 && number.replace(/[0.,]/g, '') !== ''
+  return isNegative ? `(${number} ${code})` : `${number} ${code}`
 }
 
 /** An FX rate (units of the currency per £1) to 4 decimal places */

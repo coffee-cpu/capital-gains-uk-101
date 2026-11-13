@@ -110,6 +110,11 @@ describe('transactionTableCells', () => {
     })
   })
 
+  it('shows a penny stock\'s price to more than 2 decimal places', () => {
+    const cells = transactionTableCells(tx({ type: 'BUY', currency: 'USD', quantity: 1000, price: 0.0045, total: 4.5, fx_rate: 1.25 }))
+    expect(cells?.original?.price).toBe('0.0045 USD')
+  })
+
   it('shows the broker\'s amount when the GBP value is missing', () => {
     const cells = transactionTableCells(tx({ type: 'DIVIDEND', currency: 'EUR', total: 12.5, fx_rate: null }))
     expect(cells).toMatchObject({ value: '-', original: { price: '-', value: '12.50 EUR', fee: '-' }, fxRate: '-' })
@@ -170,7 +175,17 @@ describe('transactionHistoryRows', () => {
 describe('formatOriginalAmount', () => {
   it('uses the currency code, with 2 decimal places for fiat', () => {
     expect(formatOriginalAmount(1234.5, 'usd')).toBe('1,234.50 USD')
-    expect(formatOriginalAmount(-3, 'INR')).toBe('-3.00 INR')
+  })
+
+  it('puts negatives in brackets, like the GBP figures, but not an amount that rounds to zero', () => {
+    expect(formatOriginalAmount(-3, 'INR')).toBe('(3.00 INR)')
+    expect(formatOriginalAmount(-0.001, 'USD')).toBe('0.00 USD')
+  })
+
+  it('keeps more decimal places when asked, for a price', () => {
+    expect(formatOriginalAmount(0.0045, 'USD', 6)).toBe('0.0045 USD')
+    expect(formatOriginalAmount(152.3456, 'USD', 6)).toBe('152.3456 USD')
+    expect(formatOriginalAmount(152.3, 'USD', 6)).toBe('152.30 USD')
   })
 
   it('keeps up to 8 decimal places for crypto', () => {
