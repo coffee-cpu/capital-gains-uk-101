@@ -86,7 +86,7 @@
 }
 /* Unlayered box-shadow above would hide Tailwind's ring, so draw focus here */
 .coffee-btn:focus-visible {
-  outline: 2px solid #f59e0b;
+  outline: 2px solid #b45309; /* amber-700: 4.8:1 on the card background */
   outline-offset: 2px;
 }
 @media (hover: hover) {
