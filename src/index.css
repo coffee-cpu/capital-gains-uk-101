@@ -1,1 +1,60 @@
 @import "tailwindcss";
+
+/* Coffee cup animation (CoffeeCup.tsx) */
+.coffee-cup {
+  overflow: visible;
+}
+.coffee-body {
+  transform-box: view-box;
+  transform-origin: 31px 57px;
+  transition: transform 0.3s ease;
+}
+.coffee-card:hover .coffee-body {
+  transform: rotate(-6deg);
+}
+.coffee-stream {
+  stroke-dasharray: 100 100;
+  stroke-dashoffset: 100;
+  animation: coffee-pour 1.6s ease-in-out forwards;
+}
+.coffee-liquid {
+  transform: translateY(24px);
+  animation: coffee-fill 1.3s ease-out 0.25s forwards;
+}
+.coffee-steam {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: bottom;
+  animation: coffee-steam 2.8s ease-in-out 1.5s infinite;
+}
+.coffee-steam-2 {
+  animation-delay: 1.9s;
+}
+.coffee-steam-3 {
+  animation-delay: 2.3s;
+}
+.coffee-card:hover .coffee-steam {
+  stroke-width: 2.6;
+}
+@keyframes coffee-pour {
+  0% { stroke-dashoffset: 100; }
+  25% { stroke-dashoffset: 0; }
+  75% { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: -100; }
+}
+@keyframes coffee-fill {
+  from { transform: translateY(24px); }
+  to { transform: translateY(0); }
+}
+@keyframes coffee-steam {
+  0% { opacity: 0; transform: translateY(4px) scaleY(0.8); }
+  40% { opacity: 0.9; }
+  100% { opacity: 0; transform: translateY(-6px) scaleY(1.1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .coffee-stream { display: none; }
+  .coffee-liquid { animation: none; transform: none; }
+  .coffee-steam { animation: none; opacity: 0.6; }
+  .coffee-body { transition: none; }
+  .coffee-card:hover .coffee-body { transform: none; }
+}
