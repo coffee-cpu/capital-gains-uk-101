@@ -98,17 +98,19 @@
     animation: coffee-shine 0.9s ease;
   }
 }
-/* Coffee inside the button: it fills the lower ~80%, so the white text sits
-   fully on dark coffee, with a band of the amber gradient showing above */
+/* Coffee inside the button: it fills the lower ~86%, so the white text sits
+   fully on dark coffee, with a band of the amber gradient showing above.
+   The layer bleeds 8px past the sides and 12px below (clipped by the button's
+   overflow: hidden) so no corner shows while it tilts in a slosh. */
 .coffee-btn {
   text-shadow: 0 1px 1px rgb(60 30 10 / 0.35);
 }
 .coffee-btn-liquid {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 80%;
+  left: -8px;
+  right: -8px;
+  bottom: -12px;
+  height: calc(86% + 12px);
   pointer-events: none;
   transform-origin: 50% 100%;
   transition: height 0.4s ease;
@@ -134,7 +136,7 @@
 @media (hover: hover) {
   /* A little more coffee on hover */
   .coffee-btn:hover .coffee-btn-liquid {
-    height: 88%;
+    height: calc(92% + 12px);
   }
 }
 @keyframes coffee-wave {
@@ -177,7 +179,7 @@
   .coffee-steam { animation: none; opacity: 0.6; }
   .coffee-btn-wave, .coffee-btn-slosh { animation: none; }
   .coffee-btn-liquid { transition: none; }
-  .coffee-btn:hover .coffee-btn-liquid { height: 80%; }
+  .coffee-btn:hover .coffee-btn-liquid { height: calc(86% + 12px); }
   .coffee-btn, .coffee-btn:hover, .coffee-btn:active { transition: none; transform: none; }
   .coffee-btn::after { display: none; }
   .coffee-bean { display: none; }
