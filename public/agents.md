@@ -45,7 +45,7 @@ npx -y cgt-visualiser@latest calculate statement1.csv statement2.csv --tax-year 
 - Pass **all** the user's files in a single call. Matching works across accounts.
 - `--tax-year` limits the report to one UK tax year (6 April to 5 April). Omit it to see every year.
 - Add `--details` when you need to explain a figure. It adds the matched acquisitions, the FX rate and the Section 104 pool before and after each sale.
-- The default exchange rates are HMRC's monthly rates. Only change `--fx` (`hmrc-yearly`, `daily-spot`) if the user asks, and use the same source every year.
+- The default exchange rates are HMRC's monthly rates (bundled, so they work offline). The other `--fx` sources are `hmrc-yearly` (HMRC's annual averages) and `daily-spot` (European Central Bank daily reference rates, fetched from the Frankfurter API; the ECB publishes rates against the euro, so GBP rates are worked out from those). Only change `--fx` if the user asks, and use the same source every year. `daily-spot` needs network access; without it you get `FX_RATE_MISSING`.
 - Add `--strict` if you want exit code `3` whenever there are warnings.
 
 Exit codes: `0` success, `1` usage error, `2` a file couldn't be read or recognised, `3` warnings with `--strict`.
