@@ -1,7 +1,7 @@
 import { Document, Page, Text, View, StyleSheet, renderToBuffer } from '@react-pdf/renderer'
 import { buildCGTReportDocument } from '../../../../src/lib/pdf/cgtReportDocument'
 import { CGTCalculationResult } from '../../../../src/types/cgt'
-import { CliError } from '../meta'
+import { CLI_NAME, CLI_VERSION, CliError } from '../meta'
 
 /**
  * Render one tax year's PDF report with the same document the web app's
@@ -29,6 +29,7 @@ export async function renderPdfReport(
       transactions: result.transactions,
       transactionHistory: includeTransactions ? 'all' : 'none',
       section104Pools: result.section104Pools,
+      generatedBy: `${CLI_NAME} ${CLI_VERSION}`,
     }
   )
   return renderToBuffer(doc)

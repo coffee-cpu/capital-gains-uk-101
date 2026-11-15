@@ -219,6 +219,8 @@ export interface PDFDocumentProps {
   transactionHistory?: TransactionHistoryScope
   /** Section 104 pools from the CGT result, for the year-end holdings table */
   section104Pools?: Map<string, Section104Pool>
+  /** What made the report, shown after the date in the footer, e.g. "cgt-visualiser 0.7.0" (the CLI) */
+  generatedBy?: string
 }
 
 /**
@@ -440,7 +442,7 @@ function createCGTReportDocument(
   View: PdfLibrary['View'],
   styles: PdfStyles
 ) {
-  return ({ taxYearSummary, disposals, transactions, transactionHistory = 'none', section104Pools }: PDFDocumentProps) => {
+  return ({ taxYearSummary, disposals, transactions, transactionHistory = 'none', section104Pools, generatedBy }: PDFDocumentProps) => {
     const formatCurrency = formatGbp
     const formatDate = formatReportDate
 
@@ -865,7 +867,7 @@ function createCGTReportDocument(
             </View>
             <View>
               <Text style={[styles.footerText, { textAlign: 'right' }]}>
-                {`Generated ${new Date().toLocaleDateString('en-GB')}`}
+                {`Generated ${new Date().toLocaleDateString('en-GB')}${generatedBy ? ` by ${generatedBy}` : ''}`}
               </Text>
               {/* Space for the page number, drawn separately below */}
               <Text style={styles.footerText}> </Text>

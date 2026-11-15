@@ -236,6 +236,16 @@ describe('CGT report document', () => {
     expect(lines.some(l => l.includes('SA106 Foreign Income Summary'))).toBe(false)
   })
 
+  it('names what generated the report in the footer only when given', () => {
+    const footer = (lines: string[]) => lines.find(l => l.startsWith('Generated '))
+    const web = textLines(buildCGTReportDocument(fakeLibrary, { taxYearSummary: summary([]), disposals: [], transactions: [] }))
+    expect(footer(web)).toMatch(/^Generated \d{2}\/\d{2}\/\d{4}$/)
+    const cli = textLines(buildCGTReportDocument(fakeLibrary, {
+      taxYearSummary: summary([]), disposals: [], transactions: [], generatedBy: 'cgt-visualiser 1.2.3',
+    }))
+    expect(footer(cli)).toMatch(/^Generated \d{2}\/\d{2}\/\d{4} by cgt-visualiser 1\.2\.3$/)
+  })
+
   it('shows the Section 104 holdings at the year end', () => {
     const pools = new Map([['AAPL', {
       symbol: 'AAPL', quantity: 0, totalCostGbp: 0, averageCostGbp: 0,
