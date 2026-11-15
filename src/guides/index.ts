@@ -1,6 +1,7 @@
 import { GuidePage, SITE_URL, guideCard, renderPage } from './html'
 import { RULE_GUIDES } from './rules'
 import { buildBrokerGuides } from './brokers'
+import { SCHWAB_RSU_GUIDE } from './rsu'
 
 export type { GuidePage } from './html'
 
@@ -10,7 +11,7 @@ export interface GuideSite {
   files: Map<string, string>
 }
 
-function hubPage(rules: GuidePage[], brokers: GuidePage[]): GuidePage {
+function hubPage(rules: GuidePage[], employeeShares: GuidePage[], brokers: GuidePage[]): GuidePage {
   return {
     path: '/guides/',
     title: 'UK Capital Gains Tax on shares: guides to HMRC’s rules and broker exports',
@@ -21,6 +22,8 @@ function hubPage(rules: GuidePage[], brokers: GuidePage[]): GuidePage {
 <p class="lead">How HMRC’s rules work for shares, and how to get the right file from your broker to calculate your gains.</p>
 <h2>HMRC’s rules</h2>
 <ul class="cards">${rules.map(guideCard).join('')}</ul>
+<h2>Employee shares</h2>
+<ul class="cards">${employeeShares.map(guideCard).join('')}</ul>
 <h2>Broker guides</h2>
 <ul class="cards">${brokers.map(guideCard).join('')}</ul>
 `,
@@ -46,7 +49,8 @@ ${entries.join('\n')}
 export function buildGuideSite(): GuideSite {
   const rules = RULE_GUIDES
   const brokers = buildBrokerGuides()
-  const pages = [hubPage(rules, brokers), ...rules, ...brokers]
+  const employeeShares = [SCHWAB_RSU_GUIDE]
+  const pages = [hubPage(rules, employeeShares, brokers), ...rules, ...employeeShares, ...brokers]
   const pagesByPath = new Map(pages.map(p => [p.path, p]))
 
   const files = new Map<string, string>()

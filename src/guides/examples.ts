@@ -14,6 +14,8 @@ export interface ExampleTransaction {
   price?: number
   /** e.g. "10:1" for a STOCK_SPLIT */
   splitRatio?: string
+  /** Shown instead of "Buy" or "Sell", e.g. "RSU vest" */
+  label?: string
 }
 
 export interface ExpectedMatch {
@@ -113,11 +115,35 @@ export const STOCK_SPLIT_EXAMPLE: WorkedExample = {
   poolAfter: { quantity: 50, costGbp: 5000 },
 }
 
+/** RSU vests are acquisitions at market value, so a vest just after a sale is matched under the 30-day rule */
+export const RSU_EXAMPLE: WorkedExample = {
+  symbol: 'ACME',
+  transactions: [
+    { date: '2024-09-16', type: 'BUY', quantity: 40, price: 400, label: 'RSU vest' },
+    { date: '2024-12-16', type: 'BUY', quantity: 40, price: 500, label: 'RSU vest' },
+    { date: '2025-03-10', type: 'SELL', quantity: 60, price: 600 },
+    { date: '2025-03-17', type: 'BUY', quantity: 20, price: 580, label: 'RSU vest' },
+  ],
+  disposal: {
+    date: '2025-03-10',
+    quantity: 60,
+    proceedsGbp: 36000,
+    allowableCostsGbp: 29600,
+    gainOrLossGbp: 6400,
+    matches: [
+      { rule: '30-day', quantity: 20, costGbp: 11600 },
+      { rule: 'section-104', quantity: 40, costGbp: 18000 },
+    ],
+  },
+  poolAfter: { quantity: 40, costGbp: 18000 },
+}
+
 export const WORKED_EXAMPLES = {
   sameDay: SAME_DAY_EXAMPLE,
   thirtyDay: THIRTY_DAY_EXAMPLE,
   section104: SECTION_104_EXAMPLE,
   stockSplit: STOCK_SPLIT_EXAMPLE,
+  rsu: RSU_EXAMPLE,
 }
 
 /** 2025-06-10 → 10 June 2025 */
@@ -141,7 +167,7 @@ export function renderTransactionsTable(example: WorkedExample): string {
       return `<tr><td>${longDate(tx.date)}</td><td>Stock split ${escapeHtml(tx.splitRatio ?? '')}</td><td class="num"></td><td class="num"></td><td class="num"></td></tr>`
     }
     const total = (tx.quantity ?? 0) * (tx.price ?? 0)
-    return `<tr><td>${longDate(tx.date)}</td><td>${tx.type === 'BUY' ? 'Buy' : 'Sell'}</td><td class="num">${tx.quantity?.toLocaleString('en-GB')}</td><td class="num">${gbp(tx.price ?? 0)}</td><td class="num">${gbp(total)}</td></tr>`
+    return `<tr><td>${longDate(tx.date)}</td><td>${escapeHtml(tx.label ?? (tx.type === 'BUY' ? 'Buy' : 'Sell'))}</td><td class="num">${tx.quantity?.toLocaleString('en-GB')}</td><td class="num">${gbp(tx.price ?? 0)}</td><td class="num">${gbp(total)}</td></tr>`
   })
   return `<table><thead><tr><th>Date</th><th>Transaction</th><th class="num">Shares</th><th class="num">Price</th><th class="num">Total</th></tr></thead><tbody>${rows.join('')}</tbody></table>`
 }
