@@ -51,7 +51,7 @@ export const SCHWAB_RSU_GUIDE: GuidePage = {
 <li><strong>Net settlement</strong>: your employer keeps some of the shares and pays the tax in cash itself. You never own the shares withheld, so there’s nothing to sell and no capital gain on them (HMRC’s manual describes this at <a href="${ERSM140095}">ERSM140095</a>). Only the shares you received are an acquisition.</li>
 <li><strong>Sell to cover</strong>: you receive all the shares and some are sold for you on the vest date to pay the tax. That sale is a disposal. It’s matched with the same day’s vest under the <a href="${SAME_DAY_PATH}">same-day rule</a>, so the gain or loss is just the difference between the sale price and the vest price, less fees, and is usually small.</li>
 </ul>
-<p>If you’re not sure which applies, ask your employer’s share plan team.</p>
+<p>If you’re not sure which applies, ask your employer’s share plan team. If yours is sell to cover, check that those sales appear in your results: they count towards your total disposal proceeds. If they don’t, add them in a <a href="/guides/generic-csv-format/">Generic CSV</a>.</p>
 
 <h2 id="thirty-day">Watch out: a vest just after a sale</h2>
 <p>A vest is an acquisition like any purchase, so the <a href="${THIRTY_DAY_PATH}">30-day rule</a> applies to it. If you sell shares and more vest in the next 30 days, the sale is matched with the new vest first, at its market value, not with your pool. With regular vests this happens often, and it changes the gain.</p>
