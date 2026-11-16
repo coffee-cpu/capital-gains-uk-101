@@ -52,7 +52,7 @@ export function BrokerInstructions({ definition, isExpanded, onToggle }: BrokerI
             </p>
           ))}
 
-          {/* Info callout (blue) */}
+          {/* Info callout (brand teal) */}
           {instructions.info && (
             <p className="text-brand-800 font-medium bg-brand-50 border border-brand-200 rounded p-2">
               {instructions.info}

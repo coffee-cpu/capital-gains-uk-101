@@ -22,7 +22,7 @@ const HMRC_CGT_RATE_CHANGE_URL =
 
 /**
  * Panel showing CGT rate change information when NO adjustment is required.
- * This is an informational blue panel.
+ * This is an informational brand-teal panel.
  */
 function NoAdjustmentRequiredPanel({ data }: CGTRateChange2024PanelProps) {
   const isGainBelowAEA = data.totalNetGainOrLoss <= data.annualExemptAmount
