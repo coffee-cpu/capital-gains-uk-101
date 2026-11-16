@@ -12,9 +12,15 @@ function storedSetting(page: Page, key: string): Promise<string | null> {
     open.onerror = () => resolve(null)
     open.onsuccess = () => {
       const db = open.result
-      const get = db.transaction('settings', 'readonly').objectStore('settings').get(key)
-      get.onsuccess = () => { resolve(get.result?.value ?? null); db.close() }
-      get.onerror = () => { resolve(null); db.close() }
+      try {
+        const get = db.transaction('settings', 'readonly').objectStore('settings').get(key)
+        get.onsuccess = () => { resolve(get.result?.value ?? null); db.close() }
+        get.onerror = () => { resolve(null); db.close() }
+      } catch {
+        // No settings table (e.g. a schema change): read as unset rather than hang
+        resolve(null)
+        db.close()
+      }
     }
   }), key)
 }
