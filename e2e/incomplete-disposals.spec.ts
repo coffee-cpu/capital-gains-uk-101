@@ -117,6 +117,10 @@ test.describe('Incomplete Disposal Tracking', () => {
     // Total gains should be £0 - use more specific selector
     const gainsCard = page.locator('div.bg-green-50').filter({ hasText: 'Gains' }).first()
     await expect(gainsCard).toContainText('£0')
+
+    // £0 figures from an unmatched sale don't settle the reporting limits
+    await expect(page.getByTestId('tax-status')).toContainText('Figures Incomplete')
+    await expect(page.getByTestId('tax-status')).not.toContainText("doesn't need the capital gains pages")
   })
 
   test('should show multiple incomplete disposals for tax year 2025/26', async ({ page }) => {

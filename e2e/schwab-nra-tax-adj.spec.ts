@@ -48,7 +48,7 @@ test.describe('Schwab NRA Tax Adj Dividend & Interest Panel Verification', () =>
     await page.waitForTimeout(500)
 
     // Verify the period is correct
-    await expect(page.getByText('Period: 2024-04-06 to 2025-04-05')).toBeVisible()
+    await expect(page.getByTestId('tax-year-period')).toHaveText('6 Apr 2024 – 5 Apr 2025')
 
     // --- Dividend Income Button ---
     const dividendButton = page.getByRole('button', { name: /Dividend Income/ })

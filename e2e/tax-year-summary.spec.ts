@@ -89,7 +89,7 @@ test.describe('Tax Year Summary Verification', () => {
     await page.waitForTimeout(500)
 
     // Verify the period is correct
-    await expect(page.getByText('Period: 2023-04-06 to 2024-04-05')).toBeVisible()
+    await expect(page.getByTestId('tax-year-period')).toHaveText('6 Apr 2023 – 5 Apr 2024')
 
     // Verify the numerical values displayed on the page
     // Expected values for 2023/24 based on anonymized data:
@@ -135,7 +135,7 @@ test.describe('Tax Year Summary Verification', () => {
       await page.waitForTimeout(300)
 
       // Verify the summary updates with the correct period
-      await expect(page.getByText(/Period:/)).toBeVisible()
+      await expect(page.getByTestId('tax-year-period')).toBeVisible()
 
       // Verify disposals count is visible
       await expect(page.getByRole('button', { name: /Disposals/ })).toBeVisible()
@@ -172,7 +172,7 @@ test.describe('Tax Year Summary Verification', () => {
     await page.waitForTimeout(500)
 
     // Verify the period is correct
-    await expect(page.getByText('Period: 2024-04-06 to 2025-04-05')).toBeVisible()
+    await expect(page.getByTestId('tax-year-period')).toHaveText('6 Apr 2024 – 5 Apr 2025')
 
     // Verify Taxable Gain value is displayed and calculated correctly
     // This test verifies that taxable gain calculation works end-to-end with:
