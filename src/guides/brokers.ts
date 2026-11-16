@@ -2,6 +2,7 @@ import { getEnabledBrokerDefinitions } from '../config/brokers'
 import { BrokerDefinition } from '../types/brokerDefinition'
 import { BrokerType } from '../types/broker'
 import { GuidePage, escapeHtml } from './html'
+import { SCHWAB_RSU_PATH } from './rsu'
 import { OVERVIEW_PATH, SAME_DAY_PATH, SECTION_104_PATH, THIRTY_DAY_PATH, FOREIGN_CURRENCY_PATH, STOCK_SPLITS_PATH } from './rules'
 
 /**
@@ -69,7 +70,7 @@ function brokerPage(definition: BrokerDefinition): GuidePage {
     : `Amounts in US dollars or other currencies are converted to pounds at the exchange rate for each transaction, which matters for the gain (see <a href="${FOREIGN_CURRENCY_PATH}">foreign currency shares</a>).`
 
   const employeeText = EMPLOYEE_PLAN_BROKERS.has(definition.type)
-    ? `<p>With an employee share plan, each vest is an acquisition at the shares’ market value on that day. Shares sold the same day they vest (for example “sell to cover”) are matched with that day’s vest under the <a href="${SAME_DAY_PATH}">same-day rule</a>, so the gain on them is usually small.</p>`
+    ? `<p>With an employee share plan, each vest is an acquisition at the shares’ market value on that day. Shares sold the same day they vest (for example “sell to cover”) are matched with that day’s vest under the <a href="${SAME_DAY_PATH}">same-day rule</a>, so the gain on them is usually small.${definition.type === BrokerType.SCHWAB_EQUITY_AWARDS ? ` See <a href="${SCHWAB_RSU_PATH}">Schwab RSUs and UK Capital Gains Tax</a> for which files to export, shares withheld for tax, and vests just after a sale.` : ''}</p>`
     : ''
 
   const cryptoText = isCrypto
