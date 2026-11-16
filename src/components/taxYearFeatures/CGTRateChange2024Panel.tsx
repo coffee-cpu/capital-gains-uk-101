@@ -21,30 +21,40 @@ const HMRC_CGT_RATE_CHANGE_URL =
   'https://www.gov.uk/government/publications/changes-to-the-rates-of-capital-gains-tax'
 
 /**
- * Note shown when NO adjustment is required: one quiet line, since there's
- * nothing to do. The adjustment-required panel below stays prominent.
+ * Panel showing CGT rate change information when NO adjustment is required.
+ * This is an informational blue panel.
  */
 function NoAdjustmentRequiredPanel({ data }: CGTRateChange2024PanelProps) {
   const isGainBelowAEA = data.totalNetGainOrLoss <= data.annualExemptAmount
   const allDisposalsBeforeChange = data.disposalCountAfterRateChange === 0
 
   return (
-    <div className="flex items-start gap-2 text-sm text-gray-600" data-testid="rate-change-no-adjustment">
-      <svg
-        className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0"
-        viewBox="0 0 20 20"
-        fill="currentColor"
-        aria-hidden="true"
-      >
-        <path
-          fillRule="evenodd"
-          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-          clipRule="evenodd"
-        />
-      </svg>
-      <div>
-        <span className="font-medium text-gray-800">2024 CGT Rate Change — No Adjustment Required.</span>{' '}
-          <span>
+    <div className="bg-brand-50 border border-brand-200 rounded-lg p-4">
+      <div className="flex items-start">
+        <svg
+          className="h-5 w-5 text-brand-500 mt-0.5 flex-shrink-0"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path
+            fillRule="evenodd"
+            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+            clipRule="evenodd"
+          />
+        </svg>
+        <div className="ml-3 flex-1">
+          <h4 className="text-sm font-semibold text-brand-900 mb-2">
+            2024 CGT Rate Change — No Adjustment Required{' '}
+            <a
+              href={HMRC_CGT_RATE_CHANGE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-brand-600 hover:text-brand-800 underline text-xs font-normal"
+            >
+              (HMRC)
+            </a>
+          </h4>
+          <p className="text-xs text-brand-700">
             {isGainBelowAEA && data.totalNetGainOrLoss < 0 ? (
               <>
                 You have a net loss of {formatGbp(-data.totalNetGainOrLoss)} for
@@ -74,15 +84,8 @@ function NoAdjustmentRequiredPanel({ data }: CGTRateChange2024PanelProps) {
                 s4B). No CGT adjustment is needed.
               </>
             )}
-          </span>{' '}
-        <a
-          href={HMRC_CGT_RATE_CHANGE_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-brand-600 hover:text-brand-800 underline text-xs"
-        >
-          (HMRC)
-        </a>
+          </p>
+        </div>
       </div>
     </div>
   )

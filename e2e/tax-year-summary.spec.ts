@@ -103,8 +103,6 @@ test.describe('Tax Year Summary Verification', () => {
     await expect(page.getByRole('button', { name: /Disposals/ })).toContainText('4')
     await expect(page.getByText('£42,150')).toBeVisible()
     await expect(page.getByText('£13,567', { exact: true })).toBeVisible()
-    // The pence are in the CGT Calculation breakdown, collapsed by default
-    await page.getByTestId('cgt-calculation').locator('summary').click()
     await expect(page.getByText('£7,566.78')).toBeVisible()
   })
 
@@ -139,8 +137,8 @@ test.describe('Tax Year Summary Verification', () => {
       // Verify the summary updates with the correct period
       await expect(page.getByTestId('tax-year-period')).toBeVisible()
 
-      // Each year has an answer: the CGT status, or that there were no disposals
-      await expect(page.getByTestId('tax-year-answer')).toBeVisible()
+      // Verify disposals count is visible
+      await expect(page.getByRole('button', { name: /Disposals/ })).toBeVisible()
 
       console.log(`Switched to tax year: ${taxYear}`)
     }
@@ -191,8 +189,6 @@ test.describe('Tax Year Summary Verification', () => {
     // - 30-day bed-and-breakfast (e.g., AAPL 2024-03-25, TSLA 2024-06-20, INTC 2024-11-01/15)
     // - Section 104 pooling for remaining shares
     // - Annual exemption (£3,000) deducted
-    // The pence are in the CGT Calculation breakdown, collapsed by default
-    await page.getByTestId('cgt-calculation').locator('summary').click()
     await expect(page.getByText('£7,509.07')).toBeVisible()
   })
 

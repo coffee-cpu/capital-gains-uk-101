@@ -1,4 +1,3 @@
-import { AlertTriangle, CheckCircle2, ChevronDown, FileText } from 'lucide-react'
 import { useTransactionStore } from '../stores/transactionStore'
 import { useHelpPanelStore } from '../stores/helpPanelStore'
 import { useState } from 'react'
@@ -11,7 +10,6 @@ import { BuyMeACoffee } from './BuyMeACoffee'
 import { TaxYearFeaturesRenderer } from './taxYearFeatures'
 import { formatGbp, formatGbpWhole } from '../utils/currency'
 import { sa108ReportingNeed } from '../lib/cgt/reporting'
-import { sa108Rows } from '../lib/cgt/sa108'
 import type { TaxYearSummary as TaxYearSummaryData } from '../types/cgt'
 
 /**
@@ -37,94 +35,61 @@ function formatUkDate(isoDate: string): string {
 }
 
 /**
- * The answer for the selected tax year, in two lines: whether Capital Gains
- * Tax is due, and separately whether the year still goes on the SA108 pages
- * (owing nothing doesn't mean nothing to report).
+ * The status box under the CGT Calculation: whether CGT is due and,
+ * separately, whether the year still goes on the SA108 pages. Owing no tax
+ * doesn't mean nothing to report (HMRC SA108 notes; see lib/cgt/reporting).
  */
-function TaxYearAnswer({ summary }: { summary: TaxYearSummaryData }) {
+function TaxStatusMessage({ summary }: { summary: TaxYearSummaryData }) {
   const need = sa108ReportingNeed(summary)
   const exemptAmount = formatGbpWhole(summary.annualExemptAmount)
-  const net = summary.netGainOrLossGbp
+  const loss = formatGbpWhole(Math.abs(summary.netGainOrLossGbp))
 
-  const reason = need.taxDue
-    ? `taxable gain of ${formatGbpWhole(summary.taxableGainGbp)}: net gain of ${formatGbpWhole(net)} less the ${exemptAmount} annual exempt amount`
-    : net < 0
-      ? `net loss of ${formatGbpWhole(Math.abs(net))}`
-      : `net gain of ${formatGbpWhole(net)} is within the ${exemptAmount} annual exempt amount`
-
-  // Why the SA108 pages are needed when no tax is due (HMRC SA108 notes)
+  // Why the SA108 pages are needed when no tax is due
   const reportReasons = [
     need.proceedsOverLimit && `your disposals were worth more than ${formatGbpWhole(need.proceedsLimit)}`,
     !need.taxDue && need.gainsOverExemptAmount &&
       `your gains before losses (${formatGbpWhole(summary.totalGainsGbp)}) were more than the ${exemptAmount} annual exempt amount`,
   ].filter((r): r is string => typeof r === 'string')
 
-  // Something to put on the return (tax due, a limit passed, a loss to claim),
-  // or figures too low to rule that out
-  const mustAct = need.taxDue || reportReasons.length > 0 || need.hasLossToClaim || need.figuresIncomplete
-  // Unmatched or unvalued disposals count at £0, so "no tax" isn't settled
-  const statusUncertain = !need.taxDue && need.figuresIncomplete
+  let title: string
+  let body: string
+  if (need.taxDue) {
+    title = 'Capital Gains Tax May Be Due'
+    body = 'Your taxable gain exceeds the annual exempt amount. Report it on the capital gains pages (SA108) of your Self Assessment return and pay the CGT. Consult a tax professional for advice.'
+  } else if (reportReasons.length > 0) {
+    title = 'No CGT Due, but You May Need to Report'
+    body = `If you send a Self Assessment return, fill in its capital gains pages (SA108): ${reportReasons.join(', and ')}.`
+  } else if (need.figuresIncomplete) {
+    title = 'Figures Incomplete'
+    body = `Some disposals couldn't be matched to a purchase or valued in pounds, so they count at £0. Once they're complete, check whether CGT is due and whether you need the capital gains pages (SA108): disposals worth more than ${formatGbpWhole(need.proceedsLimit)}, or gains before losses over the ${exemptAmount} annual exempt amount.`
+  } else {
+    title = 'Within Annual Exemption'
+    body = 'Your gains are within the annual exempt amount. No CGT is due for this tax year, and from the disposals you imported it doesn\'t need the capital gains pages (SA108). Sales of other assets count towards the same limits.'
+  }
+  if (need.hasLossToClaim && !need.figuresIncomplete) {
+    body += ` To set the ${loss} loss against future gains, claim it on the capital gains pages (SA108) within 4 years of the end of the tax year.`
+  }
 
+  // Amber whenever something should go on the return, or can't be ruled out
+  const warn = need.taxDue || reportReasons.length > 0 || need.figuresIncomplete
   return (
-    <div data-testid="tax-year-answer" className="space-y-3">
-      <p className="flex items-start gap-2 text-lg">
-        {need.taxDue || statusUncertain ? (
-          <AlertTriangle className="w-5 h-5 mt-1 shrink-0 text-amber-600" aria-hidden="true" />
+    <div
+      data-testid="tax-status"
+      className={`${warn ? 'bg-yellow-50 border-yellow-200' : 'bg-green-50 border-green-200'} border rounded-lg p-4`}
+    >
+      <div className="flex">
+        {warn ? (
+          <svg className="h-5 w-5 text-yellow-400 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+          </svg>
         ) : (
-          <CheckCircle2 className="w-5 h-5 mt-1 shrink-0 text-emerald-600" aria-hidden="true" />
+          <svg className="h-5 w-5 text-green-400 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+          </svg>
         )}
-        <span>
-          <span className="font-semibold text-gray-900">
-            {need.taxDue ? 'CGT to pay' : statusUncertain ? 'No CGT to pay on the figures so far' : 'No CGT to pay'}
-          </span>
-          <span className="text-gray-600"> · {reason}</span>
-        </span>
-      </p>
-
-      <div
-        data-testid="reporting-note"
-        className={`flex items-start gap-2 text-sm ${
-          mustAct ? 'text-amber-900 bg-amber-50 border border-amber-200 rounded-md px-3 py-2' : 'text-gray-600 px-0.5'
-        }`}
-      >
-        {mustAct ? (
-          <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0 text-amber-600" aria-hidden="true" />
-        ) : (
-          <FileText className="w-4 h-4 mt-0.5 shrink-0 text-gray-400" aria-hidden="true" />
-        )}
-        <div className="space-y-1">
-          {need.taxDue ? (
-            <p>
-              <span className="font-medium">Report it to HMRC</span> on the capital gains pages (SA108) of your
-              Self Assessment return.
-            </p>
-          ) : reportReasons.length > 0 ? (
-            <p>
-              <span className="font-medium">You may still need to report this year.</span> If you send a Self
-              Assessment return, fill in its capital gains pages (SA108): {reportReasons.join(', and ')}.
-            </p>
-          ) : need.figuresIncomplete ? (
-            <p>
-              <span className="font-medium">These figures are incomplete.</span> Some disposals couldn&apos;t be
-              matched to a purchase or valued in pounds, so they count at £0. Once they&apos;re complete, check whether
-              CGT is due and whether you need the capital gains pages (SA108): disposals worth more than{' '}
-              {formatGbpWhole(need.proceedsLimit)}, or gains before losses over the {exemptAmount} annual exempt amount.
-            </p>
-          ) : need.hasLossToClaim ? (
-            <p>
-              <span className="font-medium">Report the loss to use it later.</span> To set the{' '}
-              {formatGbpWhole(Math.abs(net))} loss against future gains, claim it on the capital gains pages (SA108)
-              within 4 years of the end of the tax year.
-            </p>
-          ) : (
-            <p>
-              From the disposals you imported, this year doesn&apos;t need the capital gains pages (SA108). Sales
-              of other assets count towards the same limits.
-            </p>
-          )}
-          {need.hasLossToClaim && reportReasons.length > 0 && (
-            <p>Claiming the {formatGbpWhole(Math.abs(net))} loss there lets you set it against future gains.</p>
-          )}
+        <div className="ml-3">
+          <h4 className={`text-sm font-medium ${warn ? 'text-yellow-800' : 'text-green-800'}`}>{title}</h4>
+          <p className={`mt-1 text-sm ${warn ? 'text-yellow-700' : 'text-green-700'}`}>{body}</p>
         </div>
       </div>
     </div>
@@ -156,7 +121,11 @@ export function TaxYearSummary() {
     )
   }
 
-  if (!cgtResults || cgtResults.taxYearSummaries.length === 0) {
+  if (!cgtResults) {
+    return null
+  }
+
+  if (cgtResults.taxYearSummaries.length === 0) {
     return null
   }
 
@@ -175,89 +144,90 @@ export function TaxYearSummary() {
     return <BuyOnlyNote />
   }
 
-  const hasDisposals = currentSummary.totalDisposals > 0
   const hasTaxableGain = currentSummary.taxableGainGbp > 0
-  const hasOtherIncome = currentSummary.totalDividends > 0 || currentSummary.totalInterest > 0
-
-  // Box numbers are shown when every disposal is in one SA108 section whose
-  // boxes are known for the year (the PDF splits mixed years by section)
-  const sa108 = sa108Rows(currentSummary.taxYear, currentSummary.disposals)
-  const boxes = sa108.length === 1 ? sa108[0].boxes : null
-
-  const figures: { id: string; label: string; box?: string; value: string; tone?: string }[] = [
-    { id: 'proceeds', label: 'Proceeds', box: boxes?.proceeds, value: formatGbpWhole(currentSummary.totalProceedsGbp) },
-    { id: 'costs', label: 'Allowable costs', box: boxes?.costs, value: formatGbpWhole(currentSummary.totalAllowableCostsGbp) },
-    { id: 'gains', label: 'Gains', box: boxes?.gains, value: formatGbpWhole(currentSummary.totalGainsGbp), tone: 'text-green-700' },
-    { id: 'losses', label: 'Losses', box: boxes?.losses, value: formatGbpWhole(Math.abs(currentSummary.totalLossesGbp)), tone: 'text-red-700' },
-  ]
-  const figureLabel = (label: string, box: string | undefined) => (
-    <span className="block text-xs text-gray-500">
-      {label}
-      {box && <span className="text-gray-400"> · box {box}</span>}
-    </span>
-  )
-
-  const incomeButton = (label: string, amountGbp: number, count: number, open: boolean, onClick: () => void) => (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-expanded={open}
-      className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 hover:bg-gray-100 px-3 py-1 text-sm transition-colors"
-    >
-      <span className="text-gray-700">{label}</span>
-      <span className="font-semibold text-gray-900">{formatGbpWhole(amountGbp)}</span>
-      <span className="text-gray-500">({count} {count === 1 ? 'payment' : 'payments'})</span>
-      <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
-    </button>
-  )
 
   return (
     <div className="bg-white shadow rounded-lg overflow-hidden">
-      <div className="px-6 py-4 border-b border-gray-200 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <h2 className="text-2xl font-semibold text-gray-900">Tax Year Summary</h2>
+      <div className="px-6 py-4 border-b border-gray-200">
+        <div className="space-y-2">
+          <div className="flex items-baseline gap-3">
+            <h2 className="text-2xl font-semibold text-gray-900">Tax Year Summary</h2>
 
-          {/* Tax Year Selector Dropdown */}
-          <div className="relative">
-            <select
-              id="tax-year-select"
-              aria-label="Tax year"
-              value={selectedTaxYear}
-              onChange={(e) => setSelectedTaxYear(e.target.value)}
-              className="block pl-3 pr-9 py-1 text-base font-semibold text-brand-600 bg-brand-50 border-2 border-brand-200 rounded-md hover:border-brand-400 hover:bg-brand-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 appearance-none cursor-pointer transition-colors"
-            >
-              {cgtResults.taxYearSummaries.map((summary) => (
-                <option key={summary.taxYear} value={summary.taxYear}>
-                  {summary.taxYear}
-                </option>
-              ))}
-            </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2 text-brand-600">
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
+            {/* Tax Year Selector Dropdown */}
+            <div className="relative">
+              <select
+                id="tax-year-select"
+                value={selectedTaxYear}
+                onChange={(e) => setSelectedTaxYear(e.target.value)}
+                className="block pl-3 pr-9 py-1 text-base font-semibold text-brand-600 bg-brand-50 border-2 border-brand-200 rounded-md hover:border-brand-400 hover:bg-brand-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 appearance-none cursor-pointer transition-colors"
+              >
+                {cgtResults.taxYearSummaries.map((summary) => (
+                  <option key={summary.taxYear} value={summary.taxYear}>
+                    {summary.taxYear}
+                  </option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2 text-brand-600">
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
             </div>
           </div>
 
-          <span className="text-sm text-gray-500" data-testid="tax-year-period">
+          <p className="text-sm text-gray-500" data-testid="tax-year-period">
             {formatUkDate(currentSummary.startDate)} – {formatUkDate(currentSummary.endDate)}
-          </span>
+          </p>
         </div>
-        <ExportPDFButton />
       </div>
 
-      <div className="p-6 space-y-5">
-        {/* Shown after a PDF export, next to the button that made it */}
-        {hasExportedPDF && <BuyMeACoffee />}
+      <div className="p-6 space-y-6">
+        {/* Key Metrics Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <button
+            onClick={() => setShowDisposals(!showDisposals)}
+            className="bg-gray-50 hover:bg-gray-100 rounded-lg p-4 text-left transition-colors"
+          >
+            <div className="text-xs text-gray-500 uppercase mb-1">Disposals</div>
+            <div className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+              {currentSummary.totalDisposals}
+              <svg
+                className={`w-4 h-4 text-gray-400 transition-transform ${showDisposals ? 'transform rotate-180' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+            {currentSummary.disposals.length !== currentSummary.totalDisposals && (
+              <div className="text-xs text-gray-500 mt-1">
+                {currentSummary.disposals.length} sales; same-day sales of a share count as one
+              </div>
+            )}
+          </button>
 
-        {hasDisposals ? (
-          <TaxYearAnswer summary={currentSummary} />
-        ) : (
-          <p data-testid="tax-year-answer" className="text-gray-700">
-            No disposals in {currentSummary.taxYear} in the transactions you imported, so there are no capital gains
-            to report for this year.
-          </p>
-        )}
+          <div className="bg-gray-50 rounded-lg p-4">
+            <div className="text-xs text-gray-500 uppercase mb-1">Total Proceeds</div>
+            <div className="text-2xl font-bold text-gray-900">
+              {formatGbpWhole(currentSummary.totalProceedsGbp)}
+            </div>
+          </div>
+
+          <div className="bg-green-50 rounded-lg p-4">
+            <div className="text-xs text-green-600 uppercase mb-1">Gains</div>
+            <div className="text-2xl font-bold text-green-700">
+              {formatGbpWhole(currentSummary.totalGainsGbp)}
+            </div>
+          </div>
+
+          <div className="bg-red-50 rounded-lg p-4">
+            <div className="text-xs text-red-600 uppercase mb-1">Losses</div>
+            <div className="text-2xl font-bold text-red-700">
+              {formatGbpWhole(Math.abs(currentSummary.totalLossesGbp))}
+            </div>
+          </div>
+        </div>
 
         {/* Warning for disposals valued with a missing exchange rate */}
         {(currentSummary.missingFxDisposals ?? 0) > 0 && (
@@ -265,7 +235,7 @@ export function TaxYearSummary() {
             <h4 className="text-sm font-medium text-red-800">Missing Exchange Rates</h4>
             <p className="mt-1 text-sm text-red-700">
               {currentSummary.missingFxDisposals} disposal{currentSummary.missingFxDisposals !== 1 ? 's' : ''} use a transaction with no GBP exchange rate, valued at £0.
-              The gains and losses below are wrong until the rate is available. Try reloading, or choose a different FX source.
+              The gains and losses above are wrong until the rate is available. Try reloading, or choose a different FX source.
             </p>
           </div>
         )}
@@ -273,147 +243,162 @@ export function TaxYearSummary() {
         {currentSummary.incompleteDisposals > 0 && (
           <IssuePointer testId="incomplete-disposals-pointer">
             {currentSummary.incompleteDisposals} disposal{currentSummary.incompleteDisposals !== 1 ? 's' : ''} this tax year could
-            not be fully matched, so the figures below cover only the matched shares. See "Incomplete Disposal Data" in the Issues panel above.
+            not be fully matched, so the figures above cover only the matched shares. See "Incomplete Disposal Data" in the Issues panel above.
           </IssuePointer>
         )}
 
-        {hasDisposals && (
-          <>
-            {/* The year's figures, as they go on SA108 */}
-            <div>
-              <div className="flex flex-wrap gap-x-8 gap-y-3 rounded-lg bg-gray-50 px-4 py-3">
-                <button
-                  type="button"
-                  onClick={() => setShowDisposals(!showDisposals)}
-                  aria-expanded={showDisposals}
-                  className="text-left group"
-                >
-                  {figureLabel('Disposals', boxes?.number)}{' '}
-                  <span className="flex items-center gap-1 text-lg font-semibold text-brand-600 group-hover:text-brand-800">
-                    {currentSummary.totalDisposals}
-                    <ChevronDown className={`w-4 h-4 transition-transform ${showDisposals ? 'rotate-180' : ''}`} aria-hidden="true" />
-                  </span>
-                  {currentSummary.disposals.length !== currentSummary.totalDisposals && (
-                    <span className="block text-xs text-gray-500">
-                      {' '}{currentSummary.disposals.length} sales; same-day sales of a share count as one
-                    </span>
-                  )}
-                </button>
-                {figures.map(figure => (
-                  <div key={figure.id} data-testid={`summary-${figure.id}`}>
-                    {figureLabel(figure.label, figure.box)}{' '}
-                    <span className={`block text-lg font-semibold ${figure.tone ?? 'text-gray-900'}`}>{figure.value}</span>
-                  </div>
-                ))}
-              </div>
-              <p className="text-xs text-gray-500 mt-2">
-                {boxes
-                  ? `Boxes from the SA108 "${sa108[0].section}" section; losses shown as positive amounts, as on the form. `
-                  : sa108.length > 1
-                    ? 'Totals across shares, cryptoassets and options; the PDF report splits them by SA108 section. '
-                    : 'Gains are before losses; losses are shown as positive amounts. '}
-                <a href="#transactions" className="text-brand-600 hover:text-brand-800 underline">
-                  See every transaction
-                </a>{' '}
-                with the FX rate and HMRC matching rule used.
-              </p>
-            </div>
-
-            {/* Disposal Records Panel */}
-            {showDisposals && (
-              <DisposalRecords
-                containerClassName="bg-white border border-gray-200 rounded-lg overflow-hidden"
-                showHeader={true}
-                headerTitle="Disposal Records"
-              />
-            )}
-
-            {/* CGT Calculation: the working behind the answer, collapsed by default */}
-            <details className="group" data-testid="cgt-calculation">
-              <summary className="flex items-start gap-1 cursor-pointer list-none text-sm text-brand-600 hover:text-brand-800 [&::-webkit-details-marker]:hidden">
-                <ChevronDown className="w-4 h-4 mt-0.5 shrink-0 -rotate-90 transition-transform group-open:rotate-0" aria-hidden="true" />
-                <span>
-                  <h3 className="inline font-medium">CGT Calculation</h3>
-                  <span className="text-gray-500">: how the taxable gain is worked out</span>
-                </span>
-              </summary>
-
-              <div className="mt-3 space-y-3 rounded-lg border border-gray-200 p-5">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-700">Total Gains</span>
-                  <span className="font-medium text-gray-900">
-                    {formatGbp(currentSummary.totalGainsGbp)}
-                  </span>
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-700">Total Losses</span>
-                  <span className="font-medium text-gray-900">
-                    {formatGbp(currentSummary.totalLossesGbp)}
-                  </span>
-                </div>
-
-                <div className="border-t border-gray-200 pt-2">
-                  <div className="flex justify-between items-center font-semibold">
-                    <span className="text-gray-700">Net Gain/(Loss)</span>
-                    <span className={currentSummary.netGainOrLossGbp >= 0 ? 'text-green-700' : 'text-red-700'}>
-                      {formatGbp(currentSummary.netGainOrLossGbp)}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-700">
-                    Less: Annual Exempt Amount
-                    <Tooltip content="View HMRC official rates and allowances">
-                      <a
-                        href="https://www.gov.uk/government/publications/rates-and-allowances-capital-gains-tax/capital-gains-tax-rates-and-annual-tax-free-allowances"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="ml-1 text-brand-600 hover:text-brand-800 underline text-xs"
-                      >
-                        (source)
-                      </a>
-                    </Tooltip>
-                  </span>
-                  <span className="font-medium text-gray-900">
-                    ({formatGbpWhole(currentSummary.annualExemptAmount)})
-                  </span>
-                </div>
-
-                <div className="border-t border-gray-300 pt-3">
-                  <div className="flex justify-between items-center">
-                    <span className="font-bold text-gray-900">Taxable Gain</span>
-                    <span className={`text-xl font-bold ${hasTaxableGain ? 'text-red-700' : 'text-green-700'}`}>
-                      {formatGbp(currentSummary.taxableGainGbp)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </details>
-
-            {/* Tax Year-Specific Features (e.g., CGT Rate Change 2024) */}
-            <TaxYearFeaturesRenderer summary={currentSummary} />
-          </>
+        {/* Disposal Records Panel */}
+        {showDisposals && (
+          <DisposalRecords
+            containerClassName="bg-white border border-gray-200 rounded-lg overflow-hidden"
+            showHeader={true}
+            headerTitle="Disposal Records"
+          />
         )}
 
-        {/* Other income: reference only, taxed separately from capital gains */}
-        {hasOtherIncome && (
-          <div className="border-t border-gray-200 pt-4 space-y-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm text-gray-600">
-                Other income <span className="text-gray-400">(taxed separately, not part of CGT)</span>
+        {/* CGT Calculation */}
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">CGT Calculation</h3>
+
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-gray-700">Total Gains</span>
+              <span className="font-medium text-gray-900">
+                {formatGbp(currentSummary.totalGainsGbp)}
               </span>
-              {currentSummary.totalDividends > 0 &&
-                incomeButton('Dividend Income', currentSummary.grossDividendsGbp, currentSummary.totalDividends, showDividends, () => {
-                  setShowDividends(!showDividends)
-                  if (!showDividends) setShowInterest(false)
-                })}
-              {currentSummary.totalInterest > 0 &&
-                incomeButton('Interest Income', currentSummary.grossInterestGbp, currentSummary.totalInterest, showInterest, () => {
-                  setShowInterest(!showInterest)
-                  if (!showInterest) setShowDividends(false)
-                })}
+            </div>
+
+            <div className="flex justify-between items-center">
+              <span className="text-gray-700">Total Losses</span>
+              <span className="font-medium text-gray-900">
+                {formatGbp(currentSummary.totalLossesGbp)}
+              </span>
+            </div>
+
+            <div className="border-t border-gray-200 pt-2">
+              <div className="flex justify-between items-center font-semibold">
+                <span className="text-gray-700">Net Gain/(Loss)</span>
+                <span className={currentSummary.netGainOrLossGbp >= 0 ? 'text-green-700' : 'text-red-700'}>
+                  {formatGbp(currentSummary.netGainOrLossGbp)}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex justify-between items-center">
+              <span className="text-gray-700">
+                Less: Annual Exempt Amount
+                <Tooltip content="View HMRC official rates and allowances">
+                  <a
+                    href="https://www.gov.uk/government/publications/rates-and-allowances-capital-gains-tax/capital-gains-tax-rates-and-annual-tax-free-allowances"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="ml-1 text-brand-600 hover:text-brand-800 underline text-xs"
+                  >
+                    (source)
+                  </a>
+                </Tooltip>
+              </span>
+              <span className="font-medium text-gray-900">
+                ({formatGbpWhole(currentSummary.annualExemptAmount)})
+              </span>
+            </div>
+
+            <div className="border-t border-gray-300 pt-3">
+              <div className="flex justify-between items-center">
+                <span className="text-lg font-bold text-gray-900">Taxable Gain</span>
+                <span className={`text-2xl font-bold ${hasTaxableGain ? 'text-red-700' : 'text-green-700'}`}>
+                  {formatGbp(currentSummary.taxableGainGbp)}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Tax Year-Specific Features (e.g., CGT Rate Change 2024) */}
+        <TaxYearFeaturesRenderer summary={currentSummary} />
+
+        {/* Tax Status Message */}
+        <TaxStatusMessage summary={currentSummary} />
+
+        {/* Pointer to the per-transaction detail */}
+        <p className="text-sm text-gray-600">
+          <a href="#transactions" className="font-medium text-brand-600 hover:text-brand-800 underline">
+            See every transaction
+          </a>
+          {' '}with the FX rate used and the HMRC matching rule applied (Same Day, 30-Day, Section 104).
+        </p>
+
+        {/* Other Income Section */}
+        {(currentSummary.totalDividends > 0 || currentSummary.totalInterest > 0) && (
+          <>
+            <div className="border-t border-gray-200 pt-4">
+              <h3 className="text-base font-semibold text-gray-900 mb-1">Other Income (for reference)</h3>
+              <p className="text-xs text-gray-500 mb-3">
+                Dividends and interest are taxed separately from capital gains and do not affect your CGT calculation above.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {/* Dividend Income Card */}
+                {currentSummary.totalDividends > 0 && (
+                  <button
+                    onClick={() => {
+                      setShowDividends(!showDividends)
+                      if (!showDividends) setShowInterest(false)
+                    }}
+                    className="bg-gray-50 hover:bg-gray-100 rounded-lg p-3 text-left transition-colors border border-gray-200"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="text-xs text-gray-500 uppercase mb-0.5">Dividend Income</div>
+                        <div className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                          {formatGbpWhole(currentSummary.grossDividendsGbp)}
+                          <span className="text-xs font-normal text-gray-600">
+                            ({currentSummary.totalDividends} {currentSummary.totalDividends === 1 ? 'payment' : 'payments'})
+                          </span>
+                        </div>
+                      </div>
+                      <svg
+                        className={`w-4 h-4 text-gray-400 transition-transform flex-shrink-0 ${showDividends ? 'transform rotate-180' : ''}`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </button>
+                )}
+
+                {/* Interest Income Card */}
+                {currentSummary.totalInterest > 0 && (
+                  <button
+                    onClick={() => {
+                      setShowInterest(!showInterest)
+                      if (!showInterest) setShowDividends(false)
+                    }}
+                    className="bg-gray-50 hover:bg-gray-100 rounded-lg p-3 text-left transition-colors border border-gray-200"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="text-xs text-gray-500 uppercase mb-0.5">Interest Income</div>
+                        <div className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                          {formatGbpWhole(currentSummary.grossInterestGbp)}
+                          <span className="text-xs font-normal text-gray-600">
+                            ({currentSummary.totalInterest} {currentSummary.totalInterest === 1 ? 'payment' : 'payments'})
+                          </span>
+                        </div>
+                      </div>
+                      <svg
+                        className={`w-4 h-4 text-gray-400 transition-transform flex-shrink-0 ${showInterest ? 'transform rotate-180' : ''}`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </button>
+                )}
+              </div>
             </div>
 
             {showDividends && currentSummary.totalDividends > 0 && (
@@ -423,13 +408,21 @@ export function TaxYearSummary() {
             {showInterest && currentSummary.totalInterest > 0 && (
               <InterestDetailsPanel summary={currentSummary} onHelp={() => toggleHelpPanelWithContext('interest')} />
             )}
-          </div>
+          </>
         )}
 
-        {/* Disclaimer */}
-        <p className="text-xs text-gray-500 italic">
-          This is an estimate based on HMRC guidance. Always consult a qualified tax professional for your specific situation.
-        </p>
+        {/* Disclaimer and Export Button */}
+        <div className="flex items-center justify-between gap-4">
+          <div className="text-xs text-gray-500 italic">
+            This is an estimate based on HMRC guidance. Always consult a qualified tax professional for your specific situation.
+          </div>
+          <div className="flex-shrink-0">
+            <ExportPDFButton />
+          </div>
+        </div>
+
+        {/* Buy Me A Coffee - Only shown after PDF export */}
+        {hasExportedPDF && <BuyMeACoffee />}
       </div>
     </div>
   )

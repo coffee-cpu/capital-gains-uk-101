@@ -111,15 +111,16 @@ test.describe('Incomplete Disposal Tracking', () => {
     await page.waitForTimeout(500)
 
     // Total proceeds should be £0 (no matched shares) - use more specific selector
-    await expect(page.getByTestId('summary-proceeds')).toContainText('£0')
+    const proceedsCard = page.locator('div.bg-white').filter({ hasText: 'TOTAL PROCEEDS' }).first()
+    await expect(proceedsCard).toContainText('£0')
 
     // Total gains should be £0 - use more specific selector
-    await expect(page.getByTestId('summary-gains')).toContainText('£0')
+    const gainsCard = page.locator('div.bg-green-50').filter({ hasText: 'Gains' }).first()
+    await expect(gainsCard).toContainText('£0')
 
     // £0 figures from an unmatched sale don't settle the reporting limits
-    await expect(page.getByTestId('tax-year-answer')).toContainText('No CGT to pay on the figures so far')
-    await expect(page.getByTestId('reporting-note')).toContainText('These figures are incomplete')
-    await expect(page.getByTestId('reporting-note')).not.toContainText("doesn't need the capital gains pages")
+    await expect(page.getByTestId('tax-status')).toContainText('Figures Incomplete')
+    await expect(page.getByTestId('tax-status')).not.toContainText("doesn't need the capital gains pages")
   })
 
   test('should show multiple incomplete disposals for tax year 2025/26', async ({ page }) => {

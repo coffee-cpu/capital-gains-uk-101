@@ -15,10 +15,10 @@ test.describe('First run', () => {
     await expect(page.getByText(/Loaded a sample Charles Schwab portfolio/)).toBeVisible({ timeout: 20000 })
     await expect(loadSample).toHaveCount(0)
 
-    // The tax year summary leads with the answer
-    const answer = page.getByTestId('tax-year-answer')
-    await expect(answer).toContainText(/net (gain|loss)/)
-    await expect(answer).toContainText(/No CGT to pay|CGT to pay/)
+    // The tax year summary says whether CGT is due, and whether to report
+    const status = page.getByTestId('tax-status')
+    await expect(status).toBeVisible()
+    await expect(status).toContainText(/SA108/)
 
     // The link to the per-transaction detail lands on the table
     await page.getByRole('link', { name: 'See every transaction' }).click()
@@ -29,7 +29,7 @@ test.describe('First run', () => {
   test('the sample is not merged into transactions from a previous session', async ({ page }) => {
     await page.goto('/')
     await page.getByTestId('load-sample').click()
-    await expect(page.getByTestId('tax-year-answer')).toBeVisible({ timeout: 20000 })
+    await expect(page.getByTestId('tax-status')).toBeVisible({ timeout: 20000 })
 
     // A returning visit: stored transactions, nothing loaded yet. Click the
     // sample button directly, as if before the resume-session dialog opened
