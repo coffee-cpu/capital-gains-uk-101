@@ -36,9 +36,9 @@ export function DividendDetailsPanel({ summary, onHelp }: PanelProps) {
           label={<>Less: Dividend Allowance<SourceLink href="https://www.gov.uk/tax-on-dividends" tooltip="View HMRC tax on dividends information" text="(source)" /></>}
           amount={`(£${summary.dividendAllowance.toLocaleString('en-GB', { maximumFractionDigits: 0 })})`}
         />
-        <div className="border-t border-purple-300 pt-3">
+        <div className="border-t border-gray-300 pt-3">
           <div className="flex justify-between items-center">
-            <span className="text-lg font-bold text-purple-900">Taxable Dividends</span>
+            <span className="text-lg font-bold text-gray-900">Taxable Dividends</span>
             <span className={`text-2xl font-bold ${exceedsAllowance ? 'text-red-700' : 'text-green-700'}`}>
               {formatGbp(Math.max(0, summary.grossDividendsGbp - summary.dividendAllowance))}
             </span>
@@ -101,10 +101,10 @@ export function InterestDetailsPanel({ summary, onHelp }: PanelProps) {
               label={<>Tax Withheld at Source<SourceLink href={TAXED_TWICE_URL} tooltip="View Foreign Tax Credit Relief guidance" text="(relief)" /></>}
               amount={formatGbp(-summary.interestWithholdingTaxGbp)}
             />
-            <div className="border-t border-purple-300 pt-2">
+            <div className="border-t border-gray-300 pt-2">
               <div className="flex justify-between items-center font-semibold">
-                <span className="text-purple-800">Net Interest Received</span>
-                <span className="text-purple-900">{formatGbp(summary.totalInterestGbp)}</span>
+                <span className="text-gray-700">Net Interest Received</span>
+                <span className="text-gray-900">{formatGbp(summary.totalInterestGbp)}</span>
               </div>
             </div>
           </>
@@ -116,12 +116,12 @@ export function InterestDetailsPanel({ summary, onHelp }: PanelProps) {
         )}
 
         <div className="py-2">
-          <p className="text-sm text-purple-800">
+          <p className="text-sm text-gray-700">
             <strong>Personal Savings Allowance:</strong>
             {' '}£1,000 (basic rate), £500 (higher rate), or £0 (additional rate)
             <SourceLink href={SAVINGS_INTEREST_URL} tooltip="View HMRC savings interest information" text="(source)" />
           </p>
-          <p className="text-sm text-purple-700 mt-1">
+          <p className="text-sm text-gray-600 mt-1">
             Interest above your allowance is taxed at your income tax rate (20%, 40%, or 45%).
           </p>
         </div>
@@ -155,22 +155,22 @@ function IncomePanel({ title, subtitle, helpLabel, onHelp, children }: {
   children: ReactNode
 }) {
   return (
-    <div className="bg-white border border-purple-200 rounded-lg overflow-hidden">
-      <div className="bg-purple-50 px-6 py-4 border-b border-purple-200">
+    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+      <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <h3 className="text-lg font-semibold text-purple-900">{title}</h3>
-            <p className="text-sm text-purple-700 mt-1">{subtitle}</p>
+            <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+            <p className="text-sm text-gray-600 mt-1">{subtitle}</p>
           </div>
           <button
             onClick={(e) => {
               e.stopPropagation()
               onHelp()
             }}
-            className="p-1 rounded hover:bg-purple-100 transition-colors flex-shrink-0"
+            className="p-1 rounded hover:bg-gray-100 transition-colors flex-shrink-0"
             aria-label={helpLabel}
           >
-            <svg className="w-5 h-5 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+            <svg className="w-5 h-5 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
             </svg>
           </button>
@@ -184,22 +184,22 @@ function IncomePanel({ title, subtitle, helpLabel, onHelp, children }: {
 function AmountRow({ label, amount }: { label: ReactNode; amount: string }) {
   return (
     <div className="flex justify-between items-center">
-      <span className="text-purple-800">{label}</span>
-      <span className="font-medium text-purple-900">{amount}</span>
+      <span className="text-gray-700">{label}</span>
+      <span className="font-medium text-gray-900">{amount}</span>
     </div>
   )
 }
 
 /** An external guidance link with a tooltip, as used beside figures */
-function SourceLink({ href, tooltip, text, tone = 'purple', small = true }: {
+function SourceLink({ href, tooltip, text, tone = 'brand', small = true }: {
   href: string
   tooltip: string
   text: string
-  tone?: 'purple' | 'amber'
+  tone?: 'brand' | 'amber'
   small?: boolean
 }) {
-  const colours = tone === 'purple'
-    ? 'text-purple-600 hover:text-purple-800'
+  const colours = tone === 'brand'
+    ? 'text-brand-600 hover:text-brand-800'
     : 'text-amber-600 hover:text-amber-800'
   return (
     <Tooltip content={tooltip}>

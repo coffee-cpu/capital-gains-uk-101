@@ -124,7 +124,7 @@ test.describe('IssuesPanel', () => {
     await expect(issuesPanelButton).toBeVisible()
 
     // Verify info badge (blue) is shown
-    await expect(page.locator('button:has(h2) span.bg-blue-100.text-blue-800').first()).toBeVisible()
+    await expect(page.locator('button:has(h2) span.bg-brand-100.text-brand-800').first()).toBeVisible()
 
     // Expand and verify No Disposals Found content
     await expandIssuesPanel(page)

@@ -201,7 +201,7 @@ export function DisposalRecords({
                             <div key={idx} className="bg-gray-50 rounded p-3">
                               <div className="flex items-center justify-between mb-2">
                               <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${
-                                  matching.rule === 'SAME_DAY' ? 'bg-blue-100 text-blue-800 border-blue-300' :
+                                  matching.rule === 'SAME_DAY' ? 'bg-brand-100 text-brand-800 border-brand-300' :
                                   matching.rule === '30_DAY' ? 'bg-orange-100 text-orange-800 border-orange-300' :
                                   matching.rule === 'SHORT_SELL' ? 'bg-pink-100 text-pink-800 border-pink-300' :
                                   'bg-green-100 text-green-800 border-green-300'
@@ -252,9 +252,9 @@ export function DisposalRecords({
                   </div>
 
                   {/* Calculation Summary */}
-                  <div className="bg-blue-50 rounded p-3 text-sm">
-                    <div className="font-medium text-blue-900 mb-2">Calculation</div>
-                    <div className="space-y-1 text-blue-800">
+                  <div className="bg-brand-50 rounded p-3 text-sm">
+                    <div className="font-medium text-brand-900 mb-2">Calculation</div>
+                    <div className="space-y-1 text-brand-800">
                       <div className="flex justify-between">
                         <span>Proceeds:</span>
                         <span>{formatGbp(disposal.proceedsGbp)}</span>
@@ -264,12 +264,12 @@ export function DisposalRecords({
                         <span>({formatGbp(disposal.allowableCostsGbp)})</span>
                       </div>
                       {sellingFees > 0.005 && (
-                        <div className="flex justify-between text-xs text-blue-700 pl-3">
+                        <div className="flex justify-between text-xs text-brand-700 pl-3">
                           <span>includes selling fees</span>
                           <span>{formatGbp(sellingFees)}</span>
                         </div>
                       )}
-                      <div className="flex justify-between font-bold border-t border-blue-200 pt-1 mt-1">
+                      <div className="flex justify-between font-bold border-t border-brand-200 pt-1 mt-1">
                         <span>Gain/(Loss):</span>
                         <span className={isGain ? 'text-green-700' : 'text-red-700'}>
                           {formatGbp(disposal.gainOrLossGbp)}

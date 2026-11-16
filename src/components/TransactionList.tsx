@@ -94,7 +94,7 @@ export function TransactionList() {
     return (
       <div className="bg-white shadow rounded-lg p-6">
         <div className="flex flex-col items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-600"></div>
           <p className="text-gray-600 mt-4 font-medium">Loading your previously uploaded transactions...</p>
           <p className="text-gray-500 text-sm mt-2">Applying FX rates and calculating CGT rules</p>
         </div>
@@ -149,7 +149,7 @@ export function TransactionList() {
             <AutoSplitsToggle />
             <button
               onClick={() => exportTransactionsToCSV(transactions)}
-              className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500"
               title="Export transactions as Generic CSV"
             >
               <svg className="h-4 w-4 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -189,23 +189,23 @@ export function TransactionList() {
 
       {/* FX Rate Information - show if any non-GBP transactions (even if FX failed) */}
       {transactions.some(tx => tx.currency !== 'GBP') && (
-        <div className="px-6 py-4 bg-blue-50 border-b border-blue-200">
+        <div className="px-6 py-4 bg-brand-50 border-b border-brand-200">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
             <div className="flex flex-1">
               <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                <svg className="h-5 w-5 text-brand-400" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                 </svg>
               </div>
               <div className="ml-3">
-                <div className="text-sm text-blue-700">
+                <div className="text-sm text-brand-700">
                   <p>
                     Foreign currency values converted to GBP. Hover over any GBP value to see the rate applied.
                   </p>
                   {!showFxInfo && (
                     <button
                       onClick={() => setShowFxInfo(true)}
-                      className="mt-1 text-blue-600 hover:text-blue-800 underline text-sm"
+                      className="mt-1 text-brand-600 hover:text-brand-800 underline text-sm"
                     >
                       Learn more about exchange rate options
                     </button>
@@ -218,7 +218,7 @@ export function TransactionList() {
                           href="https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg78310"
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="underline hover:text-blue-900"
+                          className="underline hover:text-brand-900"
                         >
                           CG78310
                         </a>{' '}
@@ -231,7 +231,7 @@ export function TransactionList() {
                       </p>
                       <button
                         onClick={() => setShowFxInfo(false)}
-                        className="text-blue-600 hover:text-blue-800 underline text-sm"
+                        className="text-brand-600 hover:text-brand-800 underline text-sm"
                       >
                         Hide details
                       </button>
@@ -252,7 +252,7 @@ export function TransactionList() {
           <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-blue-50 z-10">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-brand-50 z-10">
                 <div className="flex items-center gap-1.5">
                   <Tooltip content="CGT Rule indicates how HMRC matches this transaction for Capital Gains Tax calculation: Same Day (same calendar day), 30-Day (bed & breakfast rule), or Section 104 (pooled holdings)">
                     <span className="cursor-help border-b border-dotted border-gray-500">
@@ -264,10 +264,10 @@ export function TransactionList() {
                       e.stopPropagation()
                       toggleHelpPanelWithContext('default')
                     }}
-                    className="p-0.5 rounded hover:bg-blue-100 transition-colors"
+                    className="p-0.5 rounded hover:bg-brand-100 transition-colors"
                     aria-label="Learn about CGT rules"
                   >
-                    <svg className="w-3.5 h-3.5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="w-3.5 h-3.5 text-brand-600" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                     </svg>
                   </button>
@@ -365,7 +365,7 @@ export function TransactionList() {
               const rowClassName = hasFxError ? 'bg-red-50' :
                                    isIgnored ? 'bg-gray-50 opacity-40' :
                                    isIncomplete ? 'bg-yellow-50' :
-                                   isHighlighted ? 'bg-blue-100 ring-2 ring-blue-400' :
+                                   isHighlighted ? 'bg-brand-100 ring-2 ring-brand-400' :
                                    shouldDim ? 'opacity-30' :
                                    (isRelevant ? '' : 'opacity-50')
 
@@ -380,8 +380,8 @@ export function TransactionList() {
                     hasFxError ? 'bg-red-100' :
                     isIgnored ? 'bg-gray-100' :
                     isIncomplete ? 'bg-yellow-100' :
-                    isHighlighted ? 'bg-blue-100' :
-                    'bg-blue-50'
+                    isHighlighted ? 'bg-brand-100' :
+                    'bg-brand-50'
                   }`}>
                     {cgtBadges.length > 0 ? (
                       <div className="flex flex-wrap gap-1">
@@ -444,7 +444,7 @@ export function TransactionList() {
                           tx.type === 'OPTIONS_ASSIGNED' ? 'bg-red-100 text-red-800' :
                           tx.type === 'OPTIONS_EXPIRED' ? 'bg-gray-100 text-gray-800' :
                           tx.type === 'OPTIONS_STOCK_SPLIT' ? 'bg-indigo-100 text-indigo-800' :
-                          tx.type === 'DIVIDEND' ? 'bg-blue-100 text-blue-800' :
+                          tx.type === 'DIVIDEND' ? 'bg-brand-100 text-brand-800' :
                           tx.type === 'INTEREST' ? 'bg-purple-100 text-purple-800' :
                           tx.type === 'TAX' ? 'bg-yellow-100 text-yellow-800' :
                           tx.type === 'TRANSFER' ? 'bg-orange-100 text-orange-800' :

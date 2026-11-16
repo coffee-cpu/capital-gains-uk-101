@@ -1,5 +1,27 @@
 @import "tailwindcss";
 
+/* Accent colour for interactive and informational UI: links, buttons, focus
+   rings, info notes. Change it here. Gains, losses, warnings and the HMRC
+   rule badges keep their own colours; the logo and PDF band are teal. */
+@theme {
+  --color-brand-50: var(--color-blue-50);
+  --color-brand-100: var(--color-blue-100);
+  --color-brand-200: var(--color-blue-200);
+  --color-brand-300: var(--color-blue-300);
+  --color-brand-400: var(--color-blue-400);
+  --color-brand-500: var(--color-blue-500);
+  --color-brand-600: var(--color-blue-600);
+  --color-brand-700: var(--color-blue-700);
+  --color-brand-800: var(--color-blue-800);
+  --color-brand-900: var(--color-blue-900);
+  --color-brand-950: var(--color-blue-950);
+}
+
+/* Figures line up in columns and don't shift width as they change */
+body {
+  font-variant-numeric: tabular-nums;
+}
+
 /* Coffee cup animation (CoffeeCup.tsx)
    One 12s loop shared by every part: pour (0-16%), full and steaming
    (16-60%), sipped (60-82%), empty (82-100%), then pour again. */

@@ -3,11 +3,11 @@
  */
 export function MobileHeader({ onMenuToggle }: { onMenuToggle: () => void }) {
   return (
-    <header className="lg:hidden sticky top-0 z-10 bg-gradient-to-br from-blue-50 to-indigo-50 border-b border-gray-200 px-4 py-3">
+    <header className="lg:hidden sticky top-0 z-10 bg-gradient-to-br from-brand-50 to-indigo-50 border-b border-gray-200 px-4 py-3">
       <div className="flex items-center gap-3">
         <button
           onClick={onMenuToggle}
-          className="p-2 rounded-md hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="p-2 rounded-md hover:bg-brand-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
           aria-label="Toggle menu"
         >
           <svg className="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -22,11 +22,11 @@ export function MobileHeader({ onMenuToggle }: { onMenuToggle: () => void }) {
           />
           <div className="flex flex-col">
             <div className="text-sm font-bold leading-tight">
-              <span className="text-blue-600">C</span>
+              <span className="text-brand-600">C</span>
               <span className="text-gray-900">apital </span>
-              <span className="text-blue-600">G</span>
+              <span className="text-brand-600">G</span>
               <span className="text-gray-900">ains </span>
-              <span className="text-blue-600">T</span>
+              <span className="text-brand-600">T</span>
               <span className="text-gray-900">ax</span>
             </div>
             <div className="text-xs font-semibold text-gray-600">

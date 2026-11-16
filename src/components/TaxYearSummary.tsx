@@ -99,7 +99,7 @@ export function TaxYearSummary() {
       <div className="bg-white shadow rounded-lg overflow-hidden">
         <div className="p-6">
           <div className="flex flex-col items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-600"></div>
             <p className="text-gray-600 mt-4 font-medium">Calculating tax summary from your data...</p>
             <p className="text-gray-500 text-sm mt-2">Processing disposals and applying HMRC rules</p>
           </div>
@@ -146,7 +146,7 @@ export function TaxYearSummary() {
                 id="tax-year-select"
                 value={selectedTaxYear}
                 onChange={(e) => setSelectedTaxYear(e.target.value)}
-                className="block pl-3 pr-9 py-1 text-base font-semibold text-blue-600 bg-blue-50 border-2 border-blue-200 rounded-md hover:border-blue-400 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none cursor-pointer transition-colors"
+                className="block pl-3 pr-9 py-1 text-base font-semibold text-brand-600 bg-brand-50 border-2 border-brand-200 rounded-md hover:border-brand-400 hover:bg-brand-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 appearance-none cursor-pointer transition-colors"
               >
                 {cgtResults.taxYearSummaries.map((summary) => (
                   <option key={summary.taxYear} value={summary.taxYear}>
@@ -154,7 +154,7 @@ export function TaxYearSummary() {
                   </option>
                 ))}
               </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2 text-blue-600">
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2 text-brand-600">
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
@@ -254,27 +254,27 @@ export function TaxYearSummary() {
         )}
 
         {/* CGT Calculation */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-blue-900 mb-4">CGT Calculation</h3>
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">CGT Calculation</h3>
 
           <div className="space-y-3">
             <div className="flex justify-between items-center">
-              <span className="text-blue-800">Total Gains</span>
-              <span className="font-medium text-blue-900">
+              <span className="text-gray-700">Total Gains</span>
+              <span className="font-medium text-gray-900">
                 {formatGbp(currentSummary.totalGainsGbp)}
               </span>
             </div>
 
             <div className="flex justify-between items-center">
-              <span className="text-blue-800">Total Losses</span>
-              <span className="font-medium text-blue-900">
+              <span className="text-gray-700">Total Losses</span>
+              <span className="font-medium text-gray-900">
                 {formatGbp(currentSummary.totalLossesGbp)}
               </span>
             </div>
 
-            <div className="border-t border-blue-300 pt-2">
+            <div className="border-t border-gray-200 pt-2">
               <div className="flex justify-between items-center font-semibold">
-                <span className="text-blue-800">Net Gain/(Loss)</span>
+                <span className="text-gray-700">Net Gain/(Loss)</span>
                 <span className={currentSummary.netGainOrLossGbp >= 0 ? 'text-green-700' : 'text-red-700'}>
                   {formatGbp(currentSummary.netGainOrLossGbp)}
                 </span>
@@ -282,27 +282,27 @@ export function TaxYearSummary() {
             </div>
 
             <div className="flex justify-between items-center">
-              <span className="text-blue-800">
+              <span className="text-gray-700">
                 Less: Annual Exempt Amount
                 <Tooltip content="View HMRC official rates and allowances">
                   <a
                     href="https://www.gov.uk/government/publications/rates-and-allowances-capital-gains-tax/capital-gains-tax-rates-and-annual-tax-free-allowances"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="ml-1 text-blue-600 hover:text-blue-800 underline text-xs"
+                    className="ml-1 text-brand-600 hover:text-brand-800 underline text-xs"
                   >
                     (source)
                   </a>
                 </Tooltip>
               </span>
-              <span className="font-medium text-blue-900">
+              <span className="font-medium text-gray-900">
                 ({formatGbpWhole(currentSummary.annualExemptAmount)})
               </span>
             </div>
 
-            <div className="border-t border-blue-400 pt-3">
+            <div className="border-t border-gray-300 pt-3">
               <div className="flex justify-between items-center">
-                <span className="text-lg font-bold text-blue-900">Taxable Gain</span>
+                <span className="text-lg font-bold text-gray-900">Taxable Gain</span>
                 <span className={`text-2xl font-bold ${hasTaxableGain ? 'text-red-700' : 'text-green-700'}`}>
                   {formatGbp(currentSummary.taxableGainGbp)}
                 </span>
@@ -316,7 +316,7 @@ export function TaxYearSummary() {
 
         {/* Pointer to the per-transaction detail */}
         <p className="text-sm text-gray-600">
-          <a href="#transactions" className="font-medium text-blue-600 hover:text-blue-800 underline">
+          <a href="#transactions" className="font-medium text-brand-600 hover:text-brand-800 underline">
             See every transaction
           </a>
           {' '}with the FX rate used and the HMRC matching rule applied (Same Day, 30-Day, Section 104).
@@ -338,20 +338,20 @@ export function TaxYearSummary() {
                       setShowDividends(!showDividends)
                       if (!showDividends) setShowInterest(false)
                     }}
-                    className="bg-purple-50 hover:bg-purple-100 rounded-lg p-3 text-left transition-colors border border-purple-200"
+                    className="bg-gray-50 hover:bg-gray-100 rounded-lg p-3 text-left transition-colors border border-gray-200"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
-                        <div className="text-xs text-purple-600 uppercase mb-0.5">Dividend Income</div>
-                        <div className="text-xl font-bold text-purple-900 flex items-center gap-2">
+                        <div className="text-xs text-gray-500 uppercase mb-0.5">Dividend Income</div>
+                        <div className="text-xl font-bold text-gray-900 flex items-center gap-2">
                           {formatGbpWhole(currentSummary.grossDividendsGbp)}
-                          <span className="text-xs font-normal text-purple-700">
+                          <span className="text-xs font-normal text-gray-600">
                             ({currentSummary.totalDividends} {currentSummary.totalDividends === 1 ? 'payment' : 'payments'})
                           </span>
                         </div>
                       </div>
                       <svg
-                        className={`w-4 h-4 text-purple-400 transition-transform flex-shrink-0 ${showDividends ? 'transform rotate-180' : ''}`}
+                        className={`w-4 h-4 text-gray-400 transition-transform flex-shrink-0 ${showDividends ? 'transform rotate-180' : ''}`}
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -369,20 +369,20 @@ export function TaxYearSummary() {
                       setShowInterest(!showInterest)
                       if (!showInterest) setShowDividends(false)
                     }}
-                    className="bg-purple-50 hover:bg-purple-100 rounded-lg p-3 text-left transition-colors border border-purple-200"
+                    className="bg-gray-50 hover:bg-gray-100 rounded-lg p-3 text-left transition-colors border border-gray-200"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
-                        <div className="text-xs text-purple-600 uppercase mb-0.5">Interest Income</div>
-                        <div className="text-xl font-bold text-purple-900 flex items-center gap-2">
+                        <div className="text-xs text-gray-500 uppercase mb-0.5">Interest Income</div>
+                        <div className="text-xl font-bold text-gray-900 flex items-center gap-2">
                           {formatGbpWhole(currentSummary.grossInterestGbp)}
-                          <span className="text-xs font-normal text-purple-700">
+                          <span className="text-xs font-normal text-gray-600">
                             ({currentSummary.totalInterest} {currentSummary.totalInterest === 1 ? 'payment' : 'payments'})
                           </span>
                         </div>
                       </div>
                       <svg
-                        className={`w-4 h-4 text-purple-400 transition-transform flex-shrink-0 ${showInterest ? 'transform rotate-180' : ''}`}
+                        className={`w-4 h-4 text-gray-400 transition-transform flex-shrink-0 ${showInterest ? 'transform rotate-180' : ''}`}
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"

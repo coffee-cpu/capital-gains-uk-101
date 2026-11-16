@@ -68,12 +68,12 @@ function getIssueStyles(type: IssueType) {
       }
     case 'info':
       return {
-        borderColor: 'border-l-blue-500',
-        bgColor: 'bg-blue-50',
-        iconColor: 'text-blue-500',
-        titleColor: 'text-blue-800',
-        textColor: 'text-blue-700',
-        badgeColor: 'bg-blue-100 text-blue-800',
+        borderColor: 'border-l-brand-500',
+        bgColor: 'bg-brand-50',
+        iconColor: 'text-brand-500',
+        titleColor: 'text-brand-800',
+        textColor: 'text-brand-700',
+        badgeColor: 'bg-brand-100 text-brand-800',
         Icon: InfoIcon,
       }
   }
@@ -183,7 +183,7 @@ export function IssuesPanel() {
               </span>
             )}
             {infoCount > 0 && (
-              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-brand-100 text-brand-800">
                 <InfoIcon className="h-3.5 w-3.5" />
                 {infoCount}
               </span>

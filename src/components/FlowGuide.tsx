@@ -15,10 +15,9 @@ export function FlowGuide() {
           {steps.map((step, index) => (
             <div
               key={index}
-              className="relative flex items-center px-6 py-2 flex-shrink-0 transition-all hover:bg-blue-200"
+              className="relative flex items-center px-6 py-2 flex-shrink-0 bg-brand-200"
               style={{
                 clipPath: 'polygon(0 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 0 100%, 16px 50%)',
-                background: '#bfdbfe',
                 marginLeft: index === 0 ? '0' : '-17px',
                 zIndex: steps.length - index,
               }}

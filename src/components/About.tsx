@@ -6,7 +6,7 @@ type ToolTag = 'Free' | 'Paid' | 'Open source' | 'Command line' | 'Web' | 'Crypt
 const TAG_STYLES: Record<ToolTag, string> = {
   Free: 'bg-green-100 text-green-800',
   Paid: 'bg-orange-100 text-orange-800',
-  'Open source': 'bg-blue-100 text-blue-800',
+  'Open source': 'bg-brand-100 text-brand-800',
   'Command line': 'bg-gray-100 text-gray-800',
   Web: 'bg-gray-100 text-gray-800',
   Crypto: 'bg-purple-100 text-purple-800',
@@ -167,7 +167,7 @@ export function About() {
                   href="https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51500p"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-600 underline hover:text-blue-800 font-semibold"
+                  className="text-brand-600 underline hover:text-brand-800 font-semibold"
                 >
                   HMRC Capital Gains Manual
                 </a>.
@@ -184,7 +184,7 @@ export function About() {
                       href="https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51560"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-600 underline hover:text-blue-800"
+                      className="text-brand-600 underline hover:text-brand-800"
                     >
                       HMRC CG51560
                     </a>
@@ -202,7 +202,7 @@ export function About() {
                       href="https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51560"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-600 underline hover:text-blue-800"
+                      className="text-brand-600 underline hover:text-brand-800"
                     >
                       HMRC CG51560
                     </a>
@@ -220,7 +220,7 @@ export function About() {
                       href="https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51620"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-600 underline hover:text-blue-800"
+                      className="text-brand-600 underline hover:text-brand-800"
                     >
                       HMRC CG51620
                     </a>
@@ -254,7 +254,7 @@ export function About() {
                     href="https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51700"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-600 underline hover:text-blue-800"
+                    className="text-brand-600 underline hover:text-brand-800"
                   >
                     HMRC CG51700
                   </a>
@@ -267,11 +267,11 @@ export function About() {
                 <p>
                   To ensure accurate CGT calculations, the calculator automatically adjusts all transactions for affected stocks:
                 </p>
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-2">
+                <div className="bg-brand-50 border border-brand-200 rounded-lg p-4 mt-2">
                   <div className="space-y-2 text-sm">
                     <div>
-                      <strong className="text-blue-900">Adjustment Process:</strong>
-                      <ul className="list-disc list-inside ml-4 mt-1 text-blue-800">
+                      <strong className="text-brand-900">Adjustment Process:</strong>
+                      <ul className="list-disc list-inside ml-4 mt-1 text-brand-800">
                         <li>All transactions <strong>before</strong> the split date are adjusted to post-split quantities</li>
                         <li>Share quantities are multiplied by the split ratio (e.g., ×4 for a 4:1 split)</li>
                         <li>Share prices are divided by the split ratio (e.g., ÷4 for a 4:1 split)</li>
@@ -279,7 +279,7 @@ export function About() {
                       </ul>
                     </div>
                     <div className="pt-2">
-                      <strong className="text-blue-900">Example (4:1 split on 2020-08-31):</strong>
+                      <strong className="text-brand-900">Example (4:1 split on 2020-08-31):</strong>
                       <div className="ml-4 mt-1 font-mono text-xs">
                         <div>Original: Bought 10 shares @ $360/share = $3,600 total</div>
                         <div>Adjusted: Bought 40 shares @ $90/share = $3,600 total</div>
@@ -308,7 +308,7 @@ export function About() {
                   href="https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg78310"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-600 underline hover:text-blue-800"
+                  className="text-brand-600 underline hover:text-brand-800"
                 >
                   HMRC CG78310
                 </a>
@@ -326,7 +326,7 @@ export function About() {
                     <div className="flex items-start justify-between">
                       <div>
                         <h4 className="font-medium text-gray-900">HMRC Monthly Rates</h4>
-                        <span className="inline-block mt-1 px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 rounded">Default</span>
+                        <span className="inline-block mt-1 px-2 py-0.5 text-xs font-medium bg-brand-100 text-brand-800 rounded">Default</span>
                       </div>
                     </div>
                     <p className="mt-2 text-sm text-gray-700">
@@ -338,7 +338,7 @@ export function About() {
                         href="https://www.trade-tariff.service.gov.uk/exchange_rates/monthly"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-600 underline hover:text-blue-800"
+                        className="text-brand-600 underline hover:text-brand-800"
                       >
                         HMRC Trade Tariff Service
                       </a>
@@ -357,7 +357,7 @@ export function About() {
                         href="https://www.trade-tariff.service.gov.uk/exchange_rates/average"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-600 underline hover:text-blue-800"
+                        className="text-brand-600 underline hover:text-brand-800"
                       >
                         HMRC Trade Tariff Service
                       </a>
@@ -376,7 +376,7 @@ export function About() {
                         href="https://frankfurter.dev/"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-600 underline hover:text-blue-800"
+                        className="text-brand-600 underline hover:text-brand-800"
                       >
                         European Central Bank (via Frankfurter API)
                       </a>
@@ -419,7 +419,7 @@ export function About() {
                       href="https://github.com/coffee-cpu/capital-gains-uk-101"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-600 underline hover:text-blue-800"
+                      className="text-brand-600 underline hover:text-brand-800"
                     >
                       GitHub
                     </a>
@@ -442,7 +442,7 @@ export function About() {
                       href="https://www.trade-tariff.service.gov.uk/exchange_rates"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-600 underline hover:text-blue-800"
+                      className="text-brand-600 underline hover:text-brand-800"
                     >
                       HMRC's published rates
                     </a>
@@ -487,15 +487,15 @@ export function About() {
                   href="https://github.com/coffee-cpu/capital-gains-uk-101/issues/new"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-brand-600 hover:bg-brand-700"
                 >
                   Report an issue on GitHub
                 </a>
               </p>
 
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-blue-900 mb-1">Manually correcting or adding transactions</h3>
-                <p className="text-sm text-blue-800">
+              <div className="bg-brand-50 border border-brand-200 rounded-lg p-4">
+                <h3 className="text-sm font-medium text-brand-900 mb-1">Manually correcting or adding transactions</h3>
+                <p className="text-sm text-brand-800">
                   Need to fix a transaction or add one that's missing (for example, a purchase made
                   before your broker export begins)? Export your data using{' '}
                   <strong>Export Generic CSV</strong> in the Transactions section, edit the rows in a
@@ -529,7 +529,7 @@ export function About() {
                   href="/agents.md"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-600 underline hover:text-blue-800 font-semibold"
+                  className="text-brand-600 underline hover:text-brand-800 font-semibold"
                 >
                   Agent guide
                 </a>
@@ -538,7 +538,7 @@ export function About() {
                   href="https://github.com/coffee-cpu/capital-gains-uk-101/tree/main/packages/cli#readme"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-600 underline hover:text-blue-800"
+                  className="text-brand-600 underline hover:text-brand-800"
                 >
                   CLI documentation
                 </a>
@@ -547,7 +547,7 @@ export function About() {
                   href="https://www.npmjs.com/package/cgt-visualiser"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-600 underline hover:text-blue-800"
+                  className="text-brand-600 underline hover:text-brand-800"
                 >
                   npm package
                 </a>
@@ -564,9 +564,9 @@ export function About() {
                 your figures with another calculator is a good way to catch mistakes.
               </p>
 
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-blue-900 mb-1">How this tool fits in</h3>
-                <p className="text-sm text-blue-800">
+              <div className="bg-brand-50 border border-brand-200 rounded-lg p-4">
+                <h3 className="text-sm font-medium text-brand-900 mb-1">How this tool fits in</h3>
+                <p className="text-sm text-brand-800">
                   Capital Gains Tax Visualiser runs <strong>entirely in your browser</strong> — your transactions
                   are never uploaded. It imports exports from many brokers directly, handles FX conversion and
                   stock splits automatically, and is <strong>free and open source</strong>.
@@ -582,7 +582,7 @@ export function About() {
                           href={tool.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-blue-600 underline hover:text-blue-800"
+                          className="text-brand-600 underline hover:text-brand-800"
                         >
                           {tool.name}
                         </a>
@@ -624,7 +624,7 @@ export function About() {
           <div className="text-center pt-6">
             <a
               href="/"
-              className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+              className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-brand-600 hover:bg-brand-700"
             >
               ← Back to Calculator
             </a>
