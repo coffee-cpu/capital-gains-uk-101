@@ -234,7 +234,7 @@ export function ExportPDFButton() {
         <div
           role="dialog"
           aria-label="PDF export options"
-          className="absolute right-0 bottom-full mb-1 w-80 max-w-[calc(100vw-2rem)] rounded-md shadow-lg bg-white border border-gray-200 z-50"
+          className="absolute right-0 top-full mt-1 w-80 max-w-[calc(100vw-2rem)] rounded-md shadow-lg bg-white border border-gray-200 z-50"
         >
           <fieldset className="px-3 pt-3 pb-2">
             <legend className="float-left w-full text-sm font-medium text-gray-900">Transaction history appendix</legend>

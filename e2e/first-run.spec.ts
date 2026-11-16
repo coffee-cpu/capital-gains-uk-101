@@ -18,7 +18,7 @@ test.describe('First run', () => {
     // The tax year summary leads with the answer
     const answer = page.getByTestId('tax-year-answer')
     await expect(answer).toContainText('Taxable gain')
-    await expect(answer).toContainText(/No CGT due|CGT may be due/)
+    await expect(answer).toContainText(/No CGT to pay|CGT to pay/)
 
     // The link to the per-transaction detail lands on the table
     await page.getByRole('link', { name: 'See every transaction' }).click()
