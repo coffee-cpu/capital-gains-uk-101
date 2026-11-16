@@ -89,7 +89,7 @@ test.describe('Tax Year Summary Verification', () => {
     await page.waitForTimeout(500)
 
     // Verify the period is correct
-    await expect(page.getByText('Period: 2023-04-06 to 2024-04-05')).toBeVisible()
+    await expect(page.getByTestId('tax-year-period')).toHaveText('6 Apr 2023 – 5 Apr 2024')
 
     // Verify the numerical values displayed on the page
     // Expected values for 2023/24 based on anonymized data:
@@ -103,6 +103,8 @@ test.describe('Tax Year Summary Verification', () => {
     await expect(page.getByRole('button', { name: /Disposals/ })).toContainText('4')
     await expect(page.getByText('£42,150')).toBeVisible()
     await expect(page.getByText('£13,567', { exact: true })).toBeVisible()
+    // The pence are in the CGT Calculation breakdown, collapsed by default
+    await page.getByTestId('cgt-calculation').locator('summary').click()
     await expect(page.getByText('£7,566.78')).toBeVisible()
   })
 
@@ -135,7 +137,7 @@ test.describe('Tax Year Summary Verification', () => {
       await page.waitForTimeout(300)
 
       // Verify the summary updates with the correct period
-      await expect(page.getByText(/Period:/)).toBeVisible()
+      await expect(page.getByTestId('tax-year-period')).toBeVisible()
 
       // Verify disposals count is visible
       await expect(page.getByRole('button', { name: /Disposals/ })).toBeVisible()
@@ -172,7 +174,7 @@ test.describe('Tax Year Summary Verification', () => {
     await page.waitForTimeout(500)
 
     // Verify the period is correct
-    await expect(page.getByText('Period: 2024-04-06 to 2025-04-05')).toBeVisible()
+    await expect(page.getByTestId('tax-year-period')).toHaveText('6 Apr 2024 – 5 Apr 2025')
 
     // Verify Taxable Gain value is displayed and calculated correctly
     // This test verifies that taxable gain calculation works end-to-end with:
@@ -189,6 +191,8 @@ test.describe('Tax Year Summary Verification', () => {
     // - 30-day bed-and-breakfast (e.g., AAPL 2024-03-25, TSLA 2024-06-20, INTC 2024-11-01/15)
     // - Section 104 pooling for remaining shares
     // - Annual exemption (£3,000) deducted
+    // The pence are in the CGT Calculation breakdown, collapsed by default
+    await page.getByTestId('cgt-calculation').locator('summary').click()
     await expect(page.getByText('£7,509.07')).toBeVisible()
   })
 

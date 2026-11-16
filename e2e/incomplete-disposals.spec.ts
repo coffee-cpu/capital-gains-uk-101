@@ -111,12 +111,10 @@ test.describe('Incomplete Disposal Tracking', () => {
     await page.waitForTimeout(500)
 
     // Total proceeds should be £0 (no matched shares) - use more specific selector
-    const proceedsCard = page.locator('div.bg-white').filter({ hasText: 'TOTAL PROCEEDS' }).first()
-    await expect(proceedsCard).toContainText('£0')
+    await expect(page.getByTestId('summary-proceeds')).toContainText('£0')
 
     // Total gains should be £0 - use more specific selector
-    const gainsCard = page.locator('div.bg-green-50').filter({ hasText: 'Gains' }).first()
-    await expect(gainsCard).toContainText('£0')
+    await expect(page.getByTestId('summary-gains')).toContainText('£0')
   })
 
   test('should show multiple incomplete disposals for tax year 2025/26', async ({ page }) => {
