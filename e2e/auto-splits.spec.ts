@@ -106,8 +106,8 @@ test.describe('Auto-detected Stock Splits', () => {
     const autoSplitRows = page.locator('tr').filter({ hasText: 'STOCK_SPLIT' }).filter({ hasText: 'Community' })
     await expect(autoSplitRows).toHaveCount(2)
 
-    // Check for "Community" badge (span with bg-teal-100 class)
-    const communityBadges = page.locator('span.bg-teal-100').filter({ hasText: 'Community' })
+    // Check for "Community" badge (span with bg-brand-100 class)
+    const communityBadges = page.locator('span.bg-brand-100').filter({ hasText: 'Community' })
     await expect(communityBadges).toHaveCount(2)
 
     // Verify split ratios are shown

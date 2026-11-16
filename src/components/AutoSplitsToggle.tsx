@@ -46,7 +46,7 @@ export function AutoSplitsToggle() {
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="text-gray-600 hover:text-teal-700 whitespace-nowrap"
+            className="text-gray-600 hover:text-brand-700 whitespace-nowrap"
           >
             Community split data
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="inline w-3 h-3 -mt-0.5 ml-0.5">
@@ -59,9 +59,9 @@ export function AutoSplitsToggle() {
             aria-checked={autoSplitsEnabled}
             onClick={handleToggle}
             disabled={isChanging}
-            className={`relative inline-flex h-5 w-9 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 ${
+            className={`relative inline-flex h-5 w-9 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 ${
               isChanging ? 'cursor-wait opacity-50' : 'cursor-pointer'
-            } ${autoSplitsEnabled ? 'bg-teal-600' : 'bg-gray-200'}`}
+            } ${autoSplitsEnabled ? 'bg-brand-600' : 'bg-gray-200'}`}
           >
             <span
               className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${

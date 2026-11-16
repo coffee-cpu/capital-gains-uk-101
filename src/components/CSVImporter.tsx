@@ -220,7 +220,7 @@ export function CSVImporter() {
               href="https://github.com/coffee-cpu/capital-gains-uk-101/tree/main/packages/cli#readme"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-600 underline hover:text-blue-800"
+              className="text-brand-700 underline hover:text-brand-900"
             >
               Use the command-line tool
             </a>
@@ -228,7 +228,7 @@ export function CSVImporter() {
         </div>
         <button
           onClick={() => setShowImportInfo(!showImportInfo)}
-          className="text-sm text-blue-600 hover:text-blue-800 underline flex items-center gap-1"
+          className="text-sm text-brand-700 hover:text-brand-900 underline flex items-center gap-1"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -238,20 +238,20 @@ export function CSVImporter() {
       </div>
 
       {showImportInfo && (
-        <div className="rounded-md bg-blue-50 border border-blue-200 p-4 mb-4">
+        <div className="rounded-md bg-brand-50 border border-brand-200 p-4 mb-4">
           <div className="flex">
             <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+              <svg className="h-5 w-5 text-brand-400" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
               </svg>
             </div>
             <div className="ml-3">
-              <h3 className="text-sm font-medium text-blue-800">What to import</h3>
-              <div className="mt-2 text-sm text-blue-700 space-y-2">
+              <h3 className="text-sm font-medium text-brand-900">What to import</h3>
+              <div className="mt-2 text-sm text-brand-800 space-y-2">
                 <p>You need to provide the transaction history for <strong>each of your taxable accounts</strong>.</p>
                 <p>Leave out ISAs and pensions (SIPPs): gains in those accounts are free of Capital Gains Tax.</p>
                 <p>The history should include <strong>ALL transactions</strong> since you first acquired any shares owned during the relevant tax years (even if they were acquired in previous years).</p>
-                <p className="text-blue-600 bg-blue-100 p-2 rounded">
+                <p className="text-brand-700 bg-brand-100 p-2 rounded">
                   <strong>Why historical data?</strong> To calculate your gain/loss, we need to know the original purchase price (cost basis) of shares you sold. This requires transaction history from when you first bought them, which may be years ago.
                 </p>
                 <p className="italic">The calculation is possible once you've gathered all transactions from all your brokers.</p>
@@ -268,7 +268,7 @@ export function CSVImporter() {
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors ${isDragging
-            ? 'border-blue-500 bg-blue-50'
+            ? 'border-brand-600 bg-brand-50'
             : 'border-gray-300 hover:border-gray-400 bg-gray-50'
             } ${isProcessing ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
         >
@@ -286,7 +286,7 @@ export function CSVImporter() {
 
           <div className="flex flex-col items-center">
             <svg
-              className={`w-12 h-12 mb-3 ${isDragging ? 'text-blue-500' : 'text-gray-400'}`}
+              className={`w-12 h-12 mb-3 ${isDragging ? 'text-brand-600' : 'text-gray-400'}`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -314,7 +314,7 @@ export function CSVImporter() {
               type="button"
               onClick={loadSample}
               data-testid="load-sample"
-              className="self-start inline-flex items-center gap-1.5 rounded-md border border-teal-600 px-3 py-1.5 font-medium text-teal-700 hover:bg-teal-50 focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="self-start inline-flex items-center gap-1.5 rounded-md border border-brand-600 px-3 py-1.5 font-medium text-brand-700 hover:bg-brand-50 focus:outline-none focus:ring-2 focus:ring-brand-500"
             >
               Try a sample portfolio
             </button>
@@ -323,7 +323,7 @@ export function CSVImporter() {
 
         {isProcessing && (
           <div className="flex flex-col gap-2">
-            <div className="flex items-center text-blue-600">
+            <div className="flex items-center text-brand-700">
               <svg className="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">
                 <circle
                   className="opacity-25"

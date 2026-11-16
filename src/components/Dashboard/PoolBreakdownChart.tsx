@@ -14,6 +14,7 @@ import {
   Cell,
 } from 'recharts'
 import {
+  CHART_COLORS,
   PoolBreakdownResult,
   CurrentHoldingsResult,
   CurrentHoldingPoint,
@@ -271,13 +272,13 @@ export function PoolBreakdownChart({ data, holdingsData }: PoolBreakdownChartPro
               <ReferenceLine
                 key={boundary.date}
                 x={boundary.timestamp}
-                stroke="#6366F1"
+                stroke={CHART_COLORS.taxYear}
                 strokeDasharray="4 4"
                 strokeWidth={1.5}
                 label={{
                   value: boundary.label,
                   position: 'top',
-                  fill: '#6366F1',
+                  fill: CHART_COLORS.taxYear,
                   fontSize: 11,
                   fontWeight: 500,
                 }}

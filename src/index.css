@@ -1,5 +1,28 @@
 @import "tailwindcss";
 
+/* Brand colour: teal, as in the logo and the PDF report's footer band.
+   Use brand-* for accents (links, buttons, focus rings, info notes). Gains,
+   losses and HMRC rule badges keep their own colours. Text and solid
+   backgrounds use brand-700 or darker for WCAG AA contrast on white. */
+@theme {
+  --color-brand-50: var(--color-teal-50);
+  --color-brand-100: var(--color-teal-100);
+  --color-brand-200: var(--color-teal-200);
+  --color-brand-300: var(--color-teal-300);
+  --color-brand-400: var(--color-teal-400);
+  --color-brand-500: var(--color-teal-500);
+  --color-brand-600: var(--color-teal-600);
+  --color-brand-700: var(--color-teal-700);
+  --color-brand-800: var(--color-teal-800);
+  --color-brand-900: var(--color-teal-900);
+  --color-brand-950: var(--color-teal-950);
+}
+
+/* Figures line up in columns and don't shift width as they change */
+body {
+  font-variant-numeric: tabular-nums;
+}
+
 /* Coffee cup animation (CoffeeCup.tsx)
    One 12s loop shared by every part: pour (0-16%), full and steaming
    (16-60%), sipped (60-82%), empty (82-100%), then pour again. */
