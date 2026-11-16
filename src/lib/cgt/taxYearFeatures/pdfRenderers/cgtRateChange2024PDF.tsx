@@ -22,8 +22,10 @@ export const renderCGTRateChange2024PDF: FeaturePDFRenderer<CGTRateChange2024Dat
 ) => {
   const { Text, View, styles } = context
 
+  // One unbreakable block: the box is short, and without this the heading
+  // and the top of the box could end one page with the rest on the next
   return (
-    <>
+    <View wrap={false}>
       <Text style={styles.subtitle}>2024 CGT Rate Change — 30 October 2024</Text>
       <View
         style={[
@@ -41,7 +43,7 @@ export const renderCGTRateChange2024PDF: FeaturePDFRenderer<CGTRateChange2024Dat
           <NoAdjustmentRequiredContent data={data} context={context} />
         )}
       </View>
-    </>
+    </View>
   )
 }
 
