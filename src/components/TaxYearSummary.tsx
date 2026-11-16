@@ -1,3 +1,4 @@
+import { AlertTriangle, CheckCircle2 } from 'lucide-react'
 import { useTransactionStore } from '../stores/transactionStore'
 import { useHelpPanelStore } from '../stores/helpPanelStore'
 import { useState } from 'react'
@@ -21,6 +22,63 @@ function BuyOnlyNote() {
         <span className="font-medium text-gray-900">No capital gains to calculate yet.</span>{' '}
         Your imported transactions include purchases but no sales. See the Issues panel above for what to import.
       </p>
+    </div>
+  )
+}
+
+interface TaxYearAnswerProps {
+  taxYear: string
+  taxableGainGbp: number
+  netGainOrLossGbp: number
+  annualExemptAmount: number
+}
+
+/**
+ * The headline answer for the selected tax year: the taxable gain, whether
+ * CGT may be due, and the one-line reason. The worked figures follow in the
+ * "CGT Calculation" box below.
+ */
+function TaxYearAnswer({ taxYear, taxableGainGbp, netGainOrLossGbp, annualExemptAmount }: TaxYearAnswerProps) {
+  const isTaxable = taxableGainGbp > 0
+  const exemptAmount = formatGbpWhole(annualExemptAmount)
+
+  let reason: string
+  if (isTaxable) {
+    reason = `Net gain of ${formatGbpWhole(netGainOrLossGbp)}, less the ${exemptAmount} annual exempt amount.`
+  } else if (netGainOrLossGbp < 0) {
+    reason = `Net loss of ${formatGbpWhole(Math.abs(netGainOrLossGbp))}. You can carry a loss forward to later years if you report it to HMRC within 4 years.`
+  } else {
+    reason = `Net gain of ${formatGbpWhole(netGainOrLossGbp)} is within the ${exemptAmount} annual exempt amount.`
+  }
+
+  return (
+    <div
+      data-testid="tax-year-answer"
+      className={`rounded-lg border p-5 flex flex-col sm:flex-row sm:items-center gap-4 ${
+        isTaxable ? 'bg-amber-50 border-amber-200' : 'bg-emerald-50 border-emerald-200'
+      }`}
+    >
+      <div className="min-w-0">
+        <div className="text-xs font-medium uppercase tracking-wider text-gray-500">
+          Taxable gain {taxYear}
+        </div>
+        <div className={`text-4xl font-bold tabular-nums mt-1 ${isTaxable ? 'text-amber-900' : 'text-emerald-900'}`}>
+          {formatGbpWhole(taxableGainGbp)}
+        </div>
+        <p className={`text-sm mt-1 ${isTaxable ? 'text-amber-800' : 'text-emerald-800'}`}>{reason}</p>
+      </div>
+      <div
+        className={`sm:ml-auto shrink-0 self-start sm:self-center inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium ${
+          isTaxable ? 'bg-amber-100 text-amber-900' : 'bg-emerald-100 text-emerald-900'
+        }`}
+      >
+        {isTaxable ? (
+          <AlertTriangle className="w-4 h-4" aria-hidden="true" />
+        ) : (
+          <CheckCircle2 className="w-4 h-4" aria-hidden="true" />
+        )}
+        {isTaxable ? 'CGT may be due' : 'No CGT due'}
+      </div>
     </div>
   )
 }
@@ -113,6 +171,13 @@ export function TaxYearSummary() {
         <div className="text-sm text-gray-600">
           Period: {currentSummary.startDate} to {currentSummary.endDate}
         </div>
+
+        <TaxYearAnswer
+          taxYear={currentSummary.taxYear}
+          taxableGainGbp={currentSummary.taxableGainGbp}
+          netGainOrLossGbp={currentSummary.netGainOrLossGbp}
+          annualExemptAmount={currentSummary.annualExemptAmount}
+        />
 
         {/* Key Metrics Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -249,49 +314,13 @@ export function TaxYearSummary() {
         {/* Tax Year-Specific Features (e.g., CGT Rate Change 2024) */}
         <TaxYearFeaturesRenderer summary={currentSummary} />
 
-        {/* Tax Status Message */}
-        {hasTaxableGain ? (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <div className="flex">
-              <svg className="h-5 w-5 text-yellow-400 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
-              <div className="ml-3">
-                <h4 className="text-sm font-medium text-yellow-800">Capital Gains Tax May Be Due</h4>
-                <p className="mt-1 text-sm text-yellow-700">
-                  Your taxable gain exceeds the annual exempt amount. You may need to report this and pay CGT.
-                  Consult a tax professional for advice.
-                </p>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <div className="flex">
-              <svg className="h-5 w-5 text-green-400 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              <div className="ml-3">
-                <h4 className="text-sm font-medium text-green-800">Within Annual Exemption</h4>
-                <p className="mt-1 text-sm text-green-700">
-                  Your gains are within the annual exempt amount. No CGT is due for this tax year.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Hint to view transaction details */}
-        <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
-          <svg className="h-5 w-5 text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <div className="text-sm text-gray-600">
-            <span className="font-medium text-gray-700">Want more details?</span>
-            {' '}Scroll down to the <span className="font-medium">Transactions</span> table to see FX rates used for each transaction,
-            which HMRC matching rules were applied (Same Day, 30-Day, Section 104), and how gains were calculated.
-          </div>
-        </div>
+        {/* Pointer to the per-transaction detail */}
+        <p className="text-sm text-gray-600">
+          <a href="#transactions" className="font-medium text-blue-600 hover:text-blue-800 underline">
+            See every transaction
+          </a>
+          {' '}with the FX rate used and the HMRC matching rule applied (Same Day, 30-Day, Section 104).
+        </p>
 
         {/* Other Income Section */}
         {(currentSummary.totalDividends > 0 || currentSummary.totalInterest > 0) && (

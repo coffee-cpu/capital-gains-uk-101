@@ -102,7 +102,7 @@ test.describe('Tax Year Summary Verification', () => {
     // Check that all expected values are visible on the page
     await expect(page.getByRole('button', { name: /Disposals/ })).toContainText('4')
     await expect(page.getByText('£42,150')).toBeVisible()
-    await expect(page.getByText('£13,567')).toBeVisible()
+    await expect(page.getByText('£13,567', { exact: true })).toBeVisible()
     await expect(page.getByText('£7,566.78')).toBeVisible()
   })
 
