@@ -139,8 +139,8 @@ test.describe('Tax Year Summary Verification', () => {
       // Verify the summary updates with the correct period
       await expect(page.getByTestId('tax-year-period')).toBeVisible()
 
-      // Verify disposals count is visible
-      await expect(page.getByRole('button', { name: /Disposals/ })).toBeVisible()
+      // Each year has an answer: the CGT status, or that there were no disposals
+      await expect(page.getByTestId('tax-year-answer')).toBeVisible()
 
       console.log(`Switched to tax year: ${taxYear}`)
     }
