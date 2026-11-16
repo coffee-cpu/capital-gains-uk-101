@@ -37,6 +37,12 @@ export interface Sa108ReportingNeed {
   gainsOverExemptAmount: boolean
   /** There is a net loss that can be claimed to use against later gains */
   hasLossToClaim: boolean
+  /**
+   * Some disposals are unmatched or have no exchange rate, so they count at
+   * £0: proceeds and gains are understated and the checks above can pass
+   * when they shouldn't
+   */
+  figuresIncomplete: boolean
   proceedsLimit: number
 }
 
@@ -47,7 +53,10 @@ export interface Sa108ReportingNeed {
  * count towards the same limits.
  */
 export function sa108ReportingNeed(
-  summary: Pick<TaxYearSummary, 'taxYear' | 'totalProceedsGbp' | 'totalGainsGbp' | 'netGainOrLossGbp' | 'annualExemptAmount' | 'taxableGainGbp'>
+  summary: Pick<
+    TaxYearSummary,
+    'taxYear' | 'totalProceedsGbp' | 'totalGainsGbp' | 'netGainOrLossGbp' | 'annualExemptAmount' | 'taxableGainGbp'
+  > & Partial<Pick<TaxYearSummary, 'incompleteDisposals' | 'missingFxDisposals'>>
 ): Sa108ReportingNeed {
   const proceedsLimit = getReportingProceedsLimit(summary.taxYear)
   return {
@@ -55,6 +64,7 @@ export function sa108ReportingNeed(
     proceedsOverLimit: summary.totalProceedsGbp > proceedsLimit,
     gainsOverExemptAmount: summary.totalGainsGbp > summary.annualExemptAmount,
     hasLossToClaim: summary.netGainOrLossGbp < 0,
+    figuresIncomplete: (summary.incompleteDisposals ?? 0) > 0 || (summary.missingFxDisposals ?? 0) > 0,
     proceedsLimit,
   }
 }

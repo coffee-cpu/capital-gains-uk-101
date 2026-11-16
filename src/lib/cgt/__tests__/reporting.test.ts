@@ -33,6 +33,7 @@ describe('sa108ReportingNeed', () => {
       proceedsOverLimit: false,
       gainsOverExemptAmount: false,
       hasLossToClaim: false,
+      figuresIncomplete: false,
       proceedsLimit: 50_000,
     })
   })
@@ -57,5 +58,11 @@ describe('sa108ReportingNeed', () => {
   it('flags tax due and a loss to claim', () => {
     expect(sa108ReportingNeed(year('2024/25', { totalGainsGbp: 8_000, netGainOrLossGbp: 8_000, taxableGainGbp: 5_000 })).taxDue).toBe(true)
     expect(sa108ReportingNeed(year('2024/25', { netGainOrLossGbp: -200 })).hasLossToClaim).toBe(true)
+  })
+
+  it('flags figures that are understated by unmatched or unvalued disposals', () => {
+    expect(sa108ReportingNeed(year('2024/25', { incompleteDisposals: 1 })).figuresIncomplete).toBe(true)
+    expect(sa108ReportingNeed(year('2024/25', { missingFxDisposals: 2 })).figuresIncomplete).toBe(true)
+    expect(sa108ReportingNeed(year('2024/25', { incompleteDisposals: 0, missingFxDisposals: 0 })).figuresIncomplete).toBe(false)
   })
 })

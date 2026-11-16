@@ -59,19 +59,24 @@ function TaxYearAnswer({ summary }: { summary: TaxYearSummaryData }) {
       `your gains before losses (${formatGbpWhole(summary.totalGainsGbp)}) were more than the ${exemptAmount} annual exempt amount`,
   ].filter((r): r is string => typeof r === 'string')
 
-  // Something to put on the return: tax due, a limit passed, or a loss to claim
-  const mustAct = need.taxDue || reportReasons.length > 0 || need.hasLossToClaim
+  // Something to put on the return (tax due, a limit passed, a loss to claim),
+  // or figures too low to rule that out
+  const mustAct = need.taxDue || reportReasons.length > 0 || need.hasLossToClaim || need.figuresIncomplete
+  // Unmatched or unvalued disposals count at £0, so "no tax" isn't settled
+  const statusUncertain = !need.taxDue && need.figuresIncomplete
 
   return (
     <div data-testid="tax-year-answer" className="space-y-3">
       <p className="flex items-start gap-2 text-lg">
-        {need.taxDue ? (
+        {need.taxDue || statusUncertain ? (
           <AlertTriangle className="w-5 h-5 mt-1 shrink-0 text-amber-600" aria-hidden="true" />
         ) : (
           <CheckCircle2 className="w-5 h-5 mt-1 shrink-0 text-emerald-600" aria-hidden="true" />
         )}
         <span>
-          <span className="font-semibold text-gray-900">{need.taxDue ? 'CGT to pay' : 'No CGT to pay'}</span>
+          <span className="font-semibold text-gray-900">
+            {need.taxDue ? 'CGT to pay' : statusUncertain ? 'No CGT to pay on the figures so far' : 'No CGT to pay'}
+          </span>
           <span className="text-gray-600"> · {reason}</span>
         </span>
       </p>
@@ -97,6 +102,13 @@ function TaxYearAnswer({ summary }: { summary: TaxYearSummaryData }) {
             <p>
               <span className="font-medium">You may still need to report this year.</span> If you send a Self
               Assessment return, fill in its capital gains pages (SA108): {reportReasons.join(', and ')}.
+            </p>
+          ) : need.figuresIncomplete ? (
+            <p>
+              <span className="font-medium">These figures are incomplete.</span> Some disposals couldn&apos;t be
+              matched to a purchase or valued in pounds, so they count at £0. Once they&apos;re complete, check whether
+              CGT is due and whether you need the capital gains pages (SA108): disposals worth more than{' '}
+              {formatGbpWhole(need.proceedsLimit)}, or gains before losses over the {exemptAmount} annual exempt amount.
             </p>
           ) : need.hasLossToClaim ? (
             <p>

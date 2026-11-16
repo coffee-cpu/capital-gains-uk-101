@@ -115,6 +115,11 @@ test.describe('Incomplete Disposal Tracking', () => {
 
     // Total gains should be £0 - use more specific selector
     await expect(page.getByTestId('summary-gains')).toContainText('£0')
+
+    // £0 figures from an unmatched sale don't settle the reporting limits
+    await expect(page.getByTestId('tax-year-answer')).toContainText('No CGT to pay on the figures so far')
+    await expect(page.getByTestId('reporting-note')).toContainText('These figures are incomplete')
+    await expect(page.getByTestId('reporting-note')).not.toContainText("doesn't need the capital gains pages")
   })
 
   test('should show multiple incomplete disposals for tax year 2025/26', async ({ page }) => {
