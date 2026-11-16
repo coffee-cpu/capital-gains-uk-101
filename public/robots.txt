@@ -1,21 +1,11 @@
 # robots.txt for cgtvisualiser.co.uk
 # Capital Gains Tax Visualiser - UK CGT Calculator
 
+# One group for every crawler. Don't add a group for a named crawler
+# (e.g. Googlebot): it would follow only that group and skip these rules.
 User-agent: *
-Allow: /
+# Example CSV files aren't useful in search results. Everything else is allowed.
+Disallow: /examples/
 
 # Sitemap location
 Sitemap: https://cgtvisualiser.co.uk/sitemap.xml
-
-# Disallow example CSV files from indexing (not useful for search)
-Disallow: /examples/
-
-# Allow all major search engine crawlers
-User-agent: Googlebot
-Allow: /
-
-User-agent: Bingbot
-Allow: /
-
-User-agent: DuckDuckBot
-Allow: /
