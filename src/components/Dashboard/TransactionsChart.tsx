@@ -53,7 +53,7 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
         </div>
       )}
       <div className="flex items-center gap-2 mb-1">
-        <span className={`font-semibold ${isBuy ? 'text-brand-700' : 'text-gray-900'}`}>
+        <span className={`font-semibold ${isBuy ? 'text-blue-600' : 'text-gray-900'}`}>
           {data.type}
         </span>
         <span className="text-gray-900 font-semibold">{data.symbol}</span>
@@ -333,7 +333,7 @@ export function TransactionsChart({ data }: TransactionsChartProps) {
   // Returns pattern URL for incomplete disposals
   const getBarColor = (entry: TransactionTimelinePoint) => {
     if (entry.type === 'BUY') {
-      return CHART_COLORS.primary // Brand teal for buys (never incomplete)
+      return CHART_COLORS.primary // Blue for buys (never incomplete)
     }
     // For sells, check if incomplete and use striped pattern
     const isIncomplete = entry.isIncomplete
@@ -421,13 +421,13 @@ export function TransactionsChart({ data }: TransactionsChartProps) {
             <ReferenceLine
               key={boundary.date}
               x={boundary.index}
-              stroke={CHART_COLORS.taxYear}
+              stroke="#6366F1"
               strokeDasharray="4 4"
               strokeWidth={1.5}
               label={{
                 value: boundary.label,
                 position: 'top',
-                fill: CHART_COLORS.taxYear,
+                fill: '#6366F1',
                 fontSize: 11,
                 fontWeight: 500,
               }}

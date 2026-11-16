@@ -201,7 +201,7 @@ export function DisposalRecords({
                             <div key={idx} className="bg-gray-50 rounded p-3">
                               <div className="flex items-center justify-between mb-2">
                               <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${
-                                  matching.rule === 'SAME_DAY' ? 'bg-brand-100 text-brand-900 border-brand-300' :
+                                  matching.rule === 'SAME_DAY' ? 'bg-brand-100 text-brand-800 border-brand-300' :
                                   matching.rule === '30_DAY' ? 'bg-orange-100 text-orange-800 border-orange-300' :
                                   matching.rule === 'SHORT_SELL' ? 'bg-pink-100 text-pink-800 border-pink-300' :
                                   'bg-green-100 text-green-800 border-green-300'
@@ -253,8 +253,8 @@ export function DisposalRecords({
 
                   {/* Calculation Summary */}
                   <div className="bg-brand-50 rounded p-3 text-sm">
-                    <div className="font-medium text-brand-950 mb-2">Calculation</div>
-                    <div className="space-y-1 text-brand-900">
+                    <div className="font-medium text-brand-900 mb-2">Calculation</div>
+                    <div className="space-y-1 text-brand-800">
                       <div className="flex justify-between">
                         <span>Proceeds:</span>
                         <span>{formatGbp(disposal.proceedsGbp)}</span>
@@ -264,7 +264,7 @@ export function DisposalRecords({
                         <span>({formatGbp(disposal.allowableCostsGbp)})</span>
                       </div>
                       {sellingFees > 0.005 && (
-                        <div className="flex justify-between text-xs text-brand-800 pl-3">
+                        <div className="flex justify-between text-xs text-brand-700 pl-3">
                           <span>includes selling fees</span>
                           <span>{formatGbp(sellingFees)}</span>
                         </div>

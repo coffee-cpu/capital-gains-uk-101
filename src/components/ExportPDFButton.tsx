@@ -139,7 +139,7 @@ export function ExportPDFButton() {
           className={`inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-l-md text-white ${
             isDisabled
               ? 'bg-gray-400 cursor-not-allowed'
-              : 'bg-brand-700 hover:bg-brand-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-600'
+              : 'bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500'
           }`}
           title={
             !hasCGTResults
@@ -203,10 +203,10 @@ export function ExportPDFButton() {
           ref={toggleRef}
           onClick={() => setIsDropdownOpen(!isDropdownOpen)}
           disabled={isDisabled}
-          className={`inline-flex items-center px-2 py-1.5 text-xs font-medium rounded-r-md border-l border-brand-800 text-white ${
+          className={`inline-flex items-center px-2 py-1.5 text-xs font-medium rounded-r-md border-l border-brand-700 text-white ${
             isDisabled
               ? 'bg-gray-400 cursor-not-allowed'
-              : 'bg-brand-700 hover:bg-brand-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-600'
+              : 'bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500'
           }`}
           aria-label="PDF export options"
           aria-haspopup="dialog"
@@ -255,7 +255,7 @@ export function ExportPDFButton() {
                     value={option.value}
                     checked={transactionHistory === option.value}
                     onChange={() => void setTransactionHistory(option.value)}
-                    className="mt-0.5 h-4 w-4 shrink-0 text-brand-700 border-gray-300 focus:ring-brand-600"
+                    className="mt-0.5 h-4 w-4 shrink-0 text-brand-600 border-gray-300 focus:ring-brand-500"
                   />
                   <span>
                     <span className="block text-sm text-gray-800">{option.label}</span>
@@ -269,7 +269,7 @@ export function ExportPDFButton() {
             <button
               onClick={handleExport}
               disabled={isDisabled}
-              className="px-3 py-1.5 text-xs font-medium rounded-md text-white bg-brand-700 hover:bg-brand-800 disabled:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-600"
+              className="px-3 py-1.5 text-xs font-medium rounded-md text-white bg-brand-600 hover:bg-brand-700 disabled:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500"
             >
               Export PDF
             </button>

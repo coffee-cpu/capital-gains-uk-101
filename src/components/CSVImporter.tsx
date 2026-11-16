@@ -220,7 +220,7 @@ export function CSVImporter() {
               href="https://github.com/coffee-cpu/capital-gains-uk-101/tree/main/packages/cli#readme"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-brand-700 underline hover:text-brand-900"
+              className="text-brand-600 underline hover:text-brand-800"
             >
               Use the command-line tool
             </a>
@@ -228,7 +228,7 @@ export function CSVImporter() {
         </div>
         <button
           onClick={() => setShowImportInfo(!showImportInfo)}
-          className="text-sm text-brand-700 hover:text-brand-900 underline flex items-center gap-1"
+          className="text-sm text-brand-600 hover:text-brand-800 underline flex items-center gap-1"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -246,12 +246,12 @@ export function CSVImporter() {
               </svg>
             </div>
             <div className="ml-3">
-              <h3 className="text-sm font-medium text-brand-900">What to import</h3>
-              <div className="mt-2 text-sm text-brand-800 space-y-2">
+              <h3 className="text-sm font-medium text-brand-800">What to import</h3>
+              <div className="mt-2 text-sm text-brand-700 space-y-2">
                 <p>You need to provide the transaction history for <strong>each of your taxable accounts</strong>.</p>
                 <p>Leave out ISAs and pensions (SIPPs): gains in those accounts are free of Capital Gains Tax.</p>
                 <p>The history should include <strong>ALL transactions</strong> since you first acquired any shares owned during the relevant tax years (even if they were acquired in previous years).</p>
-                <p className="text-brand-700 bg-brand-100 p-2 rounded">
+                <p className="text-brand-600 bg-brand-100 p-2 rounded">
                   <strong>Why historical data?</strong> To calculate your gain/loss, we need to know the original purchase price (cost basis) of shares you sold. This requires transaction history from when you first bought them, which may be years ago.
                 </p>
                 <p className="italic">The calculation is possible once you've gathered all transactions from all your brokers.</p>
@@ -268,7 +268,7 @@ export function CSVImporter() {
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors ${isDragging
-            ? 'border-brand-600 bg-brand-50'
+            ? 'border-brand-500 bg-brand-50'
             : 'border-gray-300 hover:border-gray-400 bg-gray-50'
             } ${isProcessing ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
         >
@@ -286,7 +286,7 @@ export function CSVImporter() {
 
           <div className="flex flex-col items-center">
             <svg
-              className={`w-12 h-12 mb-3 ${isDragging ? 'text-brand-600' : 'text-gray-400'}`}
+              className={`w-12 h-12 mb-3 ${isDragging ? 'text-brand-500' : 'text-gray-400'}`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -323,7 +323,7 @@ export function CSVImporter() {
 
         {isProcessing && (
           <div className="flex flex-col gap-2">
-            <div className="flex items-center text-brand-700">
+            <div className="flex items-center text-brand-600">
               <svg className="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">
                 <circle
                   className="opacity-25"

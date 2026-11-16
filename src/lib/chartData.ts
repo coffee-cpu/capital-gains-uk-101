@@ -17,8 +17,7 @@ export const CHART_COLORS = {
   gain: '#22C55E',         // Tailwind green-500
   loss: '#EF4444',         // Tailwind red-500
   neutral: '#6B7280',      // Tailwind gray-500
-  primary: '#0F766E',      // Brand teal (Tailwind teal-700)
-  taxYear: '#0D9488',      // Tax year boundary lines (Tailwind teal-600)
+  primary: '#3B82F6',      // Tailwind blue-500
   costBasis: '#9CA3AF',    // Tailwind gray-400
 }
 

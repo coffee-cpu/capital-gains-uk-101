@@ -114,7 +114,7 @@ export function HelpPanel() {
               className={`
                 px-3 py-2 text-sm font-medium rounded-t-md transition-colors
                 ${activeTab === 'explanation'
-                  ? 'bg-brand-50 text-brand-800 border-b-2 border-brand-700'
+                  ? 'bg-brand-50 text-brand-700 border-b-2 border-brand-600'
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                 }
               `}
@@ -129,7 +129,7 @@ export function HelpPanel() {
                 className={`
                   px-3 py-2 text-sm font-medium rounded-t-md transition-colors
                   ${activeTab === 'example'
-                    ? 'bg-brand-50 text-brand-800 border-b-2 border-brand-700'
+                    ? 'bg-brand-50 text-brand-700 border-b-2 border-brand-600'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                   }
                 `}
@@ -144,7 +144,7 @@ export function HelpPanel() {
               className={`
                 px-3 py-2 text-sm font-medium rounded-t-md transition-colors
                 ${activeTab === 'references'
-                  ? 'bg-brand-50 text-brand-800 border-b-2 border-brand-700'
+                  ? 'bg-brand-50 text-brand-700 border-b-2 border-brand-600'
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                 }
               `}
@@ -214,7 +214,7 @@ export function HelpPanel() {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-semibold text-brand-700 group-hover:text-brand-800 mb-1">
+                      <h4 className="text-sm font-semibold text-brand-600 group-hover:text-brand-700 mb-1">
                         {ref.title}
                       </h4>
                       <p className="text-xs text-gray-600 leading-relaxed">
@@ -222,7 +222,7 @@ export function HelpPanel() {
                       </p>
                     </div>
                     <svg
-                      className="w-4 h-4 text-gray-400 group-hover:text-brand-700 flex-shrink-0 mt-0.5"
+                      className="w-4 h-4 text-gray-400 group-hover:text-brand-600 flex-shrink-0 mt-0.5"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"

@@ -29,12 +29,12 @@ export function Sidebar({ currentPage, isOpen, onClose }: SidebarProps) {
         ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
         {/* Header */}
-        <div className="p-6 bg-gradient-to-br from-brand-50 to-white border-b border-gray-200">
+        <div className="p-6 bg-gradient-to-br from-brand-50 to-indigo-50 border-b border-gray-200">
           <div className="flex items-center gap-3">
             {/* Close button for mobile */}
             <button
               onClick={onClose}
-              className="lg:hidden p-1 rounded-md hover:bg-brand-100 focus:outline-none focus:ring-2 focus:ring-brand-600"
+              className="lg:hidden p-1 rounded-md hover:bg-brand-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
               aria-label="Close menu"
             >
               <svg className="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -53,11 +53,11 @@ export function Sidebar({ currentPage, isOpen, onClose }: SidebarProps) {
               {/* The page's <h1>: the app's name, styled as before */}
               <h1 className="flex flex-col gap-1">
                 <span className="block text-sm lg:text-base font-bold leading-tight">
-                  <span className="text-brand-700">C</span>
+                  <span className="text-brand-600">C</span>
                   <span className="text-gray-900">apital </span>
-                  <span className="text-brand-700">G</span>
+                  <span className="text-brand-600">G</span>
                   <span className="text-gray-900">ains </span>
-                  <span className="text-brand-700">T</span>
+                  <span className="text-brand-600">T</span>
                   <span className="text-gray-900">ax</span>
                 </span>{' '}
                 <span className="block text-xs font-semibold text-gray-600">

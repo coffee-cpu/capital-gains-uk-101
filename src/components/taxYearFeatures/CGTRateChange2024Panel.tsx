@@ -22,7 +22,7 @@ const HMRC_CGT_RATE_CHANGE_URL =
 
 /**
  * Panel showing CGT rate change information when NO adjustment is required.
- * This is an informational brand-teal panel.
+ * This is an informational blue panel.
  */
 function NoAdjustmentRequiredPanel({ data }: CGTRateChange2024PanelProps) {
   const isGainBelowAEA = data.totalNetGainOrLoss <= data.annualExemptAmount
@@ -32,7 +32,7 @@ function NoAdjustmentRequiredPanel({ data }: CGTRateChange2024PanelProps) {
     <div className="bg-brand-50 border border-brand-200 rounded-lg p-4">
       <div className="flex items-start">
         <svg
-          className="h-5 w-5 text-brand-600 mt-0.5 flex-shrink-0"
+          className="h-5 w-5 text-brand-500 mt-0.5 flex-shrink-0"
           viewBox="0 0 20 20"
           fill="currentColor"
         >
@@ -43,18 +43,18 @@ function NoAdjustmentRequiredPanel({ data }: CGTRateChange2024PanelProps) {
           />
         </svg>
         <div className="ml-3 flex-1">
-          <h4 className="text-sm font-semibold text-brand-950 mb-2">
+          <h4 className="text-sm font-semibold text-brand-900 mb-2">
             2024 CGT Rate Change — No Adjustment Required{' '}
             <a
               href={HMRC_CGT_RATE_CHANGE_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-brand-700 hover:text-brand-900 underline text-xs font-normal"
+              className="text-brand-600 hover:text-brand-800 underline text-xs font-normal"
             >
               (HMRC)
             </a>
           </h4>
-          <p className="text-xs text-brand-800">
+          <p className="text-xs text-brand-700">
             {isGainBelowAEA && data.totalNetGainOrLoss < 0 ? (
               <>
                 You have a net loss of {formatGbp(-data.totalNetGainOrLoss)} for

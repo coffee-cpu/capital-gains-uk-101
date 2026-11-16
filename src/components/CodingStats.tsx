@@ -61,7 +61,7 @@ export function CodingStats() {
       <h2 className="text-xl font-semibold text-gray-900 mb-3">Project Stats</h2>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="bg-brand-50 rounded-lg p-3">
-          <div className="text-2xl font-bold text-brand-700">{stats.totalHours}</div>
+          <div className="text-2xl font-bold text-brand-600">{stats.totalHours}</div>
           <div className="text-xs text-gray-600 mt-0.5">Total Development Hours</div>
         </div>
 
@@ -86,7 +86,7 @@ export function CodingStats() {
           href="https://github.com/coffee-cpu/capital-gains-uk-101"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-brand-700 underline hover:text-brand-900"
+          className="text-brand-600 underline hover:text-brand-800"
         >
           GitHub commit history
         </a>
@@ -95,7 +95,7 @@ export function CodingStats() {
           href="https://github.com/coffee-cpu/vibe-coding-stats"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-brand-700 underline hover:text-brand-900"
+          className="text-brand-600 underline hover:text-brand-800"
         >
           vibe-coding-stats
         </a>

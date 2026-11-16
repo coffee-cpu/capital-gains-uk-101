@@ -93,7 +93,7 @@ export function FXSourceSelector() {
             ? 'bg-gray-100 text-gray-400 cursor-wait'
             : hasFxErrors
               ? 'bg-red-50 text-red-700 border-red-300 hover:bg-red-100 hover:border-red-400'
-              : 'bg-white text-brand-800 border-brand-300 hover:bg-brand-50 hover:border-brand-400'
+              : 'bg-white text-brand-700 border-brand-300 hover:bg-brand-50 hover:border-brand-400'
         }`}
       >
         {isChanging ? (
@@ -143,7 +143,7 @@ export function FXSourceSelector() {
                     href="https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg78310"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-brand-700 underline hover:text-brand-900"
+                    className="text-brand-600 underline hover:text-brand-800"
                   >
                     Learn more
                   </a>
@@ -162,13 +162,13 @@ export function FXSourceSelector() {
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <span
-                          className={`font-medium ${source === fxSource ? 'text-brand-800' : 'text-gray-900'}`}
+                          className={`font-medium ${source === fxSource ? 'text-brand-700' : 'text-gray-900'}`}
                         >
                           {FXSourceDisplayNames[source]}
                         </span>
                         {source === fxSource && (
                           <svg
-                            className="h-4 w-4 text-brand-700"
+                            className="h-4 w-4 text-brand-600"
                             fill="currentColor"
                             viewBox="0 0 20 20"
                           >
@@ -190,7 +190,7 @@ export function FXSourceSelector() {
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={(e) => e.stopPropagation()}
-                    className="text-xs text-brand-700 underline hover:text-brand-900 mt-1 inline-block"
+                    className="text-xs text-brand-600 underline hover:text-brand-800 mt-1 inline-block"
                   >
                     View source
                   </a>

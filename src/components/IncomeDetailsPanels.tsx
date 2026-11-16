@@ -199,7 +199,7 @@ function SourceLink({ href, tooltip, text, tone = 'brand', small = true }: {
   small?: boolean
 }) {
   const colours = tone === 'brand'
-    ? 'text-brand-700 hover:text-brand-800'
+    ? 'text-brand-600 hover:text-brand-800'
     : 'text-amber-600 hover:text-amber-800'
   return (
     <Tooltip content={tooltip}>

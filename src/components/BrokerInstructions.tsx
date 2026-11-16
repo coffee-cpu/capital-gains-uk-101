@@ -26,7 +26,7 @@ export function BrokerInstructions({ definition, isExpanded, onToggle }: BrokerI
         <span>{displayName}</span>
         <button
           onClick={onToggle}
-          className="text-brand-700 hover:text-brand-900 text-xs underline whitespace-nowrap"
+          className="text-brand-600 hover:text-brand-800 text-xs underline whitespace-nowrap"
         >
           {buttonLabel}
         </button>
@@ -52,9 +52,9 @@ export function BrokerInstructions({ definition, isExpanded, onToggle }: BrokerI
             </p>
           ))}
 
-          {/* Info callout (brand teal) */}
+          {/* Info callout (blue) */}
           {instructions.info && (
-            <p className="text-brand-800 font-medium bg-brand-50 border border-brand-200 rounded p-2">
+            <p className="text-brand-700 font-medium bg-brand-50 border border-brand-200 rounded p-2">
               {instructions.info}
             </p>
           )}
@@ -74,14 +74,14 @@ export function BrokerInstructions({ definition, isExpanded, onToggle }: BrokerI
                 href={link.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-block text-brand-700 hover:text-brand-900 underline"
+                className="inline-block text-brand-600 hover:text-brand-800 underline"
               >
                 {link.label}
               </a>
             ))}
             <a
               href={exampleFile}
-              className="inline-block text-brand-700 hover:text-brand-900 underline"
+              className="inline-block text-brand-600 hover:text-brand-800 underline"
             >
               Download example file
             </a>

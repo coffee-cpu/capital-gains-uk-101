@@ -94,7 +94,7 @@ export function TransactionList() {
     return (
       <div className="bg-white shadow rounded-lg p-6">
         <div className="flex flex-col items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-700"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-600"></div>
           <p className="text-gray-600 mt-4 font-medium">Loading your previously uploaded transactions...</p>
           <p className="text-gray-500 text-sm mt-2">Applying FX rates and calculating CGT rules</p>
         </div>
@@ -149,7 +149,7 @@ export function TransactionList() {
             <AutoSplitsToggle />
             <button
               onClick={() => exportTransactionsToCSV(transactions)}
-              className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-600"
+              className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500"
               title="Export transactions as Generic CSV"
             >
               <svg className="h-4 w-4 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -198,14 +198,14 @@ export function TransactionList() {
                 </svg>
               </div>
               <div className="ml-3">
-                <div className="text-sm text-brand-800">
+                <div className="text-sm text-brand-700">
                   <p>
                     Foreign currency values converted to GBP. Hover over any GBP value to see the rate applied.
                   </p>
                   {!showFxInfo && (
                     <button
                       onClick={() => setShowFxInfo(true)}
-                      className="mt-1 text-brand-700 hover:text-brand-900 underline text-sm"
+                      className="mt-1 text-brand-600 hover:text-brand-800 underline text-sm"
                     >
                       Learn more about exchange rate options
                     </button>
@@ -218,7 +218,7 @@ export function TransactionList() {
                           href="https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg78310"
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="underline hover:text-brand-950"
+                          className="underline hover:text-brand-900"
                         >
                           CG78310
                         </a>{' '}
@@ -231,7 +231,7 @@ export function TransactionList() {
                       </p>
                       <button
                         onClick={() => setShowFxInfo(false)}
-                        className="text-brand-700 hover:text-brand-900 underline text-sm"
+                        className="text-brand-600 hover:text-brand-800 underline text-sm"
                       >
                         Hide details
                       </button>
@@ -267,7 +267,7 @@ export function TransactionList() {
                     className="p-0.5 rounded hover:bg-brand-100 transition-colors"
                     aria-label="Learn about CGT rules"
                   >
-                    <svg className="w-3.5 h-3.5 text-brand-700" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="w-3.5 h-3.5 text-brand-600" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                     </svg>
                   </button>
@@ -444,7 +444,7 @@ export function TransactionList() {
                           tx.type === 'OPTIONS_ASSIGNED' ? 'bg-red-100 text-red-800' :
                           tx.type === 'OPTIONS_EXPIRED' ? 'bg-gray-100 text-gray-800' :
                           tx.type === 'OPTIONS_STOCK_SPLIT' ? 'bg-indigo-100 text-indigo-800' :
-                          tx.type === 'DIVIDEND' ? 'bg-brand-100 text-brand-900' :
+                          tx.type === 'DIVIDEND' ? 'bg-brand-100 text-brand-800' :
                           tx.type === 'INTEREST' ? 'bg-purple-100 text-purple-800' :
                           tx.type === 'TAX' ? 'bg-yellow-100 text-yellow-800' :
                           tx.type === 'TRANSFER' ? 'bg-orange-100 text-orange-800' :
@@ -592,7 +592,7 @@ export function TransactionList() {
                       {tx.source}
                       {tx.type === 'STOCK_SPLIT' && tx.source === COMMUNITY_SPLIT_SOURCE && (
                         <Tooltip content="This stock split was fetched from community-maintained split data (coffee-cpu/stock-splits-data). It was not included in your broker CSV.">
-                          <span className="inline-flex px-1.5 py-0.5 text-[10px] font-semibold rounded-full bg-brand-100 text-brand-800 border border-brand-300">
+                          <span className="inline-flex px-1.5 py-0.5 text-[10px] font-semibold rounded-full bg-teal-100 text-teal-800 border border-teal-300">
                             Community
                           </span>
                         </Tooltip>
