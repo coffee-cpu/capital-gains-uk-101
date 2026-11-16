@@ -168,7 +168,7 @@ export function TradeStatsPanel({ stats }: TradeStatsPanelProps) {
     <div className="flex flex-col justify-center h-full">
       {/* Header with total gain/loss */}
       <div className="text-center mb-3">
-        <p className="text-xs text-gray-500 uppercase tracking-wide">Total Gain/Loss</p>
+        <p className="text-xs text-gray-500 uppercase tracking-wide">Gain/Loss, all tax years</p>
         <p className={`text-xl font-bold ${stats.totalGainLossGbp >= 0 ? 'text-green-600' : 'text-red-600'}`}>
           {stats.totalGainLossGbp >= 0 ? '+' : ''}{formatGbpWhole(stats.totalGainLossGbp)}
         </p>
@@ -186,11 +186,11 @@ export function TradeStatsPanel({ stats }: TradeStatsPanelProps) {
             <div className="bg-green-50 rounded-lg px-3 py-2">
               <p className="text-xs text-green-700 font-medium">Best Trade</p>
               <div className="flex items-baseline justify-between">
-                <div>
+                <div className="min-w-0 truncate" title={stats.bestTrade.symbol}>
                   <span className="font-semibold text-gray-900 text-sm">{stats.bestTrade.symbol}</span>
                   <span className="text-xs text-gray-500 ml-2">{stats.bestTrade.dateLabel}</span>
                 </div>
-                <div className="text-right">
+                <div className="text-right shrink-0 ml-2">
                   <span className="text-green-600 font-bold text-sm">
                     {formatPercent(stats.bestTrade.gainLossPercent)}
                   </span>
@@ -207,11 +207,11 @@ export function TradeStatsPanel({ stats }: TradeStatsPanelProps) {
             <div className="bg-red-50 rounded-lg px-3 py-2">
               <p className="text-xs text-red-700 font-medium">Worst Trade</p>
               <div className="flex items-baseline justify-between">
-                <div>
+                <div className="min-w-0 truncate" title={stats.worstTrade.symbol}>
                   <span className="font-semibold text-gray-900 text-sm">{stats.worstTrade.symbol}</span>
                   <span className="text-xs text-gray-500 ml-2">{stats.worstTrade.dateLabel}</span>
                 </div>
-                <div className="text-right">
+                <div className="text-right shrink-0 ml-2">
                   <span className="text-red-600 font-bold text-sm">
                     {formatPercent(stats.worstTrade.gainLossPercent)}
                   </span>

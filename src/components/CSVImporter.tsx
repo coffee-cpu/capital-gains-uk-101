@@ -1,10 +1,15 @@
 import { useState } from 'react'
 import { createFileId, describeSkippedRows, importCSVText } from '../lib/import'
 import { readFileAsText } from '../lib/parsers/fileUtils'
-import { useTransactionStore } from '../stores/transactionStore'
+import { useTransactionStore, selectTransactions } from '../stores/transactionStore'
 import { db } from '../lib/db'
 import { BrokerFormatsList } from './BrokerFormatsList'
-import { getEnabledBrokerDefinitions } from '../config/brokers'
+import { getBrokerDefinition, getEnabledBrokerDefinitions } from '../config/brokers'
+import { BrokerType } from '../types/broker'
+
+/** The example a first-time visitor can load to see the app with data in it */
+const SAMPLE_BROKER = BrokerType.SCHWAB
+const SAMPLE_FILE_NAME = 'sample-portfolio.csv'
 
 export function CSVImporter() {
   const [isProcessing, setIsProcessing] = useState(false)
@@ -15,6 +20,8 @@ export function CSVImporter() {
   const [processingStatus, setProcessingStatus] = useState<string>('')
   const recalculate = useTransactionStore((state) => state.recalculate)
   const markImportStarted = useTransactionStore((state) => state.markImportStarted)
+  const hasTransactions = useTransactionStore((state) => selectTransactions(state).length > 0)
+  const isLoadingResults = useTransactionStore((state) => state.isLoading)
 
   // Build supported brokers text for the upload area
   const supportedBrokers = getEnabledBrokerDefinitions()
@@ -76,7 +83,8 @@ export function CSVImporter() {
     }
   }
 
-  const processFiles = async (files: File[]) => {
+  /** Import the files; resolves to whether every file imported */
+  const processFiles = async (files: File[]): Promise<boolean> => {
     // Before any file reaches IndexedDB, so the startup check doesn't offer
     // to resume (or clear) what is being imported now
     markImportStarted()
@@ -126,6 +134,33 @@ export function CSVImporter() {
         .map(r => r.message)
         .join('\n')
       setSuccess(`${successCount} file(s) imported successfully (${totalTransactions} total transactions):\n${successMessages}`)
+    }
+
+    return failCount === 0
+  }
+
+  const loadSample = async () => {
+    setError(null)
+    setSuccess(null)
+    try {
+      // A returning visitor can click this before the resume-session dialog
+      // appears; importing then would merge the sample into their real data
+      if (await db.transactions.count() > 0) {
+        setError('You already have imported transactions. Clear All Data first if you want to try the sample portfolio.')
+        return
+      }
+      const sampleUrl = getBrokerDefinition(SAMPLE_BROKER)?.exampleFile
+      if (!sampleUrl) throw new Error('no example file')
+      const response = await fetch(sampleUrl)
+      if (!response.ok) throw new Error(`HTTP ${response.status}`)
+      const blob = await response.blob()
+      const imported = await processFiles([new File([blob], SAMPLE_FILE_NAME, { type: 'text/csv' })])
+      if (imported) setSuccess(
+        'Loaded a sample Charles Schwab portfolio with shares, options and dividends. ' +
+        'Clear All Data before importing your own files, or the sample will be included in your figures.'
+      )
+    } catch (err) {
+      setError(`Could not load the sample portfolio: ${err instanceof Error ? err.message : 'unknown error'}`)
     }
   }
 
@@ -271,6 +306,20 @@ export function CSVImporter() {
             </p>
           </div>
         </div>
+
+        {!hasTransactions && !isProcessing && !isLoadingResults && (
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 text-sm text-gray-600">
+            <span>No export to hand?</span>
+            <button
+              type="button"
+              onClick={loadSample}
+              data-testid="load-sample"
+              className="self-start inline-flex items-center gap-1.5 rounded-md border border-teal-600 px-3 py-1.5 font-medium text-teal-700 hover:bg-teal-50 focus:outline-none focus:ring-2 focus:ring-teal-500"
+            >
+              Try a sample portfolio
+            </button>
+          </div>
+        )}
 
         {isProcessing && (
           <div className="flex flex-col gap-2">

@@ -102,16 +102,13 @@ export function TransactionList() {
     )
   }
 
+  // Nothing imported yet: the importer above offers a sample portfolio instead
   if (transactions.length === 0) {
-    return (
-      <div className="bg-white shadow rounded-lg p-6">
-        <p className="text-gray-500 text-center">No transactions imported yet</p>
-      </div>
-    )
+    return null
   }
 
   return (
-    <div className="bg-white shadow rounded-lg">
+    <div id="transactions" className="bg-white shadow rounded-lg scroll-mt-6">
       <div className="px-6 py-4 border-b border-gray-200">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
