@@ -119,4 +119,10 @@ export default defineConfig({
   server: {
     port: 3000,
   },
+  optimizeDeps: {
+    // The PDF renderer is only imported when the user exports a PDF, so the
+    // dev server would otherwise discover it on that first click, re-bundle
+    // and answer the pending request with "504 Outdated Optimize Dep"
+    include: ['@react-pdf/renderer'],
+  },
 })
