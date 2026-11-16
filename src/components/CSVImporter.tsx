@@ -4,10 +4,11 @@ import { readFileAsText } from '../lib/parsers/fileUtils'
 import { useTransactionStore, selectTransactions } from '../stores/transactionStore'
 import { db } from '../lib/db'
 import { BrokerFormatsList } from './BrokerFormatsList'
-import { getEnabledBrokerDefinitions } from '../config/brokers'
+import { getBrokerDefinition, getEnabledBrokerDefinitions } from '../config/brokers'
+import { BrokerType } from '../types/broker'
 
 /** The example a first-time visitor can load to see the app with data in it */
-const SAMPLE_FILE_URL = '/examples/schwab-transactions-example.csv'
+const SAMPLE_BROKER = BrokerType.SCHWAB
 const SAMPLE_FILE_NAME = 'sample-portfolio.csv'
 
 export function CSVImporter() {
@@ -142,7 +143,15 @@ export function CSVImporter() {
     setError(null)
     setSuccess(null)
     try {
-      const response = await fetch(SAMPLE_FILE_URL)
+      // A returning visitor can click this before the resume-session dialog
+      // appears; importing then would merge the sample into their real data
+      if (await db.transactions.count() > 0) {
+        setError('You already have imported transactions. Clear All Data first if you want to try the sample portfolio.')
+        return
+      }
+      const sampleUrl = getBrokerDefinition(SAMPLE_BROKER)?.exampleFile
+      if (!sampleUrl) throw new Error('no example file')
+      const response = await fetch(sampleUrl)
       if (!response.ok) throw new Error(`HTTP ${response.status}`)
       const blob = await response.blob()
       const imported = await processFiles([new File([blob], SAMPLE_FILE_NAME, { type: 'text/csv' })])
