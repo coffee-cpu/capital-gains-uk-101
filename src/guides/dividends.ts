@@ -1,5 +1,5 @@
 import { GuidePage } from './html'
-import { getDividendAllowance } from '../lib/cgt/allowances'
+import { getDividendAllowance, getDividendTaxRates } from '../lib/cgt/allowances'
 import { FOREIGN_CURRENCY_PATH, OVERVIEW_PATH } from './rules'
 import { SCHWAB_RSU_PATH } from './rsu'
 
@@ -9,8 +9,8 @@ import { SCHWAB_RSU_PATH } from './rsu'
  * that depends on the rest of a person's income.
  *
  * Checked against GOV.UK in November 2026:
- * - Dividend allowance and rates by year: "Income Tax rates and allowances for
- *   current and past years" (rates below) and "Tax on dividends"
+ * - Dividend allowance and rates by year: in lib/cgt/allowances.ts, from
+ *   "Income Tax rates and allowances for current and past years"
  * - Reporting dividends: "Tax on dividends: how to report tax on dividends"
  * - Savings interest: "Tax on savings interest" (how much is tax free, how
  *   you pay)
@@ -31,16 +31,8 @@ const W8BEN = 'https://www.irs.gov/forms-pubs/about-form-w-8-ben'
 
 export const DIVIDENDS_PATH = '/guides/dividend-tax-foreign-shares/'
 
-/**
- * Dividend tax rates (basic, higher, additional) by tax year.
- * Source: GOV.UK "Income Tax rates and allowances for current and past years".
- */
-export const DIVIDEND_TAX_RATES: ReadonlyArray<{ taxYear: string; basic: number; higher: number; additional: number }> = [
-  { taxYear: '2023/24', basic: 8.75, higher: 33.75, additional: 39.35 },
-  { taxYear: '2024/25', basic: 8.75, higher: 33.75, additional: 39.35 },
-  { taxYear: '2025/26', basic: 8.75, higher: 33.75, additional: 39.35 },
-  { taxYear: '2026/27', basic: 10.75, higher: 35.75, additional: 39.35 },
-]
+/** Tax years shown in the rates table */
+const RATE_TABLE_YEARS = ['2023/24', '2024/25', '2025/26', '2026/27']
 
 /** Whole pounds, e.g. £1,000 */
 function pounds(amount: number): string {
@@ -48,10 +40,11 @@ function pounds(amount: number): string {
 }
 
 function ratesTable(): string {
-  const rows = DIVIDEND_TAX_RATES.map(r =>
-    `<tr><td>${r.taxYear}</td><td class="num">${pounds(getDividendAllowance(r.taxYear))}</td>` +
-    `<td class="num">${r.basic}%</td><td class="num">${r.higher}%</td><td class="num">${r.additional}%</td></tr>`
-  )
+  const rows = RATE_TABLE_YEARS.map(taxYear => {
+    const rates = getDividendTaxRates(taxYear)!
+    return `<tr><td>${taxYear}</td><td class="num">${pounds(getDividendAllowance(taxYear))}</td>` +
+      `<td class="num">${rates.basic}%</td><td class="num">${rates.higher}%</td><td class="num">${rates.additional}%</td></tr>`
+  })
   return `<table><thead><tr><th>Tax year</th><th class="num">Dividend allowance</th><th class="num">Basic rate</th><th class="num">Higher rate</th><th class="num">Additional rate</th></tr></thead><tbody>${rows.join('')}</tbody></table>`
 }
 

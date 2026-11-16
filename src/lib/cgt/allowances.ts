@@ -49,6 +49,44 @@ function lookup(
   return amount
 }
 
+export interface DividendTaxRates {
+  /** Percentages for dividends in the basic, higher and additional rate bands */
+  basic: number
+  higher: number
+  additional: number
+}
+
+/**
+ * Dividend tax rates, from 2016/17 when the dividend allowance began.
+ *
+ * Source: https://www.gov.uk/government/publications/rates-and-allowances-income-tax/income-tax-rates-and-allowances-current-and-past
+ */
+const DIVIDEND_TAX_RATES: ReadonlyArray<readonly [number, DividendTaxRates]> = [
+  [2016, { basic: 7.5, higher: 32.5, additional: 38.1 }],
+  [2022, { basic: 8.75, higher: 33.75, additional: 39.35 }],
+  [2026, { basic: 10.75, higher: 35.75, additional: 39.35 }],
+]
+
+/** Dividend tax rates for a tax year, or null before 2016/17 */
+export function getDividendTaxRates(taxYear: string): DividendTaxRates | null {
+  const startYear = parseInt(taxYear.split('/')[0])
+  let rates: DividendTaxRates | null = null
+  for (const [fromYear, value] of DIVIDEND_TAX_RATES) {
+    if (startYear < fromYear) break
+    rates = value
+  }
+  return rates
+}
+
+/** Each period with the same dividend tax rates, oldest first; toYear is null for the latest */
+export function dividendTaxRatePeriods(): { fromYear: number; toYear: number | null; rates: DividendTaxRates }[] {
+  return DIVIDEND_TAX_RATES.map(([fromYear, rates], i) => ({
+    fromYear,
+    toYear: i + 1 < DIVIDEND_TAX_RATES.length ? DIVIDEND_TAX_RATES[i + 1][0] - 1 : null,
+    rates,
+  }))
+}
+
 /**
  * CGT annual exempt amount for a tax year. Years before 2014/15 use the
  * 2014/15 amount as an approximation.

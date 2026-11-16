@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { getAnnualExemptAmount, getDividendAllowance } from '../allowances'
+import { getAnnualExemptAmount, getDividendAllowance, getDividendTaxRates } from '../allowances'
+import { getHelpContent } from '../../../utils/helpContent'
 
 describe('getAnnualExemptAmount', () => {
   it.each([
@@ -32,5 +33,27 @@ describe('getDividendAllowance', () => {
     ['2026/27', 500],
   ])('%s is £%i', (taxYear, amount) => {
     expect(getDividendAllowance(taxYear)).toBe(amount)
+  })
+})
+
+describe('getDividendTaxRates', () => {
+  // GOV.UK "Income Tax rates and allowances for current and past years"
+  it.each([
+    ['2015/16', null],
+    ['2016/17', { basic: 7.5, higher: 32.5, additional: 38.1 }],
+    ['2021/22', { basic: 7.5, higher: 32.5, additional: 38.1 }],
+    ['2022/23', { basic: 8.75, higher: 33.75, additional: 39.35 }],
+    ['2025/26', { basic: 8.75, higher: 33.75, additional: 39.35 }],
+    ['2026/27', { basic: 10.75, higher: 35.75, additional: 39.35 }],
+  ])('%s', (taxYear, rates) => {
+    expect(getDividendTaxRates(taxYear)).toEqual(rates)
+  })
+
+  it('feeds the dividend help text', () => {
+    expect(getHelpContent('dividend').explanation).toContain([
+      '- 2026/27 onwards: 10.75% basic, 35.75% higher, 39.35% additional',
+      '- 2022/23 to 2025/26: 8.75% basic, 33.75% higher, 39.35% additional',
+      '- 2016/17 to 2021/22: 7.5% basic, 32.5% higher, 38.1% additional',
+    ].join('\n'))
   })
 })
