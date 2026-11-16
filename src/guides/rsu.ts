@@ -67,7 +67,7 @@ ${renderResultTable(WORKED_EXAMPLES.rsu)}
 <pre><code>npx -y cgt-visualiser@latest calculate EquityAwardsCenter_Transactions_*.csv Individual_*_Transactions_*.csv --tax-year 2025/26</code></pre>
 
 <h2>Dividends on your shares</h2>
-<p>Dividends on shares from vests are income, not capital gains. US dividends usually have 15% US tax withheld, and go on the foreign income pages of your return. The calculator lists them separately.</p>
+<p>Dividends on shares from vests are income, not capital gains. US dividends usually have 15% US tax withheld, and go on the foreign income pages of your return. The calculator lists them separately; the <a href="/guides/dividend-tax-foreign-shares/">dividends guide</a> explains the allowance, the W-8BEN form and Foreign Tax Credit Relief.</p>
 
 <div class="callout info"><p>This guide assumes you were UK resident while your RSUs vested. HMRC references: helpsheets <a href="${HS287}">HS287 Capital Gains Tax and employee share schemes</a> and <a href="${HS284}">HS284 Shares and Capital Gains Tax</a>.</p></div>
 `,

@@ -235,7 +235,7 @@ const foreignCurrency = rulePage({
 <p>Pick one method and use it every year. Fees charged in another currency are converted the same way.</p>
 
 <h2>Dividends and withholding tax</h2>
-<p>Dividends from foreign shares are income, not capital gains, and go on the foreign income pages of your return. US dividends usually have 15% US tax withheld if you’ve filed a W-8BEN form. The calculator shows gross dividends and the tax withheld in pounds, to help with Foreign Tax Credit Relief.</p>
+<p>Dividends from foreign shares are income, not capital gains, and go on the foreign income pages of your return. US dividends usually have 15% US tax withheld if you’ve filed a W-8BEN form. The calculator shows gross dividends and the tax withheld in pounds, to help with Foreign Tax Credit Relief. See the <a href="/guides/dividend-tax-foreign-shares/">dividends guide</a>.</p>
 `,
 })
 

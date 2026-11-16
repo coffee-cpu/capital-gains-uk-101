@@ -2,6 +2,7 @@ import { GuidePage, SITE_URL, guideCard, renderPage } from './html'
 import { RULE_GUIDES } from './rules'
 import { buildBrokerGuides } from './brokers'
 import { SCHWAB_RSU_GUIDE } from './rsu'
+import { DIVIDENDS_GUIDE } from './dividends'
 
 export type { GuidePage } from './html'
 
@@ -11,12 +12,12 @@ export interface GuideSite {
   files: Map<string, string>
 }
 
-function hubPage(rules: GuidePage[], employeeShares: GuidePage[], brokers: GuidePage[]): GuidePage {
+function hubPage(rules: GuidePage[], employeeShares: GuidePage[], income: GuidePage[], brokers: GuidePage[]): GuidePage {
   return {
     path: '/guides/',
     title: 'UK Capital Gains Tax on shares: guides to HMRC’s rules and broker exports',
     navTitle: 'Guides',
-    description: 'Free guides to UK Capital Gains Tax on shares: the same-day, 30-day and Section 104 rules, stock splits, foreign currency, and how to export from each broker.',
+    description: 'Free guides to UK tax on shares: the same-day, 30-day and Section 104 rules, stock splits, foreign currency, dividends, and how to export from each broker.',
     h1: 'Capital Gains Tax on shares: guides',
     bodyHtml: `
 <p class="lead">How HMRC’s rules work for shares, and how to get the right file from your broker to calculate your gains.</p>
@@ -24,6 +25,8 @@ function hubPage(rules: GuidePage[], employeeShares: GuidePage[], brokers: Guide
 <ul class="cards">${rules.map(guideCard).join('')}</ul>
 <h2>Employee shares</h2>
 <ul class="cards">${employeeShares.map(guideCard).join('')}</ul>
+<h2>Dividends and interest</h2>
+<ul class="cards">${income.map(guideCard).join('')}</ul>
 <h2>Broker guides</h2>
 <ul class="cards">${brokers.map(guideCard).join('')}</ul>
 `,
@@ -50,7 +53,8 @@ export function buildGuideSite(): GuideSite {
   const rules = RULE_GUIDES
   const brokers = buildBrokerGuides()
   const employeeShares = [SCHWAB_RSU_GUIDE]
-  const pages = [hubPage(rules, employeeShares, brokers), ...rules, ...employeeShares, ...brokers]
+  const income = [DIVIDENDS_GUIDE]
+  const pages = [hubPage(rules, employeeShares, income, brokers), ...rules, ...employeeShares, ...income, ...brokers]
   const pagesByPath = new Map(pages.map(p => [p.path, p]))
 
   const files = new Map<string, string>()
