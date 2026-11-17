@@ -87,6 +87,11 @@ function createStyles(StyleSheet: PdfLibrary['StyleSheet']) {
   tableCell: {
     fontSize: 8,
   },
+  // The transaction history's narrow columns need the narrower font: a long
+  // ticker or a seven-figure amount in monospace runs into the next column
+  historyRow: {
+    fontFamily: REPORT_FONTS.text,
+  },
   originalAmount: {
     fontSize: 7,
     color: '#6b7280',
@@ -831,7 +836,7 @@ function createCGTReportDocument(
                     </View>
                   )
                   return (
-                    <View key={tx.id} style={styles.tableRow} wrap={false}>
+                    <View key={tx.id} style={[styles.tableRow, styles.historyRow]} wrap={false}>
                       <Text style={[styles.tableCell, { width: columns.date }]}>{formatDate(tx.date)}</Text>
                       <Text style={[styles.tableCell, { width: columns.type }]}>{formatTransactionType(tx.type)}</Text>
                       <Text style={[styles.tableCell, { width: columns.symbol }]}>{cells.symbol}</Text>

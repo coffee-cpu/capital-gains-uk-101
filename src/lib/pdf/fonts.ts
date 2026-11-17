@@ -2,8 +2,9 @@ import type { Font as FontRegistry } from '@react-pdf/renderer'
 
 /**
  * Fonts used by the PDF report. Headings, labels and figures are set in
- * IBM Plex Mono (SIL Open Font License, see fonts/OFL.txt); explanatory
- * paragraphs stay in Helvetica, which is built into every PDF reader.
+ * IBM Plex Mono (SIL Open Font License, see fonts/OFL.txt). Explanatory
+ * paragraphs and the transaction history's rows stay in Helvetica, which is
+ * built into every PDF reader.
  */
 export const REPORT_FONTS = {
   mono: 'IBMPlexMono',
@@ -27,7 +28,5 @@ export function registerReportFonts(Font: typeof FontRegistry, sources: ReportFo
   if (registered.has(Font)) return
   Font.register({ family: REPORT_FONTS.mono, src: sources.regular })
   Font.register({ family: REPORT_FONTS.monoBold, src: sources.semiBold })
-  // Don't hyphenate: a split ticker or figure reads as a different one
-  Font.registerHyphenationCallback(word => [word])
   registered.add(Font)
 }
