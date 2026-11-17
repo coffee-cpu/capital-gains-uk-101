@@ -1,21 +1,27 @@
+const LINKS = [
+  { label: 'Guides', href: '/guides/' },
+  { label: 'About', href: '#about' },
+  { label: 'Report an issue', href: 'https://github.com/coffee-cpu/capital-gains-uk-101/issues/new', external: true },
+  { label: 'GitHub', href: 'https://github.com/coffee-cpu/capital-gains-uk-101', external: true },
+]
+
 export function Footer() {
   return (
-    <footer className="bg-white border-t border-gray-200 mt-12">
-      <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <div className="text-center text-sm text-gray-500">
-          Educational and visualization tool, not financial or tax advice
-        </div>
-        <div className="mt-2 text-center text-sm text-gray-500">
-          Found a problem or have feedback?{' '}
-          <a
-            href="https://github.com/coffee-cpu/capital-gains-uk-101/issues/new"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-brand-600 underline hover:text-brand-800"
-          >
-            Report an issue on GitHub
-          </a>
-        </div>
+    <footer className="bg-white border-t border-gray-200">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between text-xs text-gray-500">
+        <p>Not financial or tax advice. Figures are estimates based on HMRC guidance.</p>
+        <nav aria-label="Footer" className="flex flex-wrap gap-x-4 gap-y-1">
+          {LINKS.map(link => (
+            <a
+              key={link.label}
+              href={link.href}
+              {...(link.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+              className="text-gray-600 hover:text-brand-700 hover:underline"
+            >
+              {link.label}
+            </a>
+          ))}
+        </nav>
       </div>
     </footer>
   )
