@@ -5,6 +5,8 @@
  * detailed explanations of CGT rules, examples, and HMRC references.
  */
 
+import { dividendTaxRatePeriods } from '../lib/cgt/allowances'
+
 export type HelpContext = 'default' | 'same-day' | '30-day' | 'section104' | 'stock-split' | 'tax-year' | 'dividend' | 'interest' | 'incomplete'
 
 export interface HelpContent {
@@ -23,6 +25,22 @@ export interface HelpContent {
     description: string
   }>
 }
+
+/** "2022/23" for 2022 */
+function taxYearLabel(startYear: number): string {
+  return `${startYear}/${String((startYear + 1) % 100).padStart(2, '0')}`
+}
+
+/** Dividend rates by period, newest first, from the same table the calculator and guides use */
+const DIVIDEND_RATE_LINES = dividendTaxRatePeriods()
+  .reverse()
+  .map(({ fromYear, toYear, rates }) => {
+    const period = toYear === null
+      ? `${taxYearLabel(fromYear)} onwards`
+      : `${taxYearLabel(fromYear)} to ${taxYearLabel(toYear)}`
+    return `- ${period}: ${rates.basic}% basic, ${rates.higher}% higher, ${rates.additional}% additional`
+  })
+  .join('\n')
 
 export const helpContent: Record<HelpContext, HelpContent> = {
   default: {
@@ -339,9 +357,7 @@ The allowance has been significantly reduced in recent years.`,
 
 **Dividend Tax Rates** (on amounts above allowance):
 
-- 2026/27 onwards: 10.75% basic, 35.75% higher, 39.35% additional
-- 2022/23 to 2025/26: 8.75% basic, 33.75% higher, 39.35% additional
-- 2016/17 to 2021/22: 7.5% basic, 32.5% higher, 38.1% additional
+${DIVIDEND_RATE_LINES}
 
 **Reporting requirements**:
 
