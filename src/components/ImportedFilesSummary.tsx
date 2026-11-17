@@ -10,16 +10,18 @@ import { ClearDataButton } from './ClearDataButton'
 export function ImportedFilesSummary() {
   const transactionCount = useTransactionStore((state) => selectTransactions(state).length)
   const cgtResults = useTransactionStore((state) => state.cgtResults)
+  const isLoading = useTransactionStore((state) => state.isLoading)
   const [fileNames, setFileNames] = useState<string[]>([])
 
-  // Every import or clear recalculates, so reload the file list with the results
+  // Every import or clear recalculates, so reload the file list after each
+  // run, including one that failed and left the results unchanged
   useEffect(() => {
     let cancelled = false
     db.imported_files.orderBy('importedAt').toArray()
       .then(files => { if (!cancelled) setFileNames(files.map(f => f.filename)) })
       .catch(() => { /* the list is informational */ })
     return () => { cancelled = true }
-  }, [cgtResults])
+  }, [cgtResults, isLoading])
 
   // Also shown when files are stored but the results aren't (e.g. a failed
   // recalculation), so there's always a way to start again
