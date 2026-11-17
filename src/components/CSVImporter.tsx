@@ -4,6 +4,7 @@ import { readFileAsText } from '../lib/parsers/fileUtils'
 import { useTransactionStore, selectTransactions } from '../stores/transactionStore'
 import { db } from '../lib/db'
 import { BrokerFormatsList } from './BrokerFormatsList'
+import { ImportedFilesSummary } from './ImportedFilesSummary'
 import { getBrokerDefinition, getEnabledBrokerDefinitions } from '../config/brokers'
 import { BrokerType } from '../types/broker'
 
@@ -267,7 +268,7 @@ export function CSVImporter() {
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors ${isDragging
+          className={`relative border-2 border-dashed rounded-lg ${hasTransactions ? 'px-4 py-3' : 'p-8'} text-center transition-colors ${isDragging
             ? 'border-brand-500 bg-brand-50'
             : 'border-gray-300 hover:border-gray-400 bg-gray-50'
             } ${isProcessing ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
@@ -284,9 +285,9 @@ export function CSVImporter() {
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
           />
 
-          <div className="flex flex-col items-center">
+          <div className={hasTransactions ? 'flex items-center justify-center gap-2' : 'flex flex-col items-center'}>
             <svg
-              className={`w-12 h-12 mb-3 ${isDragging ? 'text-brand-500' : 'text-gray-400'}`}
+              className={`${hasTransactions ? 'w-5 h-5' : 'w-12 h-12 mb-3'} ${isDragging ? 'text-brand-500' : 'text-gray-400'}`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -298,14 +299,18 @@ export function CSVImporter() {
                 d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
               />
             </svg>
-            <p className="text-sm font-medium text-gray-700 mb-1">
-              Drop your CSV files here, or click to browse
+            <p className={`text-sm font-medium text-gray-700 ${hasTransactions ? '' : 'mb-1'}`}>
+              {hasTransactions ? 'Add more CSV files: drop them here, or click to browse' : 'Drop your CSV files here, or click to browse'}
             </p>
-            <p className="text-xs text-gray-500">
-              Supports multiple files • {supportedBrokers}
-            </p>
+            {!hasTransactions && (
+              <p className="text-xs text-gray-500">
+                Supports multiple files • {supportedBrokers}
+              </p>
+            )}
           </div>
         </div>
+
+        <ImportedFilesSummary />
 
         {!hasTransactions && !isProcessing && !isLoadingResults && (
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 text-sm text-gray-600">

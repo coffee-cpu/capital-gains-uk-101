@@ -2,7 +2,6 @@ import { COMMUNITY_SPLIT_SOURCE } from '../types/broker'
 import { useMemo, useState } from 'react'
 import { useTransactionStore, selectTransactions } from '../stores/transactionStore'
 import { useHelpPanelStore } from '../stores/helpPanelStore'
-import { ClearDataButton } from './ClearDataButton'
 import { Tooltip } from './Tooltip'
 import { IssuePointer } from './IssuePointer'
 import { FXSourceSelector } from './FXSourceSelector'
@@ -164,7 +163,6 @@ export function TransactionList() {
               </svg>
               <span className="hidden sm:inline">Export Generic CSV</span>
             </button>
-            <ClearDataButton />
           </div>
         </div>
       </div>

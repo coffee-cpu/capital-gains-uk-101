@@ -39,4 +39,26 @@ test.describe('First run', () => {
     await expect(page.getByText(/You already have imported transactions/)).toBeVisible()
     await expect(page.getByText(/Loaded a sample Charles Schwab portfolio/)).toHaveCount(0)
   })
+
+  test('the import panel lists the files and is the one place to clear them', async ({ page }) => {
+    await page.goto('/')
+    await page.getByTestId('load-sample').click()
+    await expect(page.getByTestId('tax-status')).toBeVisible({ timeout: 20000 })
+
+    const summary = page.getByTestId('imported-files-summary')
+    await expect(summary).toContainText('1 file · 27 transactions')
+    await expect(summary).toContainText('sample-portfolio.csv')
+    // The drop zone shrinks to one line once there's data
+    await expect(page.getByText('Add more CSV files')).toBeVisible()
+
+    // One Clear All Data button, in the import panel
+    await expect(page.getByRole('button', { name: 'Clear All Data' })).toHaveCount(1)
+    await summary.getByRole('button', { name: 'Clear All Data' }).click()
+    await summary.getByRole('button', { name: 'Yes, Delete Everything' }).click()
+
+    // The page reloads empty, offering the sample again
+    await expect(page.getByTestId('load-sample')).toBeVisible({ timeout: 10000 })
+    await expect(summary).toHaveCount(0)
+    await expect(page.getByText('Drop your CSV files here')).toBeVisible()
+  })
 })
