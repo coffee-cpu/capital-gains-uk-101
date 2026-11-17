@@ -25,13 +25,13 @@ export function CSVImporter() {
   const isLoadingResults = useTransactionStore((state) => state.isLoading)
 
   // Build supported brokers text for the upload area
-  const brokerNames = getEnabledBrokerDefinitions().map(def => def.displayName)
-  const supportedBrokers = brokerNames.join(', ')
+  const enabledBrokers = getEnabledBrokerDefinitions()
+  const supportedBrokers = enabledBrokers.map(def => def.displayName).join(', ')
   // Phones get a short line that doesn't grow with each new broker; the full
   // list is under "Supported formats & export guides"
-  const SHORT_LIST = [BrokerType.SCHWAB, BrokerType.INTERACTIVE_BROKERS, BrokerType.TRADING212] as string[]
-  const shortBrokers = brokerNames.filter(name => SHORT_LIST.includes(name))
-  const supportedBrokersShort = `${shortBrokers.join(', ')} and ${brokerNames.length - shortBrokers.length} more`
+  const SHORT_LIST: BrokerType[] = [BrokerType.SCHWAB, BrokerType.INTERACTIVE_BROKERS, BrokerType.TRADING212]
+  const shortBrokers = enabledBrokers.filter(def => SHORT_LIST.includes(def.type)).map(def => def.displayName)
+  const supportedBrokersShort = `${shortBrokers.join(', ')} and ${enabledBrokers.length - shortBrokers.length} more`
 
   /**
    * Import one file. `beforeWrite` runs once the file has parsed, just before
