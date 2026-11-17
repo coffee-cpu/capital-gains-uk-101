@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { createFileId, describeSkippedRows, importCSVText } from '../lib/import'
 import { readFileAsText } from '../lib/parsers/fileUtils'
 import { useTransactionStore, selectTransactions } from '../stores/transactionStore'
-import { db } from '../lib/db'
+import { db, removeSampleData } from '../lib/db'
 import { BrokerFormatsList } from './BrokerFormatsList'
 import { ImportedFilesSummary } from './ImportedFilesSummary'
 import { getBrokerDefinition, getEnabledBrokerDefinitions } from '../config/brokers'
@@ -29,7 +29,7 @@ export function CSVImporter() {
     .map(def => def.displayName)
     .join(', ')
 
-  const processFile = async (file: File): Promise<{ success: boolean; message: string; count?: number }> => {
+  const processFile = async (file: File, isSample: boolean): Promise<{ success: boolean; message: string; count?: number }> => {
     try {
       // Generate unique file identifier
       const fileId = createFileId(file.name, file.size)
@@ -62,7 +62,8 @@ export function CSVImporter() {
         filename: file.name,
         broker,
         transactionCount: transactions.length,
-        importedAt
+        importedAt,
+        ...(isSample ? { isSample: true } : {}),
       })
 
       await db.transactions.bulkAdd(transactions)
@@ -84,8 +85,11 @@ export function CSVImporter() {
     }
   }
 
-  /** Import the files; resolves to whether every file imported */
-  const processFiles = async (files: File[]): Promise<boolean> => {
+  /**
+   * Import the files; resolves to whether every file imported. Real files
+   * replace the sample portfolio, so it never mixes with the user's figures.
+   */
+  const processFiles = async (files: File[], { isSample = false } = {}): Promise<boolean> => {
     // Before any file reaches IndexedDB, so the startup check doesn't offer
     // to resume (or clear) what is being imported now
     markImportStarted()
@@ -99,11 +103,13 @@ export function CSVImporter() {
     let successCount = 0
     let failCount = 0
 
+    const replacedSample = !isSample && await removeSampleData()
+
     for (let i = 0; i < files.length; i++) {
       const file = files[i]
       setProcessingStatus(`Processing file ${i + 1} of ${files.length}: ${file.name}...`)
 
-      const result = await processFile(file)
+      const result = await processFile(file, isSample)
       results.push(result)
 
       if (result.success) {
@@ -134,7 +140,10 @@ export function CSVImporter() {
         .filter(r => r.success)
         .map(r => r.message)
         .join('\n')
-      setSuccess(`${successCount} file(s) imported successfully (${totalTransactions} total transactions):\n${successMessages}`)
+      setSuccess(
+        (replacedSample ? 'Removed the sample portfolio.\n' : '') +
+        `${successCount} file(s) imported successfully (${totalTransactions} total transactions):\n${successMessages}`
+      )
     }
 
     return failCount === 0
@@ -155,10 +164,10 @@ export function CSVImporter() {
       const response = await fetch(sampleUrl)
       if (!response.ok) throw new Error(`HTTP ${response.status}`)
       const blob = await response.blob()
-      const imported = await processFiles([new File([blob], SAMPLE_FILE_NAME, { type: 'text/csv' })])
+      const imported = await processFiles([new File([blob], SAMPLE_FILE_NAME, { type: 'text/csv' })], { isSample: true })
       if (imported) setSuccess(
         'Loaded a sample Charles Schwab portfolio with shares, options and dividends. ' +
-        'Clear all data before importing your own files, or the sample will be included in your figures.'
+        'Your own files will replace it automatically.'
       )
     } catch (err) {
       setError(`Could not load the sample portfolio: ${err instanceof Error ? err.message : 'unknown error'}`)
@@ -313,16 +322,21 @@ export function CSVImporter() {
         <ImportedFilesSummary />
 
         {!hasTransactions && !isProcessing && !isLoadingResults && (
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-gray-600">
-            <span>No export to hand?</span>
-            <button
-              type="button"
-              onClick={loadSample}
-              data-testid="load-sample"
-              className="self-start inline-flex items-center gap-1.5 rounded-md border border-brand-600 px-3 py-1.5 font-medium text-brand-700 hover:bg-brand-50 focus:outline-none focus:ring-2 focus:ring-brand-500"
-            >
-              Try a sample portfolio
-            </button>
+          <div className="space-y-1">
+            <div className="text-sm">
+              <button
+                type="button"
+                onClick={loadSample}
+                data-testid="load-sample"
+                aria-describedby="sample-portfolio-note"
+                className="inline-flex items-center gap-1.5 rounded-md border border-brand-600 px-3 py-1.5 font-medium text-brand-700 hover:bg-brand-50 focus:outline-none focus:ring-2 focus:ring-brand-500"
+              >
+                Explore with a sample portfolio
+              </button>
+            </div>
+            <p id="sample-portfolio-note" className="text-xs text-gray-500">
+              A made-up Charles Schwab account with shares, options and dividends. It isn&apos;t kept, and your own files replace it.
+            </p>
           </div>
         )}
 
