@@ -12,9 +12,9 @@ interface Stop {
 
 /** Jump to a section, centred, without changing the URL */
 function jumpTo(event: React.MouseEvent, id: string) {
+  event.preventDefault()
   const el = document.getElementById(id)
   if (!el) return
-  event.preventDefault()
   const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
   el.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: id === 'export-pdf' ? 'center' : 'start' })
 }
@@ -31,6 +31,8 @@ const DOT_STYLES: Record<StopState, string> = {
  */
 export function FlowGuide() {
   const hasData = useTransactionStore((state) => selectTransactions(state).length > 0)
+  // A tax year summary needs at least one tax year with activity (not only dividends, say)
+  const hasSummary = useTransactionStore((state) => (state.cgtResults?.taxYearSummaries.length ?? 0) > 0)
   const hasDisposals = useTransactionStore((state) => (state.cgtResults?.metadata?.totalSells ?? 0) > 0)
 
   const after = (ready: boolean): StopState => (ready ? 'next' : 'locked')
@@ -38,7 +40,7 @@ export function FlowGuide() {
     { name: 'Export', description: 'History from each broker', target: 'import', state: hasData ? 'done' : 'next' },
     { name: 'Import', description: 'Drop the CSV files', target: 'import', state: hasData ? 'done' : 'next' },
     { name: 'Check', description: 'HMRC matching rules', target: 'transactions', state: after(hasData) },
-    { name: 'Tax year', description: 'Gains and SA108 figures', target: 'tax-year-summary', state: after(hasData) },
+    { name: 'Tax year', description: 'Gains and SA108 figures', target: 'tax-year-summary', state: after(hasSummary) },
     { name: 'PDF', description: 'For Self Assessment', target: 'export-pdf', state: after(hasDisposals) },
   ]
 
