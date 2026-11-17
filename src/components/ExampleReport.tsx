@@ -10,7 +10,9 @@ const EXAMPLE_IMAGE = '/examples/example-report-2025-26.jpg'
  */
 export function ExampleReport() {
   const hasData = useTransactionStore((state) => selectTransactions(state).length > 0)
-  if (hasData) return null
+  // Also hidden while results load, so returning users don't see it flash
+  const isLoading = useTransactionStore((state) => state.isLoading)
+  if (hasData || isLoading) return null
 
   return (
     <section aria-labelledby="example-report-title" data-testid="example-report" className="bg-white shadow rounded-lg p-6">
