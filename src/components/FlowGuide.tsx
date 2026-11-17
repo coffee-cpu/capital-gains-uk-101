@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { useTransactionStore, selectTransactions } from '../stores/transactionStore'
 
 type StopState = 'done' | 'next' | 'locked'
@@ -5,6 +6,8 @@ type StopState = 'done' | 'next' | 'locked'
 interface Stop {
   name: string
   description: string
+  /** Fine print for phones, where the full description doesn't fit */
+  short: string
   /** Section the stop jumps to (an element id) */
   target: string
   state: StopState
@@ -26,6 +29,37 @@ const DOT_STYLES: Record<StopState, string> = {
 }
 
 /**
+ * Sections the user has looked at this visit: scrolled into the top part of
+ * the screen, or jumped to from the line. Watched only while they exist:
+ * the sections swap in a spinner while results recalculate, so the caller
+ * stops watching then and the new elements are observed afterwards.
+ */
+function useSeenSections(ids: string[], watch: boolean) {
+  const [seen, setSeen] = useState<ReadonlySet<string>>(() => new Set())
+  const key = ids.join(' ')
+
+  useEffect(() => {
+    if (!watch || typeof IntersectionObserver === 'undefined') return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries.filter(e => e.isIntersecting).map(e => e.target.id)
+        if (visible.length > 0) setSeen(prev => new Set([...prev, ...visible]))
+      },
+      // Counts once the section reaches the top 60% of the screen, not just its bottom edge
+      { rootMargin: '0px 0px -40% 0px' }
+    )
+    for (const id of key.split(' ')) {
+      const el = document.getElementById(id)
+      if (el) observer.observe(el)
+    }
+    return () => observer.disconnect()
+  }, [key, watch])
+
+  const markSeen = (id: string) => setSeen(prev => new Set([...prev, id]))
+  return { seen, markSeen }
+}
+
+/**
  * "How it works" as a line with a stop per step. Stops tick off as the user
  * gets through them and jump to their section once it exists.
  */
@@ -34,21 +68,26 @@ export function FlowGuide() {
   // A tax year summary needs at least one tax year with activity (not only dividends, say)
   const hasSummary = useTransactionStore((state) => (state.cgtResults?.taxYearSummaries.length ?? 0) > 0)
   const hasDisposals = useTransactionStore((state) => (state.cgtResults?.metadata?.totalSells ?? 0) > 0)
+  const hasExportedPDF = useTransactionStore((state) => state.hasExportedPDF)
+  const isLoading = useTransactionStore((state) => state.isLoading)
+  const { seen, markSeen } = useSeenSections(['transactions', 'tax-year-summary'], hasData && !isLoading)
 
-  const after = (ready: boolean): StopState => (ready ? 'next' : 'locked')
+  // Locked until its section exists, then next until done
+  const stateOf = (ready: boolean, done: boolean): StopState => (!ready ? 'locked' : done ? 'done' : 'next')
   const stops: Stop[] = [
-    { name: 'Export', description: 'History from each broker', target: 'import', state: hasData ? 'done' : 'next' },
-    { name: 'Import', description: 'Drop the CSV files', target: 'import', state: hasData ? 'done' : 'next' },
-    { name: 'Check', description: 'HMRC matching rules', target: 'transactions', state: after(hasData) },
-    { name: 'Tax year', description: 'Gains and SA108 figures', target: 'tax-year-summary', state: after(hasSummary) },
-    { name: 'PDF', description: 'For Self Assessment', target: 'export-pdf', state: after(hasDisposals) },
+    { name: 'Export', description: 'History from each broker', short: 'from broker', target: 'import', state: hasData ? 'done' : 'next' },
+    { name: 'Import', description: 'Drop the CSV files', short: 'CSV files', target: 'import', state: hasData ? 'done' : 'next' },
+    { name: 'Check', description: 'HMRC matching rules', short: 'HMRC rules', target: 'transactions', state: stateOf(hasData, seen.has('transactions')) },
+    { name: 'Tax year', description: 'Gains and SA108 figures', short: 'SA108 figures', target: 'tax-year-summary', state: stateOf(hasSummary, seen.has('tax-year-summary')) },
+    { name: 'PDF', description: 'For Self Assessment', short: 'report', target: 'export-pdf', state: stateOf(hasDisposals, hasExportedPDF) },
   ]
 
   // The track runs between the first and last stop's centres; the coloured
-  // part runs up to the last completed stop
+  // part runs through the unbroken run of completed stops from the start
   const inset = `${50 / stops.length}%`
-  const doneCount = stops.filter(s => s.state === 'done').length
-  const progress = doneCount > 1 ? (doneCount - 1) / (stops.length - 1) : 0
+  const firstNotDone = stops.findIndex(s => s.state !== 'done')
+  const doneRun = firstNotDone === -1 ? stops.length : firstNotDone
+  const progress = doneRun > 1 ? (doneRun - 1) / (stops.length - 1) : 0
 
   return (
     <nav aria-label="How it works" data-testid="flow-guide" className="px-1 sm:px-4">
@@ -61,7 +100,7 @@ export function FlowGuide() {
         {progress > 0 && (
           <div
             aria-hidden="true"
-            className="absolute top-[7px] h-[3px] rounded-full bg-brand-600 origin-left animate-flow-line motion-reduce:animate-none"
+            className="absolute top-[7px] h-[3px] rounded-full bg-brand-600 origin-left animate-flow-line motion-reduce:animate-none transition-[width] duration-500"
             style={{ left: inset, width: `calc((100% - 2 * ${inset}) * ${progress})` }}
           />
         )}
@@ -89,6 +128,9 @@ export function FlowGuide() {
                   <span className={`mt-0.5 hidden sm:block text-xs ${stop.state === 'locked' ? 'text-gray-400' : 'text-gray-600'}`}>
                     {stop.description}
                   </span>
+                  <span aria-hidden="true" className={`mt-0.5 sm:hidden text-[10px] leading-tight ${stop.state === 'locked' ? 'text-gray-400' : 'text-gray-500'}`}>
+                    {stop.short}
+                  </span>
                 </span>
               </>
             )
@@ -100,7 +142,7 @@ export function FlowGuide() {
                 ) : (
                   <a
                     href={`#${stop.target}`}
-                    onClick={(e) => jumpTo(e, stop.target)}
+                    onClick={(e) => { markSeen(stop.target); jumpTo(e, stop.target) }}
                     aria-label={`${stop.name}: ${stop.description}${stop.state === 'done' ? ' (done)' : ''}`}
                     className="group flex flex-col items-center rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
                   >
