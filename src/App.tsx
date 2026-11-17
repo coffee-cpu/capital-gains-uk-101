@@ -64,7 +64,8 @@ function App() {
 
         // The sample portfolio isn't a session worth resuming: drop it quietly
         if (files.length > 0 && files.every(f => f.isSample)) {
-          await removeSampleData()
+          // Re-check: the sample may have just been loaded again during the read above
+          if (!useTransactionStore.getState().hasImportedThisSession) await removeSampleData()
           return
         }
 
