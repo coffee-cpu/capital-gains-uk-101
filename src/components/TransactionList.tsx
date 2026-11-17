@@ -182,14 +182,17 @@ export function TransactionList() {
     [transactions]
   )
 
+  // A chosen year that's gone from the data (e.g. after new imports) counts as all years
+  const activeTaxYear = taxYears.includes(taxYear) ? taxYear : 'all'
+
   // Apply the filters (all must match) to decide which rows to render
   const query = search.trim().toLowerCase()
-  const isFiltered = filterMode === 'attention' || query !== '' || typeGroup !== 'all' || taxYear !== 'all'
+  const isFiltered = filterMode === 'attention' || query !== '' || typeGroup !== 'all' || activeTaxYear !== 'all'
   const visibleTransactions = sortedTransactions.filter(tx =>
     (filterMode !== 'attention' || needsAttention(tx)) &&
     (query === '' || (tx.symbol ?? '').toLowerCase().includes(query)) &&
     (typeGroup === 'all' || TYPE_GROUPS[typeGroup].matches(tx.type)) &&
-    (taxYear === 'all' || tx.tax_year === taxYear)
+    (activeTaxYear === 'all' || tx.tax_year === activeTaxYear)
   )
   const clearFilters = () => {
     setFilterMode('all')
@@ -270,7 +273,7 @@ export function TransactionList() {
             ))}
           </select>
           <select
-            value={taxYear}
+            value={activeTaxYear}
             onChange={e => setTaxYear(e.target.value)}
             aria-label="Filter by tax year"
             className="rounded-md border border-gray-300 py-2 pl-3 pr-8 text-sm text-gray-700 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
@@ -280,32 +283,32 @@ export function TransactionList() {
               <option key={year} value={year}>{year}</option>
             ))}
           </select>
-              {attentionCount > 0 && (
-                <button
-                  onClick={() => setFilterMode(filterMode === 'attention' ? 'all' : 'attention')}
-                  aria-pressed={filterMode === 'attention'}
-                  className={`inline-flex items-center px-3 py-2 border shadow-sm text-sm leading-4 font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition-colors ${
-                    filterMode === 'attention'
-                      ? 'border-yellow-400 bg-yellow-100 text-yellow-900 hover:bg-yellow-200'
-                      : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
-                  }`}
-                  title={
-                    filterMode === 'attention'
-                      ? 'Show all transactions'
-                      : 'Show only transactions needing attention (missing data or FX errors)'
-                  }
-                >
-                  <svg className="h-4 w-4 sm:mr-2" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                  </svg>
-                  <span className="hidden sm:inline">
-                    {filterMode === 'attention' ? 'Show all' : 'Needs attention'}
-                  </span>
-                  <span className="ml-1.5 inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-yellow-200 text-yellow-900">
-                    {attentionCount}
-                  </span>
-                </button>
-              )}
+          {attentionCount > 0 && (
+            <button
+              onClick={() => setFilterMode(filterMode === 'attention' ? 'all' : 'attention')}
+              aria-pressed={filterMode === 'attention'}
+              className={`inline-flex items-center px-3 py-2 border shadow-sm text-sm leading-4 font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition-colors ${
+                filterMode === 'attention'
+                  ? 'border-yellow-400 bg-yellow-100 text-yellow-900 hover:bg-yellow-200'
+                  : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+              }`}
+              title={
+                filterMode === 'attention'
+                  ? 'Show all transactions'
+                  : 'Show only transactions needing attention (missing data or FX errors)'
+              }
+            >
+              <svg className="h-4 w-4 sm:mr-2" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              <span className="hidden sm:inline">
+                {filterMode === 'attention' ? 'Show all' : 'Needs attention'}
+              </span>
+              <span className="ml-1.5 inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-yellow-200 text-yellow-900">
+                {attentionCount}
+              </span>
+            </button>
+          )}
         </div>
         {isFiltered && (
           <p className="mt-2 text-sm text-gray-500" data-testid="filter-count">
@@ -458,7 +461,7 @@ export function TransactionList() {
             {visibleTransactions.length === 0 && (
               <tr>
                 <td colSpan={9} className="px-3 py-8 text-center text-sm text-gray-500">
-                  {filterMode === 'attention' && query === '' && typeGroup === 'all' && taxYear === 'all'
+                  {filterMode === 'attention' && query === '' && typeGroup === 'all' && activeTaxYear === 'all'
                     ? 'No transactions need attention.'
                     : 'No transactions match these filters.'}
                 </td>
