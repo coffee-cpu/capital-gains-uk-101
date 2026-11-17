@@ -1,5 +1,5 @@
 import { COMMUNITY_SPLIT_SOURCE } from '../types/broker'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTransactionStore, selectTransactions } from '../stores/transactionStore'
 import { useHelpPanelStore } from '../stores/helpPanelStore'
 import { Tooltip } from './Tooltip'
@@ -46,6 +46,74 @@ function formatFxDate(date: string, fxSource: string): string {
   return date.substring(0, 7)
 }
 
+type EnrichedRow = ReturnType<typeof selectTransactions>[number]
+
+// The type filter's groups. Tax withheld on dividends and interest goes with income
+const TYPE_GROUPS = {
+  trades: { label: 'Trades', matches: (type: string) => type === 'BUY' || type === 'SELL' },
+  options: { label: 'Options', matches: (type: string) => type.startsWith('OPTIONS_') },
+  income: {
+    label: 'Income',
+    matches: (type: string) => ['DIVIDEND', 'INTEREST', 'TAX_ON_DIVIDEND', 'TAX_ON_INTEREST'].includes(type),
+  },
+  other: {
+    label: 'Other',
+    matches: (type: string) =>
+      !['trades', 'options', 'income'].some(group => TYPE_GROUPS[group as 'trades' | 'options' | 'income'].matches(type)),
+  },
+} as const
+type TypeGroup = keyof typeof TYPE_GROUPS
+
+function fxTooltip(tx: EnrichedRow): string {
+  return `FX Rate: ${tx.fx_rate?.toFixed(4) ?? '—'} ${tx.currency}/GBP (${tx.fx_source} - ${formatFxDate(tx.date, tx.fx_source)})`
+}
+
+/**
+ * A money column: the GBP figure, with the broker's own amount underneath in
+ * grey for a row in another currency. Hovering the GBP figure shows the rate.
+ */
+function MoneyCell({ tx, gbp, original, hideZero = false, isIncomplete, children }: {
+  tx: EnrichedRow
+  gbp: number | null | undefined
+  original: number | null
+  hideZero?: boolean
+  isIncomplete: boolean
+  children?: React.ReactNode
+}) {
+  const isEmpty = (value: number | null | undefined) => value == null || (hideZero && value === 0)
+  if (isEmpty(gbp) && isEmpty(original) && !(isIncomplete && original == null && !hideZero)) {
+    return <span>—</span>
+  }
+  const foreign = tx.currency !== 'GBP'
+  let main: React.ReactNode
+  if (tx.fx_error) {
+    main = <span className="text-red-600 font-medium">Error</span>
+  } else if (!isEmpty(gbp)) {
+    main = foreign ? (
+      <Tooltip content={fxTooltip(tx)}>
+        <span className="cursor-help border-b border-dotted border-gray-400">{formatGbp(gbp!)}</span>
+      </Tooltip>
+    ) : (
+      <span>{formatGbp(gbp!)}</span>
+    )
+  } else if (isIncomplete) {
+    main = <span className="text-yellow-600 font-medium">Missing</span>
+  } else {
+    main = <span>—</span>
+  }
+  return (
+    <div>
+      <div className="flex items-center gap-2">
+        {main}
+        {children}
+      </div>
+      {foreign && !isEmpty(original) && (
+        <div className="text-xs text-gray-500">{formatAmount(original!, tx.currency)}</div>
+      )}
+    </div>
+  )
+}
+
 export function TransactionList() {
   const transactions = useTransactionStore(selectTransactions)
   const isLoading = useTransactionStore((state) => state.isLoading)
@@ -54,6 +122,27 @@ export function TransactionList() {
   const [showFxInfo, setShowFxInfo] = useState(false)
   const [hoveredMatchGroup, setHoveredMatchGroup] = useState<string | null>(null)
   const [filterMode, setFilterMode] = useState<'all' | 'attention'>('all')
+  const [search, setSearch] = useState('')
+  const [typeGroup, setTypeGroup] = useState<TypeGroup | 'all'>('all')
+  const [taxYear, setTaxYear] = useState('all')
+
+  // Fade the right edge only while there's more table to scroll to
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const [canScrollRight, setCanScrollRight] = useState(false)
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+    const update = () => setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1)
+    update()
+    const observer = new ResizeObserver(update)
+    observer.observe(el)
+    if (el.firstElementChild) observer.observe(el.firstElementChild)
+    el.addEventListener('scroll', update, { passive: true })
+    return () => {
+      observer.disconnect()
+      el.removeEventListener('scroll', update)
+    }
+  }, [transactions.length, isLoading])
 
   // Lookups for each row's CGT badges, built once per calculation
   const badgeIndex = useMemo(
@@ -87,11 +176,30 @@ export function TransactionList() {
     Boolean(tx.incomplete || tx.fx_error || incompleteDisposalIds.has(tx.id))
   const attentionCount = transactions.filter(needsAttention).length
 
-  // Apply the active filter to decide which rows to render
-  const visibleTransactions =
-    filterMode === 'attention'
-      ? sortedTransactions.filter(needsAttention)
-      : sortedTransactions
+  // Tax years with transactions, newest first, for the year filter
+  const taxYears = useMemo(
+    () => [...new Set(transactions.map(tx => tx.tax_year).filter(Boolean))].sort().reverse(),
+    [transactions]
+  )
+
+  // A chosen year that's gone from the data (e.g. after new imports) counts as all years
+  const activeTaxYear = taxYears.includes(taxYear) ? taxYear : 'all'
+
+  // Apply the filters (all must match) to decide which rows to render
+  const query = search.trim().toLowerCase()
+  const isFiltered = filterMode === 'attention' || query !== '' || typeGroup !== 'all' || activeTaxYear !== 'all'
+  const visibleTransactions = sortedTransactions.filter(tx =>
+    (filterMode !== 'attention' || needsAttention(tx)) &&
+    (query === '' || (tx.symbol ?? '').toLowerCase().includes(query)) &&
+    (typeGroup === 'all' || TYPE_GROUPS[typeGroup].matches(tx.type)) &&
+    (activeTaxYear === 'all' || tx.tax_year === activeTaxYear)
+  )
+  const clearFilters = () => {
+    setFilterMode('all')
+    setSearch('')
+    setTypeGroup('all')
+    setTaxYear('all')
+  }
 
   const fxErrorCount = transactions.filter(tx => tx.fx_error).length
 
@@ -120,38 +228,10 @@ export function TransactionList() {
           <div>
             <h2 className="text-2xl font-semibold text-gray-900">Transactions</h2>
             <p className="text-sm text-gray-500 mt-1">
-              {filterMode === 'attention'
-                ? `Showing ${visibleTransactions.length} of ${transactions.length}`
-                : `${transactions.length} total`}
+              {`${transactions.length} total`}
             </p>
           </div>
           <div className="flex items-center gap-2">
-            {attentionCount > 0 && (
-              <button
-                onClick={() => setFilterMode(filterMode === 'attention' ? 'all' : 'attention')}
-                aria-pressed={filterMode === 'attention'}
-                className={`inline-flex items-center px-3 py-2 border shadow-sm text-sm leading-4 font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition-colors ${
-                  filterMode === 'attention'
-                    ? 'border-yellow-400 bg-yellow-100 text-yellow-900 hover:bg-yellow-200'
-                    : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
-                }`}
-                title={
-                  filterMode === 'attention'
-                    ? 'Show all transactions'
-                    : 'Show only transactions needing attention (missing data or FX errors)'
-                }
-              >
-                <svg className="h-4 w-4 sm:mr-2" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-                <span className="hidden sm:inline">
-                  {filterMode === 'attention' ? 'Show all' : 'Needs attention'}
-                </span>
-                <span className="ml-1.5 inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-yellow-200 text-yellow-900">
-                  {attentionCount}
-                </span>
-              </button>
-            )}
             <AutoSplitsToggle />
             <button
               onClick={() => exportTransactionsToCSV(transactions)}
@@ -165,6 +245,79 @@ export function TransactionList() {
             </button>
           </div>
         </div>
+
+        {/* Filters: all of them apply together */}
+        <div className="mt-4 flex flex-wrap items-center gap-2" data-testid="transaction-filters">
+          <div className="relative w-full sm:w-56">
+            <svg className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" />
+            </svg>
+            <input
+              type="search"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search symbol"
+              aria-label="Search by symbol"
+              className="w-full rounded-md border border-gray-300 py-2 pl-8 pr-3 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+            />
+          </div>
+          <select
+            value={typeGroup}
+            onChange={e => setTypeGroup(e.target.value as TypeGroup | 'all')}
+            aria-label="Filter by type"
+            className="rounded-md border border-gray-300 py-2 pl-3 pr-8 text-sm text-gray-700 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+          >
+            <option value="all">All types</option>
+            {(Object.keys(TYPE_GROUPS) as TypeGroup[]).map(group => (
+              <option key={group} value={group}>{TYPE_GROUPS[group].label}</option>
+            ))}
+          </select>
+          <select
+            value={activeTaxYear}
+            onChange={e => setTaxYear(e.target.value)}
+            aria-label="Filter by tax year"
+            className="rounded-md border border-gray-300 py-2 pl-3 pr-8 text-sm text-gray-700 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+          >
+            <option value="all">All tax years</option>
+            {taxYears.map(year => (
+              <option key={year} value={year}>{year}</option>
+            ))}
+          </select>
+          {attentionCount > 0 && (
+            <button
+              onClick={() => setFilterMode(filterMode === 'attention' ? 'all' : 'attention')}
+              aria-pressed={filterMode === 'attention'}
+              className={`inline-flex items-center px-3 py-2 border shadow-sm text-sm leading-4 font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition-colors ${
+                filterMode === 'attention'
+                  ? 'border-yellow-400 bg-yellow-100 text-yellow-900 hover:bg-yellow-200'
+                  : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+              }`}
+              title={
+                filterMode === 'attention'
+                  ? 'Show all transactions'
+                  : 'Show only transactions needing attention (missing data or FX errors)'
+              }
+            >
+              <svg className="h-4 w-4 sm:mr-2" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              <span className="hidden sm:inline">
+                {filterMode === 'attention' ? 'Show all' : 'Needs attention'}
+              </span>
+              <span className="ml-1.5 inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-yellow-200 text-yellow-900">
+                {attentionCount}
+              </span>
+            </button>
+          )}
+        </div>
+        {isFiltered && (
+          <p className="mt-2 text-sm text-gray-500" data-testid="filter-count">
+            Showing {visibleTransactions.length} of {transactions.length} ·{' '}
+            <button onClick={clearFilters} className="text-brand-700 underline hover:text-brand-800">
+              Clear filters
+            </button>
+          </p>
+        )}
       </div>
 
       {fxErrorCount > 0 && (
@@ -205,7 +358,7 @@ export function TransactionList() {
               <div className="ml-3">
                 <div className="text-sm text-brand-700">
                   <p>
-                    Foreign currency values converted to GBP. Hover over any GBP value to see the rate applied.
+                    Amounts are in GBP, with your broker's amount underneath for other currencies. Hover over a GBP value to see the rate applied.
                   </p>
                   {!showFxInfo && (
                     <button
@@ -253,11 +406,11 @@ export function TransactionList() {
       )}
 
       <div className="relative">
-        <div className="overflow-x-auto">
+        <div ref={scrollRef} className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-brand-50 z-10">
+              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-brand-50 z-10">
                 <div className="flex items-center gap-1.5">
                   <Tooltip content="CGT Rule indicates how HMRC matches this transaction for Capital Gains Tax calculation: Same Day (same calendar day), 30-Day (bed & breakfast rule), or Section 104 (pooled holdings)">
                     <span className="cursor-help border-b border-dotted border-gray-500">
@@ -278,37 +431,28 @@ export function TransactionList() {
                   </button>
                 </div>
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Date<span className="block normal-case tracking-normal whitespace-nowrap">yyyy-mm-dd</span>
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Symbol
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Type
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Quantity
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Price
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Price (GBP)
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Total
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Total (GBP)
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Fee
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Fee (GBP)
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Source
               </th>
             </tr>
@@ -316,8 +460,10 @@ export function TransactionList() {
           <tbody className="bg-white divide-y divide-gray-200">
             {visibleTransactions.length === 0 && (
               <tr>
-                <td colSpan={12} className="px-6 py-8 text-center text-sm text-gray-500">
-                  No transactions need attention.
+                <td colSpan={9} className="px-3 py-8 text-center text-sm text-gray-500">
+                  {filterMode === 'attention' && query === '' && typeGroup === 'all' && activeTaxYear === 'all'
+                    ? 'No transactions need attention.'
+                    : 'No transactions match these filters.'}
                 </td>
               </tr>
             )}
@@ -381,7 +527,7 @@ export function TransactionList() {
                   onMouseEnter={() => matchGroups.length > 0 && setHoveredMatchGroup(matchGroups[0])}
                   onMouseLeave={() => setHoveredMatchGroup(null)}
                 >
-                  <td className={`px-6 py-4 text-sm sticky left-0 z-10 transition-all duration-150 ${
+                  <td className={`px-3 py-4 text-sm sticky left-0 z-10 transition-all duration-150 ${
                     hasFxError ? 'bg-red-100' :
                     isIgnored ? 'bg-gray-100' :
                     isIncomplete ? 'bg-yellow-100' :
@@ -405,11 +551,12 @@ export function TransactionList() {
                       <span className="text-gray-400">—</span>
                     )}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
                     {tx.date}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    <div className="flex items-center gap-2">
+                  <td className="px-3 py-4 text-sm font-medium text-gray-900">
+                    {/* Option names wrap ("NVDA 02/23/2024 / 1080.00 C") so the table fits */}
+                    <div className="flex items-center gap-2 min-w-[7rem] max-w-[9rem]">
                       {tx.symbol || '—'}
                       {hasFxError && (
                         <Tooltip content={tx.fx_error || 'FX rate error'}>
@@ -436,7 +583,7 @@ export function TransactionList() {
                       )}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                  <td className="px-3 py-4 whitespace-nowrap text-sm">
                     <div className="flex items-center gap-2">
                       <span
                         className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
@@ -478,7 +625,7 @@ export function TransactionList() {
                       )}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
                     {tx.quantity !== null ? (
                       <div className="flex items-center gap-2">
                         <span>{formatQuantity(tx.quantity)}</span>
@@ -506,93 +653,36 @@ export function TransactionList() {
                       </div>
                     ) : '—'}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {tx.price !== null ? (
-                      <div className="flex items-center gap-2">
-                        <span>{formatAmount(tx.price, tx.currency)}</span>
-                        {tx.split_multiplier && tx.split_multiplier !== 1.0 && tx.split_adjusted_price != null && (
-                          <Tooltip content={`Split-adjusted price: ${formatAmount(tx.split_adjusted_price, tx.currency)}/${getUnitLabel(tx, false)} (original price ÷ ${tx.split_multiplier})`}>
+                  <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <MoneyCell tx={tx} gbp={tx.price_gbp} original={tx.price} isIncomplete={!!isIncomplete}>
+                      {tx.split_multiplier && tx.split_multiplier !== 1.0 && tx.split_adjusted_price != null && (() => {
+                        // Split-adjusted price, in GBP when converted, else in the broker's currency
+                        const adjusted = tx.split_adjusted_price_gbp != null
+                          ? formatGbp(tx.split_adjusted_price_gbp)
+                          : formatAmount(tx.split_adjusted_price, tx.currency)
+                        const originalNote = tx.currency !== 'GBP' && tx.split_adjusted_price_gbp != null
+                          ? ` (${formatAmount(tx.split_adjusted_price, tx.currency)})`
+                          : ''
+                        return (
+                          <Tooltip content={`Split-adjusted price: ${adjusted}${originalNote}/${getUnitLabel(tx, false)} (original price ÷ ${tx.split_multiplier})`}>
                             <div className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 bg-purple-50 text-purple-700 rounded border border-purple-200 cursor-help">
                               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17l-5-5m0 0l5-5m-5 5h12" />
                               </svg>
-                              <span className="font-mono">{formatAmount(tx.split_adjusted_price, tx.currency)}</span>
+                              <span className="font-mono">{adjusted}</span>
                             </div>
                           </Tooltip>
-                        )}
-                      </div>
-                    ) : (isIncomplete ? <span className="text-yellow-600 font-medium">Missing</span> : '—')}
+                        )
+                      })()}
+                    </MoneyCell>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {hasFxError ? (
-                      <span className="text-red-600 font-medium">Error</span>
-                    ) : tx.price_gbp !== null ? (
-                      <div className="flex items-center gap-2">
-                        {tx.currency !== 'GBP' ? (
-                          <Tooltip content={`FX Rate: ${tx.fx_rate?.toFixed(4) ?? '—'} ${tx.currency}/GBP (${tx.fx_source} - ${formatFxDate(tx.date, tx.fx_source)})`}>
-                            <span className="cursor-help border-b border-dotted border-gray-400">
-                              {formatGbp(tx.price_gbp)}
-                            </span>
-                          </Tooltip>
-                        ) : (
-                          <span>{formatGbp(tx.price_gbp)}</span>
-                        )}
-                        {tx.split_multiplier && tx.split_multiplier !== 1.0 && tx.split_adjusted_price_gbp !== null && tx.split_adjusted_price_gbp !== undefined && (
-                          <Tooltip content={`Split-adjusted price: ${formatGbp(tx.split_adjusted_price_gbp)}/${getUnitLabel(tx, false)} (original price ÷ ${tx.split_multiplier})`}>
-                            <div className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 bg-purple-50 text-purple-700 rounded border border-purple-200 cursor-help">
-                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17l-5-5m0 0l5-5m-5 5h12" />
-                              </svg>
-                              <span className="font-mono">{formatGbp(tx.split_adjusted_price_gbp)}</span>
-                            </div>
-                          </Tooltip>
-                        )}
-                      </div>
-                    ) : isIncomplete ? (
-                      <span className="text-yellow-600 font-medium">Missing</span>
-                    ) : (
-                      '—'
-                    )}
+                  <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <MoneyCell tx={tx} gbp={tx.value_gbp} original={tx.total} isIncomplete={!!isIncomplete} />
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {tx.total !== null ? `${formatAmount(tx.total, tx.currency)}` : (isIncomplete ? <span className="text-yellow-600 font-medium">Missing</span> : '—')}
+                  <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <MoneyCell tx={tx} gbp={tx.fee_gbp} original={tx.fee} hideZero isIncomplete={!!isIncomplete} />
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {hasFxError ? (
-                      <span className="text-red-600 font-medium">Error</span>
-                    ) : tx.value_gbp !== null && tx.currency !== 'GBP' ? (
-                      <Tooltip content={`FX Rate: ${tx.fx_rate?.toFixed(4) ?? '—'} ${tx.currency}/GBP (${tx.fx_source} - ${formatFxDate(tx.date, tx.fx_source)})`}>
-                        <span className="cursor-help border-b border-dotted border-gray-400">
-                          {formatGbp(tx.value_gbp)}
-                        </span>
-                      </Tooltip>
-                    ) : tx.value_gbp !== null ? (
-                      `${formatGbp(tx.value_gbp)}`
-                    ) : isIncomplete ? (
-                      <span className="text-yellow-600 font-medium">Missing</span>
-                    ) : (
-                      '—'
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {tx.fee !== null && tx.fee !== 0 ? `${formatAmount(tx.fee, tx.currency)}` : '—'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {hasFxError ? (
-                      <span className="text-red-600 font-medium">Error</span>
-                    ) : tx.fee_gbp !== null && tx.fee_gbp !== 0 && tx.currency !== 'GBP' ? (
-                      <Tooltip content={`FX Rate: ${tx.fx_rate?.toFixed(4) ?? '—'} ${tx.currency}/GBP (${tx.fx_source} - ${formatFxDate(tx.date, tx.fx_source)})`}>
-                        <span className="cursor-help border-b border-dotted border-gray-400">
-                          {formatGbp(tx.fee_gbp)}
-                        </span>
-                      </Tooltip>
-                    ) : tx.fee_gbp !== null && tx.fee_gbp !== 0 ? (
-                      `${formatGbp(tx.fee_gbp)}`
-                    ) : (
-                      '—'
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-3 py-4 text-sm text-gray-500">
                     <div className="flex items-center gap-1.5">
                       {tx.source}
                       {tx.type === 'STOCK_SPLIT' && tx.source === COMMUNITY_SPLIT_SOURCE && (
@@ -610,7 +700,9 @@ export function TransactionList() {
           </tbody>
         </table>
         </div>
-        <div className="absolute top-0 right-0 bottom-0 w-12 bg-gradient-to-l from-white via-white/80 to-transparent pointer-events-none"></div>
+        {canScrollRight && (
+          <div className="absolute top-0 right-0 bottom-0 w-12 bg-gradient-to-l from-white via-white/80 to-transparent pointer-events-none"></div>
+        )}
       </div>
     </div>
   )
