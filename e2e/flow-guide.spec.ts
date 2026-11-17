@@ -1,4 +1,8 @@
 import { test, expect } from '@playwright/test'
+import path from 'path'
+import { fileURLToPath } from 'url'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 test.describe('How it works line', () => {
   test('tracks progress and jumps to each section once it exists', async ({ page }) => {
@@ -22,5 +26,20 @@ test.describe('How it works line', () => {
     await page.evaluate(() => window.scrollTo(0, 0))
     await flow.getByRole('link', { name: /PDF/ }).click()
     await expect(page.locator('#export-pdf')).toBeInViewport()
+  })
+
+  test('only links to sections that exist: no PDF stop without disposals', async ({ page }) => {
+    await page.goto('/')
+    await page.locator('input[type="file"]').setInputFiles(path.join(__dirname, 'fixtures', 'generic-dividends-only.csv'))
+    const flow = page.getByTestId('flow-guide')
+    await expect(flow.getByRole('link', { name: /\(done\)/ })).toHaveCount(2, { timeout: 20000 })
+
+    // Dividends alone still give a tax year summary (the income), but no PDF button
+    await expect(flow.getByRole('link', { name: /PDF/ })).toHaveCount(0)
+
+    // Every stop that is a link points at something on the page
+    for (const href of await flow.getByRole('link').evaluateAll(links => links.map(a => a.getAttribute('href')))) {
+      await expect(page.locator(href!)).toHaveCount(1)
+    }
   })
 })
