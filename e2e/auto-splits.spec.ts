@@ -103,7 +103,7 @@ test.describe('Auto-detected Stock Splits', () => {
     await expect(page.getByText('4 total', { exact: true })).toBeVisible({ timeout: 5000 })
 
     // Verify auto-detected splits appear with "Auto-detected" source and "Auto" badge
-    const autoSplitRows = page.locator('tr').filter({ hasText: 'STOCK_SPLIT' }).filter({ hasText: 'Community' })
+    const autoSplitRows = page.locator('tr').filter({ hasText: 'STOCK SPLIT' }).filter({ hasText: 'Community' })
     await expect(autoSplitRows).toHaveCount(2)
 
     // Check for "Community" badge (span with bg-teal-100 class)
@@ -145,16 +145,16 @@ test.describe('Auto-detected Stock Splits', () => {
     await expect(page.getByText('4 total', { exact: true })).toBeVisible({ timeout: 5000 })
 
     // Only 1 auto-detected split (3:1), the 5:1 is broker-provided
-    const autoSplitRows = page.locator('tr').filter({ hasText: 'STOCK_SPLIT' }).filter({ hasText: 'Community' })
+    const autoSplitRows = page.locator('tr').filter({ hasText: 'STOCK SPLIT' }).filter({ hasText: 'Community' })
     await expect(autoSplitRows).toHaveCount(1)
 
     // The broker split should still show "Generic CSV" source (not Auto-detected)
-    const brokerSplitRow = page.locator('tr').filter({ hasText: 'STOCK_SPLIT' }).filter({ hasText: '2020-08-31' })
+    const brokerSplitRow = page.locator('tr').filter({ hasText: 'STOCK SPLIT' }).filter({ hasText: '2020-08-31' })
     await expect(brokerSplitRow).toBeVisible()
     await expect(brokerSplitRow.getByText('Generic CSV')).toBeVisible()
 
     // Auto-detected 3:1 should show
-    const autoSplitRow = page.locator('tr').filter({ hasText: 'STOCK_SPLIT' }).filter({ hasText: '2022-08-24' })
+    const autoSplitRow = page.locator('tr').filter({ hasText: 'STOCK SPLIT' }).filter({ hasText: '2022-08-24' })
     await expect(autoSplitRow).toBeVisible()
     await expect(autoSplitRow.getByText('Community')).toBeVisible()
 
@@ -185,7 +185,7 @@ test.describe('Auto-detected Stock Splits', () => {
     await expect(page.getByText('2 total', { exact: true })).toBeVisible({ timeout: 15000 })
 
     // No STOCK_SPLIT rows should be visible
-    const stockSplitRows = page.locator('tr').filter({ hasText: 'STOCK_SPLIT' })
+    const stockSplitRows = page.locator('tr').filter({ hasText: 'STOCK SPLIT' })
     await expect(stockSplitRows).toHaveCount(0)
 
     // SELL should show Incomplete badge (no splits applied)
@@ -211,7 +211,7 @@ test.describe('Auto-detected Stock Splits', () => {
     await expect(page.getByText('2 total', { exact: true })).toBeVisible({ timeout: 5000 })
 
     // No STOCK_SPLIT rows
-    const stockSplitRows = page.locator('tr').filter({ hasText: 'STOCK_SPLIT' })
+    const stockSplitRows = page.locator('tr').filter({ hasText: 'STOCK SPLIT' })
     await expect(stockSplitRows).toHaveCount(0)
 
     // SELL should show Incomplete badge

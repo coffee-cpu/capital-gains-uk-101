@@ -28,6 +28,12 @@ function getCurrencySymbol(currency: string): string {
   return symbols[currency] || currency + ' '
 }
 
+// Original-currency amount with thousands separators, matching the GBP columns: 11844.4 → "$11,844.40"
+function formatAmount(value: number, currency: string): string {
+  const formatted = Math.abs(value).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  return `${value < 0 ? '-' : ''}${getCurrencySymbol(currency)}${formatted}`
+}
+
 // Helper to format date for FX tooltip based on source type
 function formatFxDate(date: string, fxSource: string): string {
   if (fxSource.includes('Annual')) {
@@ -274,7 +280,7 @@ export function TransactionList() {
                 </div>
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Date
+                Date<span className="block normal-case tracking-normal whitespace-nowrap">yyyy-mm-dd</span>
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Symbol
@@ -457,7 +463,7 @@ export function TransactionList() {
                           toggleHelpPanelWithContext('stock-split')
                         } : undefined}
                       >
-                        {tx.type}
+                        {tx.type.replace(/_/g, ' ')}
                       </span>
                       {tx.type === 'STOCK_SPLIT' && tx.ratio && (
                         <span className="text-xs text-gray-600 font-mono">
@@ -504,14 +510,14 @@ export function TransactionList() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {tx.price !== null ? (
                       <div className="flex items-center gap-2">
-                        <span>{getCurrencySymbol(tx.currency)}{tx.price.toFixed(2)}</span>
+                        <span>{formatAmount(tx.price, tx.currency)}</span>
                         {tx.split_multiplier && tx.split_multiplier !== 1.0 && tx.split_adjusted_price != null && (
-                          <Tooltip content={`Split-adjusted price: ${getCurrencySymbol(tx.currency)}${tx.split_adjusted_price.toFixed(2)}/${getUnitLabel(tx, false)} (original price ÷ ${tx.split_multiplier})`}>
+                          <Tooltip content={`Split-adjusted price: ${formatAmount(tx.split_adjusted_price, tx.currency)}/${getUnitLabel(tx, false)} (original price ÷ ${tx.split_multiplier})`}>
                             <div className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 bg-purple-50 text-purple-700 rounded border border-purple-200 cursor-help">
                               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17l-5-5m0 0l5-5m-5 5h12" />
                               </svg>
-                              <span className="font-mono">{getCurrencySymbol(tx.currency)}{tx.split_adjusted_price.toFixed(2)}</span>
+                              <span className="font-mono">{formatAmount(tx.split_adjusted_price, tx.currency)}</span>
                             </div>
                           </Tooltip>
                         )}
@@ -550,7 +556,7 @@ export function TransactionList() {
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {tx.total !== null ? `${getCurrencySymbol(tx.currency)}${tx.total.toFixed(2)}` : (isIncomplete ? <span className="text-yellow-600 font-medium">Missing</span> : '—')}
+                    {tx.total !== null ? `${formatAmount(tx.total, tx.currency)}` : (isIncomplete ? <span className="text-yellow-600 font-medium">Missing</span> : '—')}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                     {hasFxError ? (
@@ -570,7 +576,7 @@ export function TransactionList() {
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {tx.fee !== null && tx.fee !== 0 ? `${getCurrencySymbol(tx.currency)}${tx.fee.toFixed(2)}` : '—'}
+                    {tx.fee !== null && tx.fee !== 0 ? `${formatAmount(tx.fee, tx.currency)}` : '—'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                     {hasFxError ? (
