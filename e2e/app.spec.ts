@@ -28,7 +28,7 @@ test.describe('Capital Gains Tax Visualiser App', () => {
     await expect(footer).toBeVisible()
 
     // Check footer disclaimer text
-    await expect(page.getByText(/educational and visualization tool/i)).toBeVisible()
-    await expect(page.getByText(/not financial or tax advice/i)).toBeVisible()
+    await expect(footer.getByText(/not financial or tax advice/i)).toBeVisible()
+    await expect(footer.getByRole('link', { name: 'Report an issue' })).toBeVisible()
   })
 })
