@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { createFileId, describeSkippedRows, importCSVText } from '../lib/import'
 import { readFileAsText } from '../lib/parsers/fileUtils'
 import { useTransactionStore, selectTransactions } from '../stores/transactionStore'
-import { db } from '../lib/db'
+import { db, removeSampleData } from '../lib/db'
 import { BrokerFormatsList } from './BrokerFormatsList'
 import { ImportedFilesSummary } from './ImportedFilesSummary'
 import { getBrokerDefinition, getEnabledBrokerDefinitions } from '../config/brokers'
@@ -29,7 +29,15 @@ export function CSVImporter() {
     .map(def => def.displayName)
     .join(', ')
 
-  const processFile = async (file: File): Promise<{ success: boolean; message: string; count?: number }> => {
+  /**
+   * Import one file. `beforeWrite` runs once the file has parsed, just before
+   * anything is stored (used to remove the sample only when a real file works).
+   */
+  const processFile = async (
+    file: File,
+    isSample: boolean,
+    beforeWrite?: () => Promise<void>
+  ): Promise<{ success: boolean; message: string; count?: number }> => {
     try {
       // Generate unique file identifier
       const fileId = createFileId(file.name, file.size)
@@ -56,13 +64,16 @@ export function CSVImporter() {
       const importedAt = new Date().toISOString()
       const transactions = parsed.map(tx => ({ ...tx, imported_at: importedAt }))
 
+      await beforeWrite?.()
+
       // Store file metadata
       await db.imported_files.add({
         fileId,
         filename: file.name,
         broker,
         transactionCount: transactions.length,
-        importedAt
+        importedAt,
+        ...(isSample ? { isSample: true } : {}),
       })
 
       await db.transactions.bulkAdd(transactions)
@@ -84,8 +95,11 @@ export function CSVImporter() {
     }
   }
 
-  /** Import the files; resolves to whether every file imported */
-  const processFiles = async (files: File[]): Promise<boolean> => {
+  /**
+   * Import the files; resolves to whether every file imported. Real files
+   * replace the sample portfolio, so it never mixes with the user's figures.
+   */
+  const processFiles = async (files: File[], { isSample = false } = {}): Promise<boolean> => {
     // Before any file reaches IndexedDB, so the startup check doesn't offer
     // to resume (or clear) what is being imported now
     markImportStarted()
@@ -99,26 +113,35 @@ export function CSVImporter() {
     let successCount = 0
     let failCount = 0
 
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i]
-      setProcessingStatus(`Processing file ${i + 1} of ${files.length}: ${file.name}...`)
-
-      const result = await processFile(file)
-      results.push(result)
-
-      if (result.success) {
-        successCount++
-        totalTransactions += result.count || 0
-      } else {
-        failCount++
-      }
+    // A real file replaces the sample, but only once one has parsed, so a
+    // file that fails doesn't leave the user with nothing
+    let replacedSample = false
+    const replaceSample = isSample ? undefined : async () => {
+      if (await removeSampleData()) replacedSample = true
     }
 
-    // Process all transactions from DB (deduplicate, enrich, calculate CGT)
-    await recalculate()
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i]
+        setProcessingStatus(`Processing file ${i + 1} of ${files.length}: ${file.name}...`)
 
-    setIsProcessing(false)
-    setProcessingStatus('')
+        const result = await processFile(file, isSample, replaceSample)
+        results.push(result)
+
+        if (result.success) {
+          successCount++
+          totalTransactions += result.count || 0
+        } else {
+          failCount++
+        }
+      }
+
+      // Process all transactions from DB (deduplicate, enrich, calculate CGT)
+      await recalculate()
+    } finally {
+      setIsProcessing(false)
+      setProcessingStatus('')
+    }
 
     // Show summary
     if (failCount > 0) {
@@ -134,7 +157,10 @@ export function CSVImporter() {
         .filter(r => r.success)
         .map(r => r.message)
         .join('\n')
-      setSuccess(`${successCount} file(s) imported successfully (${totalTransactions} total transactions):\n${successMessages}`)
+      setSuccess(
+        (replacedSample ? 'Removed the sample portfolio.\n' : '') +
+        `${successCount} file(s) imported successfully (${totalTransactions} total transactions):\n${successMessages}`
+      )
     }
 
     return failCount === 0
@@ -145,7 +171,9 @@ export function CSVImporter() {
     setSuccess(null)
     try {
       // A returning visitor can click this before the resume-session dialog
-      // appears; importing then would merge the sample into their real data
+      // appears; importing then would merge the sample into their real data.
+      // A leftover sample from last time isn't real data: drop it first
+      await removeSampleData()
       if (await db.transactions.count() > 0) {
         setError('You already have imported transactions. Clear all data first if you want to try the sample portfolio.')
         return
@@ -155,10 +183,10 @@ export function CSVImporter() {
       const response = await fetch(sampleUrl)
       if (!response.ok) throw new Error(`HTTP ${response.status}`)
       const blob = await response.blob()
-      const imported = await processFiles([new File([blob], SAMPLE_FILE_NAME, { type: 'text/csv' })])
+      const imported = await processFiles([new File([blob], SAMPLE_FILE_NAME, { type: 'text/csv' })], { isSample: true })
       if (imported) setSuccess(
         'Loaded a sample Charles Schwab portfolio with shares, options and dividends. ' +
-        'Clear all data before importing your own files, or the sample will be included in your figures.'
+        'Your own files will replace it automatically.'
       )
     } catch (err) {
       setError(`Could not load the sample portfolio: ${err instanceof Error ? err.message : 'unknown error'}`)
@@ -319,7 +347,7 @@ export function CSVImporter() {
               type="button"
               onClick={loadSample}
               data-testid="load-sample"
-              className="self-start inline-flex items-center gap-1.5 rounded-md border border-brand-600 px-3 py-1.5 font-medium text-brand-700 hover:bg-brand-50 focus:outline-none focus:ring-2 focus:ring-brand-500"
+              className="inline-flex items-center gap-1.5 rounded-md border border-brand-600 px-3 py-1.5 font-medium text-brand-700 hover:bg-brand-50 focus:outline-none focus:ring-2 focus:ring-brand-500"
             >
               Try a sample portfolio
             </button>

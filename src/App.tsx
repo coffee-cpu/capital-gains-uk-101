@@ -13,7 +13,7 @@ import { IssuesPanel } from './components/IssuesPanel'
 import { MobileHeader } from './components/MobileHeader'
 import { useTransactionStore } from './stores/transactionStore'
 import { useSettingsStore } from './stores/settingsStore'
-import { db, clearAllData, ensureDatabaseCompatible } from './lib/db'
+import { db, clearAllData, ensureDatabaseCompatible, removeSampleData } from './lib/db'
 
 function App() {
   const [currentPage, setCurrentPage] = useState<'calculator' | 'about'>('calculator')
@@ -60,9 +60,16 @@ function App() {
       // previous session: an import can start before this check runs
       const { cgtResults, isLoading, hasImportedThisSession } = useTransactionStore.getState()
       if (count > 0 && !cgtResults && !isLoading && !hasImportedThisSession) {
-        setPendingTransactionCount(count)
-
         const files = await db.imported_files.toArray()
+
+        // The sample portfolio isn't a session worth resuming: drop it quietly
+        if (files.length > 0 && files.every(f => f.isSample)) {
+          // Re-check: the sample may have just been loaded again during the read above
+          if (!useTransactionStore.getState().hasImportedThisSession) await removeSampleData()
+          return
+        }
+
+        setPendingTransactionCount(count)
 
         const mostRecentFile = files
           .map(f => new Date(f.importedAt))

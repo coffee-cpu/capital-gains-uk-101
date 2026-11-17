@@ -1,4 +1,9 @@
 import { test, expect } from '@playwright/test'
+import path from 'path'
+import { fileURLToPath } from 'url'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const ownFile = path.join(__dirname, 'fixtures', 'generic-sample.csv')
 
 test.describe('First run', () => {
   test('a sample portfolio can be loaded in one click', async ({ page }) => {
@@ -11,8 +16,9 @@ test.describe('First run', () => {
 
     await loadSample.click()
 
-    // The sample is imported and flagged as something to clear before real files
+    // The sample is imported, and the user is told their files will replace it
     await expect(page.getByText(/Loaded a sample Charles Schwab portfolio/)).toBeVisible({ timeout: 20000 })
+    await expect(page.getByText(/Your own files will replace it automatically/)).toBeVisible()
     await expect(loadSample).toHaveCount(0)
 
     // The tax year summary says whether CGT is due, and whether to report
@@ -28,8 +34,8 @@ test.describe('First run', () => {
 
   test('the sample is not merged into transactions from a previous session', async ({ page }) => {
     await page.goto('/')
-    await page.getByTestId('load-sample').click()
-    await expect(page.getByTestId('tax-status')).toBeVisible({ timeout: 20000 })
+    await page.locator('input[type="file"]').setInputFiles(ownFile)
+    await expect(page.getByTestId('imported-files-summary')).toBeVisible({ timeout: 20000 })
 
     // A returning visit: stored transactions, nothing loaded yet. Click the
     // sample button directly, as if before the resume-session dialog opened
@@ -38,6 +44,59 @@ test.describe('First run', () => {
 
     await expect(page.getByText(/You already have imported transactions/)).toBeVisible()
     await expect(page.getByText(/Loaded a sample Charles Schwab portfolio/)).toHaveCount(0)
+  })
+
+  test('importing your own files replaces the sample', async ({ page }) => {
+    await page.goto('/')
+    await page.getByTestId('load-sample').click()
+    const summary = page.getByTestId('imported-files-summary')
+    // Wait until the sample has finished loading (the file input is disabled until then)
+    await expect(page.getByText(/Loaded a sample Charles Schwab portfolio/)).toBeVisible({ timeout: 20000 })
+    await expect(summary).toContainText('sample-portfolio.csv')
+
+    await page.locator('input[type="file"]').setInputFiles(ownFile)
+
+    await expect(page.getByText(/Removed the sample portfolio/)).toBeVisible({ timeout: 20000 })
+    await expect(summary).toContainText('generic-sample.csv')
+    await expect(summary).not.toContainText('sample-portfolio.csv')
+    await expect(summary).toContainText(/^1 file/)
+  })
+
+  test('a file that fails to import leaves the sample in place', async ({ page }) => {
+    await page.goto('/')
+    await page.getByTestId('load-sample').click()
+    await expect(page.getByText(/Loaded a sample Charles Schwab portfolio/)).toBeVisible({ timeout: 20000 })
+
+    await page.locator('input[type="file"]').setInputFiles({
+      name: 'not-a-broker-export.csv',
+      mimeType: 'text/csv',
+      buffer: Buffer.from('foo,bar\n1,2\n'),
+    })
+
+    await expect(page.getByText(/1 file\(s\) failed/)).toBeVisible({ timeout: 20000 })
+    await expect(page.getByText(/Removed the sample portfolio/)).toHaveCount(0)
+    await expect(page.getByTestId('imported-files-summary')).toContainText('sample-portfolio.csv')
+  })
+
+  test('the sample is not kept for the next visit', async ({ page }) => {
+    await page.goto('/')
+    await page.getByTestId('load-sample').click()
+    await expect(page.getByTestId('tax-status')).toBeVisible({ timeout: 20000 })
+
+    await page.reload()
+
+    // No "continue previous session?" prompt: the app starts empty
+    await expect(page.getByTestId('load-sample')).toBeVisible()
+    await expect(page.getByText(/previous session/i)).toHaveCount(0)
+    await expect.poll(() => page.evaluate(() => new Promise<number>((resolve) => {
+      const req = indexedDB.open('cgt-visualizer')
+      req.onsuccess = () => {
+        const tx = req.result.transaction('transactions', 'readonly')
+        const countReq = tx.objectStore('transactions').count()
+        countReq.onsuccess = () => { req.result.close(); resolve(countReq.result) }
+      }
+    }))).toBe(0)
+    await expect(page.getByRole('button', { name: 'Continue Session' })).toHaveCount(0)
   })
 
   test('the import panel lists the files and is the one place to clear them', async ({ page }) => {

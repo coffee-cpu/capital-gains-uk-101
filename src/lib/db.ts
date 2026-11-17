@@ -14,6 +14,7 @@ export interface ImportedFile {
   broker: string // Detected broker type (e.g., 'Charles Schwab')
   transactionCount: number // Number of transactions imported from this file
   importedAt: string // ISO timestamp when file was imported
+  isSample?: boolean // The built-in sample portfolio: replaced by real imports, not kept between visits
 }
 
 /**
@@ -201,6 +202,22 @@ async function salvageUserData(): Promise<{ transactions: GenericTransaction[]; 
   } finally {
     legacyDb.close()
   }
+}
+
+/**
+ * Removes the sample portfolio's transactions and file record, keeping
+ * everything else (other imports, settings, cached rates). Resolves to
+ * whether there was a sample to remove.
+ */
+export async function removeSampleData(): Promise<boolean> {
+  return db.transaction('rw', db.transactions, db.imported_files, async () => {
+    const samples = await db.imported_files.filter(f => f.isSample === true).toArray()
+    for (const file of samples) {
+      await db.transactions.where('id').startsWith(`${file.fileId}-`).delete()
+      await db.imported_files.delete(file.fileId)
+    }
+    return samples.length > 0
+  })
 }
 
 /**
