@@ -78,7 +78,7 @@ export function FlowGuide() {
     { name: 'Export', description: 'History from each broker', short: 'from broker', target: 'import', state: hasData ? 'done' : 'next' },
     { name: 'Import', description: 'Drop the CSV files', short: 'CSV files', target: 'import', state: hasData ? 'done' : 'next' },
     { name: 'Check', description: 'HMRC matching rules', short: 'HMRC rules', target: 'transactions', state: stateOf(hasData, seen.has('transactions')) },
-    { name: 'Tax year', description: 'Gains and SA108 figures', short: 'SA108 figures', target: 'tax-year-summary', state: stateOf(hasSummary, seen.has('tax-year-summary')) },
+    { name: 'Tax year', description: 'Gains and SA108 figures', short: 'figures', target: 'tax-year-summary', state: stateOf(hasSummary, seen.has('tax-year-summary')) },
     { name: 'PDF', description: 'For Self Assessment', short: 'report', target: 'export-pdf', state: stateOf(hasDisposals, hasExportedPDF) },
   ]
 
@@ -128,7 +128,7 @@ export function FlowGuide() {
                   <span className={`mt-0.5 hidden sm:block text-xs ${stop.state === 'locked' ? 'text-gray-400' : 'text-gray-600'}`}>
                     {stop.description}
                   </span>
-                  <span aria-hidden="true" className={`mt-0.5 sm:hidden text-[10px] leading-tight ${stop.state === 'locked' ? 'text-gray-400' : 'text-gray-500'}`}>
+                  <span aria-hidden="true" className={`mt-0.5 sm:hidden text-[10px] leading-tight ${stop.state === 'locked' ? 'text-gray-300' : 'text-gray-400'}`}>
                     {stop.short}
                   </span>
                 </span>
