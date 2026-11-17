@@ -124,6 +124,14 @@ function IssueItem({ issue }: { issue: Issue }) {
             </div>
           )}
 
+          {issue.details && issue.details.length > 0 && (
+            <ul className={`mt-2 list-disc pl-5 space-y-0.5 text-sm ${styles.textColor}`}>
+              {issue.details.map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+          )}
+
           {issue.action && (
             <p className={`mt-2 text-sm ${styles.textColor}`}>
               <strong>Action:</strong> {issue.action}
@@ -139,6 +147,17 @@ function IssueItem({ issue }: { issue: Issue }) {
       </div>
     </div>
   )
+}
+
+/**
+ * Errors and warnings need the user to act; info notices don't, so they
+ * aren't counted as issues "requiring attention"
+ */
+function panelTitle(attentionCount: number, noteCount: number): string {
+  const notes = `${noteCount} Note${noteCount !== 1 ? 's' : ''}`
+  if (attentionCount === 0) return notes
+  const issues = `${attentionCount} Issue${attentionCount !== 1 ? 's' : ''} Requiring Attention`
+  return noteCount > 0 ? `${issues}, ${notes}` : issues
 }
 
 /**
@@ -167,6 +186,7 @@ export function IssuesPanel() {
     <div className="bg-white shadow rounded-lg overflow-hidden">
       {/* Header - always visible, clickable to expand/collapse */}
       <button
+        data-testid="issues-panel-toggle"
         onClick={() => setIsExpanded(!isExpanded)}
         className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
       >
@@ -192,7 +212,7 @@ export function IssuesPanel() {
             )}
           </div>
           <h2 className="text-lg font-semibold text-gray-900">
-            {issues.length === 1 ? '1 Issue' : `${issues.length} Issues`} Requiring Attention
+            {panelTitle(errorCount + warningCount, infoCount)}
           </h2>
         </div>
         <ChevronIcon expanded={isExpanded} className="h-5 w-5 text-gray-400" />

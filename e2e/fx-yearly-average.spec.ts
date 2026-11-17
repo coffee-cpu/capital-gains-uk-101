@@ -39,7 +39,7 @@ test.describe('HMRC Yearly Average FX Source', () => {
 
     // A pointer at the top of the transaction list, and the Issues panel entry
     await expect(page.getByTestId('fx-errors-pointer')).toBeVisible({ timeout: 15000 })
-    const issuesPanel = page.locator('button:has(h2:text-matches("Issue.*Requiring Attention"))').first()
+    const issuesPanel = page.getByTestId('issues-panel-toggle').first()
     await expect(issuesPanel).toBeVisible({ timeout: 15000 })
     await issuesPanel.click()
     await expect(page.getByText('FX Rate Errors', { exact: true })).toBeVisible()

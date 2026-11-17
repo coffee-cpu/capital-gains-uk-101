@@ -7,7 +7,7 @@ const __dirname = path.dirname(__filename)
 
 /** Expand the Issues panel (collapsed on each page load) and return its "Incomplete Disposal Data" entry */
 async function incompleteDisposalsIssue(page: import('@playwright/test').Page) {
-  await page.locator('button:has(h2:text-matches("Issue.*Requiring Attention"))').first().click()
+  await page.getByTestId('issues-panel-toggle').first().click()
   return page.locator('div', { has: page.getByText('Incomplete Disposal Data', { exact: true }) })
     .filter({ hasText: 'could not be fully matched' }).last()
 }

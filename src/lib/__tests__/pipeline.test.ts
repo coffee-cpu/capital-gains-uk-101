@@ -42,6 +42,8 @@ describe('runPipeline', () => {
     const summary = result!.taxYearSummaries.find(s => s.taxYear === '2023/24')!
     expect(summary.totalAllowableCostsGbp).toBeCloseTo(100)
     expect(result!.dataNotices!.overlappingRows.map(tx => tx.id)).toEqual(['all_csv-90-1'])
+    expect(result!.dataNotices!.importOverlaps).toHaveLength(1)
+    expect(result!.dataNotices!.importOverlaps![0]).toMatchObject({ droppedFileId: 'all_csv-90', rows: 1 })
     expect(result!.dataNotices!.splitConflicts).toEqual([])
   })
 

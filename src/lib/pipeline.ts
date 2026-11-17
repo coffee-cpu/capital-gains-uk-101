@@ -43,7 +43,7 @@ export async function runPipeline(
 
   // Drop rows repeated across overlapping imports (kept for reporting), then
   // incomplete Stock Plan Activity when Equity Awards data exists
-  const { kept, removed: overlappingRows } = findOverlappingImports(rawTransactions)
+  const { kept, removed: overlappingRows, overlaps: importOverlaps } = findOverlappingImports(rawTransactions)
 
   const deduplicated = deduplicateTransactions(kept)
 
@@ -79,6 +79,7 @@ export async function runPipeline(
     .map(({ symbol, date, reason }) => ({ symbol, date, reason }))
   result.dataNotices = {
     overlappingRows,
+    importOverlaps,
     splitConflicts: findSplitConflicts(withAutoSplits),
     rejectedSplitRecords,
     symbolMerges,

@@ -1,5 +1,6 @@
 import { BrokerType } from '../types/broker'
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { db } from '../lib/db'
 import { useTransactionStore, selectTransactions } from '../stores/transactionStore'
 import type { EnrichedTransaction } from '../types/transaction'
 import type { CGTCalculationResult } from '../types/cgt'
@@ -29,6 +30,8 @@ export interface Issue {
   action?: string
   /** Label for the action button/link */
   actionLabel?: string
+  /** One line per item worth listing, e.g. each pair of overlapping files */
+  details?: string[]
   /** True when the table highlights the affected rows (and "Needs attention" lists them) */
   flaggedInTable?: boolean
 }
@@ -39,7 +42,9 @@ export interface Issue {
  */
 export function detectIssues(
   transactions: EnrichedTransaction[],
-  cgtResults: CGTCalculationResult | null
+  cgtResults: CGTCalculationResult | null,
+  /** Imported file names by file ID, to name files in notices (falls back to the ID) */
+  fileNames: ReadonlyMap<string, string> = new Map()
 ): Issue[] {
   const issues: Issue[] = []
 
@@ -96,19 +101,25 @@ export function detectIssues(
     }
   }
 
-  // Rows dropped as overlapping imports, and split records that disagreed
-  // (WARNING severity): both change the figures, so the user should check them
+  // Rows dropped as overlapping imports (INFO severity): resolved
+  // automatically, so it's a notice rather than something to fix
   const overlappingRows = cgtResults?.dataNotices?.overlappingRows ?? []
   if (overlappingRows.length > 0) {
     const affectedSymbols = [...new Set(overlappingRows.map(tx => tx.symbol).filter(Boolean))]
+    const fileName = (fileId: string) => fileNames.get(fileId) ?? fileId
+    const plural = overlappingRows.length !== 1
 
     issues.push({
       id: 'overlapping-imports',
-      type: 'warning',
-      title: 'Overlapping Imports',
-      description: `${overlappingRows.length} row${overlappingRows.length !== 1 ? 's' : ''} also appeared in another imported file from the same broker and ${overlappingRows.length !== 1 ? 'were' : 'was'} counted once. This is expected when exports cover overlapping dates.`,
+      type: 'info',
+      title: 'Overlapping Imports Automatically Merged',
+      description: `${overlappingRows.length} row${plural ? 's' : ''} appeared in more than one imported file from the same broker, so ${plural ? 'each was' : 'it was'} counted once. Nothing to fix if your exports simply cover overlapping dates.`,
       count: overlappingRows.length,
       affectedItems: affectedSymbols,
+      details: (cgtResults?.dataNotices?.importOverlaps ?? []).map(o =>
+        `${fileName(o.droppedFileId)} overlaps ${fileName(o.keptFileId)}: ${o.rows} row${o.rows !== 1 ? 's' : ''}, ` +
+        (o.firstDate === o.lastDate ? o.firstDate : `${o.firstDate} to ${o.lastDate}`)
+      ),
       action: 'If any of these were separate trades (for example the same order placed in two accounts), add the missing trade back in a Generic CSV file.',
       actionLabel: 'Check Rows',
     })
@@ -257,10 +268,22 @@ export function detectIssues(
 export function useIssues(): Issue[] {
   const transactions = useTransactionStore(selectTransactions)
   const cgtResults = useTransactionStore((state) => state.cgtResults)
+  const [fileNames, setFileNames] = useState<ReadonlyMap<string, string>>(() => new Map())
+
+  // Every import or clear recalculates, so reload the file names with the results
+  useEffect(() => {
+    let cancelled = false
+    db.imported_files.toArray()
+      .then(files => {
+        if (!cancelled) setFileNames(new Map(files.map(f => [f.fileId, f.filename])))
+      })
+      .catch(() => { /* names are optional; notices fall back to file IDs */ })
+    return () => { cancelled = true }
+  }, [cgtResults])
 
   return useMemo(
-    () => detectIssues(transactions, cgtResults),
-    [transactions, cgtResults]
+    () => detectIssues(transactions, cgtResults, fileNames),
+    [transactions, cgtResults, fileNames]
   )
 }
 

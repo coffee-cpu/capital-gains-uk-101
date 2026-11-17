@@ -9,8 +9,8 @@ const __dirname = path.dirname(__filename)
  * Helper to find the IssuesPanel expand/collapse button
  */
 async function getIssuesPanelButton(page: import('@playwright/test').Page) {
-  // The IssuesPanel button contains the "Issues Requiring Attention" text
-  return page.locator('button:has(h2:text-matches("Issue.*Requiring Attention"))').first()
+  // The IssuesPanel header button (it toggles the list of issues and notes)
+  return page.getByTestId('issues-panel-toggle').first()
 }
 
 /**
@@ -147,7 +147,7 @@ test.describe('IssuesPanel', () => {
     await page.waitForTimeout(1000)
 
     // IssuesPanel should not be visible (no issues)
-    const issuesPanelButton = page.locator('button:has(h2:text-matches("Issue.*Requiring Attention"))')
+    const issuesPanelButton = page.getByTestId('issues-panel-toggle')
     await expect(issuesPanelButton).not.toBeVisible()
 
     // CGT Calculation should be visible (normal state)

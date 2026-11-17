@@ -403,11 +403,38 @@ describe('detectIssues - data notices', () => {
 
     const issue = detectIssues([createMockTransaction()], results).find(i => i.id === 'overlapping-imports')!
 
-    expect(issue.type).toBe('warning')
+    // Resolved automatically, so a notice rather than a warning
+    expect(issue.type).toBe('info')
     expect(issue.count).toBe(2)
     expect(issue.affectedItems).toEqual(['AAPL', 'MSFT'])
     // Dropped rows are not in the table, so the panel must not point there
     expect(issue.flaggedInTable).toBeUndefined()
+  })
+
+  it('names the overlapping files and the date range of the dropped rows', () => {
+    const results = createMockCGTResults({
+      dataNotices: {
+        overlappingRows: [
+          createMockTransaction({ id: 'b_csv-200-1' }),
+          createMockTransaction({ id: 'b_csv-200-2' }),
+          createMockTransaction({ id: 'c_csv-300-1' }),
+        ],
+        importOverlaps: [
+          { droppedFileId: 'b_csv-200', keptFileId: 'a_csv-100', rows: 2, firstDate: '2023-01-05', lastDate: '2023-12-20' },
+          { droppedFileId: 'c_csv-300', keptFileId: 'a_csv-100', rows: 1, firstDate: '2024-02-01', lastDate: '2024-02-01' },
+        ],
+        splitConflicts: [],
+      },
+    })
+    const names = new Map([['a_csv-100', 'all-years.csv'], ['b_csv-200', '2023.csv']])
+
+    const issue = detectIssues([createMockTransaction()], results, names).find(i => i.id === 'overlapping-imports')!
+
+    expect(issue.details).toEqual([
+      '2023.csv overlaps all-years.csv: 2 rows, 2023-01-05 to 2023-12-20',
+      // No stored name: falls back to the file ID; one date when the range is a single day
+      'c_csv-300 overlaps all-years.csv: 1 row, 2024-02-01',
+    ])
   })
 
   it('reports conflicting split records with both ratios', () => {
