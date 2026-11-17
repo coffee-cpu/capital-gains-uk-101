@@ -1,13 +1,12 @@
-import { useSyncExternalStore } from 'react'
+import { useCallback, useSyncExternalStore } from 'react'
 
 /** Whether a CSS media query matches, kept up to date as the window changes */
 export function useMediaQuery(query: string): boolean {
-  return useSyncExternalStore(
-    onChange => {
-      const list = window.matchMedia(query)
-      list.addEventListener('change', onChange)
-      return () => list.removeEventListener('change', onChange)
-    },
-    () => window.matchMedia(query).matches,
-  )
+  // Stable per query, so re-renders don't re-subscribe
+  const subscribe = useCallback((onChange: () => void) => {
+    const list = window.matchMedia(query)
+    list.addEventListener('change', onChange)
+    return () => list.removeEventListener('change', onChange)
+  }, [query])
+  return useSyncExternalStore(subscribe, () => window.matchMedia(query).matches)
 }

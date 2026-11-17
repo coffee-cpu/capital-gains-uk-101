@@ -453,9 +453,23 @@ export function TransactionList() {
                 <div className="mt-1 flex items-center justify-between gap-3">
                   <span className="flex flex-wrap items-center gap-2 min-w-0">
                     <span className="text-gray-600">{tx.date}</span>
-                    <span className={`inline-flex px-2 py-0.5 text-[11px] font-semibold rounded-full ${typeBadgeClass(tx.type)}`}>
-                      {tx.type.replace(/_/g, ' ')}
-                    </span>
+                    {tx.type === 'STOCK_SPLIT' ? (
+                      <button
+                        type="button"
+                        onClick={e => { e.stopPropagation(); toggleHelpPanelWithContext('stock-split') }}
+                        className={`inline-flex px-2 py-0.5 text-[11px] font-semibold rounded-full ${typeBadgeClass(tx.type)}`}
+                      >
+                        STOCK SPLIT
+                      </button>
+                    ) : (
+                      <span className={`inline-flex px-2 py-0.5 text-[11px] font-semibold rounded-full ${typeBadgeClass(tx.type)}`}>
+                        {tx.type.replace(/_/g, ' ')}
+                      </span>
+                    )}
+                    {tx.type === 'STOCK_SPLIT' && tx.ratio && <span className="text-xs text-gray-600 font-mono">{tx.ratio}</span>}
+                    {tx.type === 'STOCK_SPLIT' && tx.source === COMMUNITY_SPLIT_SOURCE && (
+                      <span className="text-xs text-teal-700">community data</span>
+                    )}
                   </span>
                   {foreign && tx.total != null && (
                     <span className="shrink-0 text-xs text-gray-500">{formatAmount(tx.total, tx.currency)}</span>
@@ -498,7 +512,16 @@ export function TransactionList() {
                     )}
                   </div>
                 )}
+                {/* Why a row is flagged or greyed out: the table says this in tooltips */}
                 {tx.fx_error && <p className="mt-1 text-xs text-red-700">{tx.fx_error}</p>}
+                {tx.ignored && !tx.fx_error && (
+                  <p className="mt-1 text-xs text-gray-600">
+                    Ignored: Stock Plan Activity is incomplete. Import the Charles Schwab Equity Awards file for the full data.
+                  </p>
+                )}
+                {isIncomplete && !tx.fx_error && (
+                  <p className="mt-1 text-xs text-yellow-800">Missing price data: import the Equity Awards file for complete information.</p>
+                )}
               </li>
             )
           })}
