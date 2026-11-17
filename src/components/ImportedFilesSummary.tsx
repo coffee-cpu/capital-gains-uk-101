@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { liveQuery } from 'dexie'
 import { db } from '../lib/db'
 import { useTransactionStore, selectTransactions } from '../stores/transactionStore'
 import { ClearDataButton } from './ClearDataButton'
@@ -13,14 +14,15 @@ export function ImportedFilesSummary() {
   const isLoading = useTransactionStore((state) => state.isLoading)
   const [fileNames, setFileNames] = useState<string[]>([])
 
-  // Every import or clear recalculates, so reload the file list after each
-  // run, including one that failed and left the results unchanged
+  // Follow the stored file list as it changes, including the sample portfolio
+  // being dropped on start-up, which runs no recalculation. A liveQuery stops
+  // after an error (e.g. a database reset), so subscribe again after each run
   useEffect(() => {
-    let cancelled = false
-    db.imported_files.orderBy('importedAt').toArray()
-      .then(files => { if (!cancelled) setFileNames(files.map(f => f.filename)) })
-      .catch(() => { /* the list is informational */ })
-    return () => { cancelled = true }
+    const subscription = liveQuery(() => db.imported_files.orderBy('importedAt').toArray()).subscribe({
+      next: files => setFileNames(files.map(f => f.filename)),
+      error: () => { /* the list is informational; the next run subscribes again */ },
+    })
+    return () => subscription.unsubscribe()
   }, [cgtResults, isLoading])
 
   // Also shown when files are stored but the results aren't (e.g. a failed
