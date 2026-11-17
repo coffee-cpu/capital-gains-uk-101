@@ -22,7 +22,8 @@
     "test:e2e:ui": "playwright test --ui",
     "test:all": "npm run test && npm run test:e2e",
     "lint": "eslint src e2e packages/cli/src",
-    "build:cli": "npm run build -w packages/cli"
+    "build:cli": "npm run build -w packages/cli",
+    "build:example-report": "npm run build:cli && node scripts/build-example-report.mjs"
   },
   "repository": {
     "type": "git",

@@ -32,6 +32,25 @@ test.describe('First run', () => {
     await expect(page.getByRole('heading', { name: 'Transactions', exact: true })).toBeInViewport()
   })
 
+  test('shows an example report before anything is imported', async ({ page, request }) => {
+    await page.goto('/')
+    const card = page.getByTestId('example-report')
+    await expect(card).toBeVisible()
+
+    // The preview and the link point at files that exist
+    const link = card.getByRole('link', { name: 'Open the example report (PDF)' })
+    const pdf = await request.get((await link.getAttribute('href'))!)
+    expect(pdf.ok()).toBe(true)
+    expect(pdf.headers()['content-type']).toContain('pdf')
+    const image = card.getByRole('img')
+    await expect.poll(() => image.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth)).toBeGreaterThan(0)
+
+    // Gone once there's data
+    await page.getByTestId('load-sample').click()
+    await expect(page.getByTestId('tax-status')).toBeVisible({ timeout: 20000 })
+    await expect(card).toHaveCount(0)
+  })
+
   test('the sample is not merged into transactions from a previous session', async ({ page }) => {
     await page.goto('/')
     await page.locator('input[type="file"]').setInputFiles(ownFile)

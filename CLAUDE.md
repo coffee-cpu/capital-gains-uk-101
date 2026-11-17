@@ -16,6 +16,7 @@ npm run dev              # Start dev server on http://localhost:3000
 npm run build            # TypeScript compile + Vite build
 npm run preview          # Preview production build
 npm run build:cli        # Typecheck and bundle the CLI (packages/cli) to packages/cli/dist/cli.js
+npm run build:example-report  # Rebuild the example PDF report and its preview image (after changing the PDF layout)
 ```
 
 **IMPORTANT - Auto-start Dev Server**: When starting work on this project (especially in a new session), **automatically start the dev server in the background** using the Bash tool with `run_in_background: true`:
