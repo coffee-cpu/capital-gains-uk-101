@@ -148,6 +148,7 @@ describe('detectIssues', () => {
     expect(incompleteIssue?.count).toBe(1)
     expect(incompleteIssue?.affectedItems).toContain('GOOGL')
     expect(incompleteIssue?.action).toContain('Equity Awards')
+    expect(incompleteIssue?.flaggedInTable).toBe(true)
     expect(incompleteIssue?.action).toContain('Supported formats & export guides')
   })
 
@@ -250,6 +251,7 @@ describe('detectIssues', () => {
     const incompleteDisposalIssue = issues.find(i => i.id === 'incomplete-disposals')
     expect(incompleteDisposalIssue).toBeDefined()
     expect(incompleteDisposalIssue?.type).toBe('error')
+    expect(incompleteDisposalIssue?.flaggedInTable).toBe(true)
     expect(incompleteDisposalIssue?.count).toBe(2) // Both tax years
     expect(incompleteDisposalIssue?.affectedItems).toContain('MSFT')
     expect(incompleteDisposalIssue?.affectedItems).toContain('AAPL')
