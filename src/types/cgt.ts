@@ -193,12 +193,26 @@ export interface SplitConflict {
   ignored: { id: string; date: string; ratio: string; source: string }
 }
 
+/** Rows of one imported file that were dropped because another file had them too */
+export interface ImportOverlap {
+  /** File whose copies were dropped (see getImportFileId) */
+  droppedFileId: string
+  /** File whose copies were kept */
+  keptFileId: string
+  rows: number
+  /** Earliest and latest date of the dropped rows (YYYY-MM-DD) */
+  firstDate: string
+  lastDate: string
+}
+
 export interface DataNotices {
   /**
    * Rows dropped because an identical row from the same broker appeared in
    * another imported file (see removeOverlappingImports)
    */
   overlappingRows: GenericTransaction[]
+  /** The same rows summarised per pair of files */
+  importOverlaps?: ImportOverlap[]
   /** Split records for the same split that disagreed on the ratio */
   splitConflicts: SplitConflict[]
   /**

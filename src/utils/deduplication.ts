@@ -1,5 +1,6 @@
 import { BrokerType } from '../types/broker'
 import { GenericTransaction } from '../types/transaction'
+import type { ImportOverlap } from '../types/cgt'
 
 /**
  * The file a transaction was imported from, from its ID.
@@ -45,11 +46,12 @@ export function removeOverlappingImports(transactions: GenericTransaction[]): Ge
 /**
  * Splits transactions into the rows kept and the rows removed as overlapping
  * imports (see removeOverlappingImports), so the removed rows can be shown to
- * the user.
+ * the user. `overlaps` summarises them per pair of files: which file's copy
+ * was dropped, which was kept, how many rows and their date range.
  */
 export function findOverlappingImports(
   transactions: GenericTransaction[]
-): { kept: GenericTransaction[]; removed: GenericTransaction[] } {
+): { kept: GenericTransaction[]; removed: GenericTransaction[]; overlaps: ImportOverlap[] } {
   const groups = new Map<string, Map<string, GenericTransaction[]>>()
 
   for (const tx of transactions) {
@@ -71,6 +73,8 @@ export function findOverlappingImports(
   }
 
   const dropped = new Set<GenericTransaction>()
+  // One summary per (dropped file, kept file) pair, so the UI can name both
+  const overlaps = new Map<string, ImportOverlap>()
   for (const byFile of groups.values()) {
     if (byFile.size < 2) continue
 
@@ -84,14 +88,27 @@ export function findOverlappingImports(
     }
 
     for (const [fileId, rows] of byFile) {
-      if (fileId !== keepFile) rows.forEach(tx => dropped.add(tx))
+      if (fileId === keepFile || keepFile === null) continue
+      const pairKey = JSON.stringify([fileId, keepFile])
+      let overlap = overlaps.get(pairKey)
+      if (!overlap) {
+        overlap = { droppedFileId: fileId, keptFileId: keepFile, rows: 0, firstDate: rows[0].date, lastDate: rows[0].date }
+        overlaps.set(pairKey, overlap)
+      }
+      for (const tx of rows) {
+        dropped.add(tx)
+        overlap.rows++
+        if (tx.date < overlap.firstDate) overlap.firstDate = tx.date
+        if (tx.date > overlap.lastDate) overlap.lastDate = tx.date
+      }
     }
   }
 
-  if (dropped.size === 0) return { kept: transactions, removed: [] }
+  if (dropped.size === 0) return { kept: transactions, removed: [], overlaps: [] }
   return {
     kept: transactions.filter(tx => !dropped.has(tx)),
     removed: transactions.filter(tx => dropped.has(tx)),
+    overlaps: [...overlaps.values()].sort((a, b) => b.rows - a.rows),
   }
 }
 

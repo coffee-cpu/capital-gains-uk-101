@@ -21,7 +21,7 @@ test.describe('BUY-Only Transaction Imports', () => {
     await expect(page.getByTestId('buy-only-note')).toContainText('No capital gains to calculate yet')
 
     // The Issues panel says what to import, with Schwab-specific guidance
-    await page.locator('button:has(h2:text-matches("Issue.*Requiring Attention"))').first().click()
+    await page.getByTestId('issues-panel-toggle').first().click()
     await expect(page.getByText('No Disposals Found', { exact: true })).toBeVisible()
     await expect(page.getByText(/Upload your "Transactions" history from Schwab.com/i)).toBeVisible()
 

@@ -513,4 +513,32 @@ describe('findOverlappingImports', () => {
     expect(kept).toEqual([b1, b2])
     expect(removed).toEqual([a])
   })
+
+  it('summarises the dropped rows per pair of files with their date range', () => {
+    const rows = [
+      createTransaction({ id: 'old_csv-10-1', source: 'Freetrade', date: '2023-05-01' }),
+      createTransaction({ id: 'old_csv-10-2', source: 'Freetrade', date: '2023-03-01', symbol: 'MSFT' }),
+      createTransaction({ id: 'all_csv-90-1', source: 'Freetrade', date: '2023-05-01' }),
+      createTransaction({ id: 'all_csv-90-2', source: 'Freetrade', date: '2023-03-01', symbol: 'MSFT' }),
+      createTransaction({ id: 'all_csv-90-3', source: 'Freetrade', date: '2023-05-01' }),
+      createTransaction({ id: 'all_csv-90-4', source: 'Freetrade', date: '2023-03-01', symbol: 'MSFT' }),
+    ]
+
+    const { overlaps } = findOverlappingImports(rows)
+
+    // all_csv has two copies of each row, so its copies are kept
+    expect(overlaps).toEqual([{
+      droppedFileId: 'old_csv-10',
+      keptFileId: 'all_csv-90',
+      rows: 2,
+      firstDate: '2023-03-01',
+      lastDate: '2023-05-01',
+    }])
+  })
+
+  it('reports no overlaps when files share no rows', () => {
+    const a = createTransaction({ id: 'a_csv-100-1', source: 'Freetrade', date: '2023-01-01' })
+    const b = createTransaction({ id: 'b_csv-200-1', source: 'Freetrade', date: '2023-02-01' })
+    expect(findOverlappingImports([a, b]).overlaps).toEqual([])
+  })
 })
