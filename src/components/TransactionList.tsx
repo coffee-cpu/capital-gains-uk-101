@@ -83,6 +83,7 @@ export function TransactionList() {
     () => new Set(cgtResults?.disposals.filter(d => d.isIncomplete).map(d => d.disposal.id)),
     [cgtResults]
   )
+  // Issues whose rows this flags set Issue.flaggedInTable (useIssues.ts), so keep the two in step
   const needsAttention = (tx: typeof transactions[number]) =>
     Boolean(tx.incomplete || tx.fx_error || incompleteDisposalIds.has(tx.id))
   const attentionCount = transactions.filter(needsAttention).length

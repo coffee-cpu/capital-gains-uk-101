@@ -100,6 +100,8 @@ describe('detectIssues', () => {
     expect(fxIssue?.type).toBe('error')
     expect(fxIssue?.count).toBe(1)
     expect(fxIssue?.affectedItems).toContain('AAPL')
+    // The table highlights FX-error rows, so the panel can point there
+    expect(fxIssue?.flaggedInTable).toBe(true)
   })
 
   it('detects crypto FX errors with specific message', () => {
@@ -146,6 +148,7 @@ describe('detectIssues', () => {
     expect(incompleteIssue?.count).toBe(1)
     expect(incompleteIssue?.affectedItems).toContain('GOOGL')
     expect(incompleteIssue?.action).toContain('Equity Awards')
+    expect(incompleteIssue?.flaggedInTable).toBe(true)
     expect(incompleteIssue?.action).toContain('Supported formats & export guides')
   })
 
@@ -248,6 +251,7 @@ describe('detectIssues', () => {
     const incompleteDisposalIssue = issues.find(i => i.id === 'incomplete-disposals')
     expect(incompleteDisposalIssue).toBeDefined()
     expect(incompleteDisposalIssue?.type).toBe('error')
+    expect(incompleteDisposalIssue?.flaggedInTable).toBe(true)
     expect(incompleteDisposalIssue?.count).toBe(2) // Both tax years
     expect(incompleteDisposalIssue?.affectedItems).toContain('MSFT')
     expect(incompleteDisposalIssue?.affectedItems).toContain('AAPL')
@@ -402,6 +406,8 @@ describe('detectIssues - data notices', () => {
     expect(issue.type).toBe('warning')
     expect(issue.count).toBe(2)
     expect(issue.affectedItems).toEqual(['AAPL', 'MSFT'])
+    // Dropped rows are not in the table, so the panel must not point there
+    expect(issue.flaggedInTable).toBeUndefined()
   })
 
   it('reports conflicting split records with both ratios', () => {
