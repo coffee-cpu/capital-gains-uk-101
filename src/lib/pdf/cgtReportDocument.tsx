@@ -3,6 +3,7 @@ import type { EnrichedTransaction } from '../../types/transaction'
 import { renderAllFeaturePDFSections } from '../cgt/taxYearFeatures/pdfRenderers'
 import { formatGbp } from '../../utils/currency'
 import { isFiatCurrency } from '../currencies'
+import { REPORT_FONTS } from './fonts'
 import {
   getEffectivePrice,
   getEffectiveQuantity,
@@ -38,18 +39,25 @@ function createStyles(StyleSheet: PdfLibrary['StyleSheet']) {
     padding: 40,
     paddingBottom: 70,
     fontSize: 10,
-    fontFamily: 'Helvetica',
+    fontFamily: REPORT_FONTS.mono,
   },
   title: {
-    fontSize: 20,
+    fontSize: 16,
     marginBottom: 10,
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: REPORT_FONTS.monoBold,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 11,
     marginBottom: 8,
     marginTop: 16,
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: REPORT_FONTS.monoBold,
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
+    paddingBottom: 4,
+    borderBottomWidth: 1.5,
+    borderBottomColor: '#111827',
   },
   section: {
     marginBottom: 12,
@@ -73,7 +81,7 @@ function createStyles(StyleSheet: PdfLibrary['StyleSheet']) {
     backgroundColor: '#f3f4f6',
   },
   tableHeaderCell: {
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: REPORT_FONTS.monoBold,
     fontSize: 9,
   },
   tableCell: {
@@ -100,7 +108,7 @@ function createStyles(StyleSheet: PdfLibrary['StyleSheet']) {
   },
   summaryValue: {
     fontSize: 10,
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: REPORT_FONTS.monoBold,
   },
   totalRow: {
     flexDirection: 'row',
@@ -112,18 +120,20 @@ function createStyles(StyleSheet: PdfLibrary['StyleSheet']) {
   },
   totalLabel: {
     fontSize: 12,
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: REPORT_FONTS.monoBold,
   },
   totalValue: {
     fontSize: 12,
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: REPORT_FONTS.monoBold,
   },
   note: {
+    fontFamily: REPORT_FONTS.text, // explanatory text stays proportional
     fontSize: 7,
     color: '#6b7280',
     marginTop: 4,
   },
   disclaimer: {
+    fontFamily: REPORT_FONTS.text, // explanatory text stays proportional
     fontSize: 7,
     color: '#6b7280',
     marginTop: 20,
@@ -157,7 +167,7 @@ function createStyles(StyleSheet: PdfLibrary['StyleSheet']) {
     textAlign: 'right',
   },
   footerBold: {
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: REPORT_FONTS.monoBold,
   },
   gainGroup: {
     fontSize: 7,
@@ -191,11 +201,12 @@ function createStyles(StyleSheet: PdfLibrary['StyleSheet']) {
   },
   warningTitle: {
     fontSize: 10,
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: REPORT_FONTS.monoBold,
     color: '#991b1b',
     marginBottom: 4,
   },
   warningText: {
+    fontFamily: REPORT_FONTS.text, // explanatory text stays proportional
     fontSize: 8,
     color: '#991b1b',
     marginBottom: 3,
@@ -555,7 +566,7 @@ function createCGTReportDocument(
                   const box = (n: string | undefined) => (n ? ` (box ${n})` : '')
                   return (
                     <View key={row.category} style={{ marginBottom: 8 }}>
-                      <Text style={{ fontSize: 9, fontFamily: 'Helvetica-Bold', marginBottom: 3 }}>
+                      <Text style={{ fontSize: 9, fontFamily: REPORT_FONTS.monoBold, marginBottom: 3 }}>
                         {row.section ? `${row.label}: "${row.section}" section` : row.label}
                       </Text>
                       {([
@@ -591,9 +602,9 @@ function createCGTReportDocument(
                 {dividends.length > 0 && (
                   <>
                     <View style={[styles.summaryRow, { borderBottomWidth: 1, borderBottomColor: '#e5e7eb', paddingBottom: 2 }]}>
-                      <Text style={[styles.summaryLabel, { width: '50%', fontFamily: 'Helvetica-Bold' }]}>Dividends by holding</Text>
-                      <Text style={[styles.summaryLabel, { width: '25%', textAlign: 'right', fontFamily: 'Helvetica-Bold' }]}>Gross</Text>
-                      <Text style={[styles.summaryLabel, { width: '25%', textAlign: 'right', fontFamily: 'Helvetica-Bold' }]}>Tax withheld</Text>
+                      <Text style={[styles.summaryLabel, { width: '50%', fontFamily: REPORT_FONTS.monoBold }]}>Dividends by holding</Text>
+                      <Text style={[styles.summaryLabel, { width: '25%', textAlign: 'right', fontFamily: REPORT_FONTS.monoBold }]}>Gross</Text>
+                      <Text style={[styles.summaryLabel, { width: '25%', textAlign: 'right', fontFamily: REPORT_FONTS.monoBold }]}>Tax withheld</Text>
                     </View>
                     {dividends.map(line => (
                       <View key={line.symbol} style={styles.summaryRow} wrap={false}>
@@ -659,14 +670,14 @@ function createCGTReportDocument(
                     {/* Header: Symbol, Date, Quantity, Gain/Loss */}
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5, paddingBottom: 4, borderBottomWidth: 1, borderBottomColor: '#e5e7eb' }}>
                       <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
-                        <Text style={{ fontSize: 11, fontFamily: 'Helvetica-Bold' }}>{tx.symbol}</Text>
+                        <Text style={{ fontSize: 11, fontFamily: REPORT_FONTS.monoBold }}>{tx.symbol}</Text>
                         <Text style={{ fontSize: 9, color: '#6b7280' }}>{formatDate(tx.date)}</Text>
                         <Text style={{ fontSize: 9, color: '#6b7280' }}>
                           {quantityWithUnit(quantity, tx) +
                             (isSplitAdjusted ? ` (${formatQuantity(rawQuantity)} before split adjustment)` : '')}
                         </Text>
                       </View>
-                      <Text style={{ fontSize: 11, fontFamily: 'Helvetica-Bold', color: isGain ? TEXT : LOSS }}>
+                      <Text style={{ fontSize: 11, fontFamily: REPORT_FONTS.monoBold, color: isGain ? TEXT : LOSS }}>
                         {formatCurrency(disposal.gainOrLossGbp)}
                       </Text>
                     </View>
@@ -682,11 +693,11 @@ function createCGTReportDocument(
                     {/* Calculation, on one line */}
                     <Text style={{ fontSize: 8, marginBottom: 1 }}>
                       {'Proceeds '}
-                      <Text style={{ fontFamily: 'Helvetica-Bold' }}>{formatCurrency(disposal.proceedsGbp)}</Text>
+                      <Text style={{ fontFamily: REPORT_FONTS.monoBold }}>{formatCurrency(disposal.proceedsGbp)}</Text>
                       {' \u2013 allowable costs '}
-                      <Text style={{ fontFamily: 'Helvetica-Bold' }}>{formatCurrency(disposal.allowableCostsGbp)}</Text>
+                      <Text style={{ fontFamily: REPORT_FONTS.monoBold }}>{formatCurrency(disposal.allowableCostsGbp)}</Text>
                       {` = ${isGain ? 'gain' : 'loss'} `}
-                      <Text style={{ fontFamily: 'Helvetica-Bold', color: isGain ? TEXT : LOSS }}>{formatCurrency(disposal.gainOrLossGbp)}</Text>
+                      <Text style={{ fontFamily: REPORT_FONTS.monoBold, color: isGain ? TEXT : LOSS }}>{formatCurrency(disposal.gainOrLossGbp)}</Text>
                     </Text>
                     <Text style={{ fontSize: 7, color: '#6b7280', marginBottom: 5 }}>
                       {salePrice + (fee > 0 ? ` (fees: ${formatCurrency(fee)})` : '')}
@@ -696,7 +707,7 @@ function createCGTReportDocument(
                     <View>
                       {isFullyUnmatched(disposal) ? (
                         <View style={{ backgroundColor: '#fef2f2', borderWidth: 1, borderColor: '#fecaca', borderRadius: 3, padding: 6 }}>
-                          <Text style={{ fontSize: 8, color: '#991b1b', fontFamily: 'Helvetica-Bold', marginBottom: 2 }}>No Matching Acquisitions</Text>
+                          <Text style={{ fontSize: 8, color: '#991b1b', fontFamily: REPORT_FONTS.monoBold, marginBottom: 2 }}>No Matching Acquisitions</Text>
                           <Text style={{ fontSize: 7, color: '#991b1b' }}>
                             {`${quantityWithUnit(unmatched, tx)} could not be matched to any acquisition records. ` +
                               'Their proceeds, costs and gain are not included in this report: work them out from your own purchase records.'}
@@ -723,7 +734,7 @@ function createCGTReportDocument(
                                        'Section 104 Pool'}
                                     </Text>
                                   </View>
-                                  <Text style={{ fontSize: 8, fontFamily: 'Helvetica-Bold' }}>
+                                  <Text style={{ fontSize: 8, fontFamily: REPORT_FONTS.monoBold }}>
                                     {quantityWithUnit(matching.quantityMatched, tx)}
                                   </Text>
                                 </View>
@@ -740,7 +751,7 @@ function createCGTReportDocument(
                           {disposal.isIncomplete && unmatched > 0 && (
                             <View style={{ backgroundColor: '#fefce8', borderWidth: 1, borderColor: '#fde047', borderRadius: 3, padding: 6, marginTop: 3 }}>
                               <Text style={{ fontSize: 7, color: '#854d0e' }}>
-                                <Text style={{ fontFamily: 'Helvetica-Bold' }}>Partially matched: </Text>
+                                <Text style={{ fontFamily: REPORT_FONTS.monoBold }}>Partially matched: </Text>
                                 {`${formatQuantity(unmatched)} of ${quantityWithUnit(quantity, tx)} could not be matched. ` +
                                   `The proceeds, costs and gain shown cover only the ${quantityWithUnit(quantity - unmatched, tx)} that were matched; ` +
                                   'the rest are not included in this report.'}

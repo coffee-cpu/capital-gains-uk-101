@@ -8,6 +8,7 @@
 
 import type { CGTRateChange2024Data } from '../cgtRateChange2024'
 import type { FeaturePDFRenderer, PDFRenderContext } from '../types'
+import { REPORT_FONTS } from '../../../pdf/fonts'
 
 /**
  * Render the CGT Rate Change 2024 section for PDF export.
@@ -60,7 +61,7 @@ function AdjustmentRequiredContent({ data, context }: ContentProps): React.React
 
   return (
     <>
-      <Text style={{ fontSize: 8, color: '#92400e', marginBottom: 8, fontStyle: 'italic' }}>
+      <Text style={{ fontSize: 8, color: '#92400e', marginBottom: 8, fontStyle: 'italic', fontFamily: REPORT_FONTS.text }}>
         Box 51 Adjustment Required: Use these figures in HMRC's CGT adjustment calculator.
       </Text>
 
@@ -70,7 +71,7 @@ function AdjustmentRequiredContent({ data, context }: ContentProps): React.React
           <Text
             style={{
               fontSize: 9,
-              fontFamily: 'Helvetica-Bold',
+              fontFamily: REPORT_FONTS.monoBold,
               color: '#92400e',
               marginBottom: 4,
             }}
@@ -107,7 +108,7 @@ function AdjustmentRequiredContent({ data, context }: ContentProps): React.React
       <Text
         style={{
           fontSize: 9,
-          fontFamily: 'Helvetica-Bold',
+          fontFamily: REPORT_FONTS.monoBold,
           color: '#92400e',
           marginBottom: 4,
           marginTop: data.gainsBeforeRateChange > 0 ? 4 : 0,

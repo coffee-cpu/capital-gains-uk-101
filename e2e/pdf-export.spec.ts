@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import path from 'path'
+import { readFileSync } from 'fs'
 import { fileURLToPath } from 'url'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -65,7 +66,12 @@ test.describe('PDF export options', () => {
     // Exporting from the panel downloads the report and closes the panel
     const download = page.waitForEvent('download', { timeout: 30000 })
     await page.getByRole('dialog', { name: 'PDF export options' }).getByRole('button', { name: 'Export PDF' }).click()
-    expect((await download).suggestedFilename()).toMatch(/\.pdf$/)
+    const file = await download
+    expect(file.suggestedFilename()).toMatch(/\.pdf$/)
     await expect(page.getByRole('dialog', { name: 'PDF export options' })).toBeHidden()
+
+    // The report's monospace font is loaded from this site and embedded
+    const pdf = readFileSync((await file.path())!).toString('latin1')
+    expect(pdf).toContain('+IBMPlexMono-Regular')
   })
 })

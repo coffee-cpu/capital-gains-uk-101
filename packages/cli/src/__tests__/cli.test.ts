@@ -142,6 +142,7 @@ describe('cgt-visualiser CLI', () => {
       expect(stderr).toContain(`Wrote the 2024/25 report to ${out}`)
       expect(pdf.subarray(0, 5).toString()).toBe('%PDF-')
       expect(pdf.length).toBeGreaterThan(2000)
+      expect(pdf.toString('latin1')).toContain('+IBMPlexMono-Regular')
 
       const withTransactions = join(tmp, 'with-transactions.pdf')
       await run([...args, '-o', withTransactions, '--include-transactions'])

@@ -1,5 +1,9 @@
-import { Document, Page, Text, View, StyleSheet, renderToBuffer } from '@react-pdf/renderer'
+import { Document, Page, Text, View, StyleSheet, renderToBuffer, Font } from '@react-pdf/renderer'
 import { buildCGTReportDocument } from '../../../../src/lib/pdf/cgtReportDocument'
+import { registerReportFonts } from '../../../../src/lib/pdf/fonts'
+// Bundled into dist/cli.js as data URLs (see build.mjs), so the CLI stays one file
+import monoRegular from '../../../../src/lib/pdf/fonts/IBMPlexMono-Regular.ttf'
+import monoSemiBold from '../../../../src/lib/pdf/fonts/IBMPlexMono-SemiBold.ttf'
 import { CGTCalculationResult } from '../../../../src/types/cgt'
 import { CLI_NAME, CLI_VERSION, CliError } from '../meta'
 
@@ -21,6 +25,7 @@ export async function renderPdfReport(
     )
   }
 
+  registerReportFonts(Font, { regular: monoRegular, semiBold: monoSemiBold })
   const doc = buildCGTReportDocument(
     { Document, Page, Text, View, StyleSheet },
     {
