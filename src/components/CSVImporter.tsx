@@ -25,9 +25,13 @@ export function CSVImporter() {
   const isLoadingResults = useTransactionStore((state) => state.isLoading)
 
   // Build supported brokers text for the upload area
-  const supportedBrokers = getEnabledBrokerDefinitions()
-    .map(def => def.displayName)
-    .join(', ')
+  const enabledBrokers = getEnabledBrokerDefinitions()
+  const supportedBrokers = enabledBrokers.map(def => def.displayName).join(', ')
+  // Phones get a short line that doesn't grow with each new broker; the full
+  // list is under "Supported formats & export guides"
+  const SHORT_LIST: BrokerType[] = [BrokerType.SCHWAB, BrokerType.INTERACTIVE_BROKERS, BrokerType.TRADING212]
+  const shortBrokers = enabledBrokers.filter(def => SHORT_LIST.includes(def.type)).map(def => def.displayName)
+  const supportedBrokersShort = `${shortBrokers.join(', ')} and ${enabledBrokers.length - shortBrokers.length} more`
 
   /**
    * Import one file. `beforeWrite` runs once the file has parsed, just before
@@ -239,11 +243,11 @@ export function CSVImporter() {
 
   return (
     <div id="import" className="bg-white shadow rounded-lg p-6 scroll-mt-6">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
         <div>
           <h2 className="text-2xl font-semibold text-gray-900">Import Transactions</h2>
           <p className="text-xs text-gray-500 mt-1">All processing happens locally in your browser — your data never leaves your device</p>
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="hidden sm:block text-xs text-gray-500 mt-1">
             Prefer the terminal or an AI agent?{' '}
             <a
               href="https://github.com/coffee-cpu/capital-gains-uk-101/tree/main/packages/cli#readme"
@@ -257,7 +261,7 @@ export function CSVImporter() {
         </div>
         <button
           onClick={() => setShowImportInfo(!showImportInfo)}
-          className="text-sm text-brand-600 hover:text-brand-800 underline flex items-center gap-1"
+          className="shrink-0 text-sm text-brand-600 hover:text-brand-800 underline flex items-center gap-1"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -296,7 +300,7 @@ export function CSVImporter() {
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          className={`relative border-2 border-dashed rounded-lg ${hasTransactions ? 'px-4 py-3' : 'p-8'} text-center transition-colors ${isDragging
+          className={`relative border-2 border-dashed rounded-lg ${hasTransactions ? 'px-4 py-3' : 'p-6 sm:p-8'} text-center transition-colors ${isDragging
             ? 'border-brand-500 bg-brand-50'
             : 'border-gray-300 hover:border-gray-400 bg-gray-50'
             } ${isProcessing ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
@@ -315,7 +319,7 @@ export function CSVImporter() {
 
           <div className={hasTransactions ? 'flex items-center justify-center gap-2' : 'flex flex-col items-center'}>
             <svg
-              className={`${hasTransactions ? 'w-5 h-5' : 'w-12 h-12 mb-3'} ${isDragging ? 'text-brand-500' : 'text-gray-400'}`}
+              className={`${hasTransactions ? 'w-5 h-5' : 'w-10 h-10 sm:w-12 sm:h-12 mb-2 sm:mb-3'} ${isDragging ? 'text-brand-500' : 'text-gray-400'}`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -328,11 +332,18 @@ export function CSVImporter() {
               />
             </svg>
             <p className={`text-sm font-medium text-gray-700 ${hasTransactions ? '' : 'mb-1'}`}>
-              {hasTransactions ? 'Add more CSV files: drop them here, or click to browse' : 'Drop your CSV files here, or click to browse'}
+              {/* Touch screens can't drop files, and they tap rather than click */}
+              <span className="pointer-coarse:hidden">
+                {hasTransactions ? 'Add more CSV files: drop them here, or click to browse' : 'Drop your CSV files here, or click to browse'}
+              </span>
+              <span className="hidden pointer-coarse:inline">
+                {hasTransactions ? 'Tap to add more CSV files' : 'Tap to choose CSV files'}
+              </span>
             </p>
             {!hasTransactions && (
               <p className="text-xs text-gray-500">
-                Supports multiple files • {supportedBrokers}
+                <span className="hidden sm:inline">Supports multiple files • {supportedBrokers}</span>
+                <span className="sm:hidden">Several files at once • {supportedBrokersShort}</span>
               </p>
             )}
           </div>

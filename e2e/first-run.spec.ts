@@ -108,7 +108,7 @@ test.describe('First run', () => {
     await expect(summary).toContainText('1 file · 27 transactions')
     await expect(summary).toContainText('sample-portfolio.csv')
     // The drop zone shrinks to one line once there's data
-    await expect(page.getByText('Add more CSV files')).toBeVisible()
+    await expect(page.getByText('Add more CSV files: drop them here')).toBeVisible()
 
     // One Clear all data button, in the import panel. It opens a dialog that
     // says what goes and starts on Cancel; Escape closes it
