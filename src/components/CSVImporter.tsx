@@ -147,7 +147,7 @@ export function CSVImporter() {
       // A returning visitor can click this before the resume-session dialog
       // appears; importing then would merge the sample into their real data
       if (await db.transactions.count() > 0) {
-        setError('You already have imported transactions. Clear All Data first if you want to try the sample portfolio.')
+        setError('You already have imported transactions. Clear all data first if you want to try the sample portfolio.')
         return
       }
       const sampleUrl = getBrokerDefinition(SAMPLE_BROKER)?.exampleFile
@@ -158,7 +158,7 @@ export function CSVImporter() {
       const imported = await processFiles([new File([blob], SAMPLE_FILE_NAME, { type: 'text/csv' })])
       if (imported) setSuccess(
         'Loaded a sample Charles Schwab portfolio with shares, options and dividends. ' +
-        'Clear All Data before importing your own files, or the sample will be included in your figures.'
+        'Clear all data before importing your own files, or the sample will be included in your figures.'
       )
     } catch (err) {
       setError(`Could not load the sample portfolio: ${err instanceof Error ? err.message : 'unknown error'}`)
@@ -313,7 +313,7 @@ export function CSVImporter() {
         <ImportedFilesSummary />
 
         {!hasTransactions && !isProcessing && !isLoadingResults && (
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 text-sm text-gray-600">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-gray-600">
             <span>No export to hand?</span>
             <button
               type="button"

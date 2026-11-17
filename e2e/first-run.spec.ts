@@ -51,10 +51,19 @@ test.describe('First run', () => {
     // The drop zone shrinks to one line once there's data
     await expect(page.getByText('Add more CSV files')).toBeVisible()
 
-    // One Clear All Data button, in the import panel
-    await expect(page.getByRole('button', { name: 'Clear All Data' })).toHaveCount(1)
-    await summary.getByRole('button', { name: 'Clear All Data' }).click()
-    await summary.getByRole('button', { name: 'Yes, Delete Everything' }).click()
+    // One Clear all data button, in the import panel. It opens a dialog that
+    // says what goes and starts on Cancel; Escape closes it
+    await expect(page.getByRole('button', { name: 'Clear all data' })).toHaveCount(1)
+    await summary.getByRole('button', { name: 'Clear all data' }).click()
+    const dialog = page.getByRole('dialog', { name: 'Clear all data?' })
+    await expect(dialog).toBeVisible()
+    await expect(dialog).toContainText('1 file and 27 transactions')
+    await expect(dialog.getByRole('button', { name: 'Cancel' })).toBeFocused()
+    await page.keyboard.press('Escape')
+    await expect(dialog).toBeHidden()
+
+    await summary.getByRole('button', { name: 'Clear all data' }).click()
+    await dialog.getByRole('button', { name: 'Delete everything' }).click()
 
     // The page reloads empty, offering the sample again
     await expect(page.getByTestId('load-sample')).toBeVisible({ timeout: 10000 })
