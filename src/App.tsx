@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { ExampleReport } from './components/ExampleReport'
 import { CSVImporter } from './components/CSVImporter'
 import { TransactionList } from './components/TransactionList'
 import { TaxYearSummary } from './components/TaxYearSummary'
@@ -123,6 +124,7 @@ function App() {
             <div className="space-y-8">
               <FlowGuide />
               <CSVImporter />
+              <ExampleReport />
               <IssuesPanel />
               <TaxYearSummary />
               <Dashboard />
