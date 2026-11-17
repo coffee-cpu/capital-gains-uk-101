@@ -441,77 +441,80 @@ export function TransactionList() {
             const foreign = tx.currency !== 'GBP'
             const cgtBadges = buildCGTBadges(tx, badgeIndex)
             const hasSplit = tx.split_multiplier != null && tx.split_multiplier !== 1.0 && tx.split_adjusted_quantity != null
-            const background = tx.fx_error ? 'bg-red-50' : tx.ignored ? 'bg-gray-50 opacity-40' : isIncomplete ? 'bg-yellow-50' : ''
+            const background = tx.fx_error ? 'bg-red-50' : tx.ignored ? 'bg-gray-50' : isIncomplete ? 'bg-yellow-50' : ''
             return (
               <li key={tx.id} className={`px-4 py-3 text-sm ${background} ${!tx.fx_error && !tx.ignored && !isIncomplete && !isRelevant ? 'text-gray-500' : 'text-gray-900'}`}>
-                <div className="flex items-start justify-between gap-3">
-                  <span className="font-medium break-words min-w-0">{tx.symbol || '—'}</span>
-                  <span className="shrink-0 text-right font-medium">
-                    <GbpAmount tx={tx} gbp={tx.value_gbp} isIncomplete={isIncomplete} />
-                  </span>
-                </div>
-                <div className="mt-1 flex items-center justify-between gap-3">
-                  <span className="flex flex-wrap items-center gap-2 min-w-0">
-                    <span className="text-gray-600">{tx.date}</span>
-                    {tx.type === 'STOCK_SPLIT' ? (
-                      <button
-                        type="button"
-                        onClick={e => { e.stopPropagation(); toggleHelpPanelWithContext('stock-split') }}
-                        className={`inline-flex px-2 py-0.5 text-[11px] font-semibold rounded-full ${typeBadgeClass(tx.type)}`}
-                      >
-                        STOCK SPLIT
-                      </button>
-                    ) : (
-                      <span className={`inline-flex px-2 py-0.5 text-[11px] font-semibold rounded-full ${typeBadgeClass(tx.type)}`}>
-                        {tx.type.replace(/_/g, ' ')}
-                      </span>
-                    )}
-                    {tx.type === 'STOCK_SPLIT' && tx.ratio && <span className="text-xs text-gray-600 font-mono">{tx.ratio}</span>}
-                    {tx.type === 'STOCK_SPLIT' && tx.source === COMMUNITY_SPLIT_SOURCE && (
-                      <span className="text-xs text-teal-700">community data</span>
-                    )}
-                  </span>
-                  {foreign && tx.total != null && (
-                    <span className="shrink-0 text-xs text-gray-500">{formatAmount(tx.total, tx.currency)}</span>
-                  )}
-                </div>
-                {(tx.quantity != null || cgtBadges.length > 0) && (
+                {/* An ignored row is faded, but not the line saying why */}
+                <div className={tx.ignored && !tx.fx_error ? 'opacity-40' : undefined}>
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="font-medium break-words min-w-0">{tx.symbol || '—'}</span>
+                    <span className="shrink-0 text-right font-medium">
+                      <GbpAmount tx={tx} gbp={tx.value_gbp} isIncomplete={isIncomplete} />
+                    </span>
+                  </div>
                   <div className="mt-1 flex items-center justify-between gap-3">
-                    <span className="min-w-0 text-gray-600">
-                      {tx.quantity != null && (
-                        <>
-                          {formatQuantity(tx.quantity)}
-                          {tx.price != null && (
-                            <>
-                              {' × '}
-                              <GbpAmount tx={tx} gbp={tx.price_gbp} isIncomplete={isIncomplete} />
-                              {foreign && <span className="text-xs text-gray-500"> ({formatAmount(tx.price, tx.currency)})</span>}
-                            </>
-                          )}
-                          {tx.price == null && isIncomplete && <span className="text-yellow-600 font-medium"> · price missing</span>}
-                          {tx.fee_gbp != null && tx.fee_gbp !== 0 && <> · fee {formatGbp(tx.fee_gbp)}</>}
-                          {hasSplit && (
-                            <span className="text-purple-700"> · {formatQuantity(tx.split_adjusted_quantity!)} after split</span>
-                          )}
-                        </>
+                    <span className="flex flex-wrap items-center gap-2 min-w-0">
+                      <span className="text-gray-600">{tx.date}</span>
+                      {tx.type === 'STOCK_SPLIT' ? (
+                        <button
+                          type="button"
+                          onClick={e => { e.stopPropagation(); toggleHelpPanelWithContext('stock-split') }}
+                          className={`inline-flex px-2 py-0.5 text-[11px] font-semibold rounded-full ${typeBadgeClass(tx.type)}`}
+                        >
+                          STOCK SPLIT
+                        </button>
+                      ) : (
+                        <span className={`inline-flex px-2 py-0.5 text-[11px] font-semibold rounded-full ${typeBadgeClass(tx.type)}`}>
+                          {tx.type.replace(/_/g, ' ')}
+                        </span>
+                      )}
+                      {tx.type === 'STOCK_SPLIT' && tx.ratio && <span className="text-xs text-gray-600 font-mono">{tx.ratio}</span>}
+                      {tx.type === 'STOCK_SPLIT' && tx.source === COMMUNITY_SPLIT_SOURCE && (
+                        <span className="text-xs text-teal-700">community data</span>
                       )}
                     </span>
-                    {cgtBadges.length > 0 && (
-                      <span className="flex shrink-0 flex-wrap justify-end gap-1">
-                        {cgtBadges.map((badge, index) => (
-                          <button
-                            key={index}
-                            type="button"
-                            onClick={e => handleBadgeClick(e, badge.helpContext)}
-                            className={`inline-flex px-1.5 py-0.5 text-[10px] font-semibold rounded-full border whitespace-nowrap ${badge.className}`}
-                          >
-                            {badge.label}
-                          </button>
-                        ))}
-                      </span>
+                    {foreign && tx.total != null && (
+                      <span className="shrink-0 text-xs text-gray-500">{formatAmount(tx.total, tx.currency)}</span>
                     )}
                   </div>
-                )}
+                  {(tx.quantity != null || cgtBadges.length > 0) && (
+                    <div className="mt-1 flex items-center justify-between gap-3">
+                      <span className="min-w-0 text-gray-600">
+                        {tx.quantity != null && (
+                          <>
+                            {formatQuantity(tx.quantity)}
+                            {tx.price != null && (
+                              <>
+                                {' × '}
+                                <GbpAmount tx={tx} gbp={tx.price_gbp} isIncomplete={isIncomplete} />
+                                {foreign && <span className="text-xs text-gray-500"> ({formatAmount(tx.price, tx.currency)})</span>}
+                              </>
+                            )}
+                            {tx.price == null && isIncomplete && <span className="text-yellow-600 font-medium"> · price missing</span>}
+                            {tx.fee_gbp != null && tx.fee_gbp !== 0 && <> · fee {formatGbp(tx.fee_gbp)}</>}
+                            {hasSplit && (
+                              <span className="text-purple-700"> · {formatQuantity(tx.split_adjusted_quantity!)} after split</span>
+                            )}
+                          </>
+                        )}
+                      </span>
+                      {cgtBadges.length > 0 && (
+                        <span className="flex shrink-0 flex-wrap justify-end gap-1">
+                          {cgtBadges.map((badge, index) => (
+                            <button
+                              key={index}
+                              type="button"
+                              onClick={e => handleBadgeClick(e, badge.helpContext)}
+                              className={`inline-flex px-1.5 py-0.5 text-[10px] font-semibold rounded-full border whitespace-nowrap ${badge.className}`}
+                            >
+                              {badge.label}
+                            </button>
+                          ))}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
                 {/* Why a row is flagged or greyed out: the table says this in tooltips */}
                 {tx.fx_error && <p className="mt-1 text-xs text-red-700">{tx.fx_error}</p>}
                 {tx.ignored && !tx.fx_error && (
