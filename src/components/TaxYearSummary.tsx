@@ -18,7 +18,7 @@ import type { TaxYearSummary as TaxYearSummaryData } from '../types/cgt'
  */
 function BuyOnlyNote() {
   return (
-    <div className="bg-white shadow rounded-lg p-6" data-testid="buy-only-note">
+    <div id="tax-year-summary" className="bg-white shadow rounded-lg p-6 scroll-mt-6" data-testid="buy-only-note">
       <p className="text-sm text-gray-700">
         <span className="font-medium text-gray-900">No capital gains to calculate yet.</span>{' '}
         Your imported transactions include purchases but no sales. See the Issues panel above for what to import.
@@ -147,7 +147,7 @@ export function TaxYearSummary() {
   const hasTaxableGain = currentSummary.taxableGainGbp > 0
 
   return (
-    <div className="bg-white shadow rounded-lg overflow-hidden">
+    <div id="tax-year-summary" className="bg-white shadow rounded-lg overflow-hidden scroll-mt-6">
       <div className="px-6 py-4 border-b border-gray-200">
         <div className="space-y-2">
           <div className="flex items-baseline gap-3">
@@ -416,7 +416,7 @@ export function TaxYearSummary() {
           <div className="text-xs text-gray-500 italic">
             This is an estimate based on HMRC guidance. Always consult a qualified tax professional for your specific situation.
           </div>
-          <div className="flex-shrink-0">
+          <div id="export-pdf" className="flex-shrink-0 scroll-mt-24">
             <ExportPDFButton />
           </div>
         </div>
