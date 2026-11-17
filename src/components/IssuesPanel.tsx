@@ -126,8 +126,8 @@ function IssueItem({ issue }: { issue: Issue }) {
 
           {issue.details && issue.details.length > 0 && (
             <ul className={`mt-2 list-disc pl-5 space-y-0.5 text-sm ${styles.textColor}`}>
-              {issue.details.map((line) => (
-                <li key={line}>{line}</li>
+              {issue.details.map((line, i) => (
+                <li key={i}>{line}</li>
               ))}
             </ul>
           )}

@@ -106,7 +106,13 @@ export function detectIssues(
   const overlappingRows = cgtResults?.dataNotices?.overlappingRows ?? []
   if (overlappingRows.length > 0) {
     const affectedSymbols = [...new Set(overlappingRows.map(tx => tx.symbol).filter(Boolean))]
-    const fileName = (fileId: string) => fileNames.get(fileId) ?? fileId
+    // Brokers often reuse a default export name, so add the file ID when two files share a name
+    const fileName = (fileId: string) => {
+      const name = fileNames.get(fileId)
+      if (!name) return fileId
+      const shared = [...fileNames].some(([id, other]) => other === name && id !== fileId)
+      return shared ? `${name} (${fileId})` : name
+    }
     const plural = overlappingRows.length !== 1
 
     issues.push({

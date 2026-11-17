@@ -437,6 +437,25 @@ describe('detectIssues - data notices', () => {
     ])
   })
 
+  it('adds the file ID when two overlapping files share a name', () => {
+    const results = createMockCGTResults({
+      dataNotices: {
+        overlappingRows: [createMockTransaction({ id: 'transactions_csv-200-1' })],
+        importOverlaps: [
+          { droppedFileId: 'transactions_csv-200', keptFileId: 'transactions_csv-900', rows: 1, firstDate: '2023-01-05', lastDate: '2023-01-05' },
+        ],
+        splitConflicts: [],
+      },
+    })
+    const names = new Map([['transactions_csv-200', 'transactions.csv'], ['transactions_csv-900', 'transactions.csv']])
+
+    const issue = detectIssues([createMockTransaction()], results, names).find(i => i.id === 'overlapping-imports')!
+
+    expect(issue.details).toEqual([
+      'transactions.csv (transactions_csv-200) overlaps transactions.csv (transactions_csv-900): 1 row, 2023-01-05',
+    ])
+  })
+
   it('reports conflicting split records with both ratios', () => {
     const results = createMockCGTResults({
       dataNotices: {
