@@ -210,7 +210,7 @@ export function CSVImporter() {
   }
 
   return (
-    <div className="bg-white shadow rounded-lg p-6">
+    <div id="import" className="bg-white shadow rounded-lg p-6 scroll-mt-6">
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-2xl font-semibold text-gray-900">Import Transactions</h2>

@@ -15,6 +15,24 @@
   --color-brand-800: var(--color-blue-800);
   --color-brand-900: var(--color-blue-900);
   --color-brand-950: var(--color-blue-950);
+
+  /* "How it works" line: the track draws left to right, then the stops pop in */
+  --animate-flow-line: flow-line 0.9s ease-out both;
+  --animate-flow-dot: flow-dot 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  --animate-flow-label: flow-label 0.4s ease-out both;
+
+  @keyframes flow-line {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
+  }
+  @keyframes flow-dot {
+    from { transform: scale(0); }
+    to { transform: scale(1); }
+  }
+  @keyframes flow-label {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
 }
 
 /* Figures line up in columns and don't shift width as they change */
