@@ -29,12 +29,10 @@ const DOT_STYLES: Record<StopState, string> = {
 }
 
 /**
- * "How it works" as a line with a stop per step. Stops tick off as the user
- * gets through them and jump to their section once it exists.
- */
-/**
  * Sections the user has looked at this visit: scrolled into the top part of
- * the screen, or jumped to from the line. Watched only while they exist.
+ * the screen, or jumped to from the line. Watched only while they exist:
+ * the sections swap in a spinner while results recalculate, so the caller
+ * stops watching then and the new elements are observed afterwards.
  */
 function useSeenSections(ids: string[], watch: boolean) {
   const [seen, setSeen] = useState<ReadonlySet<string>>(() => new Set())
@@ -61,13 +59,18 @@ function useSeenSections(ids: string[], watch: boolean) {
   return { seen, markSeen }
 }
 
+/**
+ * "How it works" as a line with a stop per step. Stops tick off as the user
+ * gets through them and jump to their section once it exists.
+ */
 export function FlowGuide() {
   const hasData = useTransactionStore((state) => selectTransactions(state).length > 0)
   // A tax year summary needs at least one tax year with activity (not only dividends, say)
   const hasSummary = useTransactionStore((state) => (state.cgtResults?.taxYearSummaries.length ?? 0) > 0)
   const hasDisposals = useTransactionStore((state) => (state.cgtResults?.metadata?.totalSells ?? 0) > 0)
   const hasExportedPDF = useTransactionStore((state) => state.hasExportedPDF)
-  const { seen, markSeen } = useSeenSections(['transactions', 'tax-year-summary'], hasData)
+  const isLoading = useTransactionStore((state) => state.isLoading)
+  const { seen, markSeen } = useSeenSections(['transactions', 'tax-year-summary'], hasData && !isLoading)
 
   // Locked until its section exists, then next until done
   const stateOf = (ready: boolean, done: boolean): StopState => (!ready ? 'locked' : done ? 'done' : 'next')

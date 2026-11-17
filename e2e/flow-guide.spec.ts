@@ -38,6 +38,24 @@ test.describe('How it works line', () => {
     await expect(done).toHaveCount(5)
   })
 
+  test('still ticks sections off after the results recalculate', async ({ page }) => {
+    await page.goto('/')
+    await page.getByTestId('load-sample').click()
+    await expect(page.getByText(/Loaded a sample Charles Schwab portfolio/)).toBeVisible({ timeout: 20000 })
+
+    // A second import recalculates, replacing the sections the line watches
+    await page.locator('input[type="file"]').setInputFiles(path.join(__dirname, 'fixtures', 'generic-sample.csv'))
+    await expect(page.getByText(/file\(s\) imported successfully/)).toBeVisible({ timeout: 20000 })
+
+    const flow = page.getByTestId('flow-guide')
+    await expect(flow.getByRole('link', { name: /^Check.*\(done\)/ })).toHaveCount(0)
+
+    // Scrolling (not clicking the line) still ticks Check off
+    await page.locator('#transactions').scrollIntoViewIfNeeded()
+    await page.evaluate(() => document.getElementById('transactions')!.scrollIntoView({ block: 'start' }))
+    await expect(flow.getByRole('link', { name: /^Check.*\(done\)/ })).toHaveCount(1)
+  })
+
   test('only links to sections that exist: no PDF stop without disposals', async ({ page }) => {
     await page.goto('/')
     await page.locator('input[type="file"]').setInputFiles(path.join(__dirname, 'fixtures', 'generic-dividends-only.csv'))
