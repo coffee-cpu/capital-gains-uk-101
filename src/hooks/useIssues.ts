@@ -29,6 +29,8 @@ export interface Issue {
   action?: string
   /** Label for the action button/link */
   actionLabel?: string
+  /** True when the table highlights the affected rows (and "Needs attention" lists them) */
+  flaggedInTable?: boolean
 }
 
 /**
@@ -54,6 +56,7 @@ export function detectIssues(
 
     issues.push({
       id: 'fx-rate-errors',
+      flaggedInTable: true,
       type: 'error',
       title: 'FX Rate Errors',
       description: hasCryptoError
@@ -81,6 +84,7 @@ export function detectIssues(
 
       issues.push({
         id: 'incomplete-disposals',
+        flaggedInTable: true,
         type: 'error',
         title: 'Incomplete Disposal Data',
         description: `${allIncompleteDisposals.length} disposal${allIncompleteDisposals.length !== 1 ? 's' : ''} (${byYear}) could not be fully matched to acquisition data, usually because the shares were bought before your imported history starts. Gains/losses are only calculated for matched portions; look for the red "Incomplete" badge in the transaction list.`,
@@ -199,6 +203,7 @@ export function detectIssues(
 
     issues.push({
       id: 'incomplete-stock-plan',
+      flaggedInTable: true,
       type: 'warning',
       title: 'Incomplete Stock Plan Activity',
       description: `${incompleteTransactions.length} Stock Plan Activity transaction${incompleteTransactions.length !== 1 ? 's' : ''} for ${incompleteSymbols.join(', ')} ${incompleteSymbols.length !== 1 ? 'are' : 'is'} missing price data.`,

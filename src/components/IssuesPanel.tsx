@@ -130,9 +130,11 @@ function IssueItem({ issue }: { issue: Issue }) {
             </p>
           )}
 
-          <p className={`mt-2 text-xs ${styles.textColor} opacity-75`}>
-            See the Transactions section below for details.
-          </p>
+          {issue.flaggedInTable && (
+            <p className={`mt-2 text-xs ${styles.textColor} opacity-75`}>
+              See the Transactions section below for details.
+            </p>
+          )}
         </div>
       </div>
     </div>
