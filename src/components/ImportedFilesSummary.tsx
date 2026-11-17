@@ -10,17 +10,20 @@ import { ClearDataButton } from './ClearDataButton'
  */
 export function ImportedFilesSummary() {
   const transactionCount = useTransactionStore((state) => selectTransactions(state).length)
+  const cgtResults = useTransactionStore((state) => state.cgtResults)
+  const isLoading = useTransactionStore((state) => state.isLoading)
   const [fileNames, setFileNames] = useState<string[]>([])
 
-  // Follow the stored file list as it changes: imports, clears, and the
-  // sample portfolio being dropped on start-up, which runs no recalculation
+  // Follow the stored file list as it changes, including the sample portfolio
+  // being dropped on start-up, which runs no recalculation. A liveQuery stops
+  // after an error (e.g. a database reset), so subscribe again after each run
   useEffect(() => {
     const subscription = liveQuery(() => db.imported_files.orderBy('importedAt').toArray()).subscribe({
       next: files => setFileNames(files.map(f => f.filename)),
-      error: () => { /* the list is informational */ },
+      error: () => { /* the list is informational; the next run subscribes again */ },
     })
     return () => subscription.unsubscribe()
-  }, [])
+  }, [cgtResults, isLoading])
 
   // Also shown when files are stored but the results aren't (e.g. a failed
   // recalculation), so there's always a way to start again
