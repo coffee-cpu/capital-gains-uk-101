@@ -116,6 +116,8 @@ test.describe('First run', () => {
       }
     }))).toBe(0)
     await expect(page.getByRole('button', { name: 'Continue Session' })).toHaveCount(0)
+    // Nor is its file still listed in the import panel
+    await expect(page.getByTestId('imported-files-summary')).toHaveCount(0)
   })
 
   test('the import panel lists the files and is the one place to clear them', async ({ page }) => {
