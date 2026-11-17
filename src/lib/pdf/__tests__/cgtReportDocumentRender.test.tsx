@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { isValidElement, type ReactElement, type ReactNode } from 'react'
 import * as reactPdf from '@react-pdf/renderer'
+import { fileURLToPath } from 'node:url'
 import {
   buildCGTReportDocument,
   formatQuantity,
@@ -9,6 +10,7 @@ import {
   type ReactPdfLibrary,
 } from '../cgtReportDocument'
 import { findReportDataIssues } from '../reportData'
+import { registerReportFonts } from '../fonts'
 import type { DisposalRecord, MatchingResult, TaxYearSummary } from '../../../types/cgt'
 import type { EnrichedTransaction } from '../../../types/transaction'
 
@@ -16,6 +18,13 @@ import type { EnrichedTransaction } from '../../../types/transaction'
  * Stand-in for @react-pdf/renderer: primitives become plain tags, so the
  * document tree can be walked and its text read without rendering a PDF.
  */
+// The real renders below load the report fonts from the repository
+const fontFile = (name: string) => fileURLToPath(new URL(`../fonts/${name}`, import.meta.url))
+registerReportFonts(reactPdf.Font, {
+  regular: fontFile('IBMPlexMono-Regular.ttf'),
+  semiBold: fontFile('IBMPlexMono-SemiBold.ttf'),
+})
+
 const fakeLibrary = {
   Document: 'DOCUMENT',
   Page: 'PAGE',
@@ -281,6 +290,17 @@ describe('CGT report document', () => {
     const doc = buildCGTReportDocument(reactPdf, { taxYearSummary: summary(disposals), disposals, transactions: [sell] })
     const buffer = await reactPdf.renderToBuffer(doc)
     expect(buffer.subarray(0, 5).toString()).toBe('%PDF-')
+  })
+
+  it('embeds the monospace fonts and keeps Helvetica for paragraphs', async () => {
+    const sell = tx({ id: 's' })
+    const disposals = [record(sell, [matching(sell, 10, 40)])]
+    const doc = buildCGTReportDocument(reactPdf, { taxYearSummary: summary(disposals), disposals, transactions: [sell] })
+    const pdf = (await reactPdf.renderToBuffer(doc)).toString('latin1')
+    // Embedded subsets are named like /BaseFont /ABCDEF+IBMPlexMono-Regular
+    expect(pdf).toMatch(/\/BaseFont \/[A-Z]{6}\+IBMPlexMono-Regular/)
+    expect(pdf).toMatch(/\/BaseFont \/[A-Z]{6}\+IBMPlexMono-SemiBold/)
+    expect(pdf).toContain('/BaseFont /Helvetica')
   })
 })
 

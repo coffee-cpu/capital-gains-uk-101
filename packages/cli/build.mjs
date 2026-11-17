@@ -1,5 +1,5 @@
 import { build } from 'esbuild'
-import { readFileSync } from 'node:fs'
+import { copyFileSync, readFileSync } from 'node:fs'
 
 const { version } = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf-8'))
 
@@ -26,5 +26,13 @@ await build({
   minifyWhitespace: true,
   minifySyntax: true,
   legalComments: 'linked',
+  // The PDF report's fonts, inlined so the CLI needs no files beside it
+  loader: { '.ttf': 'dataurl' },
   logLevel: 'warning',
 })
+
+// The font licence (SIL OFL) travels with the fonts inlined above
+copyFileSync(
+  new URL('../../src/lib/pdf/fonts/OFL.txt', import.meta.url),
+  new URL('./dist/IBMPlexMono-OFL.txt', import.meta.url),
+)

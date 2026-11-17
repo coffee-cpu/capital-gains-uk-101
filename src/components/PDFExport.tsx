@@ -1,6 +1,10 @@
 import type { TaxYearSummary, DisposalRecord, Section104Pool } from '../types/cgt'
 import type { EnrichedTransaction } from '../types/transaction'
 import { buildCGTReportDocument, pdfReportFileName, type TransactionHistoryScope } from '../lib/pdf/cgtReportDocument'
+import { registerReportFonts } from '../lib/pdf/fonts'
+// Served from this site (fetched only when a report is made), never a font CDN
+import monoRegularUrl from '../lib/pdf/fonts/IBMPlexMono-Regular.ttf?url'
+import monoSemiBoldUrl from '../lib/pdf/fonts/IBMPlexMono-SemiBold.ttf?url'
 
 /**
  * Lazy-load @react-pdf/renderer to avoid including it in the main bundle.
@@ -26,6 +30,7 @@ export async function generatePDFReport(
 ): Promise<void> {
   // Lazy-load the PDF library
   const library = await loadPdfLibrary()
+  registerReportFonts(library.Font, { regular: monoRegularUrl, semiBold: monoSemiBoldUrl })
 
   const doc = buildCGTReportDocument(library, {
     taxYearSummary,

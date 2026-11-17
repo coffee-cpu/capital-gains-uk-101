@@ -21,3 +21,5 @@ node -e "
 # The PDF renderer is bundled too: check it runs from the built file
 node "$cli" calculate "$fixture" "${flags[@]}" --format pdf -o "$out/report.pdf"
 head -c 5 "$out/report.pdf" | grep -q '%PDF-' || { echo 'Expected a PDF file'; exit 1; }
+# The report fonts are inlined into the bundle: check the PDF embeds them
+grep -aq 'IBMPlexMono-Regular' "$out/report.pdf" || { echo 'Expected the PDF to embed IBM Plex Mono'; exit 1; }
