@@ -19,13 +19,17 @@ export function ClearDataButton({ fileCount, transactionCount }: ClearDataButton
   const dialogRef = useRef<HTMLDialogElement>(null)
   const cancelRef = useRef<HTMLButtonElement>(null)
   const [isClearing, setIsClearing] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleClear = async () => {
     setIsClearing(true)
+    setError(null)
     try {
       await clearAllData()
     } catch (err) {
       console.error('Failed to clear data:', err)
+      // Most often another open tab of the app is holding the database
+      setError('Could not clear the data. Close any other tabs with this app open and try again.')
       setIsClearing(false)
     }
   }
@@ -40,6 +44,7 @@ export function ClearDataButton({ fileCount, transactionCount }: ClearDataButton
       <button
         type="button"
         onClick={() => {
+          setError(null)
           dialogRef.current?.showModal()
           // Start on the safe choice (showModal would focus Delete, the first button)
           cancelRef.current?.focus()
@@ -69,6 +74,7 @@ export function ClearDataButton({ fileCount, transactionCount }: ClearDataButton
           {what ? `This removes ${what} from this browser` : 'This removes your imported data from this browser'},
           along with cached exchange rates and your settings. It can&apos;t be undone.
         </p>
+        {error && <p role="alert" className="mt-3 text-sm text-red-700">{error}</p>}
         <div className="mt-6 flex flex-col gap-2 sm:flex-row-reverse">
           <button
             type="button"
