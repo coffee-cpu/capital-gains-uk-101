@@ -21,7 +21,15 @@ export function ImportedFilesSummary() {
     return () => { cancelled = true }
   }, [cgtResults])
 
-  if (transactionCount === 0) return null
+  // Also shown when files are stored but the results aren't (e.g. a failed
+  // recalculation), so there's always a way to start again
+  if (transactionCount === 0 && fileNames.length === 0) return null
+
+  // Imports from before file metadata was recorded have no file rows
+  const counts = [
+    fileNames.length > 0 && `${fileNames.length} file${fileNames.length !== 1 ? 's' : ''}`,
+    transactionCount > 0 && `${transactionCount} transaction${transactionCount !== 1 ? 's' : ''}`,
+  ].filter(Boolean).join(' · ')
 
   return (
     <div
@@ -30,7 +38,7 @@ export function ImportedFilesSummary() {
     >
       <div className="min-w-0 text-sm text-gray-700">
         <span className="font-medium text-gray-900">
-          {fileNames.length} file{fileNames.length !== 1 ? 's' : ''} · {transactionCount} transactions
+          {counts}
         </span>
         {fileNames.length > 0 && (
           <span className="block truncate text-xs text-gray-500" title={fileNames.join(', ')}>

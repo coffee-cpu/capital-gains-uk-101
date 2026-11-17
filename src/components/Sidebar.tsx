@@ -1,4 +1,3 @@
-
 interface SidebarProps {
   currentPage: 'calculator' | 'about'
   isOpen: boolean
