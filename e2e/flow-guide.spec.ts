@@ -51,7 +51,6 @@ test.describe('How it works line', () => {
     await expect(flow.getByRole('link', { name: /^Check.*\(done\)/ })).toHaveCount(0)
 
     // Scrolling (not clicking the line) still ticks Check off
-    await page.locator('#transactions').scrollIntoViewIfNeeded()
     await page.evaluate(() => document.getElementById('transactions')!.scrollIntoView({ block: 'start' }))
     await expect(flow.getByRole('link', { name: /^Check.*\(done\)/ })).toHaveCount(1)
   })
