@@ -1,4 +1,3 @@
-import { ClearDataButton } from './ClearDataButton'
 
 interface SidebarProps {
   currentPage: 'calculator' | 'about'
@@ -123,11 +122,6 @@ export function Sidebar({ currentPage, isOpen, onClose }: SidebarProps) {
             GitHub
           </a>
         </nav>
-
-        {/* Clear Data Button */}
-        <div className="p-4">
-          <ClearDataButton variant="compact" />
-        </div>
 
         {/* Footer info */}
         <div className="mt-auto p-4 border-t border-gray-200">
