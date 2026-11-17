@@ -54,7 +54,7 @@ test.describe('30-Day Rule - Multiple Same-Day Disposals', () => {
     await expect(sellRows).toHaveCount(2)
 
     // At least one should have the 30-Day badge
-    const thirtyDayBadge = page.locator('.bg-orange-100.text-orange-800').filter({ hasText: '30-Day' })
+    const thirtyDayBadge = page.locator('#transactions table .bg-orange-100.text-orange-800').filter({ hasText: '30-Day' })
     await expect(thirtyDayBadge.first()).toBeVisible()
   })
 

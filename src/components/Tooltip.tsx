@@ -17,7 +17,8 @@ interface TooltipPosition {
 
 /**
  * Custom tooltip component with fast display and better styling.
- * Shows on hover with minimal delay (150ms vs browser default ~1s).
+ * Shows on hover with minimal delay (150ms vs browser default ~1s), and on
+ * touch screens on tap (tap again, or anywhere else, to close).
  * Uses portal rendering to avoid overflow issues in table cells.
  * Automatically adjusts position to stay within viewport on mobile.
  */
@@ -26,6 +27,9 @@ export function Tooltip({ content, children, className = '' }: TooltipProps) {
   const [position, setPosition] = useState<TooltipPosition | null>(null)
   const triggerRef = useRef<HTMLDivElement>(null)
   const tooltipRef = useRef<HTMLDivElement>(null)
+  // The kind of pointer that last pressed the trigger: touch taps toggle the
+  // tooltip, and the mouse events a browser emulates after a tap are ignored
+  const pointerTypeRef = useRef<string>('mouse')
 
   useEffect(() => {
     if (!isVisible || !triggerRef.current) {
@@ -69,7 +73,8 @@ export function Tooltip({ content, children, className = '' }: TooltipProps) {
         // Align to right edge with padding
         tooltipLeft = window.innerWidth - edgePadding
         transform = 'translateX(-100%)'
-        arrowOffset = triggerCenter - tooltipLeft // Arrow points to trigger from right-aligned tooltip
+        // The box ends at tooltipLeft, so measure the arrow from its left edge
+        arrowOffset = tooltipWidth - (tooltipLeft - triggerCenter)
       }
 
       setPosition({
@@ -103,12 +108,26 @@ export function Tooltip({ content, children, className = '' }: TooltipProps) {
     }
   }, [isVisible])
 
+  // A tooltip opened by a tap closes on a tap anywhere else
+  useEffect(() => {
+    if (!isVisible || pointerTypeRef.current !== 'touch') return
+    const handlePointerDown = (e: PointerEvent) => {
+      if (!triggerRef.current?.contains(e.target as Node)) setIsVisible(false)
+    }
+    document.addEventListener('pointerdown', handlePointerDown)
+    return () => document.removeEventListener('pointerdown', handlePointerDown)
+  }, [isVisible])
+
   const handleMouseEnter = () => {
-    setIsVisible(true)
+    if (pointerTypeRef.current !== 'touch') setIsVisible(true)
   }
 
   const handleMouseLeave = () => {
-    setIsVisible(false)
+    if (pointerTypeRef.current !== 'touch') setIsVisible(false)
+  }
+
+  const handleClick = () => {
+    if (pointerTypeRef.current === 'touch') setIsVisible(visible => !visible)
   }
 
   return (
@@ -116,15 +135,18 @@ export function Tooltip({ content, children, className = '' }: TooltipProps) {
       <div
         ref={triggerRef}
         className={`inline-block ${className}`}
+        onPointerDown={e => { pointerTypeRef.current = e.pointerType }}
+        onPointerEnter={e => { if (e.pointerType === 'mouse') pointerTypeRef.current = 'mouse' }}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
+        onClick={handleClick}
       >
         {children}
       </div>
       {isVisible && position && createPortal(
         <div
           ref={tooltipRef}
-          className="fixed z-[9999] px-3 py-2 text-sm text-white bg-gray-900 rounded-lg shadow-xl max-w-xs animate-in fade-in duration-150"
+          className="fixed z-[9999] w-max max-w-[min(20rem,calc(100vw-24px))] px-3 py-2 text-sm text-white bg-gray-900 rounded-lg shadow-xl animate-in fade-in duration-150"
           style={{
             top: `${position.top}px`,
             left: `${position.left}px`,

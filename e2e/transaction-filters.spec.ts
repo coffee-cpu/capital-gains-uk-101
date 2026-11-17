@@ -32,7 +32,7 @@ test.describe('Transactions table', () => {
 
     // Nothing matches: say so rather than show an empty table
     await page.getByLabel('Search by symbol').fill('zzzz')
-    await expect(page.getByText('No transactions match these filters.')).toBeVisible()
+    await expect(page.locator('#transactions table').getByText('No transactions match these filters.')).toBeVisible()
 
     await page.getByRole('button', { name: 'Clear filters' }).click()
     await expect(rows).toHaveCount(27)
@@ -60,5 +60,37 @@ test.describe('Transactions table', () => {
       return { scrollWidth: scroller.scrollWidth, clientWidth: scroller.clientWidth }
     })
     expect(sizes.scrollWidth).toBeLessThanOrEqual(sizes.clientWidth)
+  })
+})
+
+test.describe('Transactions on a phone', () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true })
+
+  test('shows one card per transaction instead of the table', async ({ page }) => {
+    await loadSample(page)
+    const cards = page.getByTestId('transaction-cards').locator('li')
+    await expect(cards).toHaveCount(27)
+    await expect(page.locator('#transactions table')).toBeHidden()
+    await expect(page.getByText(/looks better on a bigger screen/)).toHaveCount(0)
+
+    // GBP total, the broker's total, quantity × price and the rule, all visible
+    const buy = cards.filter({ hasText: '2024-01-15' })
+    await expect(buy).toContainText('AAPL')
+    await expect(buy).toContainText('$1,500.00')
+    await expect(buy).toContainText(/10\.00 × £[\d,.]+ \(\$150\.00\)/)
+    await expect(buy).toContainText('Section 104')
+
+    // The filters apply to the cards too
+    await page.getByLabel('Search by symbol').fill('smci')
+    await expect(cards).toHaveCount(4)
+  })
+
+  test('a tap on a GBP figure shows its exchange rate, and a tap elsewhere hides it', async ({ page }) => {
+    await loadSample(page)
+    const total = page.getByTestId('transaction-cards').locator('li').filter({ hasText: '2024-01-15' }).locator('.border-dotted').first()
+    await total.tap()
+    await expect(page.getByText(/FX Rate: [\d.]+ USD\/GBP/)).toBeVisible()
+    await page.getByRole('heading', { name: 'Transactions', exact: true }).tap()
+    await expect(page.getByText(/FX Rate: [\d.]+ USD\/GBP/)).toHaveCount(0)
   })
 })
