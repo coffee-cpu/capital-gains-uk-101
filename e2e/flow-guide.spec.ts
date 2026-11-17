@@ -18,14 +18,24 @@ test.describe('How it works line', () => {
 
     // After an import every stop is a link and the first two are ticked off
     await expect(flow.getByRole('link')).toHaveCount(5)
-    await expect(flow.getByRole('link', { name: /\(done\)/ })).toHaveCount(2)
+    const done = flow.getByRole('link', { name: /\(done\)/ })
+    await expect(done).toHaveCount(2)
+    await expect(flow.getByRole('link', { name: /^Check.*\(done\)/ })).toHaveCount(0)
 
+    // Visiting a section ticks it off: Check jumps to the table, passing the summary
     await flow.getByRole('link', { name: /Check/ }).click()
     await expect(page.getByRole('heading', { name: 'Transactions', exact: true })).toBeInViewport()
+    await expect(flow.getByRole('link', { name: /^Check.*\(done\)/ })).toHaveCount(1)
+    await expect(flow.getByRole('link', { name: /^Tax year.*\(done\)/ })).toHaveCount(1)
 
+    // PDF jumps to the button, and ticks off once the report is exported
     await page.evaluate(() => window.scrollTo(0, 0))
     await flow.getByRole('link', { name: /PDF/ }).click()
     await expect(page.locator('#export-pdf')).toBeInViewport()
+    const download = page.waitForEvent('download', { timeout: 30000 })
+    await page.locator('#export-pdf').getByRole('button', { name: /^Export PDF/ }).first().click()
+    await download
+    await expect(done).toHaveCount(5)
   })
 
   test('only links to sections that exist: no PDF stop without disposals', async ({ page }) => {
