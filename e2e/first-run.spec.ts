@@ -62,6 +62,22 @@ test.describe('First run', () => {
     await expect(summary).toContainText(/^1 file/)
   })
 
+  test('a file that fails to import leaves the sample in place', async ({ page }) => {
+    await page.goto('/')
+    await page.getByTestId('load-sample').click()
+    await expect(page.getByText(/Loaded a sample Charles Schwab portfolio/)).toBeVisible({ timeout: 20000 })
+
+    await page.locator('input[type="file"]').setInputFiles({
+      name: 'not-a-broker-export.csv',
+      mimeType: 'text/csv',
+      buffer: Buffer.from('foo,bar\n1,2\n'),
+    })
+
+    await expect(page.getByText(/1 file\(s\) failed/)).toBeVisible({ timeout: 20000 })
+    await expect(page.getByText(/Removed the sample portfolio/)).toHaveCount(0)
+    await expect(page.getByTestId('imported-files-summary')).toContainText('sample-portfolio.csv')
+  })
+
   test('the sample is not kept for the next visit', async ({ page }) => {
     await page.goto('/')
     await page.getByTestId('load-sample').click()
