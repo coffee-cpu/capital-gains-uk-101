@@ -92,3 +92,9 @@ const SA100_FOREIGN_DIVIDENDS_LIMITS: Record<string, number> = {
 export function getSa100ForeignDividendsLimit(taxYear: string): number | null {
   return SA100_FOREIGN_DIVIDENDS_LIMITS[taxYear] ?? null
 }
+
+/** The latest tax year with a checked SA100 box 6 limit, and that limit */
+export function getLatestSa100ForeignDividendsLimit(): { taxYear: string; limit: number } {
+  const taxYear = Object.keys(SA100_FOREIGN_DIVIDENDS_LIMITS).sort().at(-1)!
+  return { taxYear, limit: SA100_FOREIGN_DIVIDENDS_LIMITS[taxYear] }
+}
