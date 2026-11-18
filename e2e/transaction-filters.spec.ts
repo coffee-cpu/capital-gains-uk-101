@@ -52,6 +52,30 @@ test.describe('Transactions table', () => {
     await expect(buy).toContainText(/£[\d,]+\.\d\d/)
   })
 
+  test('ends with the net gain per tax year, matching the summary and following the filters', async ({ page }) => {
+    await loadSample(page)
+    const band = page.getByTestId('list-gains')
+    await expect(band).toContainText('Net gain/(loss)')
+    await expect(band.locator('dt')).toHaveText(['2023/24', '2024/25', '2025/26'])
+
+    // Each year's figure is the Tax Year Summary's net gain for that year
+    for (const year of ['2023/24', '2024/25', '2025/26']) {
+      await page.locator('#tax-year-select').selectOption(year)
+      const summaryNet = await page.locator('#tax-year-summary').getByText('Net Gain/(Loss)').locator('+ span').innerText()
+      await expect(band.locator('div').filter({ hasText: year }).locator('dd')).toHaveText(summaryNet)
+    }
+
+    // Filtered: only the sales shown count, and the label says so
+    await page.getByLabel('Search by symbol').fill('smci')
+    await expect(band).toContainText('Net gain/(loss), filtered')
+    await expect(band.locator('dt')).toHaveText(['2023/24'])
+
+    // No sales shown: no band
+    await page.getByLabel('Search by symbol').fill('')
+    await page.getByLabel('Filter by type').selectOption('income')
+    await expect(band).toHaveCount(0)
+  })
+
   test('fits without scrolling sideways on a 1280px screen', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 })
     await loadSample(page)

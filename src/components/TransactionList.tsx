@@ -220,6 +220,15 @@ export function TransactionList() {
     (typeGroup === 'all' || TYPE_GROUPS[typeGroup].matches(tx.type)) &&
     (activeTaxYear === 'all' || tx.tax_year === activeTaxYear)
   )
+  // Net gain per tax year of the sales shown, for the band closing the list.
+  // Unfiltered this equals the Tax Year Summary's net gain: netting same-day
+  // sales there doesn't change the total
+  const shownIds = new Set(visibleTransactions.map(tx => tx.id))
+  const gainTotals = new Map<string, number>()
+  for (const d of cgtResults?.disposals ?? []) {
+    if (shownIds.has(d.disposal.id)) gainTotals.set(d.taxYear, (gainTotals.get(d.taxYear) ?? 0) + d.gainOrLossGbp)
+  }
+  const gainsByYear = [...gainTotals].sort(([a], [b]) => a.localeCompare(b))
   const clearFilters = () => {
     setFilterMode('all')
     setSearch('')
@@ -813,6 +822,22 @@ export function TransactionList() {
           {canScrollRight && (
             <div className="absolute top-0 right-0 bottom-0 w-12 bg-gradient-to-l from-white via-white/80 to-transparent pointer-events-none"></div>
           )}
+        </div>
+      )}
+
+      {gainsByYear.length > 0 && (
+        <div className="px-4 md:px-6 py-4 bg-gray-50 border-t border-gray-200 rounded-b-lg" data-testid="list-gains">
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+            {isFiltered ? 'Net gain/(loss), filtered' : 'Net gain/(loss)'}
+          </p>
+          <dl className="mt-2 space-y-1 text-sm md:max-w-xs">
+            {gainsByYear.map(([year, gain]) => (
+              <div key={year} className="flex justify-between gap-4">
+                <dt className="text-gray-600">{year}</dt>
+                <dd className={`font-semibold tabular-nums ${gain >= 0 ? 'text-green-700' : 'text-red-700'}`}>{formatGbp(gain)}</dd>
+              </div>
+            ))}
+          </dl>
         </div>
       )}
     </div>
