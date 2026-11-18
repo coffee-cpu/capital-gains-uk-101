@@ -113,6 +113,17 @@ describe('importCSVText', () => {
       .toBe('UK gilt buy of UKT 1 01/02/30 on 2025-01-02 left out')
   })
 
+  it('counts exempt rows of one kind together, after the rows that change the totals', () => {
+    const group = 'UK gilt trades left out: gilts are exempt from Capital Gains Tax'
+    const gilts = Array.from({ length: 30 }, (_, i) => ({ reason: `UK gilt buy ${i}`, exempt: true, group }))
+    const bond = { reason: 'bond buy of T 4 1/4 11/15/34 on 2024-07-01 left out' }
+
+    expect(describeSkippedRows([...gilts, bond]))
+      .toBe(`bond buy of T 4 1/4 11/15/34 on 2024-07-01 left out; 30 ${group}`)
+    expect(describeSkippedRows(gilts)).toBe(`30 ${group}`)
+    expect(describeSkippedRows([gilts[0]])).toBe('UK gilt buy 0')
+  })
+
   it('reports the gilt trade in the Interactive Brokers example instead of dropping it silently', () => {
     const { skippedRows } = importCSVText(readExample('/examples/interactive-brokers-example.csv'), 'ib')
 

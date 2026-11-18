@@ -601,6 +601,8 @@ function parseIBDate(dateStr: string | undefined): string | null {
   return dateStr
 }
 
+const GILT_GROUP = 'UK gilt trades left out: gilts are exempt from Capital Gains Tax'
+
 /**
  * Why a bond trade is left out, or null when the row isn't one.
  *
@@ -619,7 +621,7 @@ function describeBondTrade(row: RawCSVRow): SkippedRow | null {
   }
   const trade = `${transactionType.toLowerCase()} of ${symbol} on ${row['Date']?.trim()}`
   return /^UKTI?\s/.test(symbol)
-    ? { reason: `UK gilt ${trade} left out: gilts are exempt from Capital Gains Tax`, exempt: true }
+    ? { reason: `UK gilt ${trade} left out: gilts are exempt from Capital Gains Tax`, exempt: true, group: GILT_GROUP }
     : { reason: `bond ${trade} left out: bonds aren't supported, so if it's taxable add it in a Generic CSV file` }
 }
 
