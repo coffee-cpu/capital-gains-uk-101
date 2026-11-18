@@ -601,6 +601,8 @@ function parseIBDate(dateStr: string | undefined): string | null {
   return dateStr
 }
 
+const GILT_GROUP = 'UK gilt trades left out: gilts are exempt from Capital Gains Tax'
+
 /**
  * Why a bond trade is left out, or null when the row isn't one.
  *
@@ -611,8 +613,6 @@ function parseIBDate(dateStr: string | undefined): string | null {
  * right; other bonds may be taxable, so the user is told either way. Their
  * coupons and accrued interest are still read as interest.
  */
-const GILT_GROUP = 'UK gilt trades left out: gilts are exempt from Capital Gains Tax'
-
 function describeBondTrade(row: RawCSVRow): SkippedRow | null {
   const transactionType = row['Transaction Type']?.trim()
   const symbol = row['Symbol']?.trim()

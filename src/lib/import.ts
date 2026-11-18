@@ -28,8 +28,13 @@ export function describeSkippedRows(skippedRows: SkippedRow[], limit = 3): strin
   const grouped = new Map<string, SkippedRow[]>()
   const listed: SkippedRow[] = []
   for (const s of skippedRows) {
-    if (s.exempt && s.group) grouped.set(s.group, [...(grouped.get(s.group) ?? []), s])
-    else listed.push(s)
+    if (s.exempt && s.group) {
+      const rows = grouped.get(s.group)
+      if (rows) rows.push(s)
+      else grouped.set(s.group, [s])
+    } else {
+      listed.push(s)
+    }
   }
   listed.sort((a, b) => Number(a.exempt ?? false) - Number(b.exempt ?? false))
   const lines = listed.map(describe)
