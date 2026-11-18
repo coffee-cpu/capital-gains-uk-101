@@ -59,17 +59,12 @@ test.describe('Transactions table', () => {
     const years = ['2023/24', '2024/25', '2025/26']
     await expect(band.getByTestId('gain-year')).toHaveText(years)
 
-    // Each year's figure is the Tax Year Summary's net gain for that year, in the Total column
+    // Each year's figure is the Tax Year Summary's net gain for that year
     for (const [i, year] of years.entries()) {
       await page.locator('#tax-year-select').selectOption(year)
       const summaryNet = await page.locator('#tax-year-summary').getByText('Net Gain/(Loss)').locator('+ span').innerText()
       await expect(band.getByTestId('gain-value').nth(i)).toHaveText(summaryNet)
     }
-    const [valueX, totalX] = await Promise.all([
-      band.getByTestId('gain-value').first().evaluate(el => el.getBoundingClientRect().left),
-      page.locator('#transactions thead th').nth(6).evaluate(el => el.getBoundingClientRect().left),
-    ])
-    expect(valueX).toBe(totalX)
 
     // Filtered: only the sales shown count, and the label says so
     await page.getByLabel('Search by symbol').fill('smci')

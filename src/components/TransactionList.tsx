@@ -817,30 +817,6 @@ export function TransactionList() {
                 )
               })}
             </tbody>
-            {/* Net gain per tax year, each figure in the Total column */}
-            {gainsByYear.length > 0 && (
-              <tfoot className="bg-gray-50 border-t border-gray-200" data-testid="list-gains">
-                {gainsByYear.map(([year, gain], i) => {
-                  const pad = `${i === 0 ? 'pt-4' : 'pt-1'} ${i === gainsByYear.length - 1 ? 'pb-4' : 'pb-1'}`
-                  return (
-                  <tr key={year}>
-                    <td colSpan={6} className={`px-3 text-right text-sm text-gray-600 ${pad}`}>
-                      {i === 0 && (
-                        <span className="text-xs font-medium text-gray-500 uppercase tracking-wider mr-3">
-                          {isFiltered ? 'Net gain/(loss), filtered' : 'Net gain/(loss)'}
-                        </span>
-                      )}
-                      <span data-testid="gain-year">{year}</span>
-                    </td>
-                    <td className={`px-3 text-sm font-semibold tabular-nums whitespace-nowrap ${pad} ${gain >= 0 ? 'text-green-700' : 'text-red-700'}`} data-testid="gain-value">
-                      {formatGbp(gain)}
-                    </td>
-                    <td colSpan={2}></td>
-                  </tr>
-                  )
-                })}
-              </tfoot>
-            )}
           </table>
           </div>
           {canScrollRight && (
@@ -849,16 +825,17 @@ export function TransactionList() {
         </div>
       )}
 
-      {!isWide && gainsByYear.length > 0 && (
-        <div className="px-4 py-4 bg-gray-50 border-t border-gray-200 rounded-b-lg" data-testid="list-gains">
+      {/* Net gain per tax year: a list on phones, one tile per year on wider screens */}
+      {gainsByYear.length > 0 && (
+        <div className="px-4 md:px-6 py-4 bg-gray-50 border-t border-gray-200 rounded-b-lg" data-testid="list-gains">
           <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
             {isFiltered ? 'Net gain/(loss), filtered' : 'Net gain/(loss)'}
           </p>
-          <dl className="mt-2 space-y-1 text-sm">
+          <dl className="mt-2 space-y-1 text-sm md:space-y-0 md:flex md:flex-wrap md:gap-3">
             {gainsByYear.map(([year, gain]) => (
-              <div key={year} className="flex justify-between gap-4">
+              <div key={year} className="flex justify-between gap-4 md:flex-col md:gap-1 md:min-w-[10rem] md:px-4 md:py-3 md:bg-white md:border md:border-gray-200 md:rounded-lg">
                 <dt className="text-gray-600" data-testid="gain-year">{year}</dt>
-                <dd className={`font-semibold tabular-nums ${gain >= 0 ? 'text-green-700' : 'text-red-700'}`} data-testid="gain-value">{formatGbp(gain)}</dd>
+                <dd className={`font-semibold tabular-nums md:text-base ${gain >= 0 ? 'text-green-700' : 'text-red-700'}`} data-testid="gain-value">{formatGbp(gain)}</dd>
               </div>
             ))}
           </dl>
