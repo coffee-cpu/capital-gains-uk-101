@@ -611,6 +611,8 @@ function parseIBDate(dateStr: string | undefined): string | null {
  * right; other bonds may be taxable, so the user is told either way. Their
  * coupons and accrued interest are still read as interest.
  */
+const GILT_GROUP = 'UK gilt trades left out: gilts are exempt from Capital Gains Tax'
+
 function describeBondTrade(row: RawCSVRow): SkippedRow | null {
   const transactionType = row['Transaction Type']?.trim()
   const symbol = row['Symbol']?.trim()
@@ -619,7 +621,7 @@ function describeBondTrade(row: RawCSVRow): SkippedRow | null {
   }
   const trade = `${transactionType.toLowerCase()} of ${symbol} on ${row['Date']?.trim()}`
   return /^UKTI?\s/.test(symbol)
-    ? { reason: `UK gilt ${trade} left out: gilts are exempt from Capital Gains Tax`, exempt: true }
+    ? { reason: `UK gilt ${trade} left out: gilts are exempt from Capital Gains Tax`, exempt: true, group: GILT_GROUP }
     : { reason: `bond ${trade} left out: bonds aren't supported, so if it's taxable add it in a Generic CSV file` }
 }
 

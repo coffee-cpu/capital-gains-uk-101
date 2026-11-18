@@ -318,6 +318,7 @@ describe('Interactive Brokers Parser', () => {
       expect(skippedRows).toEqual([{
         reason: 'UK gilt buy of UKT 0 5/8 06/07/25 on 2025-03-25 left out: gilts are exempt from Capital Gains Tax',
         exempt: true,
+        group: 'UK gilt trades left out: gilts are exempt from Capital Gains Tax',
       }])
     })
 

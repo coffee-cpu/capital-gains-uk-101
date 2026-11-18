@@ -44,6 +44,12 @@ export interface SkippedRow {
   reason: string
   /** The row is an asset exempt from CGT (a UK gilt), so leaving it out doesn't change the gains */
   exempt?: boolean
+  /**
+   * Describes several exempt rows of the same kind after their count, e.g.
+   * 'UK gilt trades left out: …' for "30 UK gilt trades left out: …". Exempt rows
+   * sharing it are reported as one count instead of one by one
+   */
+  group?: string
 }
 
 /**

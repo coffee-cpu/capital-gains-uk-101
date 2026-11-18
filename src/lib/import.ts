@@ -19,13 +19,26 @@ export interface CSVImportResult {
 
 /** Short description of skipped rows for messages, e.g. 'row 3: unrecognised type "SEL"' */
 export function describeSkippedRows(skippedRows: SkippedRow[], limit = 3): string {
-  const shown = skippedRows.slice(0, limit).map(s =>
+  const describe = (s: SkippedRow) =>
     s.row !== undefined ? `row ${s.row}: ${s.reason}`
     : s.transactionId !== undefined ? `transaction ${s.transactionId}: ${s.reason}`
     : s.reason
-  )
-  const more = skippedRows.length > limit ? `, and ${skippedRows.length - limit} more` : ''
-  return shown.join('; ') + more
+
+  // Rows that change the totals come first, so a long run of exempt rows can't hide them
+  const grouped = new Map<string, SkippedRow[]>()
+  const listed: SkippedRow[] = []
+  for (const s of skippedRows) {
+    if (s.exempt && s.group) grouped.set(s.group, [...(grouped.get(s.group) ?? []), s])
+    else listed.push(s)
+  }
+  listed.sort((a, b) => Number(a.exempt ?? false) - Number(b.exempt ?? false))
+  const lines = listed.map(describe)
+  for (const [group, rows] of grouped) {
+    lines.push(rows.length === 1 ? describe(rows[0]) : `${rows.length} ${group}`)
+  }
+
+  const more = lines.length > limit ? `, and ${lines.length - limit} more` : ''
+  return lines.slice(0, limit).join('; ') + more
 }
 
 /**
