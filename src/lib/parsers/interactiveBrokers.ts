@@ -223,7 +223,7 @@ export function normalizeInteractiveBrokersTransactions(
   for (const row of dataRows) {
     const bondTrade = describeBondTrade(row)
     if (bondTrade) {
-      skippedRows?.push({ reason: bondTrade })
+      skippedRows?.push(bondTrade)
       continue
     }
     const normalized = normalizeIBTransactionHistoryRow(row, fileId, rowIndex, baseCurrency, optionsPositions)
@@ -611,7 +611,7 @@ function parseIBDate(dateStr: string | undefined): string | null {
  * right; other bonds may be taxable, so the user is told either way. Their
  * coupons and accrued interest are still read as interest.
  */
-function describeBondTrade(row: RawCSVRow): string | null {
+function describeBondTrade(row: RawCSVRow): SkippedRow | null {
   const transactionType = row['Transaction Type']?.trim()
   const symbol = row['Symbol']?.trim()
   if (!transactionType || !TRADE_TYPES.has(transactionType) || !symbol || !isBondSymbol(symbol)) {
@@ -619,8 +619,8 @@ function describeBondTrade(row: RawCSVRow): string | null {
   }
   const trade = `${transactionType.toLowerCase()} of ${symbol} on ${row['Date']?.trim()}`
   return /^UKTI?\s/.test(symbol)
-    ? `UK gilt ${trade} left out: gilts are exempt from Capital Gains Tax`
-    : `bond ${trade} left out: bonds aren't supported, so if it's taxable add it in a Generic CSV file`
+    ? { reason: `UK gilt ${trade} left out: gilts are exempt from Capital Gains Tax`, exempt: true }
+    : { reason: `bond ${trade} left out: bonds aren't supported, so if it's taxable add it in a Generic CSV file` }
 }
 
 /**

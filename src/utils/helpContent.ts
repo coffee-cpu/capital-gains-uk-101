@@ -6,6 +6,7 @@
  */
 
 import { dividendTaxRatePeriods } from '../lib/cgt/allowances'
+import { getSa100ForeignDividendsLimit } from '../lib/cgt/reporting'
 
 export type HelpContext = 'default' | 'same-day' | '30-day' | 'section104' | 'stock-split' | 'tax-year' | 'dividend' | 'interest' | 'incomplete'
 
@@ -365,7 +366,7 @@ ${DIVIDEND_RATE_LINES}
 - Above the allowance, up to £10,000: Must inform HMRC (letter or phone), or include them on your Self Assessment return if you send one
 - Over £10,000: Must complete Self Assessment tax return
 
-**Foreign dividends** go on the Foreign pages (SA106), where you may be able to claim Foreign Tax Credit Relief. The relief is limited to the treaty rate (15% for US dividends with a W-8BEN form) and to the UK tax due on the same dividends. If all your dividends are within the small limit printed on SA100 box 6 (£500 for 2024/25 and 2025/26), the foreign ones can go in box 6 of the main return instead.
+**Foreign dividends** go on the Foreign pages (SA106), where you may be able to claim Foreign Tax Credit Relief. The relief is limited to the treaty rate (15% for US dividends with a W-8BEN form) and to the UK tax due on the same dividends. If all your dividends are within the small limit printed on SA100 box 6 (£${getSa100ForeignDividendsLimit('2025/26')!.toLocaleString('en-GB')} for 2025/26), the foreign ones can go in box 6 of the main return instead.
 
 **Important**: This visualizer tracks dividend income per tax year to help you determine if you need to report. It does NOT calculate the actual dividend tax owed - consult HMRC guidance or a tax advisor for that.`,
     example: {

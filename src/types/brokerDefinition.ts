@@ -42,6 +42,8 @@ export interface SkippedRow {
   /** ID of a parsed transaction that failed schema validation */
   transactionId?: string
   reason: string
+  /** The row is an asset exempt from CGT (a UK gilt), so leaving it out doesn't change the gains */
+  exempt?: boolean
 }
 
 /**

@@ -317,6 +317,7 @@ describe('Interactive Brokers Parser', () => {
       // Reported, so the trade isn't lost silently
       expect(skippedRows).toEqual([{
         reason: 'UK gilt buy of UKT 0 5/8 06/07/25 on 2025-03-25 left out: gilts are exempt from Capital Gains Tax',
+        exempt: true,
       }])
     })
 
@@ -343,6 +344,7 @@ describe('Interactive Brokers Parser', () => {
 
       expect(result).toHaveLength(0)
       expect(skippedRows).toHaveLength(1)
+      expect(skippedRows[0].exempt).toBeUndefined()
       expect(skippedRows[0].reason).toBe(
         "bond sell of T 4 1/4 11/15/34 on 2025-05-02 left out: bonds aren't supported, so if it's taxable add it in a Generic CSV file"
       )

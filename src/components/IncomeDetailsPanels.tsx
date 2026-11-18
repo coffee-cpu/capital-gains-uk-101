@@ -66,7 +66,8 @@ export function DividendDetailsPanel({ summary, onHelp }: PanelProps) {
               foreign, come to £{boxSixLimit.toLocaleString('en-GB')} or less, you can put the foreign ones in box 6
               of the main return (SA100) instead, as the amount received, with the tax withheld in box 7. That only
               applies if your other foreign income is untaxed interest of up to £2,000. To claim Foreign Tax Credit
-              Relief, use the Foreign pages.
+              Relief, use the Foreign pages; the relief is limited to the treaty rate (15% for US dividends with a
+              W-8BEN form) and to the UK tax due.
               <SourceLink href={SA100_URL} tooltip="View the SA100 tax return and notes" text="(SA100)" tone="amber" />
             </>
           ) : (
