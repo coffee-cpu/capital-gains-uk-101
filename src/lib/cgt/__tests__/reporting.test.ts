@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { getReportingProceedsLimit, sa108ReportingNeed } from '../reporting'
+import { getReportingProceedsLimit, getLatestSa100ForeignDividendsLimit, getSa100ForeignDividendsLimit, sa108ReportingNeed } from '../reporting'
 
 function year(taxYear: string, overrides: Partial<Parameters<typeof sa108ReportingNeed>[0]> = {}) {
   return {
@@ -64,5 +64,24 @@ describe('sa108ReportingNeed', () => {
     expect(sa108ReportingNeed(year('2024/25', { incompleteDisposals: 1 })).figuresIncomplete).toBe(true)
     expect(sa108ReportingNeed(year('2024/25', { missingFxDisposals: 2 })).figuresIncomplete).toBe(true)
     expect(sa108ReportingNeed(year('2024/25', { incompleteDisposals: 0, missingFxDisposals: 0 })).figuresIncomplete).toBe(false)
+  })
+})
+
+describe('getSa100ForeignDividendsLimit', () => {
+  it('gives the box 6 limit printed on each checked SA100', () => {
+    expect(getSa100ForeignDividendsLimit('2023/24')).toBe(1000)
+    expect(getSa100ForeignDividendsLimit('2024/25')).toBe(500)
+    expect(getSa100ForeignDividendsLimit('2025/26')).toBe(500)
+  })
+
+  it('returns null for years not checked against the form', () => {
+    expect(getSa100ForeignDividendsLimit('2022/23')).toBeNull()
+    expect(getSa100ForeignDividendsLimit('2026/27')).toBeNull()
+  })
+})
+
+describe('getLatestSa100ForeignDividendsLimit', () => {
+  it('returns the most recent checked tax year and its limit', () => {
+    expect(getLatestSa100ForeignDividendsLimit()).toEqual({ taxYear: '2025/26', limit: 500 })
   })
 })

@@ -1,5 +1,6 @@
 import type { DisposalRecord } from '../../types/cgt'
 import type { EnrichedTransaction, GenericTransaction } from '../../types/transaction'
+import { BrokerType } from '../../types/broker'
 import { isFiatCurrency } from '../currencies'
 
 /**
@@ -38,7 +39,7 @@ export function splitGainsAndLosses(nets: number[]): { gainsGbp: number; lossesG
 export type Sa108Category = 'LISTED_SHARES' | 'CRYPTO' | 'OPTIONS'
 
 /** Brokers whose exports are cryptoassets. Transactions carry no asset class. */
-const CRYPTO_SOURCES = new Set(['Coinbase', 'Coinbase Pro'])
+const CRYPTO_SOURCES = new Set<string>([BrokerType.COINBASE, BrokerType.COINBASE_PRO])
 
 /** True for transactions from a crypto exchange's own export */
 export function isCryptoSource(source: string): boolean {

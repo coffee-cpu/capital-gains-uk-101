@@ -1,5 +1,6 @@
 import { GuidePage } from './html'
 import { getDividendAllowance, getDividendTaxRates } from '../lib/cgt/allowances'
+import { getSa100ForeignDividendsLimit } from '../lib/cgt/reporting'
 import { FOREIGN_CURRENCY_PATH, OVERVIEW_PATH } from './rules'
 import { SCHWAB_RSU_PATH } from './rsu'
 
@@ -18,6 +19,8 @@ import { SCHWAB_RSU_PATH } from './rsu'
  *   Dividend Article of the relevant DTA", foreign tax is "the lower of the
  *   foreign tax actually withheld and the amount of tax credit allowed under
  *   the terms of a DTA"), "Tax on foreign income: if you're taxed twice", HS263
+ * - Small foreign dividends on the main return: SA100 2024, 2025 and 2026 box 6
+ *   ("Foreign dividends (up to £...)"), SA150 notes 2026 box 6
  */
 
 const TAX_ON_DIVIDENDS = 'https://www.gov.uk/tax-on-dividends'
@@ -25,6 +28,7 @@ const REPORT_DIVIDENDS = 'https://www.gov.uk/tax-on-dividends/how-to-report-tax-
 const TAXED_TWICE = 'https://www.gov.uk/tax-foreign-income/taxed-twice'
 const HS263 = 'https://www.gov.uk/government/publications/calculating-foreign-tax-credit-relief-on-income-hs263-self-assessment-helpsheet'
 const SA106 = 'https://www.gov.uk/government/publications/self-assessment-foreign-sa106'
+const SA100 = 'https://www.gov.uk/government/publications/self-assessment-tax-return-sa100'
 const SAVINGS_TAX_FREE = 'https://www.gov.uk/apply-tax-free-interest-on-savings/how-much-is-tax-free'
 const SAVINGS_HOW_TO_PAY = 'https://www.gov.uk/apply-tax-free-interest-on-savings/how-you-pay-tax-on-savings-interest'
 const W8BEN = 'https://www.irs.gov/forms-pubs/about-form-w-8-ben'
@@ -75,6 +79,8 @@ ${ratesTable()}
 
 <h2 id="foreign-dividends">Dividends from foreign shares</h2>
 <p>Dividends from companies outside the UK, including US shares and funds domiciled abroad (such as Irish-domiciled ETFs), are foreign income. They go on the ‘Foreign’ pages of your return (<a href="${SA106}">SA106</a>), in pounds, country by country, with the amount before foreign tax and the foreign tax taken off.</p>
+<h3 id="small-foreign-dividends">Small amounts: the main return instead</h3>
+<p>If all your dividends for the year, UK and foreign, are within a small limit, you can put the foreign ones in box 6 of the main return (<a href="${SA100}">SA100</a>) instead of the Foreign pages: the amount you received in pounds, with the foreign tax taken off in box 7. The limit was ${pounds(getSa100ForeignDividendsLimit('2023/24')!)} for 2023/24, and is ${pounds(getSa100ForeignDividendsLimit('2025/26')!)} for 2024/25 and 2025/26. HMRC’s notes allow it only if your other foreign income is untaxed interest of up to £2,000, which goes in box 3. To claim Foreign Tax Credit Relief, use the Foreign pages.</p>
 <p>Some funds hold mostly bonds. HMRC’s SA106 notes say that if an offshore fund has more than 60% invested in interest-bearing assets, its distributions are treated as interest, not dividends.</p>
 
 <h2 id="us-withholding">US withholding tax and the W-8BEN form</h2>

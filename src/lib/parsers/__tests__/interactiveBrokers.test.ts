@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { normalizeInteractiveBrokersTransactions, preprocessInteractiveBrokersCSV } from '../interactiveBrokers'
 import { TransactionType } from '../../../types/transaction'
+import { SkippedRow } from '../../../types/brokerDefinition'
 
 // Helper to create IB CSV row format (after preprocessing by preprocessInteractiveBrokersCSV)
 // Preprocessed format has columns: Section, RowType, Date, Account, Description, Transaction Type, Symbol, Quantity, Price, Gross Amount, Commission, Net Amount
@@ -308,10 +309,45 @@ describe('Interactive Brokers Parser', () => {
         }),
       ]
 
-      const result = normalizeInteractiveBrokersTransactions(rows, 'test-file')
+      const skippedRows: SkippedRow[] = []
+      const result = normalizeInteractiveBrokersTransactions(rows, 'test-file', undefined, skippedRows)
 
       expect(result).toHaveLength(1) // Only the stock, not the bond
       expect(result[0].symbol).toBe('VUSD')
+      // Reported, so the trade isn't lost silently
+      expect(skippedRows).toEqual([{
+        reason: 'UK gilt buy of UKT 0 5/8 06/07/25 on 2025-03-25 left out: gilts are exempt from Capital Gains Tax',
+        exempt: true,
+      }])
+    })
+
+    it('reports bonds other than gilts as possibly taxable', () => {
+      const rows = [
+        createIBRow({
+          'Section': 'Transaction History',
+          'RowType': 'Data',
+          'Date': '2025-05-02',
+          'Account': 'U1234567',
+          'Description': 'T 4 1/4 11/15/34',
+          'Transaction Type': 'Sell',
+          'Symbol': 'T 4 1/4 11/15/34',
+          'Quantity': '-2000.0',
+          'Price': '98.5',
+          'Gross Amount ': '1970.00',
+          'Commission': '-1.0',
+          'Net Amount': '1969.00',
+        }),
+      ]
+
+      const skippedRows: SkippedRow[] = []
+      const result = normalizeInteractiveBrokersTransactions(rows, 'test-file', undefined, skippedRows)
+
+      expect(result).toHaveLength(0)
+      expect(skippedRows).toHaveLength(1)
+      expect(skippedRows[0].exempt).toBeUndefined()
+      expect(skippedRows[0].reason).toBe(
+        "bond sell of T 4 1/4 11/15/34 on 2025-05-02 left out: bonds aren't supported, so if it's taxable add it in a Generic CSV file"
+      )
     })
 
 

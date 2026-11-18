@@ -3,6 +3,7 @@ import type { EnrichedTransaction } from '../../types/transaction'
 import { renderAllFeaturePDFSections } from '../cgt/taxYearFeatures/pdfRenderers'
 import { formatGbp } from '../../utils/currency'
 import { isFiatCurrency } from '../currencies'
+import { getSa100ForeignDividendsLimit } from '../cgt/reporting'
 import { REPORT_FONTS } from './fonts'
 import {
   getEffectivePrice,
@@ -29,6 +30,18 @@ import {
  */
 type PdfLibrary = typeof import('@react-pdf/renderer')
 type PdfStyles = ReturnType<typeof createStyles>
+
+/**
+ * The SA100 box 6 alternative for small foreign dividends, as a sentence
+ * (empty when the limit hasn't been checked for the year)
+ */
+function foreignDividendsBoxSixNote(taxYear: string): string {
+  const limit = getSa100ForeignDividendsLimit(taxYear)
+  if (limit === null) return ''
+  return `If all your dividends come to £${limit.toLocaleString('en-GB')} or less and your only other foreign income ` +
+    'is untaxed interest of up to £2,000, foreign dividends can go in box 6 of SA100 instead, as the amount ' +
+    'received, with the tax withheld in box 7. '
+}
 
 export type ReactPdfLibrary = Pick<PdfLibrary, 'Document' | 'Page' | 'Text' | 'View' | 'StyleSheet'>
 
@@ -636,7 +649,9 @@ function createCGTReportDocument(
                   {'This report cannot tell UK income from foreign income. Dividends from UK companies and UK funds, and ' +
                     'UK interest, go on the main tax return (SA100). Dividends and interest from abroad, including from ' +
                     'Irish-domiciled funds, go on the Foreign pages (SA106), where you may be able to claim Foreign Tax ' +
-                    'Credit Relief for tax withheld. Dividends and interest are income, not capital gains.'}
+                    'Credit Relief for tax withheld. ' +
+                    foreignDividendsBoxSixNote(taxYearSummary.taxYear) +
+                    'Dividends and interest are income, not capital gains.'}
                 </Text>
               </View>
             </View>

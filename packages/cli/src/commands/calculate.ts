@@ -58,8 +58,11 @@ export async function calculateWithResult(
       warnings.push({
         code: 'SKIPPED_ROWS',
         message:
-          `"${file.path}": ${imported.skippedRows.length} row(s) could not be read and were left out ` +
-          `(${describeSkippedRows(imported.skippedRows, 5)}). Fix them and run again, or the totals will be wrong.`,
+          `"${file.path}": ${imported.skippedRows.length} row(s) were left out ` +
+          `(${describeSkippedRows(imported.skippedRows, 5)}).` +
+          (imported.skippedRows.every(row => row.exempt)
+            ? ' They are exempt from Capital Gains Tax, so the totals are unaffected.'
+            : ' Fix them and run again, or the totals will be wrong.'),
       })
     }
   }
