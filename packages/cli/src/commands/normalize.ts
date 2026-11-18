@@ -43,7 +43,7 @@ export function normalize(files: InputFile[]): {
       transactions.push(...imported.transactions)
       if (imported.skippedRows.length > 0) {
         skippedRowMessages.push(
-          `"${file.path}": ${imported.skippedRows.length} row(s) could not be read and were left out ` +
+          `"${file.path}": ${imported.skippedRows.length} row(s) were left out ` +
           `(${describeSkippedRows(imported.skippedRows, 5)})`
         )
       }

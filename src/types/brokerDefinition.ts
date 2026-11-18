@@ -24,7 +24,8 @@ export type ParserFunction = (
 ) => GenericTransaction[]
 
 /**
- * A data row a parser dropped because it couldn't be interpreted, reported so
+ * A data row a parser dropped because it couldn't be interpreted or holds an
+ * asset the app doesn't support (Interactive Brokers bonds), reported so
  * users don't silently lose transactions. Parsers that skip rows by design
  * (summary lines, cash movements) don't report those.
  */
@@ -33,7 +34,9 @@ export interface SkippedRow {
    * Row number as shown in a spreadsheet, with the header as row 1. Completely
    * empty lines are removed before parsing, so rows after one are reported one lower.
    * Absent when a parsed transaction failed validation after parsing, which
-   * no longer knows its row; `transactionId` names it instead.
+   * no longer knows its row (`transactionId` names it instead), or when the
+   * parser can't map rows back to the file (Interactive Brokers' multi-section
+   * format), where the reason names the trade.
    */
   row?: number
   /** ID of a parsed transaction that failed schema validation */

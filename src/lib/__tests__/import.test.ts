@@ -108,6 +108,19 @@ describe('importCSVText', () => {
     expect(describeSkippedRows(rows)).toBe('row 1: missing date; row 2: missing date; row 3: missing date, and 2 more')
   })
 
+  it('shows just the reason when a skipped row has no row number', () => {
+    expect(describeSkippedRows([{ reason: 'UK gilt buy of UKT 1 01/02/30 on 2025-01-02 left out' }]))
+      .toBe('UK gilt buy of UKT 1 01/02/30 on 2025-01-02 left out')
+  })
+
+  it('reports the gilt trade in the Interactive Brokers example instead of dropping it silently', () => {
+    const { skippedRows } = importCSVText(readExample('/examples/interactive-brokers-example.csv'), 'ib')
+
+    expect(skippedRows.map(s => s.reason)).toEqual([
+      'UK gilt buy of UKT 0 5/8 06/07/25 on 2025-03-25 left out: gilts are exempt from Capital Gains Tax',
+    ])
+  })
+
   it('throws when the format cannot be detected', () => {
     const csv = 'foo,bar,baz\n1,2,3'
 

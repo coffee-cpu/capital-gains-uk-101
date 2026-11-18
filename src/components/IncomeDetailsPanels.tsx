@@ -2,8 +2,10 @@ import type { ReactNode } from 'react'
 import type { TaxYearSummary } from '../types/cgt'
 import { Tooltip } from './Tooltip'
 import { formatGbp } from '../utils/currency'
+import { getSa100ForeignDividendsLimit } from '../lib/cgt/reporting'
 
 const SA106_URL = 'https://www.gov.uk/government/publications/self-assessment-foreign-sa106'
+const SA100_URL = 'https://www.gov.uk/government/publications/self-assessment-tax-return-sa100'
 const TAXED_TWICE_URL = 'https://www.gov.uk/tax-foreign-income/taxed-twice'
 const SAVINGS_INTEREST_URL = 'https://www.gov.uk/apply-tax-free-interest-on-savings'
 
@@ -22,6 +24,8 @@ export function DividendDetailsPanel({ summary, onHelp }: PanelProps) {
   // See: https://www.gov.uk/government/publications/self-assessment-foreign-sa106
   const exceedsAllowance = summary.grossDividendsGbp > summary.dividendAllowance
   const allowance = `£${summary.dividendAllowance.toLocaleString('en-GB')}`
+  // Small foreign dividends can go on the main return instead of SA106 (null: limit not checked for the year)
+  const boxSixLimit = getSa100ForeignDividendsLimit(summary.taxYear)
 
   return (
     <IncomePanel
@@ -56,7 +60,23 @@ export function DividendDetailsPanel({ summary, onHelp }: PanelProps) {
           netLabel="Net Dividends Received"
           netGbp={summary.grossDividendsGbp - summary.totalWithholdingTaxGbp}
         >
-          Use these figures when completing SA106 (Foreign). You may be able to claim Foreign Tax Credit Relief for tax withheld.
+          {boxSixLimit !== null && summary.grossDividendsGbp <= boxSixLimit ? (
+            <>
+              Dividends from abroad go on the Foreign pages (SA106). If all your dividends for the year, UK and
+              foreign, come to £{boxSixLimit.toLocaleString('en-GB')} or less, you can put the foreign ones in box 6
+              of the main return (SA100) instead, as the amount received, with the tax withheld in box 7. That only
+              applies if your other foreign income is untaxed interest of up to £2,000. To claim Foreign Tax Credit
+              Relief, use the Foreign pages.
+              <SourceLink href={SA100_URL} tooltip="View the SA100 tax return and notes" text="(SA100)" tone="amber" />
+            </>
+          ) : (
+            <>
+              Use these figures on the Foreign pages (SA106) for dividends from abroad. Foreign Tax Credit Relief is
+              limited to the treaty rate (15% for US dividends with a W-8BEN form) and to the UK tax due on the same
+              dividends. Tax taken off above the treaty rate can only be reclaimed from the foreign country.
+              <SourceLink href={TAXED_TWICE_URL} tooltip="View Foreign Tax Credit Relief guidance" text="Learn more" tone="amber" small={false} />
+            </>
+          )}
         </WithholdingSummary>
       )}
 

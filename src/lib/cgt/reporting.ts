@@ -68,3 +68,27 @@ export function sa108ReportingNeed(
     proceedsLimit,
   }
 }
+
+/**
+ * Small foreign dividends can go on the main return (SA100 box 6, "Foreign
+ * dividends (up to £X)") instead of the Foreign pages (SA106), as the amount
+ * after foreign tax with the tax in box 7. The SA150 notes (2026) allow it when
+ * the only other foreign income is untaxed interest in box 3 and total
+ * dividends, UK and foreign, are within the limit; otherwise, and to claim
+ * Foreign Tax Credit Relief, use the Foreign pages.
+ *
+ * Only years checked against HMRC's forms are listed (SA100 2024: £1,000;
+ * SA100 2025 and 2026: £500). The limit has changed often (£300 on SA100
+ * 2016), so other years return null rather than a guess.
+ * https://www.gov.uk/government/publications/self-assessment-tax-return-sa100
+ */
+const SA100_FOREIGN_DIVIDENDS_LIMITS: Record<string, number> = {
+  '2023/24': 1000,
+  '2024/25': 500,
+  '2025/26': 500,
+}
+
+/** The SA100 box 6 foreign dividends limit for a tax year, or null when not checked */
+export function getSa100ForeignDividendsLimit(taxYear: string): number | null {
+  return SA100_FOREIGN_DIVIDENDS_LIMITS[taxYear] ?? null
+}

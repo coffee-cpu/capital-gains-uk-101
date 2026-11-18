@@ -13,14 +13,16 @@ export interface CSVImportResult {
   broker: BrokerType
   confidence: number
   transactions: GenericTransaction[]
-  /** Rows the parser couldn't interpret and dropped (reported by the Generic CSV parser) */
+  /** Rows the parser dropped and why (couldn't interpret them, or an unsupported asset such as a bond) */
   skippedRows: SkippedRow[]
 }
 
 /** Short description of skipped rows for messages, e.g. 'row 3: unrecognised type "SEL"' */
 export function describeSkippedRows(skippedRows: SkippedRow[], limit = 3): string {
   const shown = skippedRows.slice(0, limit).map(s =>
-    `${s.row !== undefined ? `row ${s.row}` : `transaction ${s.transactionId}`}: ${s.reason}`
+    s.row !== undefined ? `row ${s.row}: ${s.reason}`
+    : s.transactionId !== undefined ? `transaction ${s.transactionId}: ${s.reason}`
+    : s.reason
   )
   const more = skippedRows.length > limit ? `, and ${skippedRows.length - limit} more` : ''
   return shown.join('; ') + more

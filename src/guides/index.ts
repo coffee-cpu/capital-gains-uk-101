@@ -3,6 +3,7 @@ import { RULE_GUIDES } from './rules'
 import { buildBrokerGuides } from './brokers'
 import { SCHWAB_RSU_GUIDE } from './rsu'
 import { DIVIDENDS_GUIDE } from './dividends'
+import { GILTS_GUIDE } from './gilts'
 
 export type { GuidePage } from './html'
 
@@ -50,7 +51,7 @@ ${entries.join('\n')}
 
 /** Build every guide page and the sitemap */
 export function buildGuideSite(): GuideSite {
-  const rules = RULE_GUIDES
+  const rules = [...RULE_GUIDES, GILTS_GUIDE]
   const brokers = buildBrokerGuides()
   const employeeShares = [SCHWAB_RSU_GUIDE]
   const income = [DIVIDENDS_GUIDE]

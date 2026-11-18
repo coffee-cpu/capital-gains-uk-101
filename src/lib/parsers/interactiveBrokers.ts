@@ -1,5 +1,6 @@
 import { GenericTransaction, TransactionType } from '../../types/transaction'
 import { RawCSVRow, BrokerType } from '../../types/broker'
+import { SkippedRow } from '../../types/brokerDefinition'
 import { CSVPreprocessor } from './fileUtils'
 import { parseNumber } from './parsingUtils'
 
@@ -196,11 +197,13 @@ function createBaseTransaction(
  * @param rows Raw CSV rows
  * @param fileId Unique identifier for this file
  * @param referenceDate Optional reference date (YYYY-MM-DD) for synthetic expiration injection. Defaults to today.
+ * @param skippedRows If given, receives the bond trades that were left out
  */
 export function normalizeInteractiveBrokersTransactions(
   rows: RawCSVRow[],
   fileId: string,
-  referenceDate?: string
+  referenceDate?: string,
+  skippedRows?: SkippedRow[]
 ): GenericTransaction[] {
   const transactions: GenericTransaction[] = []
   let rowIndex = 1
@@ -218,6 +221,11 @@ export function normalizeInteractiveBrokersTransactions(
   const optionsPositions = new Map<string, number>()
 
   for (const row of dataRows) {
+    const bondTrade = describeBondTrade(row)
+    if (bondTrade) {
+      skippedRows?.push({ reason: bondTrade })
+      continue
+    }
     const normalized = normalizeIBTransactionHistoryRow(row, fileId, rowIndex, baseCurrency, optionsPositions)
     if (normalized) {
       transactions.push(normalized)
@@ -419,7 +427,7 @@ function normalizeTradeRow(
 ): GenericTransaction | null {
   const symbol = row['Symbol']?.trim()
 
-  if (!symbol || symbol === '-' || isBondSymbol(symbol)) {
+  if (!symbol || symbol === '-') {
     return null
   }
 
@@ -591,6 +599,28 @@ function normalizeInterestRow(
 function parseIBDate(dateStr: string | undefined): string | null {
   if (!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return null
   return dateStr
+}
+
+/**
+ * Why a bond trade is left out, or null when the row isn't one.
+ *
+ * Bonds aren't supported: they're quoted per 100 of nominal and come with
+ * accrued interest rows, and without real exports of their sales and
+ * redemptions we can't parse them reliably. UK gilts (IB symbol UKT, or UKTI
+ * for index-linked) are exempt from CGT (TCGA92/S115), so leaving them out is
+ * right; other bonds may be taxable, so the user is told either way. Their
+ * coupons and accrued interest are still read as interest.
+ */
+function describeBondTrade(row: RawCSVRow): string | null {
+  const transactionType = row['Transaction Type']?.trim()
+  const symbol = row['Symbol']?.trim()
+  if (!transactionType || !TRADE_TYPES.has(transactionType) || !symbol || !isBondSymbol(symbol)) {
+    return null
+  }
+  const trade = `${transactionType.toLowerCase()} of ${symbol} on ${row['Date']?.trim()}`
+  return /^UKTI?\s/.test(symbol)
+    ? `UK gilt ${trade} left out: gilts are exempt from Capital Gains Tax`
+    : `bond ${trade} left out: bonds aren't supported, so if it's taxable add it in a Generic CSV file`
 }
 
 /**
