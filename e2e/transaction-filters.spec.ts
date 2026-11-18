@@ -56,19 +56,25 @@ test.describe('Transactions table', () => {
     await loadSample(page)
     const band = page.getByTestId('list-gains')
     await expect(band).toContainText('Net gain/(loss)')
-    await expect(band.locator('dt')).toHaveText(['2023/24', '2024/25', '2025/26'])
+    const years = ['2023/24', '2024/25', '2025/26']
+    await expect(band.getByTestId('gain-year')).toHaveText(years)
 
-    // Each year's figure is the Tax Year Summary's net gain for that year
-    for (const year of ['2023/24', '2024/25', '2025/26']) {
+    // Each year's figure is the Tax Year Summary's net gain for that year, in the Total column
+    for (const [i, year] of years.entries()) {
       await page.locator('#tax-year-select').selectOption(year)
       const summaryNet = await page.locator('#tax-year-summary').getByText('Net Gain/(Loss)').locator('+ span').innerText()
-      await expect(band.locator('div').filter({ hasText: year }).locator('dd')).toHaveText(summaryNet)
+      await expect(band.getByTestId('gain-value').nth(i)).toHaveText(summaryNet)
     }
+    const [valueX, totalX] = await Promise.all([
+      band.getByTestId('gain-value').first().evaluate(el => el.getBoundingClientRect().left),
+      page.locator('#transactions thead th').nth(6).evaluate(el => el.getBoundingClientRect().left),
+    ])
+    expect(valueX).toBe(totalX)
 
     // Filtered: only the sales shown count, and the label says so
     await page.getByLabel('Search by symbol').fill('smci')
     await expect(band).toContainText('Net gain/(loss), filtered')
-    await expect(band.locator('dt')).toHaveText(['2023/24'])
+    await expect(band.getByTestId('gain-year')).toHaveText(['2023/24'])
 
     // No sales shown: no band
     await page.getByLabel('Search by symbol').fill('')
@@ -103,6 +109,9 @@ test.describe('Transactions on a phone', () => {
     await expect(buy).toContainText('$1,500.00')
     await expect(buy).toContainText(/10\.00 × £[\d,.]+ \(\$150\.00\)/)
     await expect(buy).toContainText('Section 104')
+
+    // The list ends with the net gain per tax year
+    await expect(page.getByTestId('list-gains').getByTestId('gain-year')).toHaveText(['2023/24', '2024/25', '2025/26'])
 
     // The filters apply to the cards too
     await page.getByLabel('Search by symbol').fill('smci')
