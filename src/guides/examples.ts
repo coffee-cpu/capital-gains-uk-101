@@ -1,4 +1,4 @@
-import { escapeHtml, gbp } from './html'
+import { escapeHtml, formatDate, gbp } from './html'
 
 /**
  * Worked examples shown in the rule guides. Each one is run through the real
@@ -138,7 +138,51 @@ export const RSU_EXAMPLE: WorkedExample = {
   poolAfter: { quantity: 40, costGbp: 18000 },
 }
 
+/** The overview guide's example: shares bought years apart, then a sale from the pool */
+export const OVERVIEW_EXAMPLE: WorkedExample = {
+  symbol: 'ACME',
+  transactions: [
+    { date: '2016-05-03', type: 'BUY', quantity: 400, price: 20 },
+    { date: '2022-11-14', type: 'BUY', quantity: 600, price: 30 },
+    { date: '2025-09-15', type: 'SELL', quantity: 500, price: 50 },
+  ],
+  disposal: {
+    date: '2025-09-15',
+    quantity: 500,
+    proceedsGbp: 25000,
+    allowableCostsGbp: 13000,
+    gainOrLossGbp: 12000,
+    matches: [{ rule: 'section-104', quantity: 500, costGbp: 13000 }],
+  },
+  poolAfter: { quantity: 500, costGbp: 13000 },
+}
+
+/**
+ * The rest of the overview example: the year's totals and the tax. The
+ * engine works out the taxable gain (checked in the tests); the rate split
+ * needs the person's income, so the example assumes how much of the basic
+ * rate band is left.
+ */
+export const OVERVIEW_TAX = {
+  taxYear: '2025/26',
+  annualExemptAmountGbp: 3000,
+  taxableGainGbp: 9000,
+  unusedBasicRateBandGbp: 4000,
+  basicRate: 18,
+  higherRate: 24,
+}
+
+/** Tax on a taxable gain: the part within the unused basic rate band at the basic rate, the rest at the higher rate */
+export function splitTaxByBand(taxableGain: number, unusedBasicRateBand: number, basicRate: number, higherRate: number) {
+  const atBasicRate = Math.min(taxableGain, Math.max(0, unusedBasicRateBand))
+  const atHigherRate = taxableGain - atBasicRate
+  const basicTax = atBasicRate * basicRate / 100
+  const higherTax = atHigherRate * higherRate / 100
+  return { atBasicRate, atHigherRate, basicTax, higherTax, total: basicTax + higherTax }
+}
+
 export const WORKED_EXAMPLES = {
+  overview: OVERVIEW_EXAMPLE,
   sameDay: SAME_DAY_EXAMPLE,
   thirtyDay: THIRTY_DAY_EXAMPLE,
   section104: SECTION_104_EXAMPLE,
@@ -148,7 +192,7 @@ export const WORKED_EXAMPLES = {
 
 /** 2025-06-10 → 10 June 2025 */
 export function longDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
+  return formatDate(iso)
 }
 
 /** The example's transactions as a Generic CSV, which the calculator imports directly */

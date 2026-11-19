@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { buildGuideSite } from '..'
-import { WORKED_EXAMPLES, WorkedExample, exampleToGenericCsv } from '../examples'
+import { OVERVIEW_TAX, WORKED_EXAMPLES, WorkedExample, exampleToGenericCsv, splitTaxByBand } from '../examples'
 import { importCSVText } from '../../lib/import'
 import { runPipeline } from '../../lib/pipeline'
 import { createMemoryCacheBackends, setCacheBackends } from '../../lib/cache'
@@ -42,6 +42,27 @@ describe('guide worked examples', () => {
     const pool = result!.section104Pools.get(example.symbol)!
     expect(pool.quantity).toBeCloseTo(example.poolAfter.quantity, 6)
     expect(pool.totalCostGbp).toBeCloseTo(example.poolAfter.costGbp, 2)
+  })
+})
+
+describe('overview guide tax example', () => {
+  beforeEach(() => setCacheBackends(createMemoryCacheBackends()))
+
+  it('uses the tax year, allowance and taxable gain the engine produces', async () => {
+    const { transactions } = importCSVText(exampleToGenericCsv(WORKED_EXAMPLES.overview), 'example')
+    const result = await runPipeline(transactions, { autoSplits: false })
+    const summary = result!.taxYearSummaries.find(s => s.taxYear === OVERVIEW_TAX.taxYear)!
+
+    expect(summary.annualExemptAmount).toBe(OVERVIEW_TAX.annualExemptAmountGbp)
+    expect(summary.taxableGainGbp).toBeCloseTo(OVERVIEW_TAX.taxableGainGbp, 2)
+  })
+
+  it('splits the tax between the basic and higher rates', () => {
+    expect(splitTaxByBand(9000, 4000, 18, 24)).toEqual({ atBasicRate: 4000, atHigherRate: 5000, basicTax: 720, higherTax: 1200, total: 1920 })
+    expect(splitTaxByBand(9000, 20000, 18, 24).total).toBe(1620)
+    expect(splitTaxByBand(9000, 0, 18, 24).total).toBe(2160)
+    // GOV.UK's example 2: £20,000 taxable income, £49,600 taxable gain, £37,700 band
+    expect(splitTaxByBand(49600, 17700, 18, 24).total).toBe(10842)
   })
 })
 

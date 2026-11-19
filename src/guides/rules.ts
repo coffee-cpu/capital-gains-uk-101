@@ -1,5 +1,6 @@
 import { GuidePage } from './html'
-import { WORKED_EXAMPLES, renderResultTable, renderTransactionsTable } from './examples'
+import { OVERVIEW_TAX, WORKED_EXAMPLES, renderResultTable, renderTransactionsTable, splitTaxByBand } from './examples'
+import { gbp } from './html'
 
 /**
  * Guides to HMRC's rules for shares. Figures in the worked examples come from
@@ -13,6 +14,7 @@ const CG51620 = 'https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/c
 const CG78310 = 'https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg78310'
 const RATES = 'https://www.gov.uk/government/publications/rates-and-allowances-capital-gains-tax/capital-gains-tax-rates-and-annual-tax-free-allowances'
 const SA108_NOTES = 'https://www.gov.uk/government/publications/self-assessment-capital-gains-summary-sa108'
+const REPORT_OTHER_GAINS = 'https://www.gov.uk/report-and-pay-your-capital-gains-tax/if-you-have-other-capital-gains-to-report'
 
 export const OVERVIEW_PATH = '/guides/how-to-calculate-capital-gains-tax-on-shares/'
 export const SAME_DAY_PATH = '/guides/same-day-rule/'
@@ -24,7 +26,7 @@ export const FOREIGN_CURRENCY_PATH = '/guides/foreign-currency-shares/'
 const RULE_PATHS = [OVERVIEW_PATH, SAME_DAY_PATH, THIRTY_DAY_PATH, SECTION_104_PATH, STOCK_SPLITS_PATH, FOREIGN_CURRENCY_PATH]
 const otherRules = (path: string) => RULE_PATHS.filter(p => p !== path)
 
-function article(page: Pick<GuidePage, 'path' | 'title' | 'description'>): object {
+function article(page: Pick<GuidePage, 'path' | 'title' | 'description' | 'updated'>): object {
   return {
     '@context': 'https://schema.org',
     '@type': 'Article',
@@ -33,6 +35,7 @@ function article(page: Pick<GuidePage, 'path' | 'title' | 'description'>): objec
     url: 'https://cgtvisualiser.co.uk' + page.path,
     inLanguage: 'en-GB',
     isAccessibleForFree: true,
+    ...(page.updated ? { dateModified: page.updated } : {}),
     publisher: { '@type': 'Organization', name: 'Capital Gains Tax Visualiser', url: 'https://cgtvisualiser.co.uk/' },
   }
 }
@@ -46,10 +49,21 @@ function rulePage(page: Omit<GuidePage, 'section' | 'jsonLd' | 'related'> & { js
   }
 }
 
+const overviewTax = splitTaxByBand(OVERVIEW_TAX.taxableGainGbp, OVERVIEW_TAX.unusedBasicRateBandGbp, OVERVIEW_TAX.basicRate, OVERVIEW_TAX.higherRate)
+
+// The pool before the sale: every purchase in the example comes before it
+const overviewBuys = WORKED_EXAMPLES.overview.transactions.filter(tx => tx.type === 'BUY')
+const overviewPoolShares = overviewBuys.reduce((sum, tx) => sum + (tx.quantity ?? 0), 0)
+const overviewPoolCost = overviewBuys.reduce((sum, tx) => sum + (tx.quantity ?? 0) * (tx.price ?? 0), 0)
+/** Amounts in prose: £26,000 when whole, otherwise with pence (£26.50) */
+const pounds = (value: number) =>
+  `£${value.toLocaleString('en-GB', Number.isInteger(value) ? {} : { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+
 const overview = rulePage({
   path: OVERVIEW_PATH,
   title: 'How to calculate Capital Gains Tax on shares in the UK (2025/26 and 2026/27)',
   navTitle: 'How to calculate CGT on shares',
+  updated: '2026-11-19',
   description: 'Step by step: match each sale using HMRC’s same-day, 30-day and Section 104 rules, work out the gain, deduct the £3,000 allowance and apply 18% or 24%.',
   h1: 'How to calculate Capital Gains Tax on shares',
   bodyHtml: `
@@ -65,13 +79,16 @@ const overview = rulePage({
 <li><a href="${THIRTY_DAY_PATH}">30-day rule</a>: shares bought in the 30 days <em>after</em> the sale (the “bed and breakfast” rule).</li>
 <li><a href="${SECTION_104_PATH}">Section 104 pool</a>: everything else, at the average cost of all the shares you still hold.</li>
 </ol>
-<p>The calculator does this matching for you, and shows which rule matched each sale.</p>
+<p>Bought shares at different times? Most sales come from the pool, at the average cost of all the shares you still hold, not the cost of particular shares. The calculator does this matching for you, and shows which rule matched each sale.</p>
 
 <h2>3. Work out the gain or loss on each sale</h2>
 <p>Gain = sale proceeds − allowable costs. Allowable costs are what you paid for the matched shares, including dealing fees and stamp duty. Fees on the sale are allowable costs too: on the SA108 form you enter the proceeds before fees and include the selling fees in allowable costs, which gives the same gain. Amounts in other currencies are converted to pounds (see <a href="${FOREIGN_CURRENCY_PATH}">foreign currency shares</a>).</p>
 
 <h3>Trade date or settlement date?</h3>
 <p>Use the trade date: the day the deal was made, not the day it settled a day or two later. For Capital Gains Tax the date of a sale is when the contract is made (TCGA 1992 section 28). This decides which tax year a sale falls in, and which purchases the same-day and 30-day rules match it with.</p>
+
+<h3>Does it matter how long you held the shares?</h3>
+<p>No. Shares held for 10 years are taxed the same way as shares held for 10 days: there is no relief for holding shares longer. (Taper relief, which reduced gains on assets held for years, ended in April 2008.)</p>
 
 <h2>4. Add up the year and deduct the allowance</h2>
 <p>Add the year’s gains, subtract the year’s losses, and then deduct the annual exempt amount. Losses from earlier years can reduce the rest, if you reported them to HMRC (you have 4 years from the end of the tax year to claim a loss).</p>
@@ -85,10 +102,25 @@ const overview = rulePage({
 <tr><td>2020/21 to 2022/23</td><td class="num">£12,300</td><td>10% / 20%</td></tr>
 </tbody>
 </table>
-<p>Source: <a href="${RATES}">GOV.UK Capital Gains Tax rates and allowances</a>. Which rate applies depends on your taxable income: gains that fall within your unused basic rate band are taxed at the lower rate. For 2024/25, gains on sales from 30 October 2024 used the new rates, so the calculator splits that year’s gains around that date.</p>
+<p>Source: <a href="${RATES}">GOV.UK Capital Gains Tax rates and allowances</a>. To find the rate, add your taxable gains (after the allowance) to your taxable income, which is your income after the Personal Allowance. The part that falls within the basic rate band (£37,700 in 2025/26 and 2026/27) is taxed at 18%, and the rest at 24%. This uses the UK bands even if you live in Scotland. For 2024/25, gains on sales from 30 October 2024 used the new rates, so the calculator splits that year’s gains around that date.</p>
+
+<h2>Worked example</h2>
+<p>You bought 400 ACME shares in 2016 and 600 more in 2022. On 15 September 2025, in the 2025/26 tax year, you sold 500. You sold nothing else that year, and your taxable income leaves ${pounds(OVERVIEW_TAX.unusedBasicRateBandGbp)} of your basic rate band unused.</p>
+${renderTransactionsTable(WORKED_EXAMPLES.overview)}
+<p>You bought no ACME shares on the day of the sale or in the 30 days after, so the sale comes from the Section 104 pool: ${overviewPoolShares.toLocaleString('en-GB')} shares that cost ${pounds(overviewPoolCost)}, an average of ${pounds(overviewPoolCost / overviewPoolShares)} a share. It makes no difference that some were bought nine years earlier.</p>
+${renderResultTable(WORKED_EXAMPLES.overview)}
+<p>Then the year’s totals and the tax:</p>
+<div class="callout calc">
+<p>Gains for ${OVERVIEW_TAX.taxYear}: ${gbp(WORKED_EXAMPLES.overview.disposal.gainOrLossGbp)}</p>
+<p>Less annual exempt amount: ${gbp(OVERVIEW_TAX.annualExemptAmountGbp)}</p>
+<p>Taxable gain: ${gbp(OVERVIEW_TAX.taxableGainGbp)}</p>
+<p>${gbp(overviewTax.atBasicRate)} within the basic rate band at ${OVERVIEW_TAX.basicRate}%: ${gbp(overviewTax.basicTax)}</p>
+<p>${gbp(overviewTax.atHigherRate)} above it at ${OVERVIEW_TAX.higherRate}%: ${gbp(overviewTax.higherTax)}</p>
+<p><strong>Capital Gains Tax: ${gbp(overviewTax.total)}</strong></p>
+</div>
 
 <h2>5. Report it</h2>
-<p>If you file a Self Assessment return, gains on shares go on the Capital Gains summary pages (<a href="${SA108_NOTES}">SA108</a>), in the “listed shares and securities” section. You may need to fill them in even when no tax is due, for example when your total sale proceeds are over £50,000. Check the SA108 notes for the year. If you don’t file Self Assessment, HMRC’s real time Capital Gains Tax service may be an option.</p>
+<p>If you file a Self Assessment return, gains on shares go on the Capital Gains summary pages (<a href="${SA108_NOTES}">SA108</a>), in the “listed shares and securities” section. You may need to fill them in even when no tax is due, for example when your total sale proceeds are over £50,000. Check the SA108 notes for the year. An online return, and any tax due, must reach HMRC by 31 January after the end of the tax year. If you don’t file Self Assessment, you can use HMRC’s <a href="${REPORT_OTHER_GAINS}">real time Capital Gains Tax service</a> instead: report by 31 December after the end of the tax year and pay by 31 January.</p>
 
 <div class="callout info"><p><strong>Read more:</strong> HMRC’s helpsheet <a href="${HS284}">HS284 Shares and Capital Gains Tax</a> has the official rules and worked examples.</p></div>
 `,
@@ -98,6 +130,7 @@ const sameDay = rulePage({
   path: SAME_DAY_PATH,
   title: 'The same-day rule for Capital Gains Tax on shares, with a worked example',
   navTitle: 'Same-day rule',
+  updated: '2026-10-31',
   description: 'Shares sold on the same day you bought shares of the same company are matched with those purchases first. How it works, with a worked example.',
   h1: 'The same-day rule',
   bodyHtml: `
@@ -126,6 +159,7 @@ const thirtyDay = rulePage({
   path: THIRTY_DAY_PATH,
   title: 'The 30-day “bed and breakfast” rule for shares: worked example and bed and ISA',
   navTitle: '30-day rule (bed and breakfasting)',
+  updated: '2026-11-13',
   description: 'Buy back shares within 30 days of selling and HMRC matches the sale with the new purchase. How the rule works, a worked example, and why bed and ISA isn’t caught.',
   h1: 'The 30-day “bed and breakfast” rule',
   bodyHtml: `
@@ -164,6 +198,7 @@ const section104 = rulePage({
   path: SECTION_104_PATH,
   title: 'Section 104 holding: how to work out your pool’s average cost, with an example',
   navTitle: 'Section 104 pool',
+  updated: '2026-11-13',
   description: 'How to work out a Section 104 holding: shares of one company are pooled at their average cost. What goes in the pool, and a worked example of a sale.',
   h1: 'The Section 104 holding (pool)',
   bodyHtml: `
@@ -195,6 +230,7 @@ const stockSplits = rulePage({
   path: STOCK_SPLITS_PATH,
   title: 'Stock splits and Capital Gains Tax: how a share split changes your cost per share',
   navTitle: 'Stock splits',
+  updated: '2026-10-31',
   description: 'A stock split isn’t a sale and doesn’t create a gain. Your total cost stays the same and is spread across the new number of shares. Worked example included.',
   h1: 'Stock splits and Capital Gains Tax',
   bodyHtml: `
@@ -217,6 +253,7 @@ const foreignCurrency = rulePage({
   path: FOREIGN_CURRENCY_PATH,
   title: 'Capital Gains Tax on US and other foreign shares: which exchange rate to use',
   navTitle: 'Foreign currency shares',
+  updated: '2026-11-17',
   description: 'Bought shares in dollars? Your gain is worked out in pounds, converting each purchase and sale at its own exchange rate. HMRC monthly, yearly or daily rates.',
   h1: 'Capital Gains Tax on US and other foreign shares',
   bodyHtml: `

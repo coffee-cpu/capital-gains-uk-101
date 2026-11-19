@@ -17,6 +17,8 @@ export interface GuidePage {
   /** Meta description (aim for under 160 characters) */
   description: string
   h1: string
+  /** ISO date the page's content last changed, shown under the heading */
+  updated?: string
   /** Trusted HTML for the main content (escape any data with escapeHtml) */
   bodyHtml: string
   section: 'hub' | 'rules' | 'brokers'
@@ -39,6 +41,11 @@ export function escapeHtml(text: string): string {
 export function gbp(value: number): string {
   const text = `£${Math.abs(value).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
   return value < 0 ? `(${text})` : text
+}
+
+/** 2026-11-19 → 19 November 2026 */
+export function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
 }
 
 /** JSON for a <script type="application/ld+json"> block; "<" is escaped so the text can't close the tag */
@@ -64,6 +71,7 @@ main{max-width:880px;margin:0 auto;padding:24px 20px 48px}
 h1{color:var(--ink);font-size:34px;line-height:1.2;margin:8px 0 16px}
 h2{color:var(--ink);font-size:24px;margin:36px 0 12px}
 h3{color:var(--ink);font-size:19px;margin:24px 0 8px}
+.updated{color:var(--muted);font-size:14px;margin:-8px 0 16px}
 .lead{font-size:19px;color:var(--text)}
 article{background:#fff;border:1px solid var(--line);border-radius:12px;padding:8px 28px 28px}
 table{border-collapse:collapse;width:100%;margin:12px 0;font-size:15px;display:block;overflow-x:auto}
@@ -158,7 +166,7 @@ ${(page.jsonLd ?? []).map(jsonLdScript).join('\n')}
 <div class="crumbs">${crumbHtml}</div>
 <article>
 <h1>${escapeHtml(page.h1)}</h1>
-${page.bodyHtml}
+${page.updated ? `<p class="updated">Updated <time datetime="${page.updated}">${formatDate(page.updated)}</time></p>\n` : ''}${page.bodyHtml}
 <div class="cta-box">
 <h2>Free UK Capital Gains Tax calculator</h2>
 <p>Work it out from your own broker exports. The calculator applies the same-day, 30-day and Section 104 rules, converts foreign currency to GBP and adjusts for stock splits. It runs in your browser: your transactions are never uploaded.</p>
