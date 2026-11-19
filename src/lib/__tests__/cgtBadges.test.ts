@@ -3,6 +3,7 @@ import { calculateCGT } from '../cgt/engine'
 import { buildBadgeIndex, buildCGTBadges } from '../cgtBadges'
 import { EnrichedTransaction } from '../../types/transaction'
 import { getTaxYear } from '../../utils/taxYear'
+import { BrokerType } from '../../types/broker'
 
 function tx(id: string, date: string, type: 'BUY' | 'SELL', quantity: number, priceGbp: number,
   extra: Partial<EnrichedTransaction> = {}): EnrichedTransaction {
@@ -24,12 +25,13 @@ function badgesFor(transactions: EnrichedTransaction[]) {
 describe('buildCGTBadges', () => {
   it('marks an ignored row Incomplete, not Section 104, since the engine leaves it out', () => {
     const badges = badgesFor([
-      tx('vest', '2023-01-10', 'BUY', 10, 0, { ignored: true, incomplete: true }),
+      tx('vest', '2023-01-10', 'BUY', 10, 0, { source: BrokerType.SCHWAB, ignored: true, incomplete: true }),
       tx('buy', '2023-02-10', 'BUY', 5, 10),
     ])
 
     expect(badges('vest').map(b => [b.kind, b.label])).toEqual([['IGNORED', 'Incomplete']])
     expect(badges('vest')[0].title).toMatch(/^Not counted: .*Equity Awards file/)
+    expect(badges('vest')[0].helpContext).toBe('stock-plan')
     expect(badges('buy').map(b => b.kind)).toEqual(['SECTION_104'])
   })
 

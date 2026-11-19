@@ -10,7 +10,7 @@ import { getLatestSa100ForeignDividendsLimit } from '../lib/cgt/reporting'
 
 const LATEST_BOX_SIX = getLatestSa100ForeignDividendsLimit()
 
-export type HelpContext = 'default' | 'same-day' | '30-day' | 'section104' | 'stock-split' | 'tax-year' | 'dividend' | 'interest' | 'incomplete'
+export type HelpContext = 'default' | 'same-day' | '30-day' | 'section104' | 'stock-split' | 'tax-year' | 'dividend' | 'interest' | 'incomplete' | 'stock-plan'
 
 export interface HelpContent {
   title: string
@@ -458,7 +458,7 @@ The Personal Savings Allowance was introduced in April 2016. Before that, all in
   },
 
   incomplete: {
-    title: 'Incomplete Transactions',
+    title: 'Incomplete Disposals',
     explanation: `An "Incomplete" disposal occurs when you sell shares but the CGT calculator cannot find sufficient acquisition (purchase) records to match against the sale.
 
 **Why this happens**:
@@ -487,11 +487,7 @@ You are still required to report the full disposal to HMRC, including the unmatc
 
 - Import earlier transaction history from your broker
 - Add missing acquisitions by creating transactions in the Generic CSV format
-- Manually record any pre-digital-era share purchases
-
-**Incomplete Stock Plan Activity (Charles Schwab)**:
-
-Schwab's regular transaction export lists shares from your stock plan (RSU vests, ESPP purchases) as "Stock Plan Activity" without a price. Without a price they can't be added to your Section 104 pool, so these rows are left out of the calculation and marked "Incomplete". Schwab's Equity Awards export has the same shares with their prices: import it as well, and sales of those shares will be matched.`,
+- Manually record any pre-digital-era share purchases`,
     example: {
       title: 'Incomplete Disposal Example',
       scenario: 'You sold 100 shares of ACME on 15 June 2024 at £50 each. The visualizer only has records for 60 shares purchased in 2023. The other 40 shares were bought in 2020 before you started importing data.',
@@ -532,6 +528,57 @@ Schwab's regular transaction export lists shares from your stock plan (RSU vests
         title: 'Self Assessment: capital gains summary (SA108)',
         url: 'https://www.gov.uk/government/publications/self-assessment-capital-gains-summary-sa108',
         description: 'The tax form where you report capital gains from share disposals'
+      }
+    ]
+  },
+
+  'stock-plan': {
+    title: 'Incomplete Stock Plan Activity',
+    explanation: `Charles Schwab's regular transaction export lists shares from your stock plan (RSU vests, ESPP purchases) as "Stock Plan Activity", **without a price**.
+
+**What it means**:
+
+- Without a price, the shares have no cost, so these rows are **left out of the calculation** and marked "Incomplete"
+- This doesn't change your gains by itself. But if you sold shares from these vests, the sale has no purchase to match and shows as an incomplete disposal (the red "Incomplete" badge)
+
+**How to fix**:
+
+Import your **Charles Schwab Equity Awards** export as well. It is a separate file from the regular transaction export, and it has the same vests and purchases with their prices. Keep the regular file too: it has your other trades, dividends and interest.
+
+Once both are imported, each Stock Plan Activity row is replaced by the matching vest or purchase from the Equity Awards file (same symbol and quantity, up to 6 days earlier), and sales of those shares are matched.
+
+If an amber row is still listed after importing both files, the Equity Awards file has no matching entry for it: check that it covers that date.`,
+    example: {
+      title: 'Stock Plan Activity Example',
+      scenario: '50 ACME shares vested on 10 March 2024, when they were worth £100 each. You sold all 50 on 1 June 2024 at £120. You imported only the regular Schwab transaction export.',
+      calculation: [
+        'Regular export only:',
+        '  Vest: Stock Plan Activity, 50 shares, no price → left out',
+        '  Sale: 50 shares at £120 = £6,000 proceeds',
+        '  ⚠️ No purchase to match → incomplete disposal, no gain calculated',
+        '',
+        'With the Equity Awards export as well:',
+        '  Vest: 50 shares at £100 = £5,000 cost',
+        '  Sale: 50 shares at £120 = £6,000 proceeds',
+        '  Gain: £6,000 - £5,000 = £1,000',
+      ],
+      result: 'Importing the Equity Awards file gives the vest its price, so the sale is matched and the £1,000 gain is calculated.'
+    },
+    references: [
+      {
+        title: 'Charles Schwab Equity Awards export guide',
+        url: '/guides/charles-schwab-equity-awards-capital-gains-tax/',
+        description: 'How to download the Equity Awards file and what the calculator reads from it'
+      },
+      {
+        title: 'Schwab RSUs and UK Capital Gains Tax',
+        url: '/guides/schwab-rsu-capital-gains-tax/',
+        description: 'Why your cost is the value at vest, and how RSU sales are matched'
+      },
+      {
+        title: 'HS287 - Employee share and security schemes and Capital Gains Tax',
+        url: 'https://www.gov.uk/government/publications/employee-share-and-security-schemes-and-capital-gains-tax-hs287-self-assessment-helpsheet',
+        description: 'HMRC helpsheet on the cost of shares from employee share schemes'
       }
     ]
   }
