@@ -28,11 +28,14 @@ export const GILTS_PATH = '/guides/gilts-capital-gains-tax/'
 const title = 'UK gilts and Capital Gains Tax: why gains are exempt and losses don’t count'
 const description = 'Gains on UK government gilts are free of Capital Gains Tax, and losses on them can’t be used. The interest is still taxable. What this means for your return.'
 
+/** When the guide's content last changed: shown on the page, and its lastmod and dateModified */
+const UPDATED = '2026-11-18'
+
 export const GILTS_GUIDE: GuidePage = {
   path: GILTS_PATH,
   title,
   navTitle: 'Gilts',
-  updated: '2026-11-18',
+  updated: UPDATED,
   description,
   h1: 'UK gilts and Capital Gains Tax',
   bodyHtml: `
@@ -72,7 +75,7 @@ export const GILTS_GUIDE: GuidePage = {
     url: 'https://cgtvisualiser.co.uk' + GILTS_PATH,
     inLanguage: 'en-GB',
     isAccessibleForFree: true,
-    dateModified: '2026-11-18',
+    dateModified: UPDATED,
     publisher: { '@type': 'Organization', name: 'Capital Gains Tax Visualiser', url: 'https://cgtvisualiser.co.uk/' },
   }],
   related: [DIVIDENDS_PATH, OVERVIEW_PATH],

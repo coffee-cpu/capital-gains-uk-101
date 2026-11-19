@@ -55,11 +55,14 @@ function ratesTable(): string {
 const title = 'Dividend tax on foreign shares: allowance, US withholding tax and SA106'
 const description = 'How UK tax works on dividends from US and other foreign shares: the dividend allowance, 15% US withholding, Foreign Tax Credit Relief, and broker interest.'
 
+/** When the guide's content last changed: shown on the page, and its lastmod and dateModified */
+const UPDATED = '2026-11-18'
+
 export const DIVIDENDS_GUIDE: GuidePage = {
   path: DIVIDENDS_PATH,
   title,
   navTitle: 'Dividends and interest',
-  updated: '2026-11-18',
+  updated: UPDATED,
   description,
   h1: 'Dividends and interest from your share account',
   bodyHtml: `
@@ -132,7 +135,7 @@ ${ratesTable()}
     url: 'https://cgtvisualiser.co.uk' + DIVIDENDS_PATH,
     inLanguage: 'en-GB',
     isAccessibleForFree: true,
-    dateModified: '2026-11-18',
+    dateModified: UPDATED,
     publisher: { '@type': 'Organization', name: 'Capital Gains Tax Visualiser', url: 'https://cgtvisualiser.co.uk/' },
   }],
   related: [FOREIGN_CURRENCY_PATH, SCHWAB_RSU_PATH, OVERVIEW_PATH],

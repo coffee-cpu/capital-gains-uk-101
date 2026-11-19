@@ -135,4 +135,12 @@ describe('buildGuideSite', () => {
     }
     expect(sitemap).toContain('<loc>https://cgtvisualiser.co.uk/</loc></url>')
   })
+
+  it('uses the same date for dateModified as for the page’s updated date', () => {
+    for (const page of site.pages) {
+      for (const data of page.jsonLd ?? []) {
+        if ('dateModified' in data) expect(data.dateModified).toBe(page.updated)
+      }
+    }
+  })
 })
