@@ -545,7 +545,9 @@ You are still required to report the full disposal to HMRC, including the unmatc
 
 Import your **Charles Schwab Equity Awards** export as well. It is a separate file from the regular transaction export, and it has the same vests and purchases with their prices. Keep the regular file too: it has your other trades, dividends and interest.
 
-Once both are imported, sales of your plan shares are matched to the vests from the Equity Awards file. The Stock Plan Activity rows stay listed, but are still left out, so the shares aren't counted twice.`,
+Once both are imported, each Stock Plan Activity row is replaced by the matching vest or purchase from the Equity Awards file (same symbol and quantity, up to 6 days earlier), and sales of those shares are matched.
+
+If an amber row is still listed after importing both files, the Equity Awards file has no matching entry for it: check that it covers that date.`,
     example: {
       title: 'Stock Plan Activity Example',
       scenario: '50 ACME shares vested on 10 March 2024, when they were worth £100 each. You sold all 50 on 1 June 2024 at £120. You imported only the regular Schwab transaction export.',
