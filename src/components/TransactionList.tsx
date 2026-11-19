@@ -147,9 +147,13 @@ export function TransactionList() {
   const [hoveredMatchGroup, setHoveredMatchGroup] = useState<string | null>(null)
   const filterMode = useTransactionFilterStore((state) => state.filterMode)
   const setFilterMode = useTransactionFilterStore((state) => state.setFilterMode)
-  const [search, setSearch] = useState('')
-  const [typeGroup, setTypeGroup] = useState<TypeGroup | 'all'>('all')
-  const [taxYear, setTaxYear] = useState('all')
+  const search = useTransactionFilterStore((state) => state.search)
+  const setSearch = useTransactionFilterStore((state) => state.setSearch)
+  const typeGroup = useTransactionFilterStore((state) => state.typeGroup) as TypeGroup | 'all'
+  const setTypeGroup = useTransactionFilterStore((state) => state.setTypeGroup)
+  const taxYear = useTransactionFilterStore((state) => state.taxYear)
+  const setTaxYear = useTransactionFilterStore((state) => state.setTaxYear)
+  const clearFilters = useTransactionFilterStore((state) => state.clearFilters)
   // Phones get cards, wider screens the table (Tailwind's md breakpoint).
   // Only one is rendered, so each transaction is in the page once
   const isWide = useMediaQuery('(min-width: 768px)')
@@ -222,12 +226,6 @@ export function TransactionList() {
     (typeGroup === 'all' || TYPE_GROUPS[typeGroup].matches(tx.type)) &&
     (activeTaxYear === 'all' || tx.tax_year === activeTaxYear)
   )
-  const clearFilters = () => {
-    setFilterMode('all')
-    setSearch('')
-    setTypeGroup('all')
-    setTaxYear('all')
-  }
 
   const fxErrorCount = transactions.filter(tx => tx.fx_error).length
 
@@ -291,7 +289,7 @@ export function TransactionList() {
           </div>
           <select
             value={typeGroup}
-            onChange={e => setTypeGroup(e.target.value as TypeGroup | 'all')}
+            onChange={e => setTypeGroup(e.target.value)}
             aria-label="Filter by type"
             className="rounded-md border border-gray-300 py-2 pl-3 pr-8 text-sm text-gray-700 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
           >

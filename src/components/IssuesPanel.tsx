@@ -4,7 +4,7 @@ import { useTransactionFilterStore } from '../stores/transactionFilterStore'
 
 /** Turn on the transaction list's "Needs attention" filter and scroll to it */
 function showFlaggedTransactions() {
-  useTransactionFilterStore.getState().setFilterMode('attention')
+  useTransactionFilterStore.getState().showAttention()
   document.getElementById('transactions')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
