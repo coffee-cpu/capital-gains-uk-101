@@ -105,6 +105,16 @@ test.describe('IssuesPanel', () => {
     // Check for Incomplete Stock Plan Activity issue
     await expect(page.getByText('Incomplete Stock Plan Activity')).toBeVisible()
     await expect(page.getByText(/Stock Plan Activity transaction.*missing price data/i)).toBeVisible()
+
+    // A filter that hides the flagged row is cleared by the link
+    await page.getByLabel('Search by symbol').fill('ZZZZ')
+
+    // The link filters the transaction list to the flagged rows
+    await page.getByRole('button', { name: 'Show the transactions needing attention' }).last().click()
+    await expect(page.getByRole('button', { name: /Show all/ })).toHaveAttribute('aria-pressed', 'true')
+    await expect(page.getByLabel('Search by symbol')).toHaveValue('')
+    await expect(page.locator('#transactions')).toBeInViewport()
+    await expect(page.locator('#transactions tbody tr').first()).toContainText('AAPL')
   })
 
   test('should show Buy-Only Scenario info', async ({ page }) => {

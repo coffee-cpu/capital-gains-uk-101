@@ -223,7 +223,7 @@ export function detectIssues(
       flaggedInTable: true,
       type: 'warning',
       title: 'Incomplete Stock Plan Activity',
-      description: `${incompleteTransactions.length} Stock Plan Activity transaction${incompleteTransactions.length !== 1 ? 's' : ''} for ${incompleteSymbols.join(', ')} ${incompleteSymbols.length !== 1 ? 'are' : 'is'} missing price data.`,
+      description: `${incompleteTransactions.length} Stock Plan Activity transaction${incompleteTransactions.length !== 1 ? 's' : ''} for ${incompleteSymbols.join(', ')} ${incompleteTransactions.length !== 1 ? 'are' : 'is'} missing price data.`,
       count: incompleteTransactions.length,
       affectedItems: incompleteSymbols,
       action: hasSchwabIncomplete

@@ -1,5 +1,12 @@
 import { useState } from 'react'
 import { useIssues, Issue, IssueType } from '../hooks/useIssues'
+import { useTransactionFilterStore } from '../stores/transactionFilterStore'
+
+/** Turn on the transaction list's "Needs attention" filter and scroll to it */
+function showFlaggedTransactions() {
+  useTransactionFilterStore.getState().showAttention()
+  document.getElementById('transactions')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
 
 /**
  * Icon components for different issue types
@@ -139,9 +146,13 @@ function IssueItem({ issue }: { issue: Issue }) {
           )}
 
           {issue.flaggedInTable && (
-            <p className={`mt-2 text-xs ${styles.textColor} opacity-75`}>
-              See the Transactions section below for details.
-            </p>
+            <button
+              type="button"
+              onClick={showFlaggedTransactions}
+              className={`mt-2 text-xs underline ${styles.textColor} opacity-75 hover:opacity-100`}
+            >
+              Show the transactions needing attention
+            </button>
           )}
         </div>
       </div>
