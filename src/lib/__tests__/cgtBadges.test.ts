@@ -22,6 +22,17 @@ function badgesFor(transactions: EnrichedTransaction[]) {
 }
 
 describe('buildCGTBadges', () => {
+  it('marks an ignored row Incomplete, not Section 104, since the engine leaves it out', () => {
+    const badges = badgesFor([
+      tx('vest', '2023-01-10', 'BUY', 10, 0, { ignored: true, incomplete: true }),
+      tx('buy', '2023-02-10', 'BUY', 5, 10),
+    ])
+
+    expect(badges('vest').map(b => [b.kind, b.label])).toEqual([['IGNORED', 'Incomplete']])
+    expect(badges('vest')[0].title).toMatch(/^Not counted: .*Equity Awards file/)
+    expect(badges('buy').map(b => b.kind)).toEqual(['SECTION_104'])
+  })
+
   it('labels same-day, 30-day and Section 104 matches on both sides', () => {
     const badges = badgesFor([
       tx('pool', '2023-01-10', 'BUY', 100, 10),

@@ -105,6 +105,11 @@ test.describe('IssuesPanel', () => {
     // Check for Incomplete Stock Plan Activity issue
     await expect(page.getByText('Incomplete Stock Plan Activity')).toBeVisible()
     await expect(page.getByText(/Stock Plan Activity transaction.*missing price data/i)).toBeVisible()
+
+    // The link filters the transaction list to the flagged rows
+    await page.getByRole('button', { name: 'Show the transactions needing attention' }).last().click()
+    await expect(page.getByRole('button', { name: /Show all/ })).toHaveAttribute('aria-pressed', 'true')
+    await expect(page.locator('#transactions')).toBeInViewport()
   })
 
   test('should show Buy-Only Scenario info', async ({ page }) => {

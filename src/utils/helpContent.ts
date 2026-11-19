@@ -458,7 +458,7 @@ The Personal Savings Allowance was introduced in April 2016. Before that, all in
   },
 
   incomplete: {
-    title: 'Incomplete Disposals',
+    title: 'Incomplete Transactions',
     explanation: `An "Incomplete" disposal occurs when you sell shares but the CGT calculator cannot find sufficient acquisition (purchase) records to match against the sale.
 
 **Why this happens**:
@@ -487,7 +487,11 @@ You are still required to report the full disposal to HMRC, including the unmatc
 
 - Import earlier transaction history from your broker
 - Add missing acquisitions by creating transactions in the Generic CSV format
-- Manually record any pre-digital-era share purchases`,
+- Manually record any pre-digital-era share purchases
+
+**Incomplete Stock Plan Activity (Charles Schwab)**:
+
+Schwab's regular transaction export lists shares from your stock plan (RSU vests, ESPP purchases) as "Stock Plan Activity" without a price. Without a price they can't be added to your Section 104 pool, so these rows are left out of the calculation and marked "Incomplete". Schwab's Equity Awards export has the same shares with their prices: import it as well, and sales of those shares will be matched.`,
     example: {
       title: 'Incomplete Disposal Example',
       scenario: 'You sold 100 shares of ACME on 15 June 2024 at £50 each. The visualizer only has records for 60 shares purchased in 2023. The other 40 shares were bought in 2020 before you started importing data.',

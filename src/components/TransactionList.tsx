@@ -11,6 +11,7 @@ import { exportTransactionsToCSV } from '../utils/csvExport'
 import type { HelpContext } from '../utils/helpContent'
 import { isAcquisition, isDisposal, getUnitLabel } from '../lib/cgt/utils'
 import { buildBadgeIndex, buildCGTBadges } from '../lib/cgtBadges'
+import { useTransactionFilterStore } from '../stores/transactionFilterStore'
 import { formatQuantity } from '../utils/quantity'
 import { formatGbp } from '../utils/currency'
 
@@ -144,7 +145,8 @@ export function TransactionList() {
   const toggleHelpPanelWithContext = useHelpPanelStore((state) => state.toggleWithContext)
   const [showFxInfo, setShowFxInfo] = useState(false)
   const [hoveredMatchGroup, setHoveredMatchGroup] = useState<string | null>(null)
-  const [filterMode, setFilterMode] = useState<'all' | 'attention'>('all')
+  const filterMode = useTransactionFilterStore((state) => state.filterMode)
+  const setFilterMode = useTransactionFilterStore((state) => state.setFilterMode)
   const [search, setSearch] = useState('')
   const [typeGroup, setTypeGroup] = useState<TypeGroup | 'all'>('all')
   const [taxYear, setTaxYear] = useState('all')

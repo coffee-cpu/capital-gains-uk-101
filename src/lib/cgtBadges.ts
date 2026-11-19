@@ -6,11 +6,13 @@ import { formatQuantity } from '../utils/quantity'
 import { getUnitLabel, isAcquisition, isDisposal } from './cgt/utils'
 
 /** What a badge in the transaction list's CGT column stands for */
-export type BadgeKind = MatchingRule | 'INCOMPLETE'
+export type BadgeKind = MatchingRule | 'INCOMPLETE' | 'IGNORED'
 
 /** Label, colours and help-panel topic for each kind of badge */
 export const BADGE_META: Record<BadgeKind, { label: string; className: string; helpContext: HelpContext }> = {
   INCOMPLETE: { label: 'Incomplete', className: 'bg-red-100 text-red-800 border-red-300', helpContext: 'incomplete' },
+  // A row left out of the calculation (Schwab Stock Plan Activity without a price)
+  IGNORED: { label: 'Incomplete', className: 'bg-yellow-100 text-yellow-800 border-yellow-300', helpContext: 'incomplete' },
   SAME_DAY: { label: 'Same Day', className: 'bg-blue-100 text-blue-800 border-blue-300', helpContext: 'same-day' },
   '30_DAY': { label: '30-Day', className: 'bg-orange-100 text-orange-800 border-orange-300', helpContext: '30-day' },
   SHORT_SELL: { label: 'Short Sell', className: 'bg-pink-100 text-pink-800 border-pink-300', helpContext: 'default' },
@@ -66,6 +68,12 @@ export function buildBadgeIndex(
  * warning when a disposal could not be fully matched.
  */
 export function buildCGTBadges(tx: EnrichedTransaction, index: BadgeIndex): CGTBadge[] {
+  // The engine leaves ignored rows out before matching, so no rule applies to them
+  if (tx.ignored) {
+    return [badge('IGNORED',
+      'Not counted: this Stock Plan Activity row has no price, so it is left out of the calculation. ' +
+      'Import the Charles Schwab Equity Awards file, which has these shares with their prices.')]
+  }
   if (isDisposal(tx)) return disposalBadges(tx, index)
   if (isAcquisition(tx)) return acquisitionBadges(tx, index)
   return []
