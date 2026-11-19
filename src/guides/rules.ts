@@ -55,7 +55,8 @@ const overviewTax = splitTaxByBand(OVERVIEW_TAX.taxableGainGbp, OVERVIEW_TAX.unu
 const overviewBuys = WORKED_EXAMPLES.overview.transactions.filter(tx => tx.type === 'BUY')
 const overviewPoolShares = overviewBuys.reduce((sum, tx) => sum + (tx.quantity ?? 0), 0)
 const overviewPoolCost = overviewBuys.reduce((sum, tx) => sum + (tx.quantity ?? 0) * (tx.price ?? 0), 0)
-const wholePounds = (value: number) => `£${value.toLocaleString('en-GB')}`
+/** £26,000 in prose: pence only when there are any, at most two places */
+const wholePounds = (value: number) => `£${value.toLocaleString('en-GB', { maximumFractionDigits: 2 })}`
 
 const overview = rulePage({
   path: OVERVIEW_PATH,
