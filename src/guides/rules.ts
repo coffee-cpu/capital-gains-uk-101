@@ -51,6 +51,12 @@ function rulePage(page: Omit<GuidePage, 'section' | 'jsonLd' | 'related'> & { js
 
 const overviewTax = splitTaxByBand(OVERVIEW_TAX.taxableGainGbp, OVERVIEW_TAX.unusedBasicRateBandGbp, OVERVIEW_TAX.basicRate, OVERVIEW_TAX.higherRate)
 
+// The pool before the sale: every purchase in the example comes before it
+const overviewBuys = WORKED_EXAMPLES.overview.transactions.filter(tx => tx.type === 'BUY')
+const overviewPoolShares = overviewBuys.reduce((sum, tx) => sum + (tx.quantity ?? 0), 0)
+const overviewPoolCost = overviewBuys.reduce((sum, tx) => sum + (tx.quantity ?? 0) * (tx.price ?? 0), 0)
+const wholePounds = (value: number) => `£${value.toLocaleString('en-GB')}`
+
 const overview = rulePage({
   path: OVERVIEW_PATH,
   title: 'How to calculate Capital Gains Tax on shares in the UK (2025/26 and 2026/27)',
@@ -97,9 +103,9 @@ const overview = rulePage({
 <p>Source: <a href="${RATES}">GOV.UK Capital Gains Tax rates and allowances</a>. To find the rate, add your taxable gains (after the allowance) to your taxable income, which is your income after the Personal Allowance. The part that falls within the basic rate band (£37,700 in 2025/26 and 2026/27) is taxed at 18%, and the rest at 24%. This uses the UK bands even if you live in Scotland. For 2024/25, gains on sales from 30 October 2024 used the new rates, so the calculator splits that year’s gains around that date.</p>
 
 <h2>Worked example</h2>
-<p>You bought 400 ACME shares in 2016 and 600 more in 2022. On 15 September 2025, in the 2025/26 tax year, you sold 500. You sold nothing else that year, and your taxable income leaves £${OVERVIEW_TAX.unusedBasicRateBandGbp.toLocaleString('en-GB')} of your basic rate band unused.</p>
+<p>You bought 400 ACME shares in 2016 and 600 more in 2022. On 15 September 2025, in the 2025/26 tax year, you sold 500. You sold nothing else that year, and your taxable income leaves ${wholePounds(OVERVIEW_TAX.unusedBasicRateBandGbp)} of your basic rate band unused.</p>
 ${renderTransactionsTable(WORKED_EXAMPLES.overview)}
-<p>You bought no ACME shares on the day of the sale or in the 30 days after, so the sale comes from the Section 104 pool: 1,000 shares that cost £26,000, an average of £26 a share. It makes no difference that some were bought nine years earlier.</p>
+<p>You bought no ACME shares on the day of the sale or in the 30 days after, so the sale comes from the Section 104 pool: ${overviewPoolShares.toLocaleString('en-GB')} shares that cost ${wholePounds(overviewPoolCost)}, an average of ${wholePounds(overviewPoolCost / overviewPoolShares)} a share. It makes no difference that some were bought nine years earlier.</p>
 ${renderResultTable(WORKED_EXAMPLES.overview)}
 <p>Then the year’s totals and the tax:</p>
 <div class="callout calc">
