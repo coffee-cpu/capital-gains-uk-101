@@ -17,10 +17,14 @@ export const SCHWAB_RSU_PATH = '/guides/schwab-rsu-capital-gains-tax/'
 const title = 'Schwab RSUs and UK Capital Gains Tax: vests, shares withheld for tax and the 30-day rule'
 const description = 'RSU vests from Schwab are acquisitions at market value. Which files to export, your cost per share, shares withheld for tax, and the 30-day rule trap.'
 
+/** When the guide's content last changed: shown on the page, and its lastmod and dateModified */
+const UPDATED = '2026-11-17'
+
 export const SCHWAB_RSU_GUIDE: GuidePage = {
   path: SCHWAB_RSU_PATH,
   title,
   navTitle: 'Schwab RSUs',
+  updated: UPDATED,
   description,
   h1: 'RSUs at Charles Schwab: UK Capital Gains Tax',
   bodyHtml: `
@@ -80,6 +84,7 @@ ${renderResultTable(WORKED_EXAMPLES.rsu)}
     url: 'https://cgtvisualiser.co.uk' + SCHWAB_RSU_PATH,
     inLanguage: 'en-GB',
     isAccessibleForFree: true,
+    dateModified: UPDATED,
     publisher: { '@type': 'Organization', name: 'Capital Gains Tax Visualiser', url: 'https://cgtvisualiser.co.uk/' },
   }],
   related: [THIRTY_DAY_PATH, SECTION_104_PATH, FOREIGN_CURRENCY_PATH, OVERVIEW_PATH],

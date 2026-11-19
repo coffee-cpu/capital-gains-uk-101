@@ -36,12 +36,21 @@ function hubPage(rules: GuidePage[], employeeShares: GuidePage[], income: GuideP
 }
 
 /**
- * Sitemap for the calculator, the agent files and every guide. No lastmod:
- * a build date on every URL would claim changes that didn't happen.
+ * Sitemap for the calculator, the agent files and every guide. A guide with
+ * an `updated` date gets it as lastmod, so search engines see when its content
+ * changed. Other URLs have none: a build date on every URL would claim changes
+ * that didn't happen.
  */
 export function buildSitemap(pages: GuidePage[]): string {
-  const urls = ['/', ...pages.map(p => p.path), '/agents.md', '/llms.txt']
-  const entries = urls.map(path => `  <url><loc>${SITE_URL}${path}</loc></url>`)
+  const urls: { path: string; lastmod?: string }[] = [
+    { path: '/' },
+    ...pages.map(p => ({ path: p.path, lastmod: p.updated })),
+    { path: '/agents.md' },
+    { path: '/llms.txt' },
+  ]
+  const entries = urls.map(({ path, lastmod }) =>
+    `  <url><loc>${SITE_URL}${path}</loc>${lastmod ? `<lastmod>${lastmod}</lastmod>` : ''}</url>`
+  )
   return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${entries.join('\n')}

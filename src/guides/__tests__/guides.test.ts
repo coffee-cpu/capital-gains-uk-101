@@ -118,4 +118,29 @@ describe('buildGuideSite', () => {
       expect(sitemap).toContain(`<loc>https://cgtvisualiser.co.uk${path}</loc>`)
     }
   })
+
+  it('gives a guide its updated date as lastmod, and other URLs none', () => {
+    const sitemap = site.files.get('sitemap.xml')!
+    const dated = site.pages.filter(p => p.updated)
+
+    expect(dated.length).toBeGreaterThan(0)
+    for (const page of site.pages) {
+      const entry = sitemap.split('\n').find(line => line.includes(`<loc>https://cgtvisualiser.co.uk${page.path}</loc>`))!
+      if (page.updated) {
+        expect(page.updated).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+        expect(entry).toContain(`<lastmod>${page.updated}</lastmod>`)
+      } else {
+        expect(entry).not.toContain('<lastmod>')
+      }
+    }
+    expect(sitemap).toContain('<loc>https://cgtvisualiser.co.uk/</loc></url>')
+  })
+
+  it('uses the same date for dateModified as for the page’s updated date', () => {
+    for (const page of site.pages) {
+      for (const data of page.jsonLd ?? []) {
+        if ('dateModified' in data) expect(data.dateModified).toBe(page.updated)
+      }
+    }
+  })
 })
