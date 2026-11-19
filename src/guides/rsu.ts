@@ -21,6 +21,7 @@ export const SCHWAB_RSU_GUIDE: GuidePage = {
   path: SCHWAB_RSU_PATH,
   title,
   navTitle: 'Schwab RSUs',
+  updated: '2026-11-17',
   description,
   h1: 'RSUs at Charles Schwab: UK Capital Gains Tax',
   bodyHtml: `
@@ -80,6 +81,7 @@ ${renderResultTable(WORKED_EXAMPLES.rsu)}
     url: 'https://cgtvisualiser.co.uk' + SCHWAB_RSU_PATH,
     inLanguage: 'en-GB',
     isAccessibleForFree: true,
+    dateModified: '2026-11-17',
     publisher: { '@type': 'Organization', name: 'Capital Gains Tax Visualiser', url: 'https://cgtvisualiser.co.uk/' },
   }],
   related: [THIRTY_DAY_PATH, SECTION_104_PATH, FOREIGN_CURRENCY_PATH, OVERVIEW_PATH],

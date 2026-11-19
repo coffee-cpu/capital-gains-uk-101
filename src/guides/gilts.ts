@@ -32,6 +32,7 @@ export const GILTS_GUIDE: GuidePage = {
   path: GILTS_PATH,
   title,
   navTitle: 'Gilts',
+  updated: '2026-11-18',
   description,
   h1: 'UK gilts and Capital Gains Tax',
   bodyHtml: `
@@ -71,6 +72,7 @@ export const GILTS_GUIDE: GuidePage = {
     url: 'https://cgtvisualiser.co.uk' + GILTS_PATH,
     inLanguage: 'en-GB',
     isAccessibleForFree: true,
+    dateModified: '2026-11-18',
     publisher: { '@type': 'Organization', name: 'Capital Gains Tax Visualiser', url: 'https://cgtvisualiser.co.uk/' },
   }],
   related: [DIVIDENDS_PATH, OVERVIEW_PATH],

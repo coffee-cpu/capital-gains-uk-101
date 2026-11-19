@@ -59,6 +59,7 @@ export const DIVIDENDS_GUIDE: GuidePage = {
   path: DIVIDENDS_PATH,
   title,
   navTitle: 'Dividends and interest',
+  updated: '2026-11-18',
   description,
   h1: 'Dividends and interest from your share account',
   bodyHtml: `
@@ -131,6 +132,7 @@ ${ratesTable()}
     url: 'https://cgtvisualiser.co.uk' + DIVIDENDS_PATH,
     inLanguage: 'en-GB',
     isAccessibleForFree: true,
+    dateModified: '2026-11-18',
     publisher: { '@type': 'Organization', name: 'Capital Gains Tax Visualiser', url: 'https://cgtvisualiser.co.uk/' },
   }],
   related: [FOREIGN_CURRENCY_PATH, SCHWAB_RSU_PATH, OVERVIEW_PATH],
