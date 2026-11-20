@@ -71,12 +71,94 @@ function ButtonCupIcon() {
 }
 
 /**
+ * The coffee button is a tiny game: the first clicks don't go to Stripe but
+ * ask "are you sure?", with a face on the cup that changes each time. The
+ * click after that opens the payment page and the cup smiles. Each stage has
+ * the button label, the cup's mood (null for the animated cup) and the card text.
+ */
+const STAGES = [
+  {
+    button: 'Buy me a coffee',
+    mood: null,
+    title: 'Found this tool helpful?',
+    text: "It's free, open source and runs entirely in your browser. If it saved you time or an accountant's fee, a coffee (or a free GitHub star) would make my day.",
+  },
+  {
+    button: 'Wait, are you sure?',
+    mood: 'startled',
+    title: 'Hold on a second…',
+    text: "You're about to buy a coffee for a stranger on the internet. Bold move.",
+  },
+  {
+    button: 'Ooh, you really mean it?!',
+    mood: 'sceptical',
+    title: 'Wait… really?! 🤩',
+    text: "Nobody ever gets this far. One more click and I'm putting the kettle on.",
+  },
+] as const
+const LAST_STAGE = STAGES.length - 1
+
+type Mood = 'startled' | 'sceptical' | 'happy'
+
+/** Eyes, eyebrows and mouth for each mood, drawn on the cup in CupFace */
+const FACES: Record<Mood, React.ReactNode> = {
+  // Both eyebrows up, wide eyes, small flat mouth: "wait, what?"
+  startled: (
+    <>
+      <path d="M19 25q4-3 8 0" fill="none" stroke="#6f3d1f" strokeWidth="2.2" strokeLinecap="round" />
+      <path d="M34 25q4-3 8 0" fill="none" stroke="#6f3d1f" strokeWidth="2.2" strokeLinecap="round" />
+      <circle cx="23" cy="32" r="3.6" fill="#fff" stroke="#6f3d1f" strokeWidth="1.4" />
+      <circle cx="23" cy="32" r="1.5" fill="#6f3d1f" />
+      <circle cx="38" cy="32" r="3.6" fill="#fff" stroke="#6f3d1f" strokeWidth="1.4" />
+      <circle cx="38" cy="32" r="1.5" fill="#6f3d1f" />
+      <path d="M27 43h8" fill="none" stroke="#6f3d1f" strokeWidth="2.2" strokeLinecap="round" />
+    </>
+  ),
+  // One raised eyebrow, small "o" mouth
+  sceptical: (
+    <>
+      <path className="coffee-face-brow" d="M20 27q4-5 8-2" fill="none" stroke="#6f3d1f" strokeWidth="2.2" strokeLinecap="round" />
+      <path d="M34 27h8" fill="none" stroke="#6f3d1f" strokeWidth="2.2" strokeLinecap="round" />
+      <circle cx="24" cy="32" r="2.6" fill="#6f3d1f" />
+      <circle cx="38" cy="32" r="2" fill="#6f3d1f" />
+      <ellipse cx="31" cy="42" rx="2.4" ry="3" fill="#6f3d1f" />
+    </>
+  ),
+  // Smiling eyes, rosy cheeks, big grin
+  happy: (
+    <>
+      <path d="M20 32q3.5-4 7 0" fill="none" stroke="#6f3d1f" strokeWidth="2.2" strokeLinecap="round" />
+      <path d="M35 32q3.5-4 7 0" fill="none" stroke="#6f3d1f" strokeWidth="2.2" strokeLinecap="round" />
+      <ellipse cx="20" cy="38" rx="2.8" ry="1.8" fill="#fca5a5" opacity="0.8" />
+      <ellipse cx="42" cy="38" rx="2.8" ry="1.8" fill="#fca5a5" opacity="0.8" />
+      <path d="M25 39q6 8 12 0Z" fill="#6f3d1f" stroke="#6f3d1f" strokeWidth="1.6" strokeLinejoin="round" />
+    </>
+  ),
+}
+
+/**
+ * Stand-in for a photo: a coffee cup with a face, shown in place of the
+ * animated cup while the button game is on and after the thank-you.
+ */
+function CupFace({ mood, className = '' }: { mood: Mood; className?: string }) {
+  return (
+    <svg viewBox="0 0 64 64" className={`coffee-face coffee-face-${mood} ${className}`} aria-hidden="true" focusable="false">
+      <ellipse cx="31" cy="57" rx="20" ry="3" fill="#e7d3bd" />
+      <path d="M44.5 30h3a5 5 0 0 1 0 10h-4.2" fill="none" stroke="#f59e0b" strokeWidth="3.5" strokeLinecap="round" />
+      <path d="M15 20h32l-3.5 29.5a4 4 0 0 1-4 3.5H22.5a4 4 0 0 1-4-3.5Z" fill="#fff7ed" stroke="#f59e0b" strokeWidth="3" strokeLinejoin="round" />
+      {FACES[mood]}
+    </svg>
+  )
+}
+
+/**
  * BuyMeACoffee component
  *
  * A friendly, dismissible tip card. On the tax year summary it appears only
  * after the user has exported their PDF report, i.e. after they got value.
  * The animated cup loops through pour, steam, sip and refill; clicking either
  * button restarts it from the pour, and the coffee button also pops some beans.
+ * The coffee button only opens Stripe on its third click (see STAGES).
  *
  * "Star on GitHub" is a secondary, free way to say thanks.
  *
@@ -88,7 +170,11 @@ export function BuyMeACoffee() {
   const [pourCount, setPourCount] = useState(0)
   const [beanBursts, setBeanBursts] = useState(0)
   const [sloshing, setSloshing] = useState(false)
-  const thanked = pourCount > 0
+  const [stage, setStage] = useState(0)
+  const [thanked, setThanked] = useState(false)
+  const showThanks = thanked && stage === 0
+  const copy = STAGES[stage]
+  const mood: Mood | null = showThanks ? 'happy' : stage === 0 ? null : copy.mood
 
   if (isDismissed) {
     return null
@@ -108,18 +194,21 @@ export function BuyMeACoffee() {
 
       <div className="flex items-start sm:items-center gap-3 sm:gap-4">
         {/* Re-keying the cup restarts its loop from the pour */}
-        <CoffeeCup key={pourCount} className="w-12 h-12 sm:w-16 sm:h-16 flex-shrink-0" />
+        {mood ? (
+          // Keyed by mood so each new face drops in
+          <CupFace key={mood} mood={mood} className="w-12 h-12 sm:w-16 sm:h-16 flex-shrink-0" />
+        ) : (
+          <CoffeeCup key={pourCount} className="w-12 h-12 sm:w-16 sm:h-16 flex-shrink-0" />
+        )}
 
         <div className="flex-1 pr-6">
           {/* Only the text changes after a click: the buttons stay, so focus is kept and both remain usable */}
           <div aria-live="polite">
             <h4 className="text-sm font-semibold text-gray-900 mb-1">
-              {thanked ? 'Thank you! ☕' : 'Found this tool helpful?'}
+              {showThanks ? 'Thank you! ☕' : copy.title}
             </h4>
             <p className="text-xs text-gray-700 mb-3">
-              {thanked
-                ? 'That really makes my day. Good luck with your tax return!'
-                : "It's free, open source and runs entirely in your browser. If it saved you time or an accountant's fee, a coffee (or a free GitHub star) would make my day."}
+              {showThanks ? 'That really makes my day. Good luck with your tax return!' : copy.text}
             </p>
           </div>
 
@@ -130,17 +219,38 @@ export function BuyMeACoffee() {
                 href={STRIPE_DONATION_LINK}
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={() => {
+                onClick={(e) => {
                   setPourCount((n) => n + 1)
                   setBeanBursts((n) => n + 1)
                   setSloshing(true)
+                  // Ctrl/Cmd/Shift-click opens the link straight away: no game for power users
+                  const modified = e.metaKey || e.ctrlKey || e.shiftKey || e.altKey
+                  if (stage < LAST_STAGE && !modified) {
+                    e.preventDefault()
+                    setStage(stage + 1)
+                  } else {
+                    setStage(0)
+                    setThanked(true)
+                  }
                 }}
                 className="coffee-btn inline-flex items-center justify-center gap-2 px-5 py-2.5 text-white text-sm font-semibold rounded-md"
               >
                 <ButtonCoffee slosh={sloshing} onSloshEnd={() => setSloshing(false)} />
                 <span className="relative inline-flex items-center gap-2">
                   <ButtonCupIcon />
-                  Buy me a coffee
+                  {/* Every label is laid out in the same cell, so the button keeps the
+                      width of the longest one and doesn't jump as the label changes */}
+                  <span className="grid">
+                    {STAGES.map((s, i) => (
+                      <span
+                        key={i}
+                        className={`col-start-1 row-start-1 text-center ${i === stage ? 'coffee-btn-label' : 'invisible'}`}
+                        aria-hidden={i !== stage}
+                      >
+                        {s.button}
+                      </span>
+                    ))}
+                  </span>
                 </span>
               </a>
               {beanBursts > 0 && (
@@ -156,7 +266,11 @@ export function BuyMeACoffee() {
               href={GITHUB_REPO_URL}
               target="_blank"
               rel="noopener noreferrer"
-              onClick={() => setPourCount((n) => n + 1)}
+              onClick={() => {
+                setPourCount((n) => n + 1)
+                setStage(0)
+                setThanked(true)
+              }}
               className="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 text-sm font-medium rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
             >
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">

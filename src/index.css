@@ -212,7 +212,35 @@ body {
   100% { opacity: 0; transform: translate(var(--bean-x), var(--bean-y)) rotate(var(--bean-r)) scale(1); }
 }
 
+/* Coffee button game: the new label pops in, the sceptical face drops in and
+   keeps raising its eyebrow */
+.coffee-btn-label {
+  animation: coffee-label-pop 0.35s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+.coffee-face {
+  overflow: visible;
+  animation: coffee-face-in 0.5s cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+.coffee-face-brow {
+  transform-box: fill-box;
+  transform-origin: right center;
+  animation: coffee-brow 1.6s ease-in-out 0.5s infinite;
+}
+@keyframes coffee-label-pop {
+  0% { opacity: 0; transform: translateY(6px) scale(0.9); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes coffee-face-in {
+  0% { opacity: 0; transform: translateY(-14px) rotate(-12deg) scale(0.7); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes coffee-brow {
+  0%, 60%, 100% { transform: translateY(0); }
+  70%, 85% { transform: translateY(-2px) rotate(-6deg); }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .coffee-btn-label, .coffee-face, .coffee-face-brow { animation: none; }
   .coffee-stream { display: none; }
   .coffee-liquid, .coffee-mug { animation: none; transform: none; }
   .coffee-steam-group { animation: none; opacity: 1; }
