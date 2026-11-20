@@ -105,8 +105,8 @@ const FACES: Record<Mood, React.ReactNode> = {
   // Both eyebrows up, wide eyes, small flat mouth: "wait, what?"
   startled: (
     <>
-      <path className="coffee-face-brow" d="M19 25q4-3 8 0" fill="none" stroke="#6f3d1f" strokeWidth="2.2" strokeLinecap="round" />
-      <path className="coffee-face-brow" d="M34 25q4-3 8 0" fill="none" stroke="#6f3d1f" strokeWidth="2.2" strokeLinecap="round" />
+      <path d="M19 25q4-3 8 0" fill="none" stroke="#6f3d1f" strokeWidth="2.2" strokeLinecap="round" />
+      <path d="M34 25q4-3 8 0" fill="none" stroke="#6f3d1f" strokeWidth="2.2" strokeLinecap="round" />
       <circle cx="23" cy="32" r="3.6" fill="#fff" stroke="#6f3d1f" strokeWidth="1.4" />
       <circle cx="23" cy="32" r="1.5" fill="#6f3d1f" />
       <circle cx="38" cy="32" r="3.6" fill="#fff" stroke="#6f3d1f" strokeWidth="1.4" />
