@@ -90,7 +90,7 @@ const STAGES = [
     text: "You're about to buy a coffee for a stranger on the internet. Bold move.",
   },
   {
-    button: 'Ooh, you really mean it?!',
+    button: 'You mean it?!',
     mood: 'sceptical',
     title: 'Wait… really?! 🤩',
     text: "Nobody ever gets this far. One more click and I'm putting the kettle on.",
@@ -238,13 +238,16 @@ export function BuyMeACoffee() {
                 <ButtonCoffee slosh={sloshing} onSloshEnd={() => setSloshing(false)} />
                 <span className="relative inline-flex items-center gap-2">
                   <ButtonCupIcon />
-                  {/* Every label is laid out in the same cell, so the button keeps the
-                      width of the longest one and doesn't jump as the label changes */}
+                  {/* From sm up every label is laid out in the same cell, so the button
+                      keeps the width of the longest one and doesn't jump as the label
+                      changes. Phones stack the buttons at full width, so only the current
+                      label is laid out there: a longer hidden one would wrap and make
+                      the button taller */}
                   <span className="grid">
                     {STAGES.map((s, i) => (
                       <span
                         key={i}
-                        className={`col-start-1 row-start-1 text-center ${i === stage ? 'coffee-btn-label' : 'invisible'}`}
+                        className={`col-start-1 row-start-1 text-center ${i === stage ? 'coffee-btn-label' : 'invisible hidden sm:block'}`}
                         aria-hidden={i !== stage}
                       >
                         {s.button}
