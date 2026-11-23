@@ -227,7 +227,7 @@ from live HMRC/ECB rate APIs — the suite is inherently network-dependent.
 A follow-up maintainability audit (2026-11-23; build, lint and unit tests
 clean) split its fixes across these branches:
 
-- `audit/docs-sync`: this specification, `CLAUDE.md` and CLI docs brought up
+- `audit/docs-sync` (#212): this specification, `CLAUDE.md` and CLI docs brought up
   to date, with tests that keep the GenericTransaction schema, broker lists and
   CLI options in step with the code; orphaned `public/BROKER_INSTRUCTIONS.md`
   removed (#34)
@@ -235,11 +235,12 @@ clean) split its fixes across these branches:
   writes in one Dexie transaction, chart dates formatted in UTC
 - `audit/dead-code-types`: unused and test-only exports (#22), one transaction
   type list, one split date window, parser date helpers (#20)
-- `audit/fx-enrichment-simplify`: unused FX source switching and enrichment
+- `audit/fx-enrichment-simplify` (#210): unused FX source switching and enrichment
   engine plumbing
-- `audit/shared-issues`: one issue detector for the web app and the CLI
+- `audit/shared-issues` (#216): one issue detector for the web app and the CLI
+  (`src/lib/issues.ts`)
 - `audit/pdf-lazy-chunk`: PDF report document out of the main bundle
-- `audit/e2e-offline`: E2E tests stub external hosts
+- `audit/e2e-offline` (#214): E2E tests stub external hosts (`e2e/fixtures.ts`)
 
 Still open:
 

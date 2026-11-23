@@ -94,7 +94,7 @@ imported-file metadata, user settings, and auto-fetched stock split data.
 
 **EnrichedTransaction** = GenericTransaction + All computed fields
 - Extends GenericTransaction with calculations performed during enrichment
-- Three enrichment passes (see `src/lib/enrichment/index.ts` and `src/lib/enrichment/engine.ts`):
+- Three enrichment passes (see `src/lib/enrichment/index.ts`):
   1. **Stock split adjustments**: `split_adjusted_quantity`, `split_adjusted_price`, `split_multiplier`, `applied_splits`
   2. **FX conversion**: `fx_rate`, `price_gbp`, `value_gbp`, `fee_gbp`, `fx_source`
   3. **Tax year & CGT**: `tax_year`, `match_groups`
@@ -128,7 +128,7 @@ Each parser must:
 
 #### 3. Enrichment Pipeline (`src/lib/enrichment/`)
 
-The `enrichTransactions()` function (in `index.ts`) uses the `EnrichmentEngine` (in `engine.ts`) to run three sequential passes via enricher classes in `enrichers/`:
+`enrichTransactions()` in `src/lib/enrichment/index.ts` runs the three enricher passes (classes in `enrichers/`) in order:
 1. **Stock splits** (sync) - quantities must be in comparable units first
 2. **FX conversion** (async) - fetches GBP rates from the user-selected FX source (see `src/lib/fx/`)
 3. **Tax year calculation** (sync) - assigns UK tax years
@@ -164,6 +164,10 @@ The CGT engine applies rules in this order:
 **Important**: CGT matching uses `split_adjusted_quantity ?? quantity` from the enrichment pipeline via `getEffectiveQuantity()` helper.
 
 See `docs/SPECIFICATION.md` for complete HMRC rule references.
+
+#### 7. Data Issues (`src/lib/issues.ts`)
+One pure detector finds the problems the user must resolve (missing FX rates, incomplete disposals, split notices...).
+The web app's Issues panel and the CLI's `warnings[]` both word its coded results, so add a new issue there, not in either UI
 
 ## Project Structure
 
@@ -280,7 +284,9 @@ Always store dates as ISO 8601: `YYYY-MM-DD`. Parsers must convert from broker-s
 - **Unit tests**: All parsers, detector logic, utility functions
 - **E2E tests**: Full import workflow with real CSV files
 - Test files mirror source structure: `src/lib/foo.ts` → `src/lib/__tests__/foo.test.ts`
-- E2E tests in separate `e2e/` directory with fixtures in `e2e/fixtures/`
+- E2E tests in separate `e2e/` directory with fixtures in `e2e/fixtures/`. Specs import `test` and `expect` from
+  `e2e/fixtures.ts`, which stubs external hosts (FX rates, split data) so runs don't depend on the network
+- `src/__tests__/docs.test.ts` keeps docs in step with the code: the spec's schema, broker lists and CLI options
 
 ### Debugging Frontend Issues
 
