@@ -89,7 +89,7 @@ imported-file metadata, user settings, and auto-fetched stock split data.
 
 **EnrichedTransaction** = GenericTransaction + All computed fields
 - Extends GenericTransaction with calculations performed during enrichment
-- Three enrichment passes (see `src/lib/enrichment/index.ts` and `src/lib/enrichment/engine.ts`):
+- Three enrichment passes (see `src/lib/enrichment/index.ts`):
   1. **Stock split adjustments**: `split_adjusted_quantity`, `split_adjusted_price`, `split_multiplier`, `applied_splits`
   2. **FX conversion**: `fx_rate`, `price_gbp`, `value_gbp`, `fee_gbp`, `fx_source`
   3. **Tax year & CGT**: `tax_year`, `match_groups`
@@ -123,7 +123,7 @@ Each parser must:
 
 #### 3. Enrichment Pipeline (`src/lib/enrichment/`)
 
-The `enrichTransactions()` function (in `index.ts`) uses the `EnrichmentEngine` (in `engine.ts`) to run three sequential passes via enricher classes in `enrichers/`:
+The `enrichTransactions()` function (in `index.ts`) runs three sequential passes via enricher classes in `enrichers/`:
 1. **Stock splits** (sync) - quantities must be in comparable units first
 2. **FX conversion** (async) - fetches GBP rates from the user-selected FX source (see `src/lib/fx/`)
 3. **Tax year calculation** (sync) - assigns UK tax years

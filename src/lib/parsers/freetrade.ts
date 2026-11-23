@@ -70,7 +70,7 @@ function normalizeFreetradeRow(row: RawCSVRow, fileId: string, rowIndex: number)
     quantity: null,
     price: null,
     currency: row['Account Currency']?.trim() || 'GBP',
-    total: parseNumber(row['Total Amount']) || null,
+    total: parseNumber(row['Total Amount']) ?? null,
     fee: null,
     ratio: null,
     notes: `Unrecognized transaction type: ${type}`,
@@ -93,7 +93,7 @@ function parseOrderTransaction(
   isFreeShare = false
 ): GenericTransaction | null {
   const buySell = row['Buy / Sell']?.trim()
-  const quantity = parseNumber(row['Quantity']) || null
+  const quantity = parseNumber(row['Quantity']) ?? null
   const accountCurrency = row['Account Currency']?.trim() || 'GBP'
 
   // For free shares, price and amount are £0 (no acquisition cost per HMRC)
@@ -108,10 +108,10 @@ function parseOrderTransaction(
     stampDuty = 0
     fxFeeAmount = 0
   } else {
-    pricePerShare = parseNumber(row['Price per Share in Account Currency']) || null
-    totalAmount = parseNumber(row['Total Amount']) || null
-    stampDuty = parseNumber(row['Stamp Duty']) || null
-    fxFeeAmount = parseNumber(row['FX Fee Amount']) || null
+    pricePerShare = parseNumber(row['Price per Share in Account Currency']) ?? null
+    totalAmount = parseNumber(row['Total Amount']) ?? null
+    stampDuty = parseNumber(row['Stamp Duty']) ?? null
+    fxFeeAmount = parseNumber(row['FX Fee Amount']) ?? null
   }
 
   // Determine if this is a buy or sell (free shares are always BUY)

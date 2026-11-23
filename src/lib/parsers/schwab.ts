@@ -1,4 +1,4 @@
-import { GenericTransaction, TransactionType } from '../../types/transaction'
+import { GenericTransaction, TransactionType, TransactionTypeValue } from '../../types/transaction'
 import { RawCSVRow, BrokerType } from '../../types/broker'
 import { calculateTotal, parseCurrency, parseUSDate } from './parsingUtils'
 
@@ -39,7 +39,7 @@ export function normalizeSchwabTransactions(rows: RawCSVRow[], fileId: string): 
 /**
  * Check if a transaction type is an options transaction
  */
-function isOptionsTransaction(type: typeof TransactionType[keyof typeof TransactionType]): boolean {
+function isOptionsTransaction(type: TransactionTypeValue): boolean {
   const optionsTypes: string[] = [
     TransactionType.OPTIONS_BUY_TO_OPEN,
     TransactionType.OPTIONS_SELL_TO_OPEN,
@@ -190,7 +190,7 @@ function normalizeSchwabRow(
 }
 
 interface SchwabActionResult {
-  type: typeof TransactionType[keyof typeof TransactionType] | null
+  type: TransactionTypeValue | null
   isShortSell: boolean
 }
 
@@ -203,7 +203,7 @@ function mapSchwabAction(action: string): SchwabActionResult {
   // Determine if this is a short sell action
   const isShortSell = actionLower === 'sell short' || actionLower === 'sell to open'
 
-  let type: typeof TransactionType[keyof typeof TransactionType]
+  let type: TransactionTypeValue
 
   // Options trading actions
   if (actionLower === 'buy to open') {

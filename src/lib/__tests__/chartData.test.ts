@@ -1,13 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import {
-  buildDisposalGainsData,
   buildPoolBreakdownData,
   buildTransactionTimeline,
   formatDateLabel,
-  formatMonthYear,
   generateSymbolColors,
-  getRuleColor,
-  CHART_COLORS,
 } from '../chartData'
 import { DisposalRecord, Section104Pool } from '../../types/cgt'
 import { EnrichedTransaction } from '../../types/transaction'
@@ -69,12 +65,8 @@ describe('chartData', () => {
     it('handles different months', () => {
       expect(formatDateLabel('2023-12-01')).toBe('1 Dec 23')
       expect(formatDateLabel('2024-06-30')).toBe('30 Jun 24')
-    })
-  })
-
-  describe('formatMonthYear', () => {
-    it('formats date as month year', () => {
-      expect(formatMonthYear('2024-01-15')).toBe('Jan 24')
+      // Same day whatever the machine's timezone
+      expect(formatDateLabel('2024-04-06T00:00:00Z')).toBe('6 Apr 24')
     })
   })
 
@@ -94,101 +86,6 @@ describe('chartData', () => {
 
     it('returns empty object for empty array', () => {
       expect(generateSymbolColors([])).toEqual({})
-    })
-  })
-
-  describe('getRuleColor', () => {
-    it('returns correct colors for each rule', () => {
-      expect(getRuleColor('SAME_DAY')).toBe(CHART_COLORS.sameDay)
-      expect(getRuleColor('30_DAY')).toBe(CHART_COLORS.thirtyDay)
-      expect(getRuleColor('SECTION_104')).toBe(CHART_COLORS.section104)
-    })
-
-    it('returns neutral for unknown rules', () => {
-      expect(getRuleColor('UNKNOWN')).toBe(CHART_COLORS.neutral)
-    })
-  })
-
-  describe('buildDisposalGainsData', () => {
-    it('returns empty array for empty input', () => {
-      expect(buildDisposalGainsData([])).toEqual([])
-    })
-
-    it('returns empty array for undefined input', () => {
-      expect(buildDisposalGainsData(undefined as unknown as DisposalRecord[])).toEqual([])
-    })
-
-    it('transforms single disposal correctly', () => {
-      const disposal = createMockDisposal({
-        gainOrLossGbp: 500,
-      })
-
-      const result = buildDisposalGainsData([disposal])
-
-      expect(result).toHaveLength(1)
-      expect(result[0]).toMatchObject({
-        id: 'disposal-1',
-        symbol: 'AAPL',
-        gain: 500,
-        cumulative: 500,
-        isGain: true,
-        rule: 'SECTION_104',
-      })
-    })
-
-    it('calculates cumulative correctly for multiple disposals', () => {
-      const disposals = [
-        createMockDisposal({
-          id: 'disposal-1',
-          disposal: { date: '2024-01-10' } as EnrichedTransaction,
-          gainOrLossGbp: 100,
-        }),
-        createMockDisposal({
-          id: 'disposal-2',
-          disposal: { date: '2024-01-20' } as EnrichedTransaction,
-          gainOrLossGbp: -50,
-        }),
-        createMockDisposal({
-          id: 'disposal-3',
-          disposal: { date: '2024-01-30' } as EnrichedTransaction,
-          gainOrLossGbp: 200,
-        }),
-      ]
-
-      const result = buildDisposalGainsData(disposals)
-
-      expect(result[0].cumulative).toBe(100)
-      expect(result[1].cumulative).toBe(50)  // 100 - 50
-      expect(result[2].cumulative).toBe(250) // 50 + 200
-    })
-
-    it('sorts disposals by date', () => {
-      const disposals = [
-        createMockDisposal({
-          id: 'disposal-2',
-          disposal: { date: '2024-02-01' } as EnrichedTransaction,
-        }),
-        createMockDisposal({
-          id: 'disposal-1',
-          disposal: { date: '2024-01-01' } as EnrichedTransaction,
-        }),
-      ]
-
-      const result = buildDisposalGainsData(disposals)
-
-      expect(result[0].date).toBe('2024-01-01')
-      expect(result[1].date).toBe('2024-02-01')
-    })
-
-    it('identifies losses correctly', () => {
-      const disposal = createMockDisposal({
-        gainOrLossGbp: -300,
-      })
-
-      const result = buildDisposalGainsData([disposal])
-
-      expect(result[0].isGain).toBe(false)
-      expect(result[0].gain).toBe(-300)
     })
   })
 

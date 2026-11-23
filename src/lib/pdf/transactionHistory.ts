@@ -1,6 +1,7 @@
 import type { DisposalRecord, TaxYearSummary } from '../../types/cgt'
 import type { EnrichedTransaction } from '../../types/transaction'
 import { formatGbp } from '../../utils/currency'
+import { formatIsoDate } from '../../utils/date'
 import { isFiatCurrency } from '../currencies'
 
 /**
@@ -65,12 +66,9 @@ export function transactionHistoryRows(
     .sort((a, b) => a.date.localeCompare(b.date) || a.symbol.localeCompare(b.symbol))
 }
 
-/**
- * Format an ISO date (YYYY-MM-DD) as DD/MM/YYYY. Date parses it as UTC midnight,
- * so it is formatted in UTC too; local time would print a day early west of UTC.
- */
+/** Format an ISO date (YYYY-MM-DD) as DD/MM/YYYY */
 export function formatReportDate(date: string): string {
-  return new Date(date).toLocaleDateString('en-GB', { timeZone: 'UTC' })
+  return formatIsoDate(date, 'numeric')
 }
 
 /**

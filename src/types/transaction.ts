@@ -1,6 +1,34 @@
 import { z } from 'zod'
 
 /**
+ * Transaction type enum for easier use
+ */
+export const TransactionType = {
+  BUY: 'BUY',
+  SELL: 'SELL',
+  DIVIDEND: 'DIVIDEND',
+  FEE: 'FEE',
+  INTEREST: 'INTEREST',
+  TRANSFER: 'TRANSFER',
+  TAX: 'TAX',
+  TAX_ON_DIVIDEND: 'TAX_ON_DIVIDEND',
+  TAX_ON_INTEREST: 'TAX_ON_INTEREST',
+  STOCK_SPLIT: 'STOCK_SPLIT',
+  UNKNOWN: 'UNKNOWN',
+  // Options trading types
+  OPTIONS_BUY_TO_OPEN: 'OPTIONS_BUY_TO_OPEN',
+  OPTIONS_SELL_TO_OPEN: 'OPTIONS_SELL_TO_OPEN',
+  OPTIONS_BUY_TO_CLOSE: 'OPTIONS_BUY_TO_CLOSE',
+  OPTIONS_SELL_TO_CLOSE: 'OPTIONS_SELL_TO_CLOSE',
+  OPTIONS_ASSIGNED: 'OPTIONS_ASSIGNED',
+  OPTIONS_EXPIRED: 'OPTIONS_EXPIRED',
+  OPTIONS_STOCK_SPLIT: 'OPTIONS_STOCK_SPLIT',
+} as const
+
+/** A transaction type value, e.g. 'BUY' */
+export type TransactionTypeValue = typeof TransactionType[keyof typeof TransactionType]
+
+/**
  * Generic Transaction Schema - normalized input format
  * Based on the specification in docs/SPECIFICATION.md
  */
@@ -10,27 +38,7 @@ export const GenericTransactionSchema = z.object({
   symbol: z.string().describe('Stock ticker or ISIN code'),
   name: z.string().nullable().describe('Full name of the asset'),
   date: z.string().date().describe('Transaction date in YYYY-MM-DD format'),
-  type: z.enum([
-    'BUY',
-    'SELL',
-    'DIVIDEND',
-    'FEE',
-    'INTEREST',
-    'TRANSFER',
-    'TAX',
-    'TAX_ON_DIVIDEND',
-    'TAX_ON_INTEREST',
-    'STOCK_SPLIT',
-    'UNKNOWN',
-    // Options trading types
-    'OPTIONS_BUY_TO_OPEN',
-    'OPTIONS_SELL_TO_OPEN',
-    'OPTIONS_BUY_TO_CLOSE',
-    'OPTIONS_SELL_TO_CLOSE',
-    'OPTIONS_ASSIGNED',
-    'OPTIONS_EXPIRED',
-    'OPTIONS_STOCK_SPLIT',
-  ]).describe('Transaction type'),
+  type: z.enum(TransactionType).describe('Transaction type'),
   quantity: z.number().nullable().describe('Quantity bought or sold'),
   price: z.number().nullable().describe('Price per unit in transaction currency'),
   currency: z.string().describe('Original transaction currency (e.g. USD, EUR, GBP)'),
@@ -104,30 +112,6 @@ export const FX_STATUS = {
   NOT_SUPPORTED: 'Not supported',
 } as const
 
-/**
- * Transaction type enum for easier use
- */
-export const TransactionType = {
-  BUY: 'BUY',
-  SELL: 'SELL',
-  DIVIDEND: 'DIVIDEND',
-  FEE: 'FEE',
-  INTEREST: 'INTEREST',
-  TRANSFER: 'TRANSFER',
-  TAX: 'TAX',
-  TAX_ON_DIVIDEND: 'TAX_ON_DIVIDEND',
-  TAX_ON_INTEREST: 'TAX_ON_INTEREST',
-  STOCK_SPLIT: 'STOCK_SPLIT',
-  UNKNOWN: 'UNKNOWN',
-  // Options trading types
-  OPTIONS_BUY_TO_OPEN: 'OPTIONS_BUY_TO_OPEN',
-  OPTIONS_SELL_TO_OPEN: 'OPTIONS_SELL_TO_OPEN',
-  OPTIONS_BUY_TO_CLOSE: 'OPTIONS_BUY_TO_CLOSE',
-  OPTIONS_SELL_TO_CLOSE: 'OPTIONS_SELL_TO_CLOSE',
-  OPTIONS_ASSIGNED: 'OPTIONS_ASSIGNED',
-  OPTIONS_EXPIRED: 'OPTIONS_EXPIRED',
-  OPTIONS_STOCK_SPLIT: 'OPTIONS_STOCK_SPLIT',
-} as const
 
 /**
  * The HMRC matching rule that matched a disposal to its acquisitions

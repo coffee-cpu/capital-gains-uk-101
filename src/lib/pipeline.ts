@@ -5,6 +5,7 @@ import { enrichTransactions } from './enrichment'
 import { calculateCGT } from './cgt/engine'
 import { getAutoSplitsForTransactions, hasUsableRatio, HOLDING_TYPES } from './splits/splitLookupService'
 import { SplitDataSource, JsDelivrSplitSource } from './splits/splitDataSource'
+import { withinSplitWindow } from './splits/splitWindow'
 import { FXSource, DEFAULT_FX_SOURCE } from '../types/fxSource'
 import { CGTCalculationResult } from '../types/cgt'
 import { GenericTransaction } from '../types/transaction'
@@ -92,9 +93,6 @@ export async function runPipeline(
   return result
 }
 
-/** Same window the split lookup uses to match broker and fetched splits */
-const SPLIT_MATCH_WINDOW_MS = 7 * 24 * 60 * 60 * 1000
-
 /**
  * Whether a rejected fetched split could mean a missed split: the user holds
  * the share (same definition as the split lookup) and their own files don't
@@ -104,12 +102,11 @@ const SPLIT_MATCH_WINDOW_MS = 7 * 24 * 60 * 60 * 1000
 function mayBeMissedSplit(record: { symbol: string; date: string }, transactions: GenericTransaction[]): boolean {
   const held = transactions.some(tx => tx.symbol === record.symbol && HOLDING_TYPES.has(tx.type))
   if (!held) return false
-  const recordMs = new Date(record.date).getTime()
   const coveredByBroker = transactions.some(tx =>
     tx.type === 'STOCK_SPLIT' &&
     tx.symbol === record.symbol &&
     hasUsableRatio(tx.ratio) &&
-    Math.abs(new Date(tx.date).getTime() - recordMs) <= SPLIT_MATCH_WINDOW_MS
+    withinSplitWindow(tx.date, record.date)
   )
   return !coveredByBroker
 }
@@ -128,12 +125,6 @@ export function findSplitsWithoutRatio(
   const held = new Set(transactions.filter(tx => HOLDING_TYPES.has(tx.type)).map(tx => tx.symbol))
   return transactions
     .filter(tx => tx.type === 'STOCK_SPLIT' && !hasUsableRatio(tx.ratio) && held.has(tx.symbol))
-    .filter(tx => {
-      const ms = new Date(tx.date).getTime()
-      return !usable.some(split =>
-        split.symbol === tx.symbol &&
-        Math.abs(new Date(split.date).getTime() - ms) <= SPLIT_MATCH_WINDOW_MS
-      )
-    })
+    .filter(tx => !usable.some(split => split.symbol === tx.symbol && withinSplitWindow(split.date, tx.date)))
     .map(({ id, symbol, date, source }) => ({ id, symbol, date, source }))
 }

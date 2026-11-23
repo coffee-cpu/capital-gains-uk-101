@@ -1,6 +1,7 @@
 import { COMMUNITY_SPLIT_SOURCE } from '../../types/broker'
 import { GenericTransaction, parseRatioMultiplier } from '../../types/transaction'
 import { SplitDataSource, SplitRecord, JsDelivrSplitSource } from './splitDataSource'
+import { withinSplitWindow } from './splitWindow'
 
 /** Transaction types that indicate the user holds a given symbol */
 export const HOLDING_TYPES = new Set<string>(['BUY', 'SELL', 'OPTIONS_BUY_TO_OPEN', 'OPTIONS_SELL_TO_OPEN', 'OPTIONS_BUY_TO_CLOSE', 'OPTIONS_SELL_TO_CLOSE', 'OPTIONS_ASSIGNED'])
@@ -51,27 +52,24 @@ export async function getAutoSplitsForTransactions(
     // Build list of existing broker-provided splits for deduplication
     // Uses fuzzy date matching (±7 days) because brokers may record split dates
     // slightly differently than CDN sources (e.g., ex-date vs effective date)
-    const brokerSplits: Array<{ symbol: string; dateMs: number; ratio?: string | null }> = []
+    const brokerSplits: Array<{ symbol: string; date: string; ratio?: string | null }> = []
     for (const tx of transactions) {
       // Only broker splits with a usable ratio count: the split enricher skips
       // rows without one (some Revolut, Trading 212 and Schwab rows), so
       // letting them block the fetched split would leave no split applied
       if (tx.type === 'STOCK_SPLIT' && tx.symbol && tx.date && hasUsableRatio(tx.ratio)) {
-        brokerSplits.push({ symbol: tx.symbol, dateMs: new Date(tx.date).getTime(), ratio: tx.ratio })
+        brokerSplits.push({ symbol: tx.symbol, date: tx.date, ratio: tx.ratio })
       }
     }
 
     // Deduplicate: broker-provided splits take priority (fuzzy ±7 day match)
     // When both dates and ratios match, it's definitely a duplicate.
     // When dates match but ratios differ, still dedupe (broker data wins).
-    const DEDUP_WINDOW_MS = 7 * 24 * 60 * 60 * 1000
     const newSplits = relevantSplits.filter(s => {
-      const cdnDateMs = new Date(s.date).getTime()
       const cdnRatio = `${s.ratioTo}:${s.ratioFrom}`
       return !brokerSplits.some(b => {
         if (b.symbol !== s.symbol) return false
-        const withinWindow = Math.abs(b.dateMs - cdnDateMs) <= DEDUP_WINDOW_MS
-        if (!withinWindow) return false
+        if (!withinSplitWindow(b.date, s.date)) return false
         if (b.ratio && b.ratio !== cdnRatio) {
           console.debug(`Auto-splits: skipping CDN split ${s.symbol} ${s.date} (${cdnRatio}) — broker has ${b.ratio} within ±7 days`)
         }

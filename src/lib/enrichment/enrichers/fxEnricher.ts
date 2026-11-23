@@ -1,6 +1,6 @@
 import { EnrichedTransaction, FX_STATUS } from '../../../types/transaction'
-import { FXSource } from '../../../types/fxSource'
-import { FXManager, convertToGBP } from '../../fx'
+import { FXSource, DEFAULT_FX_SOURCE } from '../../../types/fxSource'
+import { FXManager, convertToGBP, createFXProvider } from '../../fx/manager'
 import { Enricher } from '../types'
 import { isFiatCurrency } from '../../currencies'
 
@@ -30,22 +30,8 @@ export class FxEnricher implements Enricher {
 
   private fxManager: FXManager
 
-  constructor(fxSource?: FXSource) {
-    this.fxManager = new FXManager(fxSource)
-  }
-
-  /**
-   * Get the current FX source
-   */
-  getFXSource(): FXSource {
-    return this.fxManager.getFXSource()
-  }
-
-  /**
-   * Set the FX source - use before enrichment
-   */
-  setFXSource(fxSource: FXSource): void {
-    this.fxManager.setFXSource(fxSource)
+  constructor(fxSource: FXSource = DEFAULT_FX_SOURCE) {
+    this.fxManager = new FXManager(createFXProvider(fxSource))
   }
 
   async enrich(transactions: EnrichedTransaction[]): Promise<EnrichedTransaction[]> {

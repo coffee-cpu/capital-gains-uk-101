@@ -2,10 +2,6 @@
   "name": "capital-gains-tax-uk-101",
   "version": "1.0.0",
   "description": "UK Capital Gains Tax made easy - Free, privacy-focused CGT calculator and visualiser",
-  "main": "index.js",
-  "directories": {
-    "doc": "docs"
-  },
   "type": "module",
   "workspaces": [
     "packages/*"
@@ -54,7 +50,6 @@
     "@vitejs/plugin-react": "^6.3.0",
     "@vitest/coverage-v8": "5.1.0",
     "@vitest/ui": "5.1.0",
-    "autoprefixer": "^10.6.2",
     "eslint": "^10.15.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "jsdom": "^31.0.1",
