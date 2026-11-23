@@ -9,6 +9,7 @@ import { ExportPDFButton } from './ExportPDFButton'
 import { BuyMeACoffee } from './BuyMeACoffee'
 import { TaxYearFeaturesRenderer } from './taxYearFeatures'
 import { formatGbp, formatGbpWhole } from '../utils/currency'
+import { formatIsoDate } from '../utils/date'
 import { sa108ReportingNeed } from '../lib/cgt/reporting'
 import type { TaxYearSummary as TaxYearSummaryData } from '../types/cgt'
 
@@ -25,13 +26,6 @@ function BuyOnlyNote() {
       </p>
     </div>
   )
-}
-
-const UK_DATE = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
-
-/** ISO date (YYYY-MM-DD) as a UK date, e.g. "6 Apr 2024" */
-function formatUkDate(isoDate: string): string {
-  return UK_DATE.format(new Date(`${isoDate}T00:00:00Z`))
 }
 
 /**
@@ -176,7 +170,7 @@ export function TaxYearSummary() {
           </div>
 
           <p className="text-sm text-gray-500" data-testid="tax-year-period">
-            {formatUkDate(currentSummary.startDate)} – {formatUkDate(currentSummary.endDate)}
+            {formatIsoDate(currentSummary.startDate, 'short')} – {formatIsoDate(currentSummary.endDate, 'short')}
           </p>
         </div>
       </div>
