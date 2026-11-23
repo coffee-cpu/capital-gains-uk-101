@@ -205,6 +205,27 @@ async function salvageUserData(): Promise<{ transactions: GenericTransaction[]; 
 }
 
 /**
+ * Whether a file with this ID has been imported. Transaction IDs are
+ * `${fileId}-${rowIndex}`, so the separator is part of the prefix: without it
+ * `abc_csv-12` would match the rows of `abc_csv-123`.
+ */
+export async function isFileImported(fileId: string): Promise<boolean> {
+  if (await db.imported_files.get(fileId)) return true
+  return (await db.transactions.where('id').startsWith(`${fileId}-`).count()) > 0
+}
+
+/**
+ * Store an imported file's record and its transactions in one transaction,
+ * so a failed write leaves neither behind.
+ */
+export async function saveImport(file: ImportedFile, transactions: GenericTransaction[]): Promise<void> {
+  await db.transaction('rw', db.imported_files, db.transactions, async () => {
+    await db.imported_files.add(file)
+    await db.transactions.bulkAdd(transactions)
+  })
+}
+
+/**
  * Removes the sample portfolio's transactions and file record, keeping
  * everything else (other imports, settings, cached rates). Resolves to
  * whether there was a sample to remove.

@@ -190,3 +190,35 @@ test.describe('CSV Import', () => {
     await expect(page.getByText('EquatePlus').first()).toBeVisible()
   })
 })
+
+test.describe('Duplicate file detection', () => {
+  const header = 'date,type,symbol,currency,name,quantity,price,total,fee,notes\n'
+  /** A Generic CSV of exactly `size` bytes (padded in the notes column) */
+  function csvOfSize(size: number, row: string): Buffer {
+    const base = header + row + ','
+    return Buffer.from(base + 'x'.repeat(size - Buffer.byteLength(base) - 1) + '\n')
+  }
+
+  test('a file whose ID is a prefix of an imported file\'s ID still imports', async ({ page }) => {
+    await page.goto('/')
+    const fileInput = page.locator('input[type="file"]')
+
+    // File IDs are name + size: "acme_csv-1500" and "acme_csv-150". The first
+    // file's row IDs ("acme_csv-1500-1") start with the second file's ID.
+    const large = csvOfSize(1500, '2024-06-10,BUY,ACME,GBP,Acme plc,10,5.00,50.00,0')
+    const small = csvOfSize(150, '2024-07-10,BUY,ACME,GBP,Acme plc,4,6.00,24.00,0')
+    expect(large.length).toBe(1500)
+    expect(small.length).toBe(150)
+
+    await fileInput.setInputFiles({ name: 'acme.csv', mimeType: 'text/csv', buffer: large })
+    await expect(page.getByText(/1 total transactions/i)).toBeVisible({ timeout: 10000 })
+
+    await fileInput.setInputFiles({ name: 'acme.csv', mimeType: 'text/csv', buffer: small })
+    await expect(page.getByText(/1 file\(s\) imported successfully \(1 total transactions\)/i)).toBeVisible({ timeout: 10000 })
+    await expect(page.getByText(/already imported/i)).toHaveCount(0)
+
+    // Importing the same file again is still skipped
+    await fileInput.setInputFiles({ name: 'acme.csv', mimeType: 'text/csv', buffer: small })
+    await expect(page.getByText(/already imported \(skipped\)/i)).toBeVisible({ timeout: 10000 })
+  })
+})
