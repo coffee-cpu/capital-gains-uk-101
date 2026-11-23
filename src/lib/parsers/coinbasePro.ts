@@ -2,7 +2,7 @@ import type { GenericTransaction } from '../../types/transaction'
 import { TransactionType } from '../../types/transaction'
 import { BrokerType, type RawCSVRow } from '../../types/broker'
 import { isFiatCurrency } from '../currencies'
-import { parseCurrency } from './parsingUtils'
+import { parseCurrency, parseISODate } from './parsingUtils'
 
 /**
  * Coinbase Pro CSV Parser
@@ -41,29 +41,6 @@ function parseProduct(product: string): { base: string; quote: string } | null {
     base: parts[0].toUpperCase(),
     quote: parts[1].toUpperCase(),
   }
-}
-
-/**
- * Parse ISO 8601 timestamp to date string
- * e.g., "2020-10-14T10:42:20.072Z" -> "2020-10-14"
- *
- * @param timestamp - ISO 8601 formatted timestamp string
- * @returns Date in YYYY-MM-DD format, or null if invalid (row is skipped,
- *          matching every other parser's behaviour)
- */
-function parseISO8601Date(timestamp: string): string | null {
-  if (!timestamp || typeof timestamp !== 'string') {
-    return null
-  }
-
-  const datePart = timestamp.split(/[T ]/)[0]
-
-  // Validate basic YYYY-MM-DD format
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
-    return null
-  }
-
-  return datePart
 }
 
 /**
@@ -114,7 +91,7 @@ export function normalizeCoinbaseProTransactions(
     const gbpValue = parseCurrency(row['gbp_value'])
 
     // Date in YYYY-MM-DD format (skip rows with malformed timestamps)
-    const date = parseISO8601Date(timestamp)
+    const date = parseISODate(timestamp)
     if (!date) {
       console.warn(`Coinbase Pro: Invalid timestamp "${timestamp}", skipping row`)
       continue

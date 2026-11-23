@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { normalizeSymbol, addSymbolRename, getSymbolRenames } from '../symbolNormalization'
+import { normalizeSymbol } from '../symbolNormalization'
 
 describe('Symbol Normalization', () => {
   it('should normalize FB to META', () => {
@@ -22,20 +22,6 @@ describe('Symbol Normalization', () => {
 
   it('should return empty string as-is', () => {
     expect(normalizeSymbol('')).toBe('')
-  })
-
-  it('should allow adding new symbol renames', () => {
-    addSymbolRename('GOOG', 'GOOGL', '2014-04-03')
-    expect(normalizeSymbol('GOOG')).toBe('GOOGL')
-  })
-
-  it('should return all registered symbol renames', () => {
-    const renames = getSymbolRenames()
-    expect(renames).toHaveProperty('FB')
-    expect(renames.FB).toEqual({
-      newSymbol: 'META',
-      changeDate: '2022-06-09'
-    })
   })
 
   it('should normalize case-sensitive symbols correctly', () => {

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { applySameDayRule } from '../sameDayMatcher'
-import { getRemainingQuantity } from '../utils'
+import { MatchedQuantityTracker } from '../utils'
 import { EnrichedTransaction } from '../../../types/transaction'
 
 describe('Same-Day Matcher', () => {
@@ -541,7 +541,7 @@ describe('Same-Day Matcher', () => {
     })
   })
 
-  describe('getRemainingQuantity', () => {
+  describe('MatchedQuantityTracker.getRemaining', () => {
     it('should return original quantity when no matchings exist', () => {
       const transaction: EnrichedTransaction = {
         id: 'tx-1',
@@ -565,7 +565,7 @@ describe('Same-Day Matcher', () => {
         tax_year: '2023/24',
       }
 
-      const remaining = getRemainingQuantity(transaction, [])
+      const remaining = new MatchedQuantityTracker([]).getRemaining(transaction)
       expect(remaining).toBe(10)
     })
 
@@ -608,7 +608,7 @@ describe('Same-Day Matcher', () => {
         },
       ]
 
-      const remaining = getRemainingQuantity(transaction, matchings)
+      const remaining = new MatchedQuantityTracker(matchings).getRemaining(transaction)
       expect(remaining).toBe(0)
     })
 
@@ -651,7 +651,7 @@ describe('Same-Day Matcher', () => {
         },
       ]
 
-      const remaining = getRemainingQuantity(transaction, matchings)
+      const remaining = new MatchedQuantityTracker(matchings).getRemaining(transaction)
       expect(remaining).toBe(4)
     })
   })

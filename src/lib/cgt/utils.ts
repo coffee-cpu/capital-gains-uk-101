@@ -227,48 +227,11 @@ export function createMatching(
 }
 
 /**
- * Get the remaining unmatched quantity for a transaction
- *
- * Calculates how much of a transaction's quantity hasn't been
- * matched by previous rules (same-day, 30-day, Section 104).
- *
- * Note: this scans all matchings on every call. Inside matcher loops use
- * MatchedQuantityTracker instead, which answers the same question in O(1).
- *
- * @param transaction The transaction to check
- * @param matchings All existing matchings to consider
- * @returns Remaining unmatched quantity (always >= 0)
- */
-export function getRemainingQuantity(
-  transaction: EnrichedTransaction,
-  matchings: MatchingResult[]
-): number {
-  const originalQuantity = getEffectiveQuantity(transaction)
-
-  let matchedQuantity = 0
-
-  for (const matching of matchings) {
-    if (matching.disposal.id === transaction.id) {
-      matchedQuantity += matching.quantityMatched
-    }
-
-    for (const acq of matching.acquisitions) {
-      if (acq.transaction.id === transaction.id) {
-        matchedQuantity += acq.quantityMatched
-      }
-    }
-  }
-
-  const remaining = originalQuantity - matchedQuantity
-  return remaining > QUANTITY_EPSILON ? remaining : 0
-}
-
-/**
  * Incremental tracker of matched quantities per transaction
  *
- * Replaces repeated getRemainingQuantity() scans (O(matchings) per call,
- * O(n²)+ overall in the matcher loops) with O(1) lookups. Build it once per
- * stage from the existing matchings, then add() each new matching as it is
+ * Answers "how much of this transaction is still unmatched" in O(1), so
+ * the matcher loops don't rescan every matching. Build it once per stage
+ * from the existing matchings, then add() each new matching as it is
  * created.
  */
 export class MatchedQuantityTracker {

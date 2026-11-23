@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { normalizeTrading212Transactions } from '../trading212'
 import { TransactionType } from '../../../types/transaction'
+import type { SkippedRow } from '../../../types/brokerDefinition'
 
 describe('Trading 212 Parser', () => {
   describe('normalizeTrading212Transactions', () => {
@@ -654,5 +655,22 @@ describe('Trading 212 Parser', () => {
       expect(result).toHaveLength(1)
       expect(result[0].currency).toBe('GBP')
     })
+  })
+})
+
+describe('Trading 212 Parser: dates', () => {
+  it('skips a row with an impossible date and reports it', () => {
+    const skipped: SkippedRow[] = []
+    const row = (time: string) => ({
+      'Action': 'Market buy', 'Time': time, 'Ticker': 'ACME', 'No. of shares': '5', 'Price / share': '10',
+      'Currency (Price / share)': 'GBP', 'Total': '50', 'Currency (Total)': 'GBP',
+    })
+
+    const result = normalizeTrading212Transactions([row('2024-02-30 10:00:00'), row('2024-06-10 10:00:00')], 'test-file', skipped)
+
+    expect(result).toHaveLength(1)
+    expect(result[0].id).toBe('test-file-2')
+    expect(result[0].date).toBe('2024-06-10')
+    expect(skipped).toEqual([{ row: 2, reason: 'invalid date "2024-02-30 10:00:00"' }])
   })
 })
