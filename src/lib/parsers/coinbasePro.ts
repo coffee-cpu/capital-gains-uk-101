@@ -3,6 +3,7 @@ import { TransactionType } from '../../types/transaction'
 import { BrokerType, type RawCSVRow } from '../../types/broker'
 import { isFiatCurrency } from '../currencies'
 import { parseCurrency, parseISODate } from './parsingUtils'
+import type { SkippedRow } from '../../types/brokerDefinition'
 
 /**
  * Coinbase Pro CSV Parser
@@ -58,12 +59,13 @@ function parseProduct(product: string): { base: string; quote: string } | null {
  */
 export function normalizeCoinbaseProTransactions(
   rows: RawCSVRow[],
-  fileId: string
+  fileId: string,
+  skippedRows?: SkippedRow[]
 ): GenericTransaction[] {
   const transactions: GenericTransaction[] = []
   let transactionIndex = 1
 
-  for (const row of rows) {
+  for (const [index, row] of rows.entries()) {
     const product = row['product']
     const side = row['side']
     const timestamp = row['created at']
@@ -93,7 +95,8 @@ export function normalizeCoinbaseProTransactions(
     // Date in YYYY-MM-DD format (skip rows with malformed timestamps)
     const date = parseISODate(timestamp)
     if (!date) {
-      console.warn(`Coinbase Pro: Invalid timestamp "${timestamp}", skipping row`)
+      // +2: spreadsheet row number (rows are 1-based and the header is row 1)
+      skippedRows?.push({ row: index + 2, reason: `invalid date "${timestamp}"` })
       continue
     }
 
