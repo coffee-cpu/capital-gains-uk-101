@@ -5,7 +5,8 @@ import { MatchingRule } from '../../../src/types/transaction'
 import { getEffectiveQuantity, QUANTITY_EPSILON } from '../../../src/lib/cgt/utils'
 import { sa108Rows, Sa108Category, Sa108Row } from '../../../src/lib/cgt/sa108'
 import { combineFxAttributions } from '../../../src/lib/fx/attribution'
-import { findDataIssues, DataIssue, DataIssueCode, MissingRatioRemedy } from '../../../src/lib/issues'
+import { findDataIssues, DataIssueCode } from '../../../src/lib/issues'
+import { SkippedRow } from '../../../src/types/brokerDefinition'
 import { CLI_NAME, CLI_VERSION, DISCLAIMER } from './meta'
 
 /**
@@ -18,13 +19,11 @@ export type MatchRule = 'same-day' | '30-day' | 'section-104' | 'short-sell'
 
 export interface ReportWarning {
   code:
-    // Data issues found by the engine (src/lib/issues.ts)
+    // Data issues, shared with the web app's Issues panel (src/lib/issues.ts)
     | DataIssueCode
-    // About the CLI's inputs and options
+    // About the command's arguments
     | 'DUPLICATE_FILE'
     | 'TAX_YEAR_NOT_FOUND'
-    | 'SPLIT_DATA_UNAVAILABLE'
-    | 'SKIPPED_ROWS'
   message: string
   transactionIds?: string[]
 }
@@ -167,6 +166,8 @@ export interface BuildReportOptions {
   inputs: ReportInput[]
   /** Warnings raised before calculation (e.g. duplicate files) */
   warnings: ReportWarning[]
+  /** Rows each input file's parser left out */
+  skippedRows?: { file: string; rows: SkippedRow[] }[]
 }
 
 const RULE_NAMES: Record<MatchingRule, MatchRule> = {
@@ -220,8 +221,19 @@ export function buildCalculateReport(
     .filter(d => reportedYears.has(d.taxYear))
     .sort((a, b) => a.disposal.date.localeCompare(b.disposal.date) || a.disposal.id.localeCompare(b.disposal.id))
 
-  if (result) {
-    warnings.push(...collectWarnings(result, disposals))
+  // The same issues the web app's Issues panel shows, with the CLI's remedy
+  for (const issue of findDataIssues({
+    transactions: result?.transactions ?? [],
+    disposals,
+    dataNotices: result?.dataNotices,
+    metadata: result?.metadata,
+    skippedRows: options.skippedRows,
+  })) {
+    warnings.push({
+      code: issue.code,
+      message: issue.remedy ? `${issue.description} ${issue.remedy.cli}` : issue.description,
+      ...(issue.transactionIds && { transactionIds: issue.transactionIds }),
+    })
   }
 
   return {
@@ -414,123 +426,4 @@ function toPoolReports(pools: Map<string, Section104Pool>): PoolReport[] {
       costGbp: money(pool.totalCostGbp),
       averageCostGbp: money(pool.averageCostGbp),
     }))
-}
-
-/**
- * The engine's data issues (shared with the web app's Issues panel), worded
- * for the CLI: one or more warnings per issue
- */
-function collectWarnings(result: CGTCalculationResult, disposals: DisposalRecord[]): ReportWarning[] {
-  return findDataIssues({ transactions: result.transactions, disposals, dataNotices: result.dataNotices })
-    .flatMap(toWarnings)
-}
-
-function toWarnings(issue: DataIssue): ReportWarning[] {
-  switch (issue.code) {
-    case 'FX_RATE_MISSING': {
-      // One warning per currency, listing the affected transactions
-      const fxFailures = new Map<string, { ids: string[]; firstError: string }>()
-      for (const tx of issue.transactions) {
-        const entry = fxFailures.get(tx.currency) ?? { ids: [], firstError: tx.fx_error ?? '' }
-        entry.ids.push(tx.id)
-        fxFailures.set(tx.currency, entry)
-      }
-      return [...fxFailures].map(([currency, { ids, firstError }]) => ({
-        code: issue.code,
-        message:
-          `No GBP exchange rate for ${ids.length} ${currency} transaction(s), so their GBP values are missing ` +
-          `and the totals are wrong. First error: ${firstError}`,
-        transactionIds: ids,
-      }))
-    }
-
-    case 'INCOMPLETE_DISPOSAL':
-      return [{
-        code: issue.code,
-        message:
-          `${issue.disposals.length} disposal(s) sell more shares than the imported history shows were acquired. ` +
-          'Only the matched part of each is counted, so the proceeds, cost and gain of the unmatched shares are ' +
-          'left out of the totals. Import earlier history, or add the missing ' +
-          'acquisitions to a Generic CSV (see the normalize command).',
-        transactionIds: issue.disposals.map(d => d.disposal.id),
-      }]
-
-    case 'OVERLAPPING_ROWS_REMOVED':
-      return [{
-        code: issue.code,
-        message:
-          `${issue.rows.length} row(s) also appeared in another input file from the same broker and were counted once. ` +
-          'This is expected when exports cover overlapping dates. If any were separate trades (for example the same ' +
-          'order in two accounts), add them back in a Generic CSV.',
-        transactionIds: issue.rows.map(tx => tx.id),
-      }]
-
-    case 'SPLIT_RATIO_CONFLICT':
-      return issue.conflicts.map(conflict => ({
-        code: issue.code,
-        message:
-          `Stock split records for ${conflict.symbol} disagree: used ${conflict.used.ratio} ` +
-          `(${conflict.used.source}, ${conflict.used.date}), ignored ${conflict.ignored.ratio} ` +
-          `(${conflict.ignored.source}, ${conflict.ignored.date}). Every later quantity depends on the ratio, so check it.`,
-        transactionIds: [conflict.used.id, conflict.ignored.id],
-      }))
-
-    case 'SPLIT_WITHOUT_RATIO':
-      return [{
-        code: issue.code,
-        message:
-          `Stock split rows with no ratio could not be applied: ` +
-          `${issue.splits.map(s => `${s.symbol} on ${s.date} (${s.source})`).join(', ')}. ` +
-          'Quantities before and after the split don\'t line up. ' +
-          MISSING_RATIO_ADVICE[issue.remedy],
-        transactionIds: issue.splits.map(s => s.id),
-      }]
-
-    case 'SPLIT_DATA_REJECTED':
-      return [{
-        code: issue.code,
-        message:
-          `Fetched stock split data failed validation and was not applied: ` +
-          `${issue.records.map(r => `${r.symbol} on ${r.date} (${r.reason})`).join(', ')}. ` +
-          'If that split really happened, quantities from that date are wrong: add a STOCK_SPLIT row with the ratio in a Generic CSV.',
-      }]
-
-    case 'SYMBOLS_MATCHED_BY_ISIN':
-      return issue.merges.map(merge => ({
-        code: issue.code,
-        message:
-          `${merge.mergedSymbols.join(', ')} treated as ${merge.symbol}: same ISIN ${merge.isin}, so they share ` +
-          'one Section 104 pool. Check this is the same security.',
-      }))
-
-    case 'TICKER_ISIN_CONFLICT':
-      return issue.conflicts.map(conflict => ({
-        code: issue.code,
-        message: conflict.pooledSeparately
-          ? `${conflict.symbol} appears with ISINs ${conflict.isins.join(', ')} at the same time, so it names more than ` +
-            'one security. Rows with an ISIN are pooled per ISIN; rows of this ticker without an ISIN, and stock split ' +
-            'data for it, cannot be assigned to either.'
-          : `${conflict.symbol} changed ISIN (${conflict.isins.join(' to ')}), usually after a reorganisation, so its ` +
-            'rows stay in one Section 104 pool. Check it is the same holding.',
-      }))
-
-    case 'UNKNOWN_TRANSACTION_TYPE':
-      return [{
-        code: issue.code,
-        message: `${issue.transactions.length} transaction(s) have a type the importer did not recognise and were ignored in the calculation.`,
-        transactionIds: issue.transactions.map(tx => tx.id),
-      }]
-  }
-}
-
-/** What to do about split rows without a ratio, in CLI terms */
-const MISSING_RATIO_ADVICE: Record<MissingRatioRemedy, string> = {
-  'enable-auto-splits':
-    'Run again without --no-auto-splits (community split data may have the ratio), or add a STOCK_SPLIT row ' +
-    'with the ratio (e.g. 10:1) in a Generic CSV.',
-  'retry-split-data':
-    'Split data could not be fetched (see SPLIT_DATA_UNAVAILABLE), so it may still have the ratio: run again ' +
-    'online, or add a STOCK_SPLIT row with the ratio (e.g. 10:1) in a Generic CSV.',
-  'add-split-row':
-    'Community split data doesn\'t have it, so add a STOCK_SPLIT row with the ratio (e.g. 10:1) in a Generic CSV.',
 }

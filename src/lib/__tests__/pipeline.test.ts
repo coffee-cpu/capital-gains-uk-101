@@ -247,7 +247,7 @@ describe('runPipeline - stock splits without a ratio', () => {
     const result = await runPipeline(rows, { autoSplits: true, splitSource: source })
 
     expect(result!.dataNotices!.splitsWithoutRatio!.map(s => s.id)).toEqual(['split'])
-    expect(result!.dataNotices!.splitDataUnavailable).toBe(true)
+    expect(result!.dataNotices!.splitDataUnavailableYears).toEqual([2024])
   })
 
   it('does not report it when community split data covers it, and applies that ratio', async () => {

@@ -25,7 +25,7 @@ describe('buildCalculateReport - rejected split data', () => {
     })
     const warning = report.warnings.find(w => w.code === 'SPLIT_DATA_REJECTED')!
 
-    expect(warning.message).toContain('VOD on 2023-07-01 (ratio-out-of-range)')
+    expect(warning.message).toContain('VOD (2023-07-01) failed validation')
   })
 })
 
@@ -44,7 +44,7 @@ describe('buildCalculateReport - stock splits without a ratio', () => {
     })
     const warning = report.warnings.find(w => w.code === 'SPLIT_WITHOUT_RATIO')!
 
-    expect(warning.message).toContain('AAPL on 2024-06-10 (Trading 212)')
+    expect(warning.message).toContain('AAPL (2024-06-10, Trading 212)')
     expect(warning.transactionIds).toEqual(['f-3'])
   })
 
@@ -56,7 +56,7 @@ describe('buildCalculateReport - stock splits without a ratio', () => {
         splitConflicts: [],
         splitsWithoutRatio: [{ id: 'f-3', symbol: 'AAPL', date: '2024-06-10', source: 'Trading 212' }],
         autoSplits,
-        splitDataUnavailable,
+        splitDataUnavailableYears: splitDataUnavailable ? [2024] : [],
       }
       const report = buildCalculateReport(result, {
         taxYear: null, fxSource: 'HMRC_MONTHLY', autoSplits, offline: false,
@@ -67,11 +67,11 @@ describe('buildCalculateReport - stock splits without a ratio', () => {
 
     expect(messageFor(false)).toContain('without --no-auto-splits')
     expect(messageFor(true)).not.toContain('--no-auto-splits')
-    expect(messageFor(true)).toContain("Community split data doesn't have it")
+    expect(messageFor(true)).toContain("Community split data doesn't have this split")
 
     // Offline or a failed fetch: agree with SPLIT_DATA_UNAVAILABLE instead
-    expect(messageFor(true, true)).toContain('could not be fetched')
-    expect(messageFor(true, true)).not.toContain("doesn't have it")
+    expect(messageFor(true, true)).toContain("couldn't be downloaded")
+    expect(messageFor(true, true)).not.toContain("doesn't have this split")
   })
 })
 
@@ -94,8 +94,9 @@ describe('buildCalculateReport - ISIN matching', () => {
     })
 
     expect(report.warnings.find(w => w.code === 'SYMBOLS_MATCHED_BY_ISIN')!.message).toContain('VUSAL treated as VUSA')
-    const conflicts = report.warnings.filter(w => w.code === 'TICKER_ISIN_CONFLICT').map(w => w.message)
-    expect(conflicts[0]).toContain('BP appears with ISINs GB0007980591, US0556221044 at the same time')
-    expect(conflicts[1]).toContain('SHEL changed ISIN (GB00B03MLX29 to GB00BP6MXD84)')
+    const [conflicts, ...rest] = report.warnings.filter(w => w.code === 'TICKER_ISIN_CONFLICT').map(w => w.message)
+    expect(rest).toEqual([])
+    expect(conflicts).toContain('BP appears with ISINs GB0007980591 and US0556221044 at the same time')
+    expect(conflicts).toContain('SHEL changed ISIN (GB00B03MLX29 to GB00BP6MXD84)')
   })
 })

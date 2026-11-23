@@ -97,7 +97,7 @@ describe('detectIssues', () => {
 
     const fxIssue = issues.find(i => i.id === 'fx-rate-errors')
     expect(fxIssue).toBeDefined()
-    expect(fxIssue?.type).toBe('error')
+    expect(fxIssue?.severity).toBe('error')
     expect(fxIssue?.count).toBe(1)
     expect(fxIssue?.affectedItems).toContain('AAPL')
     // The table highlights FX-error rows, so the panel can point there
@@ -122,7 +122,7 @@ describe('detectIssues', () => {
     const fxIssue = issues.find(i => i.id === 'fx-rate-errors')
     expect(fxIssue).toBeDefined()
     expect(fxIssue?.description).toContain('Crypto')
-    expect(fxIssue?.action).toContain('gbp_value')
+    expect(fxIssue?.remedy?.web).toContain('gbp_value')
   })
 
   it('detects incomplete Stock Plan Activity with Schwab-specific advice', () => {
@@ -144,12 +144,12 @@ describe('detectIssues', () => {
 
     const incompleteIssue = issues.find(i => i.id === 'incomplete-stock-plan')
     expect(incompleteIssue).toBeDefined()
-    expect(incompleteIssue?.type).toBe('warning')
+    expect(incompleteIssue?.severity).toBe('warning')
     expect(incompleteIssue?.count).toBe(1)
     expect(incompleteIssue?.affectedItems).toContain('GOOGL')
-    expect(incompleteIssue?.action).toContain('Equity Awards')
+    expect(incompleteIssue?.remedy?.web).toContain('Equity Awards')
     expect(incompleteIssue?.flaggedInTable).toBe(true)
-    expect(incompleteIssue?.action).toContain('Supported formats & export guides')
+    expect(incompleteIssue?.remedy?.web).toContain('Supported formats & export guides')
   })
 
   it('detects incomplete transactions with generic advice for non-Schwab sources', () => {
@@ -171,9 +171,9 @@ describe('detectIssues', () => {
 
     const incompleteIssue = issues.find(i => i.id === 'incomplete-stock-plan')
     expect(incompleteIssue).toBeDefined()
-    expect(incompleteIssue?.type).toBe('warning')
-    expect(incompleteIssue?.action).not.toContain('Schwab')
-    expect(incompleteIssue?.action).toContain('missing price data')
+    expect(incompleteIssue?.severity).toBe('warning')
+    expect(incompleteIssue?.remedy?.web).not.toContain('Schwab')
+    expect(incompleteIssue?.remedy?.web).toContain('missing price data')
   })
 
   it('flags incomplete transactions even when ignored', () => {
@@ -196,7 +196,7 @@ describe('detectIssues', () => {
 
     const incompleteIssue = issues.find(i => i.id === 'incomplete-stock-plan')
     expect(incompleteIssue).toBeDefined()
-    expect(incompleteIssue?.type).toBe('warning')
+    expect(incompleteIssue?.severity).toBe('warning')
   })
 
   it('detects incomplete disposals across all tax years', () => {
@@ -250,7 +250,7 @@ describe('detectIssues', () => {
 
     const incompleteDisposalIssue = issues.find(i => i.id === 'incomplete-disposals')
     expect(incompleteDisposalIssue).toBeDefined()
-    expect(incompleteDisposalIssue?.type).toBe('error')
+    expect(incompleteDisposalIssue?.severity).toBe('error')
     expect(incompleteDisposalIssue?.flaggedInTable).toBe(true)
     expect(incompleteDisposalIssue?.count).toBe(2) // Both tax years
     expect(incompleteDisposalIssue?.affectedItems).toContain('MSFT')
@@ -276,7 +276,7 @@ describe('detectIssues', () => {
 
     const buyOnlyIssue = issues.find(i => i.id === 'buy-only-scenario')
     expect(buyOnlyIssue).toBeDefined()
-    expect(buyOnlyIssue?.type).toBe('info')
+    expect(buyOnlyIssue?.severity).toBe('info')
     expect(buyOnlyIssue?.count).toBe(1)
     expect(buyOnlyIssue?.description).toContain('BUY transaction')
     expect(buyOnlyIssue?.description).toContain('no SELL')
@@ -300,8 +300,8 @@ describe('detectIssues', () => {
 
     const buyOnlyIssue = issues.find(i => i.id === 'buy-only-scenario')
     expect(buyOnlyIssue).toBeDefined()
-    expect(buyOnlyIssue?.action).toContain('Schwab.com')
-    expect(buyOnlyIssue?.action).toContain('in addition to Equity Awards')
+    expect(buyOnlyIssue?.remedy?.web).toContain('Schwab.com')
+    expect(buyOnlyIssue?.remedy?.web).toContain('in addition to Equity Awards')
   })
 
   it('sorts issues by severity (errors first, then warnings, then info)', () => {
@@ -333,9 +333,9 @@ describe('detectIssues', () => {
 
     // Should have: FX error (error), incomplete stock plan (warning), buy-only (info)
     expect(issues.length).toBe(3)
-    expect(issues[0].type).toBe('error')
-    expect(issues[1].type).toBe('warning')
-    expect(issues[2].type).toBe('info')
+    expect(issues[0].severity).toBe('error')
+    expect(issues[1].severity).toBe('warning')
+    expect(issues[2].severity).toBe('info')
   })
 
   it('aggregates multiple affected items', () => {
@@ -404,7 +404,7 @@ describe('detectIssues - data notices', () => {
     const issue = detectIssues([createMockTransaction()], results).find(i => i.id === 'overlapping-imports')!
 
     // Resolved automatically, so a notice rather than a warning
-    expect(issue.type).toBe('info')
+    expect(issue.severity).toBe('info')
     expect(issue.count).toBe(2)
     expect(issue.affectedItems).toEqual(['AAPL', 'MSFT'])
     // Dropped rows are not in the table, so the panel must not point there
@@ -470,7 +470,7 @@ describe('detectIssues - data notices', () => {
 
     const issue = detectIssues([createMockTransaction()], results).find(i => i.id === 'split-conflicts')!
 
-    expect(issue.type).toBe('warning')
+    expect(issue.severity).toBe('warning')
     expect(issue.description).toContain('used 10:1')
     expect(issue.description).toContain('ignored 2:1')
     expect(issue.affectedItems).toEqual(['NVDA'])
@@ -490,27 +490,27 @@ describe('detectIssues - stock splits without a ratio', () => {
       splitConflicts: [],
       splitsWithoutRatio: [{ id: 's', symbol: 'AAPL', date: '2024-06-10', source: 'Trading 212' }],
       autoSplits,
-      splitDataUnavailable,
+      splitDataUnavailableYears: splitDataUnavailable ? [2024] : [],
     },
   })).find(i => i.id === 'splits-without-ratio')!
 
   it('warns about split rows that could not be applied', () => {
     const issue = issueFor(true)
 
-    expect(issue.type).toBe('warning')
+    expect(issue.severity).toBe('warning')
     expect(issue.description).toContain('AAPL (2024-06-10, Trading 212)')
     expect(issue.affectedItems).toEqual(['AAPL'])
-    expect(issue.action).toContain('STOCK_SPLIT row with the ratio')
+    expect(issue.remedy?.web).toContain('STOCK_SPLIT row with the ratio')
   })
 
   it('suggests Community split data only when it is off', () => {
-    expect(issueFor(false).action).toContain('Turn on "Community split data"')
-    expect(issueFor(true).action).not.toContain('Turn on')
-    expect(issueFor(true).action).toContain("Community split data doesn't have this split")
+    expect(issueFor(false).remedy?.web).toContain('Turn on "Community split data"')
+    expect(issueFor(true).remedy?.web).not.toContain('Turn on')
+    expect(issueFor(true).remedy?.web).toContain("Community split data doesn't have this split")
   })
 
   it('does not claim the data lacks the split when it could not be downloaded', () => {
-    const action = issueFor(true, true).action!
+    const action = issueFor(true, true).remedy!.web
     expect(action).toContain("couldn't be downloaded")
     expect(action).toContain('reload the page')
     expect(action).not.toContain("doesn't have this split")
@@ -529,7 +529,7 @@ describe('detectIssues - rejected split data', () => {
 
     const issue = detectIssues([createMockTransaction()], results).find(i => i.id === 'rejected-split-data')!
 
-    expect(issue.type).toBe('warning')
+    expect(issue.severity).toBe('warning')
     expect(issue.description).toContain('VOD (2023-07-01)')
     expect(issue.affectedItems).toEqual(['VOD'])
   })
@@ -549,11 +549,20 @@ describe('detectIssues - ISIN matching', () => {
     const issues = detectIssues([createMockTransaction()], results)
 
     const merge = issues.find(i => i.id === 'symbols-matched-by-isin')!
-    expect(merge.type).toBe('info')
+    expect(merge.severity).toBe('info')
     expect(merge.description).toContain('VUSAL treated as VUSA (same ISIN IE00B3XXRP09)')
 
     const conflict = issues.find(i => i.id === 'ticker-isin-conflicts')!
-    expect(conflict.type).toBe('warning')
+    expect(conflict.severity).toBe('warning')
     expect(conflict.description).toContain('BP appears with ISINs GB0007980591 and US0556221044 at the same time')
+  })
+})
+
+describe('detectIssues - issues the panel leaves out', () => {
+  it('hides unknown transaction types and unavailable split data', () => {
+    const issues = detectIssues([createMockTransaction({ type: 'UNKNOWN' })], createMockCGTResults({
+      dataNotices: { overlappingRows: [], splitConflicts: [], splitDataUnavailableYears: [2024] },
+    }))
+    expect(issues).toEqual([])
   })
 })

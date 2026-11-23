@@ -1,9 +1,9 @@
-import { describeSkippedRows, importCSVText } from '../../../../src/lib/import'
+import { importCSVText } from '../../../../src/lib/import'
 import { runPipeline } from '../../../../src/lib/pipeline'
-import { JsDelivrSplitSource } from '../../../../src/lib/splits/splitDataSource'
 import { CGTCalculationResult } from '../../../../src/types/cgt'
 import { FXSource } from '../../../../src/types/fxSource'
 import { GenericTransaction } from '../../../../src/types/transaction'
+import { SkippedRow } from '../../../../src/types/brokerDefinition'
 import { InputFile } from '../inputs'
 import { CliError, ExitCode } from '../meta'
 import { buildCalculateReport, CalculateReport, ReportInput, ReportWarning } from '../report'
@@ -31,6 +31,7 @@ export async function calculateWithResult(
 ): Promise<{ report: CalculateReport; result: CGTCalculationResult | null }> {
   const inputs: ReportInput[] = []
   const warnings: ReportWarning[] = []
+  const skippedRows: { file: string; rows: SkippedRow[] }[] = []
   const transactions: GenericTransaction[] = []
   const seenFileIds = new Set<string>()
 
@@ -54,38 +55,13 @@ export async function calculateWithResult(
     }
     inputs.push({ file: file.path, broker: imported.broker, transactions: imported.transactions.length })
     transactions.push(...imported.transactions)
-    if (imported.skippedRows.length > 0) {
-      warnings.push({
-        code: 'SKIPPED_ROWS',
-        message:
-          `"${file.path}": ${imported.skippedRows.length} row(s) were left out ` +
-          `(${describeSkippedRows(imported.skippedRows, 5)}).` +
-          (imported.skippedRows.every(row => row.exempt)
-            ? ' They are exempt from Capital Gains Tax, so the totals are unaffected.'
-            : ' Fix them and run again, or the totals will be wrong.'),
-      })
-    }
+    skippedRows.push({ file: file.path, rows: imported.skippedRows })
   }
 
-  const splitSource = new JsDelivrSplitSource()
   const result = await runPipeline(transactions, {
     fxSource: options.fxSource,
     autoSplits: options.autoSplits,
-    splitSource,
   })
 
-  // Missing split data can't be detected from the result: report it explicitly
-  if (splitSource.unavailableYears.size > 0) {
-    const years = [...splitSource.unavailableYears].sort((a, b) => a - b)
-    warnings.push({
-      code: 'SPLIT_DATA_UNAVAILABLE',
-      message:
-        `Stock split data for ${years.join(', ')} could not be fetched and was not cached` +
-        `${options.offline ? ' (--offline)' : ''}. Splits not recorded in your broker files ` +
-        'were not applied, so quantities and costs for any share that split may be wrong. ' +
-        'Run once online to cache the data, or add STOCK_SPLIT rows yourself.',
-    })
-  }
-
-  return { report: buildCalculateReport(result, { ...options, inputs, warnings }), result }
+  return { report: buildCalculateReport(result, { ...options, inputs, warnings, skippedRows }), result }
 }

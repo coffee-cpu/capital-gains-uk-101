@@ -199,7 +199,7 @@ describe('cgt-visualiser CLI', () => {
       const fxWarning = report.warnings.find(w => w.code === 'FX_RATE_MISSING')!
 
       expect(code).toBe(0)
-      expect(fxWarning.message).toContain('USD')
+      expect(fxWarning.message).toContain('Failed to fetch exchange rates for 2 transactions')
       expect(fxWarning.transactionIds!.length).toBe(2)
       expect(fetchSpy).not.toHaveBeenCalled()
     })
