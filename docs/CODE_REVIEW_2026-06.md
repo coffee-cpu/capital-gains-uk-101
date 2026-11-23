@@ -219,3 +219,33 @@ from live HMRC/ECB rate APIs — the suite is inherently network-dependent.
     reading post-mutation pool state — engine totals are right, but consumers
     reading fields off `acq.transaction` get misleading values
     (`section104Pool.ts:161-171`).
+
+---
+
+## November 2026 audit
+
+A follow-up maintainability audit (2026-11-23; build, lint and unit tests
+clean) split its fixes across these branches:
+
+- `audit/docs-sync`: this specification, `CLAUDE.md` and CLI docs brought up
+  to date, with tests that keep the GenericTransaction schema, broker lists and
+  CLI options in step with the code; orphaned `public/BROKER_INSTRUCTIONS.md`
+  removed (#34)
+- `audit/import-safety-dates`: duplicate-import prefix collision (#38), import
+  writes in one Dexie transaction, chart dates formatted in UTC
+- `audit/dead-code-types`: unused and test-only exports (#22), one transaction
+  type list, one split date window, parser date helpers (#20)
+- `audit/fx-enrichment-simplify`: unused FX source switching and enrichment
+  engine plumbing
+- `audit/shared-issues`: one issue detector for the web app and the CLI
+- `audit/pdf-lazy-chunk`: PDF report document out of the main bundle
+- `audit/e2e-offline`: E2E tests stub external hosts
+
+Still open:
+
+- Trading 212 fees converted in the wrong currency (#4)
+- HMRC yearly averages cached with wrong provenance (#9; not re-checked)
+- Duplicate warning banners alongside the Issues panel (#21)
+- `DisposalRecords.tsx` formats GBP inline rather than with `formatGbp` (a
+  visible change, so it needs a mock-up first)
+- `CodingStats.tsx` calls the GitHub API at runtime (#34)

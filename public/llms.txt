@@ -1,6 +1,6 @@
 # Capital Gains Tax Visualiser
 
-> Free, open-source UK capital gains tax calculator for shares. It imports broker CSV exports (Charles Schwab, Interactive Brokers, Trading 212, Freetrade, EquatePlus, Revolut, Coinbase, Coinbase Pro, or a Generic CSV), converts foreign currency to GBP, adjusts for stock splits, and applies HMRC's share matching rules: same-day, 30-day ("bed and breakfast") and Section 104 pooling. All processing is local; transactions are never uploaded.
+> Free, open-source UK capital gains tax calculator for shares. It imports broker CSV exports (Charles Schwab, including Equity Awards, Interactive Brokers, Trading 212, Freetrade, EquatePlus, Revolut, Coinbase, Coinbase Pro, or a Generic CSV), converts foreign currency to GBP, adjusts for stock splits, and applies HMRC's share matching rules: same-day, 30-day ("bed and breakfast") and Section 104 pooling. All processing is local; transactions are never uploaded.
 
 There are two ways to use it:
 

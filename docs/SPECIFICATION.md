@@ -1,314 +1,355 @@
-# Capital Gains Tax Visualiser – Specification (Browser-Only Capital Gains Tax Tool)
+# Capital Gains Tax Visualiser – Specification
 
-## 🧭 Overview
+## Overview
 
-**Capital Gains Tax Visualiser** is a fully browser-based tool that lets users import transaction exports from multiple brokers (e.g. Charles Schwab, Trading 212) and automatically normalize, enrich, and visualise capital gains calculations according to UK HMRC rules.
+**Capital Gains Tax Visualiser** imports transaction exports from brokers (Charles Schwab, Interactive Brokers, Trading 212 and others), converts them to one transaction format, and calculates UK capital gains tax with HMRC's share matching rules. It runs in the browser, or in a terminal as the `cgt-visualiser` CLI (`packages/cli`), with the same engine. There is no backend and transactions are never uploaded.
 
-The tool behaves like a blend of **regex101**, **Google Sheets**, and a **visual tax engine** — interactive, transparent, and completely local (no backend or data uploads).
+## Goals
 
----
+- All processing on the user's device; the only network requests are for public reference data (exchange rates and stock split data)
+- Accept broker CSV exports as they are
+- Convert them into one transaction format (`GenericTransaction`)
+- Convert foreign-currency amounts to GBP with a user-selected rate source
+- Adjust for stock splits (TCGA92/S127)
+- Apply HMRC's matching rules: same-day, 30-day ("bed and breakfast") and Section 104 pooling
+- Show which rule matched each transaction
+- Produce a PDF report with the SA108 figures for Self Assessment
 
-## 🎯 Goals
+## Architecture
 
-- 100% client-side (privacy-preserving; no external backend)
-- Accept CSV exports “as-is” from multiple brokers
-- Normalize into a single unified transaction schema
-- Automatically fetch historical FX rates to convert to GBP
-- Apply HMRC matching rules:
-  - Same-day rule  
-  - 30-day “bed and breakfast” rule  
-  - Section 104 pooled holdings
-- Provide intuitive color-coded visual feedback
-- Generate a clear PDF report for self-assessment attachment
-- Allow switching between tax years (e.g. 2022/23, 2023/24)
+Single-page application: React + TypeScript + Vite.
 
----
-
-## 🧩 Architecture
-
-**Type:** Single-Page Application (SPA)  
-**Framework:** React + TypeScript + Vite  
-
-### Core Libraries
 | Purpose | Library |
-|----------|------------------|
+|---|---|
 | CSV parsing | [PapaParse](https://www.papaparse.com/) |
-| State storage (persistence) | IndexedDB (via [`dexie`](https://dexie.org/)) |
-| State management (runtime) | [Zustand](https://zustand-demo.pmnd.rs/) |
+| Persistence | IndexedDB via [Dexie](https://dexie.org/) |
+| Runtime state | [Zustand](https://zustand-demo.pmnd.rs/) |
 | Schema validation | [Zod](https://zod.dev/) |
-| FX rates | HMRC monthly/yearly rates (trade-tariff.service.gov.uk mirror) + ECB daily spot via [Frankfurter](https://frankfurter.dev/) |
+| FX rates | HMRC monthly and yearly rates (bundled, newer months from gov.uk and trade-tariff.service.gov.uk) and ECB daily rates via [Frankfurter](https://frankfurter.dev/) |
 | Charts | [Recharts](https://recharts.org/) |
 | PDF export | [@react-pdf/renderer](https://react-pdf.org/) |
-| Styling | TailwindCSS |
-| Unit testing | [Vitest](https://vitest.dev/) |
-| E2E testing | [Playwright](https://playwright.dev/) |
+| Styling | Tailwind CSS v4 |
+| Tests | [Vitest](https://vitest.dev/) (unit), [Playwright](https://playwright.dev/) (E2E) |
 
----
+## Data flow
 
-## 📥 Data Flow (High-Level)
+```
+CSV import → broker detection → parsing (GenericTransaction) → deduplication → auto-fetched stock splits
+→ ISIN symbol matching → enrichment (splits → FX → tax year) → CGT matching → UI / PDF / CLI output
+```
 
-CSV Import → Source Detection → Normalization → FX Enrichment → CGT Matching Engine → Visualization → PDF Export
+- **Broker detection** (`src/lib/brokerDetector.ts`) checks the headers against the broker definitions in `src/config/brokers/`, in priority order.
+- **Parsing** (`src/lib/parsers/`) converts each broker's rows to `GenericTransaction`. Every parsed row is validated against the schema below; rows that fail are reported as skipped.
+- **Deduplication** (`src/utils/deduplication.ts`) drops rows repeated across overlapping exports from the same broker, and Schwab Stock Plan Activity rows superseded by an Equity Awards file.
+- **Auto-fetched splits** (`src/lib/splits/`): stock split rows from community data, added for shares the user holds when the setting is on. They are not stored.
+- **ISIN symbol matching** (`src/lib/symbolMatching.ts`) gives one symbol to a security that brokers list under different tickers.
+- **Enrichment** (`src/lib/enrichment/`) adds computed fields without changing the parsed ones.
+- **CGT matching** (`src/lib/cgt/`) applies the matching rules and builds disposal records and tax year summaries.
 
-Everything runs locally within the browser.
+`runPipeline` in `src/lib/pipeline.ts` runs every step after parsing. The web app and the CLI both call it.
 
----
+## Data model
 
-## 🧾 Data Model
+### GenericTransaction (parsed data)
 
-### 1. Generic Transaction Schema (normalized input)
+The raw data from a broker file, before anything is calculated. Generated from `GenericTransactionSchema` in `src/types/transaction.ts` (a test fails if this copy is out of date):
 
-This is the **minimal unified format**, before any derived data is computed.
-
+<!-- generic-transaction-schema:start -->
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "CGTVisualizerGenericTransaction",
   "type": "object",
   "properties": {
     "id": {
       "type": "string",
-      "description": "A locally generated unique identifier for this transaction (e.g. 'tx-001', 'tx-002'). It does not come from the CSV source and only needs to be unique within the imported dataset."
+      "description": "Locally generated unique identifier"
     },
     "source": {
       "type": "string",
-      "description": "Name of the broker or source file (e.g. 'Trading212', 'Charles Schwab')."
+      "description": "Broker or source file name"
     },
     "symbol": {
       "type": "string",
-      "description": "Stock ticker or ISIN code identifying the asset."
+      "description": "Stock ticker or ISIN code"
     },
     "name": {
-      "type": ["string", "null"],
-      "description": "Full name of the asset, if available in the CSV."
+      "description": "Full name of the asset",
+      "type": [
+        "string",
+        "null"
+      ]
     },
     "date": {
       "type": "string",
       "format": "date",
-      "description": "Date of the transaction in YYYY-MM-DD format."
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+      "description": "Transaction date in YYYY-MM-DD format"
     },
     "type": {
       "type": "string",
-      "enum": ["BUY", "SELL", "DIVIDEND", "FEE", "INTEREST"],
-      "description": "Transaction type as interpreted by the parser."
+      "enum": [
+        "BUY",
+        "SELL",
+        "DIVIDEND",
+        "FEE",
+        "INTEREST",
+        "TRANSFER",
+        "TAX",
+        "TAX_ON_DIVIDEND",
+        "TAX_ON_INTEREST",
+        "STOCK_SPLIT",
+        "UNKNOWN",
+        "OPTIONS_BUY_TO_OPEN",
+        "OPTIONS_SELL_TO_OPEN",
+        "OPTIONS_BUY_TO_CLOSE",
+        "OPTIONS_SELL_TO_CLOSE",
+        "OPTIONS_ASSIGNED",
+        "OPTIONS_EXPIRED",
+        "OPTIONS_STOCK_SPLIT"
+      ],
+      "description": "Transaction type"
     },
     "quantity": {
-      "type": ["number", "null"],
-      "description": "Quantity of the asset bought or sold. May be null for non-trade rows such as dividends or fees."
+      "description": "Quantity bought or sold",
+      "type": [
+        "number",
+        "null"
+      ]
     },
     "price": {
-      "type": ["number", "null"],
-      "description": "Price per unit in the transaction currency."
+      "description": "Price per unit in transaction currency",
+      "type": [
+        "number",
+        "null"
+      ]
     },
     "currency": {
       "type": "string",
-      "description": "Original transaction currency (e.g. 'USD', 'EUR', 'GBP')."
+      "description": "Original transaction currency (e.g. USD, EUR, GBP)"
     },
     "total": {
-      "type": ["number", "null"],
-      "description": "Total value of the transaction in the original currency (quantity × price)."
+      "description": "Total value in original currency",
+      "type": [
+        "number",
+        "null"
+      ]
     },
     "fee": {
-      "type": ["number", "null"],
-      "description": "Fee or commission amount (same currency as the transaction)."
+      "description": "Fee or commission amount",
+      "type": [
+        "number",
+        "null"
+      ]
     },
     "notes": {
-      "type": ["string", "null"],
-      "description": "Optional comments or broker notes carried from the CSV."
+      "description": "Optional broker notes",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "ratio": {
+      "description": "Stock split ratio (e.g., \"10:1\", \"2:1\", \"1:10\"). Only used for STOCK_SPLIT transactions.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "isin": {
+      "description": "ISIN security identifier when the source gives one (e.g. Freetrade, Trading 212). Used to match the same security across brokers that use different tickers.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "asset_class": {
+      "description": "Asset class when the source states it (Generic CSV asset_class column). Decides the SA108 section.",
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "share",
+            "crypto"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "incomplete": {
+      "description": "True if transaction is missing required data (e.g., Stock Plan Activity without price)",
+      "type": "boolean"
+    },
+    "ignored": {
+      "description": "True if transaction should be excluded from calculations (e.g., Stock Plan Activity which is always incomplete)",
+      "type": "boolean"
+    },
+    "is_short_sell": {
+      "description": "True if this is an explicit short sell as reported by the broker (e.g., Schwab \"Sell Short\" action)",
+      "type": "boolean"
+    },
+    "imported_at": {
+      "description": "ISO timestamp when transaction was imported (e.g., 2024-01-15T10:30:00.000Z)",
+      "type": "string"
+    },
+    "underlying_symbol": {
+      "description": "For options: the underlying stock symbol (e.g., GOOGL)",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "option_type": {
+      "description": "For options: CALL or PUT",
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "CALL",
+            "PUT"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "strike_price": {
+      "description": "For options: strike price",
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "expiration_date": {
+      "description": "For options: expiration date in YYYY-MM-DD format",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "contract_size": {
+      "description": "For options: shares per contract (typically 100)",
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "grossDividend": {
+      "description": "Gross dividend amount before withholding tax (in original currency)",
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "withholdingTax": {
+      "description": "Tax withheld at source on dividends (in original currency)",
+      "type": [
+        "number",
+        "null"
+      ]
     }
   },
-  "required": ["id", "source", "date", "type", "currency"]
+  "required": [
+    "id",
+    "source",
+    "symbol",
+    "name",
+    "date",
+    "type",
+    "quantity",
+    "price",
+    "currency",
+    "total",
+    "fee",
+    "notes"
+  ],
+  "additionalProperties": false
 }
 ```
+<!-- generic-transaction-schema:end -->
 
----
+IDs follow `${fileId}-${rowIndex}`; see CLAUDE.md for the exceptions.
 
-### 2. Enriched Transaction Schema (computed in browser)
+### EnrichedTransaction (computed fields)
 
-Once imported, each transaction can be enriched with computed attributes for display and reporting.
+`EnrichedTransactionSchema` in the same file extends `GenericTransaction` with fields that are computed on every run and never stored:
+
+| Pass | Fields |
+|---|---|
+| 1. Stock splits | `split_adjusted_quantity`, `split_adjusted_price`, `split_multiplier`, `applied_splits` |
+| 2. FX conversion | `fx_rate` (units of currency per £1), `price_gbp`, `split_adjusted_price_gbp`, `value_gbp`, `fee_gbp`, `fx_source`, `fx_error`, `grossDividend_gbp`, `withholdingTax_gbp` |
+| 3. Tax year | `tax_year` |
+| CGT matching | `match_groups` (the disposals a transaction is matched with) |
+
+Example (invented figures):
 
 ```json
 {
-  "fx_rate": 0.785,
-  "price_gbp": 141.09,
-  "value_gbp": 1410.96,
-  "fee_gbp": 0,
+  "split_adjusted_quantity": 20,
+  "split_multiplier": 2,
+  "fx_rate": 1.25,
+  "price_gbp": 80,
+  "value_gbp": 1600,
+  "fee_gbp": 4,
   "fx_source": "HMRC Monthly Exchange Rates",
-  "tax_year": "2023/24",
-  "match_groups": ["sell-123"]
+  "tax_year": "2024/25",
+  "match_groups": ["schwab_csv-1200-7"]
 }
 ```
 
-These fields **never appear in uploaded data** — they are computed dynamically.
+## HMRC matching rules
 
----
+Applied in this order (`src/lib/cgt/engine.ts`):
 
-## ⚙️ Functional Components
+0. **Short sells**: a sale the broker marks as a short sell (`is_short_sell`) is matched with the later purchases that cover it.
+1. **Same-day rule** (TCGA92/S105(1)): purchases and sales of the same shares on one day. All of a day's purchases (and all of its sales) count as one transaction, so a partial match uses the day's average cost.
+2. **30-day rule** (TCGA92/S106A(5) and (5A)): purchases in the 30 days after a sale, earliest first.
+3. **Section 104 pool** (TCGA92/S104): everything else, at the pool's average cost.
 
-| Component | Responsibility |
-|------------|----------------|
-| **CSV Importer** | Reads uploaded CSV(s) and passes them to the Source Detector |
-| **Source Detector** | Identifies the broker format by inspecting headers |
-| **Normalizer** | Converts raw rows into `GenericTransaction` objects |
-| **FX Rate Fetcher** | Retrieves GBP conversion rates (cached in IndexedDB) |
-| **Enricher** | Adds computed GBP prices, tax year, and metadata |
-| **CGT Engine** | Applies HMRC rules (same-day → 30-day → section 104) |
-| **Visualizer / UI** | Displays transactions with color coding and tooltips |
-| **PDF Exporter** | Produces printable reports summarizing all calculations |
-| **Local Storage** | Stores imported data, FX cache, and user settings |
+Quantities are split-adjusted before matching. Proceeds are gross, and selling fees are an allowable cost, as SA108 asks. Same-day sales of one share count as one disposal in the tax year totals.
 
----
+References: [CG51500P](https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51500p) (share identification rules), [CG51560](https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51560) (same-day and 30-day rules), [CG51620](https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51620) (Section 104 holdings), [CG51127](https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51127) (stock splits), [CG78310](https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg78310) (exchange rates).
 
-## 🌈 Color Coding (for CGT rule visualization)
+## Exchange rates
 
-| Rule | Color | Tooltip |
-|------|--------|---------|
-| Same-day | 🔵 `#4A90E2` | Matched same-day buy/sell |
-| 30-day | 🟠 `#F5A623` | Repurchase within 30 days |
-| Section 104 | 🟢 `#7ED321` | Added to pooled holdings |
-| None | ⚪ `#CCCCCC` | Not taxable / unclassified |
+The user picks one source (`src/lib/fx/providers/`): HMRC monthly rates (default), HMRC yearly averages, or ECB daily rates. HMRC doesn't prescribe a source but expects a reasonable one used consistently (CG78310). Fetched rates are cached in IndexedDB.
 
-Hover tooltips will display short HMRC explanations.
+## Tax years
 
----
+UK tax years run from 6 April to 5 April and are labelled `2024/25`. The user picks the year shown; the calculation always covers every year, because earlier transactions set the Section 104 pool cost used later.
 
-## 📅 Tax Year Calculation
+## Rule colours
 
-- Tax years run **6 April → 5 April**  
-- Year label format: `2023/24`
-- The UI includes buttons:
-  [ Calculate for 2022/23 ] [ 2023/24 ] [ 2024/25 ]
-- When a year is selected, the engine filters and recalculates all gains within that range.
+| Rule | Colour |
+|---|---|
+| Same-day | `#4A90E2` (blue) |
+| 30-day | `#F5A623` (orange) |
+| Section 104 | `#7ED321` (green) |
+| Short sell | `#EC4899` (pink) |
 
----
+## PDF report
 
-## 📊 User Interface
+One tax year per report (`src/lib/pdf/`), shared by the web app's Export PDF button and the CLI's `--format pdf`:
 
-### Main Table
-- Columns: Date, Symbol, Type, Quantity, Price (orig), FX Rate, GBP Value, CGT Rule badges  
-- Rule badges (Same Day / 30-Day / Section 104 / Short Sell) derived from `match_groups` and disposal matchings
-- Sorting and filtering by date, symbol, or type
+1. Tax year summary: disposals, proceeds, allowable costs, gains, losses, annual exempt amount and taxable gain
+2. SA108 figures, by section
+3. Dividend and interest income
+4. Disposal details: each disposal's matched acquisitions and rule, with the Section 104 pool
+5. Optional appendix: transaction history
+6. Disclaimer: the report is an estimate, not tax advice
 
----
+## Local storage
 
-## 🧾 PDF / Report Export
+IndexedDB database `cgt-visualizer` (`src/lib/db.ts`):
 
-**PDF sections:**
-1. Tax year summary (disposals, costs, total gain/loss)
-2. Table of individual transactions
-3. Visual legend (color rules)
-4. Appendix: detailed matching trace
+- `transactions`: parsed `GenericTransaction` rows
+- `fx_rates`: cached exchange rates
+- `imported_files`: imported file metadata, for duplicate detection
+- `settings`: FX source, auto-splits setting, PDF transaction history option
+- `split_data_cache`: fetched stock split data
 
-Footer:  
-### ⚠️ Disclaimer
+## License
 
-Capital Gains Tax Visualiser is an educational and visualisation tool, not financial or tax advice.
-All calculations are approximate and based on publicly available HMRC guidance.
-No guarantee is made as to the accuracy, completeness, or applicability of the results.
-Always verify your figures and consult a qualified tax professional before submitting any official tax returns.
-
-All processing is performed locally in your browser — your data is never uploaded or shared.
-
----
-
-## 💾 Local Data Storage
-
-- All data cached in **IndexedDB** (via Dexie)
-- Two stores:
-  - `transactions` – normalized inputs
-  - `fx_rates` – cached historical rates
-- Auto-save session state for later return
-
----
-
-## 🧠 HMRC Matching Logic
-
-All CGT matching rules implemented according to official HMRC guidance:
-
-- [CG51500P – Share identification rules (index)](https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51500p)
-- [CG51560 – Same-day and 30-day matching rules](https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51560)
-- [CG51620 – Section 104 holding (pooled holdings)](https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51620)
-
-Order of application:
-1. **Same-Day Rule** (TCGA92/S105(1)) — match buys/sells on the same calendar day; all buys (and all sells) on one day count as a single transaction, so partial matches use the day's average cost
-2. **30-Day Rule** (TCGA92/S106A(5) and (5A)) — match repurchases within 30 days after a disposal
-3. **Section 104 Pool** (TCGA92/S104) — all remaining holdings grouped for average cost
-
-Each sale record links to its matched purchase(s) with proportional cost basis and resulting gain/loss.
-
----
-
-## 🧰 Technology Summary
-
-| Area | Choice |
-|------|--------|
-| Language | TypeScript |
-| Framework | React + Vite |
-| State (runtime) | Zustand |
-| State (persistence) | Dexie (IndexedDB) |
-| Schema Validation | Zod |
-| Visualization | Recharts |
-| CSV Parsing | PapaParse |
-| FX Rates | HMRC monthly/yearly + ECB (Frankfurter) |
-| PDF Export | @react-pdf/renderer |
-| Unit Testing | Vitest |
-| E2E Testing | Playwright |
-
----
-
-## 🔐 Privacy & Offline Mode
-
-- All processing runs client-side
-- No data leaves the user’s device
-
----
-
-## 🧩 Data Flow Diagram (PlantUML)
-
-```plantuml
-@startuml
-title Capital Gains Tax Visualiser – Data Flow (Browser Only)
-
-actor User
-
-rectangle "Browser App (SPA)" {
-  [CSV Importer] as importer
-  [Source Detector] as detector
-  [Normalizer] as normalizer
-  [FX Rate Fetcher] as fx
-  [Enricher] as enricher
-  [Matcher / CGT Engine] as matcher
-  [Visualizer / UI] as ui
-  [PDF Exporter] as exporter
-  [IndexedDB / Local Cache] as storage
-}
-
-User --> importer : Upload CSV(s)
-importer --> detector : Inspect headers\nIdentify broker
-detector --> normalizer : Parse to GenericTransaction[]
-normalizer --> storage : Save normalized data
-normalizer --> fx : Request GBP FX rates
-fx --> enricher : Add price_gbp, fx_rate
-enricher --> matcher : Apply HMRC rules
-matcher --> ui : Send enriched data with gain groups
-ui --> User : Display visualized table & charts
-User --> ui : Select tax year
-ui --> matcher : Filter & recalc for year
-matcher --> ui : Update totals
-ui --> exporter : Generate PDF / CSV
-exporter --> User : Download report
-storage <--> enricher : Cache data & FX rates
-@enduml
-```
-
----
-
-## 📚 License & Attribution
-
-Planned license: **MIT**  
-Data sources:
-- HMRC exchange rates / ECB (Frankfurter) FX rates  
-- User-supplied broker CSV exports  
-
----
-
-*End of Specification*
+MIT. Data sources: HMRC exchange rates, ECB reference rates (via Frankfurter), community stock split data, and the user's own broker exports.
