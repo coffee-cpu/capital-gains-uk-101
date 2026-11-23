@@ -1,8 +1,8 @@
 import type { GenericTransaction } from '../../types/transaction'
-import { TransactionType } from '../../types/transaction'
+import { TransactionType, TransactionTypeValue } from '../../types/transaction'
 import { BrokerType, type RawCSVRow } from '../../types/broker'
 import type { SkippedRow } from '../../types/brokerDefinition'
-import { parseNumber, extractCurrencyFromAmount } from './parsingUtils'
+import { parseISODate, parseNumber, extractCurrencyFromAmount } from './parsingUtils'
 
 /**
  * Revolut CSV Parser
@@ -19,8 +19,6 @@ import { parseNumber, extractCurrencyFromAmount } from './parsingUtils'
  * - Currency: Transaction currency (e.g., "USD")
  * - FX Rate: Exchange rate to GBP
  */
-
-type TransactionTypeValue = typeof TransactionType[keyof typeof TransactionType]
 
 /**
  * Keyword-based mappings for Revolut types (checked in order)
@@ -56,15 +54,6 @@ function mapTypeToTransactionType(type: string): TransactionTypeValue {
 }
 
 /**
- * Parse Revolut date format: "2024-01-15T10:00:00.000000Z" -> "2024-01-15"
- */
-function parseDate(dateStr: string): string {
-  // Revolut uses ISO 8601 format with microseconds
-  // Extract just the date part (YYYY-MM-DD)
-  return dateStr.split('T')[0]
-}
-
-/**
  * The row's currency: the Currency column, or else the code or sign written
  * in the amounts. Null when neither says, rather than guessing.
  */
@@ -93,6 +82,14 @@ export function normalizeRevolutTransactions(
       // Skip rows without essential data
       if (!date || !type) return null
 
+      // Dates are ISO 8601 timestamps, e.g. "2024-01-15T10:00:00.000000Z"
+      const isoDate = parseISODate(date)
+      if (!isoDate) {
+        // +2: spreadsheet row number (rows are 1-based and the header is row 1)
+        skippedRows?.push({ row: index + 2, reason: `invalid date "${date}"` })
+        return null
+      }
+
       const transactionType = mapTypeToTransactionType(type)
 
       // Parse numeric fields
@@ -116,7 +113,7 @@ export function normalizeRevolutTransactions(
       const transaction: GenericTransaction = {
         id: `${fileId}-${index + 1}`,
         source: BrokerType.REVOLUT,
-        date: parseDate(date),
+        date: isoDate,
         type: transactionType,
         symbol,
         name: null,

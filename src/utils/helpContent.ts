@@ -590,10 +590,3 @@ If an amber row is still listed after importing both files, the Equity Awards fi
 export function getHelpContent(context: HelpContext): HelpContent {
   return helpContent[context]
 }
-
-/**
- * Get all available help contexts
- */
-export function getAvailableContexts(): HelpContext[] {
-  return Object.keys(helpContent) as HelpContext[]
-}

@@ -1,4 +1,4 @@
-import { GenericTransaction, TransactionType } from '../../types/transaction'
+import { GenericTransaction, TransactionType, TransactionTypeValue } from '../../types/transaction'
 import { RawCSVRow, BrokerType } from '../../types/broker'
 import { SkippedRow } from '../../types/brokerDefinition'
 import { parseNumber } from './parsingUtils'
@@ -142,12 +142,12 @@ const ASSET_CLASSES: Record<string, 'share' | 'crypto'> = {
 /**
  * Validate transaction type string
  */
-function parseGenericType(typeStr: string): typeof TransactionType[keyof typeof TransactionType] | null {
+function parseGenericType(typeStr: string): TransactionTypeValue | null {
   const typeUpper = typeStr?.trim().toUpperCase()
 
   // Check if it's a valid TransactionType
   if (typeUpper && typeUpper in TransactionType) {
-    return typeUpper as typeof TransactionType[keyof typeof TransactionType]
+    return typeUpper as TransactionTypeValue
   }
 
   return null

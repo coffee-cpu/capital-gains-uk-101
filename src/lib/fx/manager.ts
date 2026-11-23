@@ -1,9 +1,4 @@
-import {
-  FXProvider,
-  FXRateResult,
-  FXSource,
-  DEFAULT_FX_SOURCE,
-} from '../../types/fxSource'
+import { FXProvider, FXRateResult, FXSource } from '../../types/fxSource'
 import { GenericTransaction } from '../../types/transaction'
 import { isFiatCurrency } from '../currencies'
 import { HMRCMonthlyProvider } from './providers/hmrcMonthly'
@@ -11,70 +6,42 @@ import { HMRCYearlyProvider } from './providers/hmrcYearly'
 import { DailySpotProvider } from './providers/dailySpot'
 
 /**
- * FX Manager
+ * FX rates for GBP conversion, from one source.
  *
- * Orchestrates FX rate fetching using the selected source.
- * Provides a unified interface for getting rates and prefetching.
+ * HMRC Guidance (CG78310):
+ * "HMRC does not prescribe what reference point should be used for the exchange rate.
+ * It is, however, expected that a reasonable and consistent method is used."
+ *
+ * @see https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg78310
+ */
+
+/** The provider for an FX source */
+export function createFXProvider(fxSource: FXSource): FXProvider {
+  switch (fxSource) {
+    case 'HMRC_MONTHLY': return new HMRCMonthlyProvider()
+    case 'HMRC_YEARLY_AVG': return new HMRCYearlyProvider()
+    case 'DAILY_SPOT': return new DailySpotProvider()
+  }
+}
+
+/**
+ * Looks up rates from one provider, sharing each lookup between the
+ * transactions that need it (so each rate is fetched once per run).
  */
 export class FXManager {
-  private providers: Map<FXSource, FXProvider>
-  private currentSource: FXSource
-
-  // In-memory cache to prevent duplicate requests during enrichment
+  /** Lookups by the provider's cache key; a failed lookup is dropped so it can be retried */
   private rateCache = new Map<string, Promise<FXRateResult>>()
 
-  constructor(fxSource: FXSource = DEFAULT_FX_SOURCE) {
-    this.currentSource = fxSource
-    this.providers = new Map<FXSource, FXProvider>()
-    this.providers.set('HMRC_MONTHLY', new HMRCMonthlyProvider())
-    this.providers.set('HMRC_YEARLY_AVG', new HMRCYearlyProvider())
-    this.providers.set('DAILY_SPOT', new DailySpotProvider())
-  }
+  constructor(private readonly provider: FXProvider) {}
 
-  /**
-   * Get the current FX source
-   */
-  getFXSource(): FXSource {
-    return this.currentSource
-  }
+  /** Exchange rate for a date and currency */
+  getRate(date: string, currency: string): Promise<FXRateResult> {
+    const cacheKey = this.provider.getCacheKey(date, currency)
 
-  /**
-   * Set the FX source - clears in-memory cache
-   */
-  setFXSource(fxSource: FXSource): void {
-    if (this.currentSource !== fxSource) {
-      this.currentSource = fxSource
-      this.rateCache.clear()
-    }
-  }
-
-  /**
-   * Get the current provider
-   */
-  private getProvider(): FXProvider {
-    const provider = this.providers.get(this.currentSource)
-    if (!provider) {
-      throw new Error(`Unknown FX source: ${this.currentSource}`)
-    }
-    return provider
-  }
-
-  /**
-   * Get exchange rate for a specific date and currency
-   * Uses in-memory caching to prevent duplicate requests during enrichment
-   */
-  async getRate(date: string, currency: string): Promise<FXRateResult> {
-    const provider = this.getProvider()
-    const cacheKey = `${this.currentSource}-${provider.getCacheKey(date, currency)}`
-
-    // Check in-memory cache first
     let ratePromise = this.rateCache.get(cacheKey)
-
     if (!ratePromise) {
-      ratePromise = provider.getRate(date, currency)
+      ratePromise = this.provider.getRate(date, currency)
       this.rateCache.set(cacheKey, ratePromise)
-      // Evict failures so a transient network error doesn't poison the
-      // cache for the rest of the session — the next enrichment run retries
       ratePromise.catch(() => {
         this.rateCache.delete(cacheKey)
       })
@@ -84,47 +51,26 @@ export class FXManager {
   }
 
   /**
-   * Prefetch rates for a set of transactions
-   * Groups transactions by date range and currencies for efficient batch fetching
+   * Prefetch rates for the date range and fiat currencies of a set of
+   * transactions, when the provider supports batch fetching
    */
   async prefetchForTransactions(transactions: GenericTransaction[]): Promise<void> {
-    const provider = this.getProvider()
+    if (!this.provider.prefetchRates) return
 
-    // Only prefetch if provider supports it
-    if (!provider.prefetchRates) {
-      return
-    }
-
-    // Extract unique dates and currencies
     const dates: string[] = []
     const currencies = new Set<string>()
 
     for (const tx of transactions) {
-      // Only fiat currencies have FX rates; crypto symbols (e.g. BTC) would
-      // never be cacheable and force a full time-series re-download every run
       if (tx.currency !== 'GBP' && isFiatCurrency(tx.currency)) {
         dates.push(tx.date)
         currencies.add(tx.currency)
       }
     }
 
-    if (dates.length === 0 || currencies.size === 0) {
-      return
-    }
+    if (dates.length === 0) return
 
-    // Sort dates to find range
-    const sortedDates = [...new Set(dates)].sort()
-    const startDate = sortedDates[0]
-    const endDate = sortedDates[sortedDates.length - 1]
-
-    await provider.prefetchRates(startDate, endDate, [...currencies])
-  }
-
-  /**
-   * Clear the in-memory rate cache
-   */
-  clearCache(): void {
-    this.rateCache.clear()
+    dates.sort()
+    await this.provider.prefetchRates(dates[0], dates[dates.length - 1], [...currencies])
   }
 }
 

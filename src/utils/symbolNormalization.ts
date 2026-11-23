@@ -54,23 +54,3 @@ export function normalizeTransactionSymbols(transactions: GenericTransaction[]):
     }
   })
 }
-
-/**
- * Add a new symbol rename to the registry.
- * Useful for testing or future extensibility.
- *
- * @param oldSymbol The historical symbol
- * @param newSymbol The current symbol
- * @param changeDate The date of the rename (YYYY-MM-DD)
- */
-export function addSymbolRename(oldSymbol: string, newSymbol: string, changeDate: string) {
-  SYMBOL_RENAMES[oldSymbol] = { newSymbol, changeDate }
-}
-
-/**
- * Get all registered symbol renames.
- * Useful for debugging and testing.
- */
-export function getSymbolRenames() {
-  return { ...SYMBOL_RENAMES }
-}

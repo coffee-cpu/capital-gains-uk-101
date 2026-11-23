@@ -1,6 +1,7 @@
 import { EnrichedTransaction, GenericTransaction, StockSplitEvent, parseRatioMultiplier } from '../../../types/transaction'
 import type { SplitConflict } from '../../../types/cgt'
 import { Enricher } from '../types'
+import { withinSplitWindow } from '../../splits/splitWindow'
 
 /**
  * Extract stock split events from transactions
@@ -50,12 +51,6 @@ function parseStockSplits(transactions: GenericTransaction[]): StockSplitEvent[]
 }
 
 /**
- * Brokers may record the same split a few days apart (ex-date vs pay date),
- * matching the window used to dedupe auto-fetched splits.
- */
-const SPLIT_DEDUP_WINDOW_MS = 7 * 24 * 60 * 60 * 1000
-
-/**
  * Collapse repeated reports of the same split into one event.
  *
  * The same split often arrives more than once: from two brokers that both
@@ -73,10 +68,8 @@ function dedupeSplitEvents(
   const conflicts: SplitConflict[] = []
 
   for (const split of splits) {
-    const splitMs = new Date(split.date).getTime()
     const duplicateOf = kept.find(existing =>
-      existing.symbol === split.symbol &&
-      Math.abs(new Date(existing.date).getTime() - splitMs) <= SPLIT_DEDUP_WINDOW_MS
+      existing.symbol === split.symbol && withinSplitWindow(existing.date, split.date)
     )
 
     if (!duplicateOf) {

@@ -427,3 +427,19 @@ describe('Revolut Parser - currency', () => {
     expect(tx.currency).toBe('GBP')
   })
 })
+
+describe('Revolut Parser: dates', () => {
+  it('skips a row with an impossible date and reports it', () => {
+    const skipped: SkippedRow[] = []
+    const row = (date: string) => ({
+      'Date': date, 'Ticker': 'ACME', 'Type': 'BUY - MARKET', 'Quantity': '2',
+      'Price per share': '$10', 'Total Amount': '$20', 'Currency': 'USD',
+    })
+
+    const result = normalizeRevolutTransactions([row('2024-13-01T10:00:00.000Z'), row('2024-06-10T10:00:00.000Z')], 'test-file', skipped)
+
+    expect(result).toHaveLength(1)
+    expect(result[0].date).toBe('2024-06-10')
+    expect(skipped).toEqual([{ row: 2, reason: 'invalid date "2024-13-01T10:00:00.000Z"' }])
+  })
+})
