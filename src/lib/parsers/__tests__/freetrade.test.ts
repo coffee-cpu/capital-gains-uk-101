@@ -614,3 +614,32 @@ describe('Freetrade Parser - thousands separators', () => {
     expect(tx.price).toBeCloseTo(1250.05)
   })
 })
+
+describe('Freetrade Parser: zero values', () => {
+  it('keeps a zero price and total as 0 rather than missing', () => {
+    const rows = [
+      {
+        'Title': 'Acme',
+        'Type': 'ORDER',
+        'Timestamp': '2024-06-10T09:00:00.000Z',
+        'Account Currency': 'GBP',
+        'Total Amount': '0.00',
+        'Buy / Sell': 'BUY',
+        'Ticker': 'ACME',
+        'ISIN': 'GB0000000001',
+        'Price per Share in Account Currency': '0.00',
+        'Stamp Duty': '0.00',
+        'Quantity': '3.00000000',
+        'FX Fee Amount': '',
+      },
+    ]
+
+    const result = normalizeFreetradeTransactions(rows, 'test-file')
+
+    expect(result).toHaveLength(1)
+    expect(result[0].price).toBe(0)
+    expect(result[0].total).toBe(0)
+    expect(result[0].quantity).toBe(3)
+    expect(result[0].fee).toBeNull()
+  })
+})

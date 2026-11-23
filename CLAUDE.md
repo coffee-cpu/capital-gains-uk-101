@@ -128,7 +128,7 @@ Each parser must:
 
 #### 3. Enrichment Pipeline (`src/lib/enrichment/`)
 
-`enrichTransactions()` in `src/lib/enrichment/index.ts` runs the three enricher passes (classes in `enrichers/`) in order:
+The `enrichTransactions()` function (in `index.ts`) runs three sequential passes via enricher classes in `enrichers/`:
 1. **Stock splits** (sync) - quantities must be in comparable units first
 2. **FX conversion** (async) - fetches GBP rates from the user-selected FX source (see `src/lib/fx/`)
 3. **Tax year calculation** (sync) - assigns UK tax years

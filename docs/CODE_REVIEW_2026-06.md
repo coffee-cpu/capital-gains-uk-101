@@ -233,9 +233,9 @@ clean) split its fixes across these branches:
   removed (#34)
 - `audit/import-safety-dates`: duplicate-import prefix collision (#38), import
   writes in one Dexie transaction, chart dates formatted in UTC
-- `audit/dead-code-types`: unused and test-only exports (#22), one transaction
+- `audit/dead-code-types` (#215, merged): unused and test-only exports (#22), one transaction
   type list, one split date window, parser date helpers (#20)
-- `audit/fx-enrichment-simplify` (#210): unused FX source switching and enrichment
+- `audit/fx-enrichment-simplify` (#210, merged): unused FX source switching and enrichment
   engine plumbing
 - `audit/shared-issues` (#216): one issue detector for the web app and the CLI
   (`src/lib/issues.ts`)

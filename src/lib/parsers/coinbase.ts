@@ -1,7 +1,8 @@
 import type { GenericTransaction } from '../../types/transaction'
-import { TransactionType } from '../../types/transaction'
+import { TransactionType, TransactionTypeValue } from '../../types/transaction'
 import { BrokerType, type RawCSVRow } from '../../types/broker'
-import { parseCurrency } from './parsingUtils'
+import { parseCurrency, parseISODate } from './parsingUtils'
+import type { SkippedRow } from '../../types/brokerDefinition'
 import { CSVPreprocessor } from './fileUtils'
 
 /**
@@ -88,8 +89,6 @@ export function stripCoinbaseMetadataRows(text: string): string {
  * - Notes: Additional info
  */
 
-type TransactionTypeValue = typeof TransactionType[keyof typeof TransactionType]
-
 /**
  * Map Coinbase transaction type to GenericTransaction type
  * Note: 'convert' and 'reward income' transactions are handled specially in normalizeCoinbaseTransactions
@@ -158,25 +157,6 @@ function parseConvertNotes(
 }
 
 /**
- * Parse Coinbase date format: "YYYY-MM-DD HH:MM:SS UTC" -> "YYYY-MM-DD"
- */
-function parseDate(dateStr: string): string {
-  // Coinbase uses: "2025-12-31 11:08:09 UTC"
-  // We need: "2025-12-31"
-  return dateStr.split(' ')[0]
-}
-
-/**
- * Parse quantity, handling scientific notation (e.g., "2.63622E-05")
- */
-function parseQuantity(value: string | undefined): number | null {
-  if (!value || value.trim() === '') return null
-
-  const parsed = parseFloat(value)
-  return isNaN(parsed) ? null : parsed
-}
-
-/**
  * Normalize Coinbase transactions to GenericTransaction format
  *
  * Note: Convert transactions (crypto-to-crypto) generate TWO transactions:
@@ -187,7 +167,8 @@ function parseQuantity(value: string | undefined): number | null {
  */
 export function normalizeCoinbaseTransactions(
   rows: RawCSVRow[],
-  fileId: string
+  fileId: string,
+  skippedRows?: SkippedRow[]
 ): GenericTransaction[] {
   const transactions: GenericTransaction[] = []
   let transactionIndex = 1
@@ -203,10 +184,19 @@ export function normalizeCoinbaseTransactions(
     // Skip if this looks like a header row
     if (transactionType === 'Transaction Type') continue
 
+    // Timestamps look like "2025-12-31 11:08:09 UTC". No row number: the
+    // metadata lines above the header are removed before parsing.
+    const date = parseISODate(timestamp)
+    if (!date) {
+      skippedRows?.push({ reason: `invalid date "${timestamp}"` })
+      continue
+    }
+
     const type = mapTransactionType(transactionType)
 
     // Parse numeric fields
-    const quantity = parseQuantity(row['Quantity Transacted'])
+    // Can be in scientific notation, e.g. "2.63622E-05"
+    const quantity = parseCurrency(row['Quantity Transacted'])
     const price = parseCurrency(row['Price at Transaction'])
     const subtotal = parseCurrency(row['Subtotal'])
     const total = parseCurrency(row['Total (inclusive of fees and/or spread)'])
@@ -242,7 +232,7 @@ export function normalizeCoinbaseTransactions(
       const interestTransaction: GenericTransaction = {
         id: `${fileId}-${transactionIndex++}`,
         source: BrokerType.COINBASE,
-        date: parseDate(timestamp),
+        date,
         type: 'INTEREST',
         symbol: asset,
         name: null,
@@ -259,7 +249,7 @@ export function normalizeCoinbaseTransactions(
       const buyTransaction: GenericTransaction = {
         id: `${fileId}-${transactionIndex++}`,
         source: BrokerType.COINBASE,
-        date: parseDate(timestamp),
+        date,
         type: TransactionType.BUY,
         symbol: asset,
         name: null,
@@ -285,7 +275,7 @@ export function normalizeCoinbaseTransactions(
       const sellTransaction: GenericTransaction = {
         id: `${fileId}-${transactionIndex++}`,
         source: BrokerType.COINBASE,
-        date: parseDate(timestamp),
+        date,
         type: TransactionType.SELL,
         symbol: asset,
         name: null,
@@ -309,7 +299,7 @@ export function normalizeCoinbaseTransactions(
         const buyTransaction: GenericTransaction = {
           id: `${fileId}-${transactionIndex++}`,
           source: BrokerType.COINBASE,
-          date: parseDate(timestamp),
+          date,
           type: TransactionType.BUY,
           symbol: convertInfo.acquiredAsset,
           name: null,
@@ -341,7 +331,7 @@ export function normalizeCoinbaseTransactions(
     const transaction: GenericTransaction = {
       id: `${fileId}-${transactionIndex++}`,
       source: BrokerType.COINBASE,
-      date: parseDate(timestamp),
+      date,
       type,
       symbol: asset,
       name: null, // Coinbase doesn't provide full asset names in CSV

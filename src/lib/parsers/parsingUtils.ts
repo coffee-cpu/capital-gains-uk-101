@@ -40,16 +40,23 @@ export function parseCurrency(value: string | undefined | null): number | null {
 }
 
 /**
- * Extract date part from ISO 8601 timestamp
- * Handles formats like "2024-01-15T10:00:00.000Z" -> "2024-01-15"
+ * Extract the date part from an ISO 8601 date or timestamp:
+ * "2024-01-15T10:00:00.000Z", "2024-01-15 10:00:00 UTC" and "2024-01-15"
+ * all give "2024-01-15". Null when there is no date, or it isn't a real
+ * calendar date (e.g. "2024-02-30").
  */
 export function parseISODate(dateStr: string | undefined | null): string | null {
   if (!dateStr) return null
 
-  const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/)
+  const match = dateStr.trim().match(/^(\d{4})-(\d{2})-(\d{2})/)
   if (!match) return null
 
   const [, year, month, day] = match
+  const [y, m, d] = [Number(year), Number(month), Number(day)]
+  const parsed = new Date(Date.UTC(y, m - 1, d))
+  if (parsed.getUTCFullYear() !== y || parsed.getUTCMonth() !== m - 1 || parsed.getUTCDate() !== d) {
+    return null
+  }
   return `${year}-${month}-${day}`
 }
 

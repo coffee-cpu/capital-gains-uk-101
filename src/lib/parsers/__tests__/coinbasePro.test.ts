@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { normalizeCoinbaseProTransactions } from '../coinbasePro'
 import type { RawCSVRow } from '../../../types/broker'
+import type { SkippedRow } from '../../../types/brokerDefinition'
 
 describe('Coinbase Pro Parser', () => {
   describe('normalizeCoinbaseProTransactions', () => {
@@ -412,9 +413,11 @@ describe('Coinbase Pro Parser', () => {
           },
         ]
 
-        const result = normalizeCoinbaseProTransactions(rows, 'test-file')
+        const skipped: SkippedRow[] = []
+        const result = normalizeCoinbaseProTransactions(rows, 'test-file', skipped)
         expect(result).toHaveLength(1)
         expect(result[0].symbol).toBe('ETH')
+        expect(skipped).toEqual([{ row: 2, reason: 'invalid date "14/10/2020T10:42:20.072Z"' }])
       })
 
       it('should skip rows with timestamp without date part', () => {

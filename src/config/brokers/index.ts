@@ -72,16 +72,6 @@ export function getEnabledBrokerDefinitions(): BrokerDefinition[] {
   return ALL_BROKER_DEFINITIONS.filter(def => def.enabled !== false)
 }
 
-/**
- * Get display name for a broker type
- * @param type BrokerType enum value
- * @returns Display name string, or the enum value if not found
- */
-export function getBrokerDisplayName(type: BrokerType): string {
-  const definition = BROKER_REGISTRY.get(type)
-  return definition?.displayName ?? type
-}
-
 // Re-export individual definitions for direct access if needed
 export {
   schwabDefinition,

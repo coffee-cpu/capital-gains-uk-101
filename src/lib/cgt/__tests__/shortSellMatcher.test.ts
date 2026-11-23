@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { applyShortSellRule } from '../shortSellMatcher'
-import { getRemainingQuantity } from '../utils'
+import { MatchedQuantityTracker } from '../utils'
 import { EnrichedTransaction } from '../../../types/transaction'
 
 /**
@@ -157,7 +157,7 @@ describe('Short Sell Matcher', () => {
       expect(matchings[0].acquisitions[0].quantityMatched).toBe(50)
 
       // Verify remaining quantity on the BUY transaction
-      const buyRemaining = getRemainingQuantity(transactions[1], matchings)
+      const buyRemaining = new MatchedQuantityTracker(matchings).getRemaining(transactions[1])
       expect(buyRemaining).toBe(50) // 100 - 50 = 50 shares available for Section 104
     })
 
@@ -327,11 +327,11 @@ describe('Short Sell Matcher', () => {
     })
   })
 
-  describe('getRemainingQuantity', () => {
+  describe('MatchedQuantityTracker.getRemaining', () => {
     it('should return original quantity when no matchings exist', () => {
       const transaction = createTransaction({ id: 'sell-1', date: '2023-06-01', type: 'SELL', quantity: 100, price: 160, is_short_sell: true })
 
-      const remaining = getRemainingQuantity(transaction, [])
+      const remaining = new MatchedQuantityTracker([]).getRemaining(transaction)
       expect(remaining).toBe(100)
     })
 
@@ -349,7 +349,7 @@ describe('Short Sell Matcher', () => {
         },
       ]
 
-      const remaining = getRemainingQuantity(disposal, matchings)
+      const remaining = new MatchedQuantityTracker(matchings).getRemaining(disposal)
       expect(remaining).toBe(0)
     })
 
@@ -367,7 +367,7 @@ describe('Short Sell Matcher', () => {
         },
       ]
 
-      const remaining = getRemainingQuantity(disposal, matchings)
+      const remaining = new MatchedQuantityTracker(matchings).getRemaining(disposal)
       expect(remaining).toBe(40)
     })
 
@@ -385,7 +385,7 @@ describe('Short Sell Matcher', () => {
         },
       ]
 
-      const remaining = getRemainingQuantity(acquisition, matchings)
+      const remaining = new MatchedQuantityTracker(matchings).getRemaining(acquisition)
       expect(remaining).toBe(0)
     })
   })

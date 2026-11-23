@@ -1,7 +1,8 @@
 import type { GenericTransaction } from '../../types/transaction'
-import { TransactionType } from '../../types/transaction'
+import { TransactionType, TransactionTypeValue } from '../../types/transaction'
 import { BrokerType, type RawCSVRow } from '../../types/broker'
-import { parseNumber } from './parsingUtils'
+import { parseISODate, parseNumber } from './parsingUtils'
+import type { SkippedRow } from '../../types/brokerDefinition'
 
 /**
  * Trading 212 CSV Parser
@@ -37,8 +38,6 @@ import { parseNumber } from './parsingUtils'
  * - Notes: Additional info
  * - ID: Unique transaction ID
  */
-
-type TransactionTypeValue = typeof TransactionType[keyof typeof TransactionType]
 
 const HEADER_LOOKUPS = {
   time: ['Time', 'Time (UTC)'],
@@ -127,20 +126,12 @@ function mapActionToType(action: string): TransactionTypeValue {
 }
 
 /**
- * Parse Trading 212 date format: "YYYY-MM-DD HH:MM:SS" -> "YYYY-MM-DD"
- */
-function parseDate(dateStr: string): string {
-  // Trading 212 uses: "2025-09-09 07:03:13"
-  // We need: "2025-09-09"
-  return dateStr.split(' ')[0]
-}
-
-/**
  * Normalize Trading 212 transactions to GenericTransaction format
  */
 export function normalizeTrading212Transactions(
   rows: RawCSVRow[],
-  fileId: string
+  fileId: string,
+  skippedRows?: SkippedRow[]
 ): GenericTransaction[] {
   return rows
     .map((row, index) => {
@@ -151,6 +142,14 @@ export function normalizeTrading212Transactions(
 
       // Skip rows without essential data
       if (!action || !time) return null
+
+      // Times look like "2025-09-09 07:03:13"
+      const date = parseISODate(time)
+      if (!date) {
+        // +2: spreadsheet row number (rows are 1-based and the header is row 1)
+        skippedRows?.push({ row: index + 2, reason: `invalid date "${time}"` })
+        return null
+      }
 
       const type = mapActionToType(action)
 
@@ -209,7 +208,7 @@ export function normalizeTrading212Transactions(
       const transaction: GenericTransaction = {
         id: `${fileId}-${index + 1}`,
         source: BrokerType.TRADING212,
-        date: parseDate(time),
+        date,
         type,
         symbol: ticker || '',
         isin: row['ISIN']?.trim().toUpperCase() || null,
