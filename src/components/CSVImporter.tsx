@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { createFileId, describeSkippedRows, importCSVText } from '../lib/import'
 import { readFileAsText } from '../lib/parsers/fileUtils'
 import { useTransactionStore, selectTransactions } from '../stores/transactionStore'
-import { db, removeSampleData } from '../lib/db'
+import { db, isFileImported, removeSampleData, saveImport } from '../lib/db'
 import { BrokerFormatsList } from './BrokerFormatsList'
 import { ImportedFilesSummary } from './ImportedFilesSummary'
 import { getBrokerDefinition, getEnabledBrokerDefinitions } from '../config/brokers'
@@ -46,13 +46,7 @@ export function CSVImporter() {
       // Generate unique file identifier
       const fileId = createFileId(file.name, file.size)
 
-      // Check for duplicates
-      const existingWithFileId = await db.transactions
-        .where('id')
-        .startsWith(fileId)
-        .count()
-
-      if (existingWithFileId > 0) {
+      if (await isFileImported(fileId)) {
         return {
           success: true,
           message: `"${file.name}" was already imported (skipped)`,
@@ -70,17 +64,14 @@ export function CSVImporter() {
 
       await beforeWrite?.()
 
-      // Store file metadata
-      await db.imported_files.add({
+      await saveImport({
         fileId,
         filename: file.name,
         broker,
         transactionCount: transactions.length,
         importedAt,
         ...(isSample ? { isSample: true } : {}),
-      })
-
-      await db.transactions.bulkAdd(transactions)
+      }, transactions)
 
       return {
         success: true,

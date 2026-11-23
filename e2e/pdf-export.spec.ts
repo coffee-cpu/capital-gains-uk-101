@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test'
+import { test, expect, type Page } from './fixtures'
 import path from 'path'
 import { readFileSync } from 'fs'
 import { fileURLToPath } from 'url'

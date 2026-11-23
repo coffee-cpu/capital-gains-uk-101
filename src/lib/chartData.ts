@@ -7,6 +7,7 @@
 
 import { DisposalRecord, Section104Pool } from '../types/cgt'
 import { isAcquisition, isDisposal } from './cgt/utils'
+import { formatIsoDate } from '../utils/date'
 
 // Chart color constants (matching tailwind.config.js CGT colors)
 export const CHART_COLORS = {
@@ -36,76 +37,10 @@ export function generateSymbolColors(symbols: string[]): Record<string, string> 
 }
 
 /**
- * Format date for chart display
+ * Format date for chart display: 15 Jan 24
  */
 export function formatDateLabel(dateStr: string): string {
-  const date = new Date(dateStr)
-  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' })
-}
-
-/**
- * Format date for short display (month + year)
- */
-export function formatMonthYear(dateStr: string): string {
-  const date = new Date(dateStr)
-  return date.toLocaleDateString('en-GB', { month: 'short', year: '2-digit' })
-}
-
-// ============================================================================
-// Gains/Losses Chart Data
-// ============================================================================
-
-export interface DisposalDataPoint {
-  id: string
-  date: string
-  dateLabel: string
-  symbol: string
-  gain: number          // Positive for gain, negative for loss
-  cumulative: number    // Running total of gains/losses
-  rule: 'SAME_DAY' | '30_DAY' | 'SECTION_104' | 'SHORT_SELL' | 'MIXED'
-  isGain: boolean
-}
-
-/**
- * Transform disposal records into chart data for gains/losses bar chart
- */
-export function buildDisposalGainsData(disposals: DisposalRecord[]): DisposalDataPoint[] {
-  if (!disposals || disposals.length === 0) {
-    return []
-  }
-
-  // Sort disposals by date
-  const sorted = [...disposals].sort((a, b) =>
-    new Date(a.disposal.date).getTime() - new Date(b.disposal.date).getTime()
-  )
-
-  let cumulative = 0
-
-  return sorted.map(disposal => {
-    cumulative += disposal.gainOrLossGbp
-
-    // Determine primary matching rule
-    let rule: DisposalDataPoint['rule'] = 'SECTION_104'
-    if (disposal.matchings.length > 0) {
-      const rules = new Set(disposal.matchings.map(m => m.rule))
-      if (rules.size === 1) {
-        rule = disposal.matchings[0].rule as DisposalDataPoint['rule']
-      } else {
-        rule = 'MIXED'
-      }
-    }
-
-    return {
-      id: disposal.id,
-      date: disposal.disposal.date,
-      dateLabel: formatDateLabel(disposal.disposal.date),
-      symbol: disposal.disposal.symbol,
-      gain: disposal.gainOrLossGbp,
-      cumulative,
-      rule,
-      isGain: disposal.gainOrLossGbp >= 0,
-    }
-  })
+  return formatIsoDate(dateStr, 'chart')
 }
 
 // ============================================================================
@@ -482,24 +417,6 @@ export function buildCurrentHoldingsData(
     totalValueGbp,
     totalQuantity,
     lastTransactionDate: lastDate,
-  }
-}
-
-/**
- * Get color for a disposal based on its matching rule
- */
-export function getRuleColor(rule: string): string {
-  switch (rule) {
-    case 'SAME_DAY':
-      return CHART_COLORS.sameDay
-    case '30_DAY':
-      return CHART_COLORS.thirtyDay
-    case 'SECTION_104':
-      return CHART_COLORS.section104
-    case 'SHORT_SELL':
-      return CHART_COLORS.shortSell
-    default:
-      return CHART_COLORS.neutral
   }
 }
 
