@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './fixtures'
 
 test.describe('Capital Gains Tax Visualiser App', () => {
   test('should display the app title', async ({ page }) => {
