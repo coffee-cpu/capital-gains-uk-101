@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { deduplicateTransactions, getIncompleteStockPlanActivity, getImportFileId, findOverlappingImports } from '../deduplication'
+import { deduplicateTransactions, getImportFileId, findOverlappingImports } from '../deduplication'
 import { GenericTransaction } from '../../types/transaction'
 
 // Helper to create a minimal valid transaction
@@ -354,87 +354,6 @@ describe('deduplicateTransactions', () => {
       expect(result).toHaveLength(3)
       expect(result.map(t => t.id).sort()).toEqual(['equity-1', 'schwab-2', 'schwab-3'])
     })
-  })
-})
-
-describe('getIncompleteStockPlanActivity', () => {
-  it('should return symbols for incomplete transactions', () => {
-    const transactions: GenericTransaction[] = [
-      createTransaction({
-        id: '1',
-        symbol: 'AAPL',
-        incomplete: true,
-      }),
-      createTransaction({
-        id: '2',
-        symbol: 'GOOG',
-        incomplete: true,
-      }),
-    ]
-
-    const result = getIncompleteStockPlanActivity(transactions)
-
-    expect(result).toHaveLength(2)
-    expect(result).toContain('AAPL')
-    expect(result).toContain('GOOG')
-  })
-
-  it('should return empty array when no incomplete transactions', () => {
-    const transactions: GenericTransaction[] = [
-      createTransaction({
-        id: '1',
-        symbol: 'AAPL',
-        incomplete: false,
-      }),
-      createTransaction({
-        id: '2',
-        symbol: 'GOOG',
-      }),
-    ]
-
-    const result = getIncompleteStockPlanActivity(transactions)
-
-    expect(result).toHaveLength(0)
-  })
-
-  it('should not include duplicate symbols', () => {
-    const transactions: GenericTransaction[] = [
-      createTransaction({
-        id: '1',
-        symbol: 'AAPL',
-        incomplete: true,
-      }),
-      createTransaction({
-        id: '2',
-        symbol: 'AAPL',
-        incomplete: true,
-      }),
-    ]
-
-    const result = getIncompleteStockPlanActivity(transactions)
-
-    expect(result).toHaveLength(1)
-    expect(result).toContain('AAPL')
-  })
-
-  it('should skip transactions without symbol', () => {
-    const transactions: GenericTransaction[] = [
-      createTransaction({
-        id: '1',
-        symbol: '',
-        incomplete: true,
-      }),
-      createTransaction({
-        id: '2',
-        symbol: 'AAPL',
-        incomplete: true,
-      }),
-    ]
-
-    const result = getIncompleteStockPlanActivity(transactions)
-
-    expect(result).toHaveLength(1)
-    expect(result).toContain('AAPL')
   })
 })
 

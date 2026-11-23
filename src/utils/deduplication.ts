@@ -177,22 +177,3 @@ export function deduplicateTransactions(allTransactions: GenericTransaction[]): 
     return true
   })
 }
-
-/**
- * Check if there are any incomplete Stock Plan Activity transactions
- * that need Equity Awards data
- *
- * @param transactions Array of transactions to check
- * @returns Array of incomplete transaction symbols that need Equity Awards data
- */
-export function getIncompleteStockPlanActivity(transactions: GenericTransaction[]): string[] {
-  const incompleteSymbols = new Set<string>()
-
-  for (const tx of transactions) {
-    if (tx.incomplete && tx.symbol) {
-      incompleteSymbols.add(tx.symbol)
-    }
-  }
-
-  return Array.from(incompleteSymbols)
-}

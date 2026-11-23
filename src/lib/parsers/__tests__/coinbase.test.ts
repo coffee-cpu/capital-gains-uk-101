@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { normalizeCoinbaseTransactions } from '../coinbase'
 import type { RawCSVRow } from '../../../types/broker'
+import type { SkippedRow } from '../../../types/brokerDefinition'
 
 describe('Coinbase Parser', () => {
   describe('normalizeCoinbaseTransactions', () => {
@@ -720,5 +721,41 @@ describe('Coinbase Parser', () => {
         })
       })
     })
+  })
+})
+
+describe('Coinbase Parser: dates and quantities', () => {
+  const row = (timestamp: string, quantity: string): RawCSVRow => ({
+    'ID': 'x',
+    'Timestamp': timestamp,
+    'Transaction Type': 'Buy',
+    'Asset': 'BTC',
+    'Quantity Transacted': quantity,
+    'Price Currency': 'GBP',
+    'Price at Transaction': '£20000',
+    'Subtotal': '£100',
+    'Total (inclusive of fees and/or spread)': '£101',
+    'Fees and/or Spread': '£1',
+    'Notes': '',
+  })
+
+  it('skips a row with an impossible date and reports it', () => {
+    const skipped: SkippedRow[] = []
+
+    const result = normalizeCoinbaseTransactions(
+      [row('2024-02-30 10:00:00 UTC', '0.005'), row('2024-06-10 10:00:00 UTC', '0.005')],
+      'test-file',
+      skipped
+    )
+
+    expect(result).toHaveLength(1)
+    expect(result[0].date).toBe('2024-06-10')
+    expect(skipped).toEqual([{ reason: 'invalid date "2024-02-30 10:00:00 UTC"' }])
+  })
+
+  it('reads quantities in scientific notation', () => {
+    const result = normalizeCoinbaseTransactions([row('2024-06-10 10:00:00 UTC', '5E-05')], 'test-file')
+
+    expect(result[0].quantity).toBeCloseTo(0.00005, 10)
   })
 })

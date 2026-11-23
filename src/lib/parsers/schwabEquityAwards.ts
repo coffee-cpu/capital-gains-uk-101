@@ -1,4 +1,4 @@
-import { GenericTransaction, TransactionType } from '../../types/transaction'
+import { GenericTransaction, TransactionType, TransactionTypeValue } from '../../types/transaction'
 import { RawCSVRow, BrokerType } from '../../types/broker'
 import { parseUSDate, parseCurrency, parseNumber } from './parsingUtils'
 
@@ -86,7 +86,7 @@ function normalizeSchwabEquityAwardsPair(
   const total = quantity && price ? quantity * price : null
 
   // Type mapping
-  let type: typeof TransactionType[keyof typeof TransactionType]
+  let type: TransactionTypeValue
   const actionLower = action.toLowerCase()
   if (actionLower.includes('lapse') && detailRows.length === 0) {
     // The award details (fair market value, net shares) are missing, e.g. a

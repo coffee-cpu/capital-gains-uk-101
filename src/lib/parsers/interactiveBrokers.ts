@@ -1,8 +1,8 @@
-import { GenericTransaction, TransactionType } from '../../types/transaction'
+import { GenericTransaction, TransactionType, TransactionTypeValue } from '../../types/transaction'
 import { RawCSVRow, BrokerType } from '../../types/broker'
 import { SkippedRow } from '../../types/brokerDefinition'
 import { CSVPreprocessor } from './fileUtils'
-import { parseNumber } from './parsingUtils'
+import { parseISODate, parseNumber } from './parsingUtils'
 
 /**
  * Raw-file preprocessor for Interactive Brokers' multi-section CSV format.
@@ -318,7 +318,7 @@ function normalizeIBTransactionHistoryRow(
   const description = row['Description']?.trim()
 
   // Parse date (format: YYYY-MM-DD)
-  const date = parseIBDate(dateStr)
+  const date = parseISODate(dateStr)
   if (!date) {
     return null
   }
@@ -432,6 +432,7 @@ function normalizeTradeRow(
   }
 
   // Quantity can be negative for sells
+  // A zero quantity is no trade: treat it like a missing one
   const rawQuantity = parseNumber(row['Quantity']) || null
   const commission = Math.abs(parseNumber(row['Commission']) || 0)
 
@@ -452,7 +453,7 @@ function normalizeTradeRow(
 
     // Determine options transaction type using position tracking
     const currentPosition = optionsPositions.get(symbol) || 0
-    let type: typeof TransactionType[keyof typeof TransactionType]
+    let type: TransactionTypeValue
 
     if (transactionType === 'Assignment') {
       type = TransactionType.OPTIONS_ASSIGNED
@@ -591,14 +592,6 @@ function normalizeInterestRow(
     fee: null,
     notes: transactionType,
   }
-}
-
-/**
- * Validate IB date format (YYYY-MM-DD) and return if valid
- */
-function parseIBDate(dateStr: string | undefined): string | null {
-  if (!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return null
-  return dateStr
 }
 
 const GILT_GROUP = 'UK gilt trades left out: gilts are exempt from Capital Gains Tax'
