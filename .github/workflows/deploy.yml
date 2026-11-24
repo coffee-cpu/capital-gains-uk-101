@@ -35,6 +35,8 @@ jobs:
       # If GitHub can't be reached the committed numbers are used.
       - name: Refresh project stats
         run: node scripts/update-coding-stats.mjs
+        timeout-minutes: 3
+        continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ github.token }}
 

@@ -23,6 +23,8 @@ try {
       excludeBots: true,
       excludeMergeCommits: true,
       sessionTimeoutMin: 45,
+      // A stalled request would otherwise hold up the deploy for minutes
+      fetchImpl: (url, init) => fetch(url, { ...init, signal: AbortSignal.timeout(15_000) }),
       ...(process.env.GITHUB_TOKEN && { githubToken: process.env.GITHUB_TOKEN }),
     }
   )
