@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { FXSource, FXSourceSchema, DEFAULT_FX_SOURCE } from '../types/fxSource'
 import { db } from '../lib/db'
-import { isTransactionHistoryScope, type TransactionHistoryScope } from '../lib/pdf/cgtReportDocument'
+import { isTransactionHistoryScope, type TransactionHistoryScope } from '../lib/pdf/transactionHistory'
 
 interface SettingsState {
   fxSource: FXSource

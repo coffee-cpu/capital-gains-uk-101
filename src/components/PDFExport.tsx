@@ -1,6 +1,7 @@
 import type { TaxYearSummary, DisposalRecord, Section104Pool } from '../types/cgt'
 import type { EnrichedTransaction } from '../types/transaction'
-import { buildCGTReportDocument, pdfReportFileName, type TransactionHistoryScope } from '../lib/pdf/cgtReportDocument'
+import { buildCGTReportDocument } from '../lib/pdf/cgtReportDocument'
+import { pdfReportFileName, type TransactionHistoryScope } from '../lib/pdf/transactionHistory'
 import { registerReportFonts } from '../lib/pdf/fonts'
 // Served from this site (fetched only when a report is made), never a font CDN
 import monoRegularUrl from '../lib/pdf/fonts/IBMPlexMono-Regular.ttf?url'
@@ -8,7 +9,8 @@ import monoSemiBoldUrl from '../lib/pdf/fonts/IBMPlexMono-SemiBold.ttf?url'
 
 /**
  * Lazy-load @react-pdf/renderer to avoid including it in the main bundle.
- * This module is only loaded when the user clicks the Export PDF button.
+ * This module (with the report document) is itself imported dynamically by
+ * the Export PDF button, so none of it loads until a report is made.
  */
 async function loadPdfLibrary() {
   const module = await import('@react-pdf/renderer')

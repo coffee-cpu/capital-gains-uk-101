@@ -1,12 +1,11 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { useTransactionStore, selectTransactions } from '../stores/transactionStore'
 import { useSettingsStore } from '../stores/settingsStore'
-import { generatePDFReport } from './PDFExport'
 import {
   formatReportDate,
   transactionHistoryRows,
   type TransactionHistoryScope,
-} from '../lib/pdf/cgtReportDocument'
+} from '../lib/pdf/transactionHistory'
 
 function plural(count: number, noun: string): string {
   return `${count.toLocaleString('en-GB')} ${noun}${count === 1 ? '' : 's'}`
@@ -67,7 +66,9 @@ export function ExportPDFButton() {
       const allDisposals = getDisposals()
       const disposalsForYear = allDisposals.filter(d => d.taxYear === selectedTaxYear)
 
-      // Generate PDF
+      // Generate PDF. The report document and PDF library load only now,
+      // so they stay out of the main bundle.
+      const { generatePDFReport } = await import('./PDFExport')
       await generatePDFReport(
         taxYearSummary,
         disposalsForYear,
