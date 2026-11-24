@@ -34,6 +34,10 @@ updates:
       dev-dependencies:
         dependency-type: development
         update-types: [minor, patch]
+        # Listing the vitest group first wasn't enough: Dependabot still put
+        # @vitest/coverage-v8 and @vitest/ui here and vitest alone in its own
+        # group, so neither PR could npm ci (#217, #219)
+        exclude-patterns: ["vitest", "@vitest/*"]
       # Security fixes grouped too, so packages pinned to each other's exact
       # version (vitest, @vitest/ui, @vitest/coverage-v8) move together
       dev-security:
