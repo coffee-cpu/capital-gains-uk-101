@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { GOV_UK_DECEMBER_ATTRIBUTION, HMRCYearlyProvider } from '../hmrcYearly'
+import { GOV_UK_ATTRIBUTION, HMRCYearlyProvider } from '../hmrcYearly'
 import bundledYearly from '../../data/hmrcYearly.json'
 import { createMemoryCacheBackends, getFxRateCache, setCacheBackends } from '../../../cache'
+import { combineFxAttributions } from '../../attribution'
 
 const years = Object.entries(bundledYearly.years) as [string, { file: string; rates: Record<string, number> }][]
 const finalYear = years.find(([, y]) => y.file === 'December')!
@@ -35,6 +36,7 @@ describe('HMRCYearlyProvider with bundled rates', () => {
     const result = await new HMRCYearlyProvider().getRate(`${year}-07-01`, 'USD')
 
     expect(result.rate).toBe(rates.USD)
+    expect(result.source).toBe(GOV_UK_ATTRIBUTION)
     expect(fetchSpy).not.toHaveBeenCalled()
   })
 
@@ -67,6 +69,7 @@ describe('HMRCYearlyProvider with bundled rates', () => {
     const result = await new HMRCYearlyProvider().getRate(`${year}-02-01`, 'USD')
 
     expect(result.rate).toBe(rates.USD)
+    expect(result.source).toBe(GOV_UK_ATTRIBUTION)
     expect(fetchSpy).toHaveBeenCalledTimes(1)
     expect(String(fetchSpy.mock.calls[0][0])).toContain(`average_csv_${year}-12.csv`)
   })
@@ -111,23 +114,37 @@ describe('HMRCYearlyProvider with bundled rates', () => {
       fetchSpy.mockImplementation(async () => new Response(decemberCsv, { status: 200 }))
       await new HMRCYearlyProvider().getRate(`${YEAR}-07-01`, 'USD')
 
-      expect((await getFxRateCache().get(`HMRC_YEARLY_AVG-${YEAR}-USD`))?.source).toBe(GOV_UK_DECEMBER_ATTRIBUTION)
+      expect((await getFxRateCache().get(`HMRC_YEARLY_AVG-${YEAR}-USD`))?.source).toBe(GOV_UK_ATTRIBUTION)
 
       // A later session, with gov.uk rate-limiting
       fetchSpy.mockClear()
       fetchSpy.mockImplementation(async () => new Response('', { status: 429 }))
       const result = await new HMRCYearlyProvider().getRate(`${YEAR}-07-01`, 'USD')
       expect(result.rate).toBe(1.25)
-      expect(result.source).toBe(GOV_UK_DECEMBER_ATTRIBUTION)
+      expect(result.source).toBe(GOV_UK_ATTRIBUTION)
       expect(fetchSpy).not.toHaveBeenCalled()
     })
 
-    it('keeps the cached rate when gov.uk has no December file yet', async () => {
+    it('keeps the cached rate when gov.uk has no December file yet, labelled as cached by an earlier version', async () => {
       vi.useFakeTimers({ toFake: ['Date'] })
       vi.setSystemTime(new Date(`${Number(YEAR) + 1}-01-02T12:00:00`))
       await cacheMarchRate()
 
-      expect((await new HMRCYearlyProvider().getRate(`${YEAR}-07-01`, 'USD')).rate).toBe(1.11)
+      const result = await new HMRCYearlyProvider().getRate(`${YEAR}-07-01`, 'USD')
+      expect(result.rate).toBe(1.11)
+      expect(result.source).toBe('HMRC Annual Average Rates')
+    })
+
+    it('labels bundled and fetched years alike, so a report covering both names one source', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date(`${Number(YEAR) + 1}-01-02T12:00:00`))
+      fetchSpy.mockImplementation(async () => new Response(decemberCsv, { status: 200 }))
+      const provider = new HMRCYearlyProvider()
+
+      const bundled = await provider.getRate(`${finalYear[0]}-07-01`, 'USD')
+      const fetched = await provider.getRate(`${YEAR}-07-01`, 'USD')
+
+      expect(combineFxAttributions([bundled.source, fetched.source])).toEqual(['HMRC Annual Average Rates (gov.uk)'])
     })
   })
 
