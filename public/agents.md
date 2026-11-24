@@ -119,7 +119,7 @@ The JSON has `schemaVersion: 1`. Check it: if it is different, re-read this guid
 
 ## 5. Deal with warnings before presenting figures
 
-Every warning has a `code`, a `message` and usually `transactionIds`. Don't present totals as final while warnings remain; explain them to the user.
+Every warning has a `code`, a `message` and usually `transactionIds`. There is one warning per kind of problem. When it covers several items, `details` lists them one per line (for example each currency with missing rates, and its first error). Don't present totals as final while warnings remain; explain them to the user.
 
 | Code | What it means | What to do |
 |---|---|---|

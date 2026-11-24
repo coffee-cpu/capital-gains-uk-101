@@ -1,4 +1,4 @@
-import { CalculateReport, warningTextLayout } from './report'
+import { CalculateReport, warningLines } from './report'
 
 const gbp = new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' })
 
@@ -98,8 +98,7 @@ export function formatCalculateText(report: CalculateReport): string {
     lines.push('')
     lines.push('Warnings')
     for (const warning of report.warnings) {
-      const { message, details } = warningTextLayout(warning)
-      lines.push(`  ! [${warning.code}] ${message}`, ...details.map(line => `      ${line}`))
+      lines.push(...warningLines(warning, `  ! [${warning.code}] `, '      '))
     }
   }
 

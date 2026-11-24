@@ -551,6 +551,7 @@ describe('detectIssues - ISIN matching', () => {
     const merge = issues.find(i => i.id === 'symbols-matched-by-isin')!
     expect(merge.severity).toBe('info')
     expect(merge.description).toContain('VUSAL treated as VUSA (same ISIN IE00B3XXRP09)')
+    expect(merge.remedy?.web).toBe('Check this is the same security.')
 
     const conflict = issues.find(i => i.id === 'ticker-isin-conflicts')!
     expect(conflict.severity).toBe('warning')

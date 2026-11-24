@@ -25,7 +25,14 @@ export interface ReportWarning {
     | 'DUPLICATE_FILE'
     | 'TAX_YEAR_NOT_FOUND'
   message: string
+  /** One line per affected item worth naming, e.g. each currency with missing rates */
+  details?: string[]
   transactionIds?: string[]
+}
+
+/** A warning as text: the message, then each detail line indented beneath it */
+export function warningLines(warning: ReportWarning, prefix: string, detailIndent: string): string[] {
+  return [`${prefix}${warning.message}`, ...(warning.details ?? []).map(line => `${detailIndent}${line}`)]
 }
 
 export interface ReportInput {
@@ -232,16 +239,12 @@ export function buildCalculateReport(
     skippedRows: options.skippedRows,
     fileNames: options.fileNames,
   })) {
-    const details = issue.details ?? []
-    const warning: ReportWarning = {
+    warnings.push({
       code: issue.code,
-      message: [issue.description, ...details.map(asSentence), issue.remedy?.cli].filter(Boolean).join(' '),
+      message: issue.remedy ? `${issue.description} ${issue.remedy.cli}` : issue.description,
+      ...(issue.details && issue.details.length > 0 && { details: issue.details }),
       ...(issue.transactionIds && { transactionIds: issue.transactionIds }),
-    }
-    if (details.length > 0) {
-      textLayouts.set(warning, { message: [issue.description, issue.remedy?.cli].filter(Boolean).join(' '), details })
-    }
-    warnings.push(warning)
+    })
   }
 
   return {
@@ -434,21 +437,4 @@ function toPoolReports(pools: Map<string, Section104Pool>): PoolReport[] {
       costGbp: money(pool.totalCostGbp),
       averageCostGbp: money(pool.averageCostGbp),
     }))
-}
-
-/**
- * Warnings with detail lines, laid out for `--format text`: the message
- * without the details, which are printed on their own lines underneath.
- * Kept beside the report so the JSON keeps one `message` string.
- */
-const textLayouts = new WeakMap<ReportWarning, { message: string; details: string[] }>()
-
-/** A warning's message and detail lines for `--format text` */
-export function warningTextLayout(warning: ReportWarning): { message: string; details: string[] } {
-  return textLayouts.get(warning) ?? { message: warning.message, details: [] }
-}
-
-/** A detail line as a sentence, for joining into a warning message */
-function asSentence(line: string): string {
-  return /[.!?]$/.test(line) ? line : `${line}.`
 }

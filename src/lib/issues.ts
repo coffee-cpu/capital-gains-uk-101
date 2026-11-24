@@ -74,8 +74,7 @@ const REJECTION_REASONS: Partial<Record<string, string>> = {
   'ratio-out-of-range': 'ratio too large or too small to be plausible',
 } satisfies Record<SplitRejectionReason, string>
 
-
-const SEVERITY_ORDER:Record<DataIssueSeverity, number> = { error: 0, warning: 1, info: 2 }
+const SEVERITY_ORDER: Record<DataIssueSeverity, number> = { error: 0, warning: 1, info: 2 }
 
 const s = (n: number) => (n !== 1 ? 's' : '')
 const unique = (items: string[]) => [...new Set(items.filter(Boolean))]
@@ -347,9 +346,14 @@ export function findDataIssues(input: DataIssueInput): DataIssue[] {
       title: 'Same Security, Different Tickers',
       description: symbolMerges
         .map(m => `${m.mergedSymbols.join(', ')} treated as ${m.symbol} (same ISIN ${m.isin}).`)
-        .join(' ') + ' Their purchases and sales share one Section 104 pool.',
+        .join(' ') + (symbolMerges.length === 1
+          ? ' Their purchases and sales share one Section 104 pool.'
+          : ' Each group\'s purchases and sales share one Section 104 pool.'),
       count: symbolMerges.length,
       affectedItems: symbolMerges.map(m => m.symbol),
+      remedy: both(symbolMerges.length === 1
+        ? 'Check this is the same security.'
+        : 'Check each of these is the same security.'),
     })
   }
 

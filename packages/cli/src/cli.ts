@@ -11,6 +11,7 @@ import { normalize } from './commands/normalize'
 import { createFileCacheBackends, defaultCacheDir, FileCacheBackends } from './fileCache'
 import { formatCalculateText, formatDisposalsCsv } from './format'
 import { readInputFiles } from './inputs'
+import { warningLines } from './report'
 import { CLI_NAME, CLI_VERSION, CliError, DISCLAIMER, ExitCode, ExitCodeValue, WEB_APP_URL } from './meta'
 
 const FX_SOURCES: Record<string, FXSource> = {
@@ -202,7 +203,7 @@ export async function main(argv: string[], io: CliIO): Promise<ExitCodeValue> {
           )
         }
         if ((format === 'csv' || format === 'pdf') && report.warnings.length > 0) {
-          io.stderr(report.warnings.map(w => `warning [${w.code}]: ${w.message}\n`).join(''))
+          io.stderr(report.warnings.flatMap(w => warningLines(w, `warning [${w.code}]: `, '    ')).map(line => `${line}\n`).join(''))
         }
         return values.strict && report.warnings.some(w => !NOT_STRICT.has(w.code)) ? ExitCode.WARNINGS : ExitCode.OK
       }

@@ -211,7 +211,7 @@ describe('cgt-visualiser CLI', () => {
 
       expect(code).toBe(0)
       expect(fxWarning.message).toContain('Failed to fetch exchange rates for 2 transactions')
-      expect(fxWarning.message).toContain('USD: 2 transactions (first error: ')
+      expect(fxWarning.details).toEqual([expect.stringMatching(/^USD: 2 transactions \(first error: /)])
       expect(fxWarning.transactionIds!.length).toBe(2)
       expect(fetchSpy).not.toHaveBeenCalled()
 
@@ -220,6 +220,11 @@ describe('cgt-visualiser CLI', () => {
       const at = text.findIndex(line => line.startsWith('  ! [FX_RATE_MISSING] Failed to fetch exchange rates for 2 transactions'))
       expect(text[at]).not.toContain('USD: 2 transactions')
       expect(text[at + 1]).toMatch(/^ {6}USD: 2 transactions \(first error: /)
+
+      // So does the CSV format's warning on stderr
+      const csv = (await run(['calculate', file, '--format', 'csv', ...OFFLINE])).stderr.split('\n')
+      const csvAt = csv.findIndex(line => line.startsWith('warning [FX_RATE_MISSING]: Failed to fetch exchange rates'))
+      expect(csv[csvAt + 1]).toMatch(/^ {4}USD: 2 transactions \(first error: /)
     })
 
     it('skips a file passed twice, as the web app does', async () => {
@@ -246,7 +251,7 @@ describe('cgt-visualiser CLI', () => {
 
       expect(warning.transactionIds).toHaveLength(1)
       // Files are named as given on the command line, not by internal file ID
-      expect(warning.message).toMatch(/vod-(2024|all)\.csv overlaps \S*vod-(2024|all)\.csv: 1 row, 2024-05-01/)
+      expect(warning.details![0]).toMatch(/vod-(2024|all)\.csv overlaps \S*vod-(2024|all)\.csv: 1 row, 2024-05-01/)
       expect(warning.message).not.toContain('_csv-')
       expect(report.taxYears.find(y => y.taxYear === '2024/25')!.netGainOrLossGbp).toBe(50)
     })

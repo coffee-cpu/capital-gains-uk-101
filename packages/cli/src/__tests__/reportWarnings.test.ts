@@ -26,7 +26,7 @@ describe('buildCalculateReport - rejected split data', () => {
     const warning = report.warnings.find(w => w.code === 'SPLIT_DATA_REJECTED')!
 
     expect(warning.message).toContain('VOD (2023-07-01) failed validation')
-    expect(warning.message).toContain('VOD 2023-07-01: ratio too large or too small to be plausible.')
+    expect(warning.details).toEqual(['VOD 2023-07-01: ratio too large or too small to be plausible'])
   })
 })
 
@@ -95,6 +95,7 @@ describe('buildCalculateReport - ISIN matching', () => {
     })
 
     expect(report.warnings.find(w => w.code === 'SYMBOLS_MATCHED_BY_ISIN')!.message).toContain('VUSAL treated as VUSA')
+    expect(report.warnings.find(w => w.code === 'SYMBOLS_MATCHED_BY_ISIN')!.message).toMatch(/Check this is the same security\.$/)
     const [conflicts, ...rest] = report.warnings.filter(w => w.code === 'TICKER_ISIN_CONFLICT').map(w => w.message)
     expect(rest).toEqual([])
     expect(conflicts).toContain('BP appears with ISINs GB0007980591 and US0556221044 at the same time')
