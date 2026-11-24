@@ -31,4 +31,14 @@ test.describe('Capital Gains Tax Visualiser App', () => {
     await expect(footer.getByText(/not financial or tax advice/i)).toBeVisible()
     await expect(footer.getByRole('link', { name: 'Report an issue' })).toBeVisible()
   })
+
+  test('About page shows project stats without contacting GitHub', async ({ page }) => {
+    // The stats are fetched at build time; the shared fixture fails the test
+    // if the page makes any external request it doesn't stub
+    await page.goto('/#about')
+
+    const stats = page.getByRole('heading', { name: 'Project Stats' }).locator('..')
+    await expect(stats).toBeVisible()
+    await expect(stats.getByText('Total Commits')).toBeVisible()
+  })
 })
