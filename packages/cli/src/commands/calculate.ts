@@ -33,18 +33,18 @@ export async function calculateWithResult(
   const warnings: ReportWarning[] = []
   const skippedRows: { file: string; rows: SkippedRow[] }[] = []
   const transactions: GenericTransaction[] = []
-  const seenFileIds = new Set<string>()
+  const fileNames = new Map<string, string>()
 
   for (const file of files) {
     // Same rule as the web app: a file with the same name and size is imported once
-    if (seenFileIds.has(file.fileId)) {
+    if (fileNames.has(file.fileId)) {
       warnings.push({
         code: 'DUPLICATE_FILE',
         message: `"${file.path}" has the same name and size as an earlier input and was skipped.`,
       })
       continue
     }
-    seenFileIds.add(file.fileId)
+    fileNames.set(file.fileId, file.path)
 
     let imported
     try {
@@ -63,5 +63,5 @@ export async function calculateWithResult(
     autoSplits: options.autoSplits,
   })
 
-  return { report: buildCalculateReport(result, { ...options, inputs, warnings, skippedRows }), result }
+  return { report: buildCalculateReport(result, { ...options, inputs, warnings, skippedRows, fileNames }), result }
 }

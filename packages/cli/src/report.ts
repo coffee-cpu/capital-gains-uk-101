@@ -168,6 +168,8 @@ export interface BuildReportOptions {
   warnings: ReportWarning[]
   /** Rows each input file's parser left out */
   skippedRows?: { file: string; rows: SkippedRow[] }[]
+  /** Input file paths by file ID, to name files in warnings */
+  fileNames?: ReadonlyMap<string, string>
 }
 
 const RULE_NAMES: Record<MatchingRule, MatchRule> = {
@@ -228,6 +230,7 @@ export function buildCalculateReport(
     dataNotices: result?.dataNotices,
     metadata: result?.metadata,
     skippedRows: options.skippedRows,
+    fileNames: options.fileNames,
   })) {
     warnings.push({
       code: issue.code,

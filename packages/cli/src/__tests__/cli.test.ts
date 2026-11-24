@@ -239,6 +239,9 @@ describe('cgt-visualiser CLI', () => {
       const warning = report.warnings.find(w => w.code === 'OVERLAPPING_ROWS_REMOVED')!
 
       expect(warning.transactionIds).toHaveLength(1)
+      // Files are named as given on the command line, not by internal file ID
+      expect(warning.message).toMatch(/vod-(2024|all)\.csv overlaps \S*vod-(2024|all)\.csv: 1 row, 2024-05-01/)
+      expect(warning.message).not.toContain('_csv-')
       expect(report.taxYears.find(y => y.taxYear === '2024/25')!.netGainOrLossGbp).toBe(50)
     })
 
