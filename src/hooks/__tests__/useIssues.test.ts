@@ -278,8 +278,8 @@ describe('detectIssues', () => {
     expect(buyOnlyIssue).toBeDefined()
     expect(buyOnlyIssue?.severity).toBe('info')
     expect(buyOnlyIssue?.count).toBe(1)
-    expect(buyOnlyIssue?.description).toContain('BUY transaction')
-    expect(buyOnlyIssue?.description).toContain('no SELL')
+    expect(buyOnlyIssue?.description).toBe("No sales found, so there's no capital gain to report.")
+    expect(buyOnlyIssue?.remedy?.web).toBe('If you did sell, import the statements with those sales.')
   })
 
   it('provides Schwab-specific advice for buy-only with Equity Awards', () => {
@@ -301,7 +301,7 @@ describe('detectIssues', () => {
     const buyOnlyIssue = issues.find(i => i.id === 'buy-only-scenario')
     expect(buyOnlyIssue).toBeDefined()
     expect(buyOnlyIssue?.remedy?.web).toContain('Schwab.com')
-    expect(buyOnlyIssue?.remedy?.web).toContain('in addition to Equity Awards')
+    expect(buyOnlyIssue?.remedy?.web).toContain('as well as Equity Awards')
   })
 
   it('sorts issues by severity (errors first, then warnings, then info)', () => {

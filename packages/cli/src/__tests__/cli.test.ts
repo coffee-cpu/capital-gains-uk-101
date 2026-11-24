@@ -214,6 +214,12 @@ describe('cgt-visualiser CLI', () => {
       expect(fxWarning.message).toContain('USD: 2 transactions (first error: ')
       expect(fxWarning.transactionIds!.length).toBe(2)
       expect(fetchSpy).not.toHaveBeenCalled()
+
+      // Text output puts the detail lines on their own lines under the message
+      const text = (await run(['calculate', file, '--format', 'text', ...OFFLINE])).stdout.split('\n')
+      const at = text.findIndex(line => line.startsWith('  ! [FX_RATE_MISSING] Failed to fetch exchange rates for 2 transactions'))
+      expect(text[at]).not.toContain('USD: 2 transactions')
+      expect(text[at + 1]).toMatch(/^ {6}USD: 2 transactions \(first error: /)
     })
 
     it('skips a file passed twice, as the web app does', async () => {

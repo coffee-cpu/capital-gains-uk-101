@@ -232,13 +232,16 @@ export function buildCalculateReport(
     skippedRows: options.skippedRows,
     fileNames: options.fileNames,
   })) {
-    warnings.push({
+    const details = issue.details ?? []
+    const warning: ReportWarning = {
       code: issue.code,
-      message: [issue.description, ...(issue.details ?? []).map(asSentence), issue.remedy?.cli]
-        .filter(Boolean)
-        .join(' '),
+      message: [issue.description, ...details.map(asSentence), issue.remedy?.cli].filter(Boolean).join(' '),
       ...(issue.transactionIds && { transactionIds: issue.transactionIds }),
-    })
+    }
+    if (details.length > 0) {
+      textLayouts.set(warning, { message: [issue.description, issue.remedy?.cli].filter(Boolean).join(' '), details })
+    }
+    warnings.push(warning)
   }
 
   return {
@@ -431,6 +434,18 @@ function toPoolReports(pools: Map<string, Section104Pool>): PoolReport[] {
       costGbp: money(pool.totalCostGbp),
       averageCostGbp: money(pool.averageCostGbp),
     }))
+}
+
+/**
+ * Warnings with detail lines, laid out for `--format text`: the message
+ * without the details, which are printed on their own lines underneath.
+ * Kept beside the report so the JSON keeps one `message` string.
+ */
+const textLayouts = new WeakMap<ReportWarning, { message: string; details: string[] }>()
+
+/** A warning's message and detail lines for `--format text` */
+export function warningTextLayout(warning: ReportWarning): { message: string; details: string[] } {
+  return textLayouts.get(warning) ?? { message: warning.message, details: [] }
 }
 
 /** A detail line as a sentence, for joining into a warning message */

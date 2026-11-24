@@ -80,6 +80,25 @@ describe('findDataIssues', () => {
     expect(rejected.details).toEqual(['ACME 2024-06-10: ratio too large or too small to be plausible'])
   })
 
+  it('agrees in number with one affected item or several', () => {
+    const unknownIssue = (n: number) => findDataIssues({
+      transactions: Array.from({ length: n }, (_, i) => tx({ id: `u${i}`, type: 'UNKNOWN' })),
+      disposals: [],
+    })[0]
+
+    expect(unknownIssue(1).description).toMatch(/^1 transaction has a type .* and was left out/)
+    expect(unknownIssue(1).remedy!.web).toMatch(/^If it is a trade/)
+    expect(unknownIssue(2).description).toMatch(/^2 transactions have a type .* and were left out/)
+    expect(unknownIssue(2).remedy!.web).toMatch(/^If any of them is a trade/)
+
+    const fx = (n: number) => findDataIssues({
+      transactions: Array.from({ length: n }, (_, i) => tx({ id: `f${i}`, fx_error: 'No rate' })),
+      disposals: [],
+    })[0].description
+    expect(fx(1)).toContain('its GBP value is missing and totals that include it are wrong')
+    expect(fx(2)).toContain('their GBP values are missing and totals that include them are wrong')
+  })
+
   it('checks only the disposals it is given', () => {
     expect(findDataIssues({ transactions: [], disposals: [disposal('s1', false)] })).toEqual([])
   })

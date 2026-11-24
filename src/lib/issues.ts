@@ -93,14 +93,16 @@ export function findDataIssues(input: DataIssueInput): DataIssue[] {
   const fxFailures = transactions.filter(tx => tx.fx_error)
   if (fxFailures.length > 0) {
     const crypto = fxFailures.some(tx => tx.fx_error?.includes('Crypto currency'))
+    const one = fxFailures.length === 1
     issues.push({
       code: 'FX_RATE_MISSING',
       id: 'fx-rate-errors',
       flaggedInTable: true,
       severity: 'error',
       title: 'FX Rate Errors',
-      description: `Failed to fetch exchange rates for ${fxFailures.length} transaction${s(fxFailures.length)}. ` +
-        (crypto ? 'Crypto currencies require manual GBP values.' : 'GBP values cannot be calculated.'),
+      description: `Failed to fetch exchange rates for ${fxFailures.length} transaction${s(fxFailures.length)}, so ` +
+        (one ? 'its GBP value is missing and totals that include it are wrong.' : 'their GBP values are missing and totals that include them are wrong.') +
+        (crypto ? ' Crypto currencies require manual GBP values.' : ''),
       count: fxFailures.length,
       affectedItems: unique(fxFailures.map(tx => tx.symbol)),
       transactionIds: fxFailures.map(tx => tx.id),
@@ -130,7 +132,7 @@ export function findDataIssues(input: DataIssueInput): DataIssue[] {
       flaggedInTable: true,
       severity: 'error',
       title: 'Incomplete Disposal Data',
-      description: `${incomplete.length} disposal${s(incomplete.length)} (${byYear}) could not be fully matched to acquisition data, usually because the shares were bought before your imported history starts. Gains/losses are only calculated for matched portions.`,
+      description: `${incomplete.length} disposal${s(incomplete.length)} (${byYear}) could not be fully matched to acquisition data, usually because the shares were bought before your imported history starts. Gains/losses are only calculated for matched portions, so the year's totals leave out the unmatched shares.`,
       count: incomplete.length,
       affectedItems: unique(incomplete.map(d => d.disposal.symbol)),
       transactionIds: incomplete.map(d => d.disposal.id),
@@ -145,18 +147,24 @@ export function findDataIssues(input: DataIssueInput): DataIssue[] {
   if (skippedFiles.length > 0) {
     const rows = skippedFiles.flatMap(f => f.rows)
     const exempt = rows.every(row => row.exempt)
+    const one = rows.length === 1
     issues.push({
       code: 'SKIPPED_ROWS',
       id: 'skipped-rows',
       severity: 'warning',
       title: 'Rows Left Out',
-      description: `${rows.length} row${s(rows.length)} could not be read and ${rows.length !== 1 ? 'were' : 'was'} left out: ` +
+      description: `${rows.length} row${s(rows.length)} could not be read and ${one ? 'was' : 'were'} left out: ` +
         skippedFiles.map(f => `"${f.file}" (${describeSkippedRows(f.rows, 5)})`).join('; ') + '. ' +
         (exempt
-          ? 'They are exempt from Capital Gains Tax, so the totals are unaffected.'
-          : 'The totals will be wrong until they are fixed.'),
+          ? `${one ? 'It is' : 'They are'} exempt from Capital Gains Tax, so the totals are unaffected.`
+          : `The totals will be wrong until ${one ? 'it is' : 'they are'} fixed.`),
       count: rows.length,
-      ...(!exempt && { remedy: { web: 'Fix the rows and import the file again.', cli: 'Fix them and run again.' } }),
+      ...(!exempt && {
+        remedy: {
+          web: `Fix the ${one ? 'row' : 'rows'} and import the ${skippedFiles.length === 1 ? 'file' : 'files'} again.`,
+          cli: `Fix ${one ? 'it' : 'them'} and run again.`,
+        },
+      }),
     })
   }
 
@@ -185,7 +193,9 @@ export function findDataIssues(input: DataIssueInput): DataIssue[] {
       id: 'splits-without-ratio',
       severity: 'warning',
       title: 'Stock Split Without a Ratio',
-      description: `Your files record a stock split for ${splitsWithoutRatio.map(sp => `${sp.symbol} (${sp.date}, ${sp.source})`).join(', ')} without saying what the ratio was, and no split data covers it, so it could not be applied. Quantities before and after the split won't line up, which can show as incomplete disposals or wrong gains.`,
+      description: splitsWithoutRatio.length === 1
+        ? `Your files record a stock split for ${splitList(splitsWithoutRatio)} without saying what the ratio was, and no split data covers it, so it could not be applied. Quantities before and after the split won't line up, which can show as incomplete disposals or wrong gains.`
+        : `Your files record stock splits for ${splitList(splitsWithoutRatio)} without saying what the ratios were, and no split data covers them, so they could not be applied. Quantities before and after the splits won't line up, which can show as incomplete disposals or wrong gains.`,
       count: splitsWithoutRatio.length,
       affectedItems: unique(splitsWithoutRatio.map(sp => sp.symbol)),
       transactionIds: splitsWithoutRatio.map(sp => sp.id),
@@ -213,11 +223,16 @@ export function findDataIssues(input: DataIssueInput): DataIssue[] {
       id: 'rejected-split-data',
       severity: 'warning',
       title: 'Invalid Stock Split Data Ignored',
-      description: `Auto-detected stock split data for ${rejectedSplits.map(r => `${r.symbol} (${r.date})`).join(', ')} failed validation and was not applied. If that split really happened, quantities from that date are wrong.`,
+      description: `Auto-detected stock split data for ${rejectedSplits.map(r => `${r.symbol} (${r.date})`).join(', ')} failed validation and was not applied. ` +
+        (rejectedSplits.length === 1
+          ? 'If that split really happened, quantities from that date are wrong.'
+          : 'If those splits really happened, quantities from those dates are wrong.'),
       count: rejectedSplits.length,
       affectedItems: unique(rejectedSplits.map(r => r.symbol)),
       details: rejectedSplits.map(r => `${r.symbol} ${r.date}: ${REJECTION_REASONS[r.reason] ?? r.reason}`),
-      remedy: both('Check whether the share split on that date. If it did, add a STOCK_SPLIT row with the ratio in a Generic CSV file.'),
+      remedy: both(rejectedSplits.length === 1
+        ? 'Check whether the share split on that date. If it did, add a STOCK_SPLIT row with the ratio in a Generic CSV file.'
+        : 'Check whether the shares split on those dates. For each that did, add a STOCK_SPLIT row with the ratio in a Generic CSV file.'),
     })
   }
 
@@ -264,7 +279,9 @@ export function findDataIssues(input: DataIssueInput): DataIssue[] {
       count: unknown.length,
       affectedItems: unique(unknown.map(tx => tx.symbol)),
       transactionIds: unknown.map(tx => tx.id),
-      remedy: both('If any of them is a trade, add it with a supported type in a Generic CSV file.'),
+      remedy: both(unknown.length === 1
+        ? 'If it is a trade, add it with a supported type in a Generic CSV file.'
+        : 'If any of them is a trade, add it with a supported type in a Generic CSV file.'),
     })
   }
 
@@ -288,7 +305,7 @@ export function findDataIssues(input: DataIssueInput): DataIssue[] {
             web: 'Upload your Charles Schwab Equity Awards transaction history (a separate file from the regular Schwab transaction export) to get complete pricing information. See "Supported formats & export guides" in the Import section for instructions.',
             cli: 'Add your Charles Schwab Equity Awards transaction history (a separate file from the regular Schwab transaction export) as another input to get complete pricing information. Run `cgt-visualiser brokers` for export steps.',
           }
-        : both('These transactions are missing price data required for CGT calculations. Check your broker export for a more complete transaction history.'),
+        : both(`${incompleteStockPlan.length === 1 ? 'This transaction is' : 'These transactions are'} missing price data required for CGT calculations. Check your broker export for a more complete transaction history.`),
     })
   }
 
@@ -315,7 +332,9 @@ export function findDataIssues(input: DataIssueInput): DataIssue[] {
         `${fileName(o.droppedFileId)} overlaps ${fileName(o.keptFileId)}: ${o.rows} row${s(o.rows)}, ` +
         (o.firstDate === o.lastDate ? o.firstDate : `${o.firstDate} to ${o.lastDate}`)
       ),
-      remedy: both('If any of these were separate trades (for example the same order placed in two accounts), add the missing trade back in a Generic CSV file.'),
+      remedy: both(plural
+        ? 'If any of these were separate trades (for example the same order placed in two accounts), add the missing trade back in a Generic CSV file.'
+        : 'If it was a separate trade (for example the same order placed in two accounts), add the missing trade back in a Generic CSV file.'),
     })
   }
 
@@ -342,21 +361,26 @@ export function findDataIssues(input: DataIssueInput): DataIssue[] {
       id: 'buy-only-scenario',
       severity: 'info',
       title: 'No Disposals Found',
-      description: `You've imported ${totalBuys} BUY transaction${s(totalBuys)} (purchases, RSU vests) but no SELL transactions. CGT calculations require disposals.`,
+      description: "No sales found, so there's no capital gain to report.",
       count: totalBuys,
       remedy: equityAwards
         ? {
-            web: 'Upload your "Transactions" history from Schwab.com (in addition to Equity Awards) to include SELL transactions.',
-            cli: 'Add your "Transactions" history from Schwab.com (in addition to Equity Awards) to include SELL transactions.',
+            web: 'If you did sell, upload your "Transactions" history from Schwab.com (as well as Equity Awards) to include the sales.',
+            cli: 'If you did sell, add your "Transactions" history from Schwab.com (as well as Equity Awards) to include the sales.',
           }
         : {
-            web: 'Upload brokerage statements containing your SELL transactions to calculate capital gains.',
-            cli: 'Add brokerage statements containing your SELL transactions to calculate capital gains.',
+            web: 'If you did sell, import the statements with those sales.',
+            cli: 'If you did sell, add the statements with those sales as inputs.',
           },
     })
   }
 
   return issues.sort((a, b) => SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity])
+}
+
+/** Split rows as "ACME (2024-06-10, Broker), …" */
+function splitList(splits: { symbol: string; date: string; source: string }[]): string {
+  return splits.map(sp => `${sp.symbol} (${sp.date}, ${sp.source})`).join(', ')
 }
 
 /** A remedy that reads the same in both channels */

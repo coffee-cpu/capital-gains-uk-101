@@ -23,7 +23,7 @@ test.describe('BUY-Only Transaction Imports', () => {
     // The Issues panel says what to import, with Schwab-specific guidance
     await page.getByTestId('issues-panel-toggle').first().click()
     await expect(page.getByText('No Disposals Found', { exact: true })).toBeVisible()
-    await expect(page.getByText(/Upload your "Transactions" history from Schwab.com/i)).toBeVisible()
+    await expect(page.getByText(/upload your "Transactions" history from Schwab.com/i)).toBeVisible()
 
     // Verify transaction list still shows the imported BUY transactions
     await expect(page.getByRole('table').getByText('AAPL').first()).toBeVisible()
