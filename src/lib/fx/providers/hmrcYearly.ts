@@ -14,11 +14,13 @@ interface BundledYearlyRates {
 const BUNDLED_YEARS = bundledYearly.years as Record<string, BundledYearlyRates>
 
 /**
- * Label for a December (final) rate fetched from gov.uk. The only yearly
- * rates cached, and distinct from the plain label older versions cached
- * March rates under, so a cached rate with it is known to be final.
+ * Label for every rate this provider reads: all come from HMRC's gov.uk
+ * files, bundled or fetched, as with the monthly rates. Older versions cached
+ * March rates under the plain label, which reports mark as "cached by an
+ * earlier version". Only December (final) rates are cached with this label,
+ * so a cached rate with it is known to be final.
  */
-export const GOV_UK_DECEMBER_ATTRIBUTION = `${FXSourceAttributions.HMRC_YEARLY_AVG} (gov.uk)`
+export const GOV_UK_ATTRIBUTION = `${FXSourceAttributions.HMRC_YEARLY_AVG} (gov.uk)`
 
 /** HMRC publishes a year's December (calendar-year) file on 31 December */
 function decemberFileMayBeOut(year: string, now = new Date()): boolean {
@@ -75,11 +77,11 @@ export class HMRCYearlyProvider extends BaseFXProvider {
    */
   protected isCachedRateUsable(source: string | undefined, year: string): boolean {
     if (BUNDLED_YEARS[year]?.file === 'December') return false
-    return source === GOV_UK_DECEMBER_ATTRIBUTION || !decemberFileMayBeOut(year)
+    return source === GOV_UK_ATTRIBUTION || !decemberFileMayBeOut(year)
   }
 
-  protected sourceAttribution(year: string): string {
-    return this.fetchedDecember.has(year) ? GOV_UK_DECEMBER_ATTRIBUTION : FXSourceAttributions.HMRC_YEARLY_AVG
+  protected sourceAttribution(): string {
+    return GOV_UK_ATTRIBUTION
   }
 
   /**
@@ -259,7 +261,7 @@ export class HMRCYearlyProvider extends BaseFXProvider {
       date: year,
       currency,
       rate,
-      source: GOV_UK_DECEMBER_ATTRIBUTION,
+      source: GOV_UK_ATTRIBUTION,
       fxSource: this.fxSource,
     }))
 
