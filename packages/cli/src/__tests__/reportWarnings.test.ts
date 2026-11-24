@@ -26,6 +26,7 @@ describe('buildCalculateReport - rejected split data', () => {
     const warning = report.warnings.find(w => w.code === 'SPLIT_DATA_REJECTED')!
 
     expect(warning.message).toContain('VOD (2023-07-01) failed validation')
+    expect(warning.message).toContain('VOD 2023-07-01: ratio too large or too small to be plausible.')
   })
 })
 

@@ -62,6 +62,24 @@ describe('findDataIssues', () => {
     ])
   })
 
+  it('lists FX failures per currency and rejected splits with a plain reason', () => {
+    const [fx, rejected] = findDataIssues({
+      transactions: [
+        tx({ id: 'a', fx_error: 'No rate for May' }),
+        tx({ id: 'b', fx_error: 'Timeout' }),
+        tx({ id: 'c', currency: 'EUR', fx_error: 'No rate for June' }),
+      ],
+      disposals: [],
+      dataNotices: { ...NO_NOTICES, rejectedSplitRecords: [{ symbol: 'ACME', date: '2024-06-10', reason: 'ratio-out-of-range' }] },
+    })
+
+    expect(fx.details).toEqual([
+      'USD: 2 transactions (first error: No rate for May)',
+      'EUR: 1 transaction (first error: No rate for June)',
+    ])
+    expect(rejected.details).toEqual(['ACME 2024-06-10: ratio too large or too small to be plausible'])
+  })
+
   it('checks only the disposals it is given', () => {
     expect(findDataIssues({ transactions: [], disposals: [disposal('s1', false)] })).toEqual([])
   })

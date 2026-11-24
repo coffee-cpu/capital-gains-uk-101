@@ -231,7 +231,9 @@ export function buildCalculateReport(
   })) {
     warnings.push({
       code: issue.code,
-      message: issue.remedy ? `${issue.description} ${issue.remedy.cli}` : issue.description,
+      message: [issue.description, ...(issue.details ?? []).map(asSentence), issue.remedy?.cli]
+        .filter(Boolean)
+        .join(' '),
       ...(issue.transactionIds && { transactionIds: issue.transactionIds }),
     })
   }
@@ -426,4 +428,9 @@ function toPoolReports(pools: Map<string, Section104Pool>): PoolReport[] {
       costGbp: money(pool.totalCostGbp),
       averageCostGbp: money(pool.averageCostGbp),
     }))
+}
+
+/** A detail line as a sentence, for joining into a warning message */
+function asSentence(line: string): string {
+  return /[.!?]$/.test(line) ? line : `${line}.`
 }

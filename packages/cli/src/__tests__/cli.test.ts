@@ -161,6 +161,17 @@ describe('cgt-visualiser CLI', () => {
       expect(noData.stderr).toContain('Tax years with data: 2016/17, 2019/20, 2024/25')
     })
 
+    it('notes a history with no sales, which --strict does not count', async () => {
+      const file = join(tmp, 'buy-only.csv')
+      writeFileSync(file, 'date,type,symbol,currency,quantity,price,total,fee\n2024-06-03,BUY,VOD,GBP,100,0.70,70,0\n')
+
+      const strict = await run(['calculate', file, '--strict', ...OFFLINE])
+      const report: CalculateReport = JSON.parse(strict.stdout)
+
+      expect(report.warnings.map(w => w.code)).toEqual(['NO_DISPOSALS'])
+      expect(strict.code).toBe(0)
+    })
+
     it('warns about incomplete disposals and exits 3 with --strict', async () => {
       const file = join(tmp, 'sell-only.csv')
       writeFileSync(file, 'date,type,symbol,currency,quantity,price,total,fee\n2024-06-03,SELL,VOD,GBP,100,0.70,70,0\n')
@@ -200,6 +211,7 @@ describe('cgt-visualiser CLI', () => {
 
       expect(code).toBe(0)
       expect(fxWarning.message).toContain('Failed to fetch exchange rates for 2 transactions')
+      expect(fxWarning.message).toContain('USD: 2 transactions (first error: ')
       expect(fxWarning.transactionIds!.length).toBe(2)
       expect(fetchSpy).not.toHaveBeenCalled()
     })

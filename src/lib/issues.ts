@@ -3,6 +3,8 @@ import type { EnrichedTransaction } from '../types/transaction'
 import type { SkippedRow } from '../types/brokerDefinition'
 import { BrokerType } from '../types/broker'
 import { describeSkippedRows } from './import'
+import { groupBy } from './cgt/utils'
+import type { SplitRejectionReason } from './splits/splitDataSource'
 
 /**
  * Problems with the imported data that change, or may change, the figures.
@@ -62,7 +64,18 @@ export interface DataIssueInput {
   skippedRows?: { file: string; rows: SkippedRow[] }[]
 }
 
-const SEVERITY_ORDER: Record<DataIssueSeverity, number> = { error: 0, warning: 1, info: 2 }
+/** Why fetched split data was rejected, in plain words */
+const REJECTION_REASONS: Partial<Record<string, string>> = {
+  'missing-symbol': 'no symbol',
+  'invalid-date': 'not a valid date',
+  'wrong-year': 'date outside the year it was published under',
+  'future-date': 'date in the future',
+  'invalid-ratio': 'ratio could not be read',
+  'ratio-out-of-range': 'ratio too large or too small to be plausible',
+} satisfies Record<SplitRejectionReason, string>
+
+
+const SEVERITY_ORDER:Record<DataIssueSeverity, number> = { error: 0, warning: 1, info: 2 }
 
 const s = (n: number) => (n !== 1 ? 's' : '')
 const unique = (items: string[]) => [...new Set(items.filter(Boolean))]
@@ -91,6 +104,8 @@ export function findDataIssues(input: DataIssueInput): DataIssue[] {
       count: fxFailures.length,
       affectedItems: unique(fxFailures.map(tx => tx.symbol)),
       transactionIds: fxFailures.map(tx => tx.id),
+      details: [...groupBy(fxFailures, tx => tx.currency)].map(([currency, txs]) =>
+        `${currency}: ${txs.length} transaction${s(txs.length)} (first error: ${txs[0].fx_error})`),
       remedy: crypto
         ? {
             web: 'Automatic FX conversion is not supported for crypto. For crypto-to-crypto trades, add a gbp_value column to your CSV with the GBP spot price of the quote currency at the time of each trade, then re-import.',
@@ -115,12 +130,12 @@ export function findDataIssues(input: DataIssueInput): DataIssue[] {
       flaggedInTable: true,
       severity: 'error',
       title: 'Incomplete Disposal Data',
-      description: `${incomplete.length} disposal${s(incomplete.length)} (${byYear}) could not be fully matched to acquisition data, usually because the shares were bought before your imported history starts. Gains/losses are only calculated for matched portions; look for the red "Incomplete" badge in the transaction list.`,
+      description: `${incomplete.length} disposal${s(incomplete.length)} (${byYear}) could not be fully matched to acquisition data, usually because the shares were bought before your imported history starts. Gains/losses are only calculated for matched portions.`,
       count: incomplete.length,
       affectedItems: unique(incomplete.map(d => d.disposal.symbol)),
       transactionIds: incomplete.map(d => d.disposal.id),
       remedy: {
-        web: 'Import earlier transaction history that includes the original purchases, or manually calculate gains using your original records.',
+        web: 'Look for the red "Incomplete" badge in the transaction list. Import earlier transaction history that includes the original purchases, or manually calculate gains using your original records.',
         cli: 'Import earlier history, or add the missing acquisitions to a Generic CSV (see the normalize command).',
       },
     })
@@ -141,7 +156,6 @@ export function findDataIssues(input: DataIssueInput): DataIssue[] {
           ? 'They are exempt from Capital Gains Tax, so the totals are unaffected.'
           : 'The totals will be wrong until they are fixed.'),
       count: rows.length,
-      details: skippedFiles.map(f => `${f.file}: ${f.rows.length} row${s(f.rows.length)}`),
       ...(!exempt && { remedy: { web: 'Fix the rows and import the file again.', cli: 'Fix them and run again.' } }),
     })
   }
@@ -202,6 +216,7 @@ export function findDataIssues(input: DataIssueInput): DataIssue[] {
       description: `Auto-detected stock split data for ${rejectedSplits.map(r => `${r.symbol} (${r.date})`).join(', ')} failed validation and was not applied. If that split really happened, quantities from that date are wrong.`,
       count: rejectedSplits.length,
       affectedItems: unique(rejectedSplits.map(r => r.symbol)),
+      details: rejectedSplits.map(r => `${r.symbol} ${r.date}: ${REJECTION_REASONS[r.reason] ?? r.reason}`),
       remedy: both('Check whether the share split on that date. If it did, add a STOCK_SPLIT row with the ratio in a Generic CSV file.'),
     })
   }
