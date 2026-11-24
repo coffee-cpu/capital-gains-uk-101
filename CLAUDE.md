@@ -29,7 +29,7 @@ This allows:
 - Running E2E debug tests (`npx playwright test e2e/debug.spec.ts --headed`) without manual setup
 - User to verify changes at http://localhost:3000 (or 3001 if 3000 is taken)
 
-The dev server will run in the background and hot-reload on file changes. You can check its output anytime using the BashOutput tool. Only skip auto-starting if the user explicitly says they don't need it running.
+The dev server will run in the background and hot-reload on file changes. You can check its output anytime by reading the background task's output file. Only skip auto-starting if the user explicitly says they don't need it running.
 
 ### Testing
 ```bash
@@ -64,8 +64,13 @@ npx playwright test e2e/csv-import.spec.ts
 ### Core Data Flow
 
 ```
-CSV Import → Broker Detection → Parsing (to GenericTransaction) → Enrichment (3 passes) → CGT Engine → Visualization → PDF Export
+CSV Import → Broker Detection → Parsing (to GenericTransaction) → Deduplication → Auto-fetched Splits → ISIN Symbol Matching → Enrichment (3 passes) → CGT Engine → Visualization → PDF Export
 ```
+
+`runPipeline` (`src/lib/pipeline.ts`) runs every step after parsing, for both the web app and the CLI:
+- **Deduplication** (`src/utils/deduplication.ts`): drops rows repeated across overlapping imports from the same broker, and Schwab Stock Plan Activity superseded by Equity Awards
+- **Auto-fetched splits** (`src/lib/splits/`): community split data for held shares, added each run (not stored) when the setting is on
+- **ISIN symbol matching** (`src/lib/symbolMatching.ts`): one symbol per security when brokers use different tickers
 
 **Terminology**:
 - **Parsing/Normalization**: Converting broker-specific CSV formats to `GenericTransaction` (unified structure, raw data only)
@@ -134,15 +139,16 @@ The `enrichTransactions()` function (in `index.ts`) runs three sequential passes
     selector) and the selected tax year. Anything that changes the inputs (an import, the FX source,
     the auto-splits toggle) calls `recalculate()`, which re-runs the pipeline on IndexedDB with the current
     settings; when runs overlap only the latest is applied. Don't call `processTransactionsFromDB` from components
-  - `settingsStore.ts` holds the FX source and auto-splits toggle. IndexedDB (`settings` table) is their only
+  - `settingsStore.ts` holds the FX source, auto-splits toggle and PDF transaction history option. IndexedDB (`settings` table) is their only
     persisted copy (older versions also kept one in localStorage, which is no longer read). A database reset
     after a schema upgrade error keeps settings as well as transactions
   - `helpPanelStore.ts` holds the help panel's open state and topic
+  - `transactionFilterStore.ts` holds the transaction list's filters, so the Issues panel can show the flagged rows
 - **Persistence**: Dexie database (`src/lib/db.ts`, schema v5) with five tables:
   - `transactions`: Indexed by id, source, symbol, date, type
   - `fx_rates`: Primary key `id` (format `SOURCE-dateKey-currency`, e.g. `HMRC_MONTHLY-2025-05-USD`)
   - `imported_files`: Metadata for duplicate-import detection
-  - `settings`: User settings (FX source, auto-splits toggle)
+  - `settings`: User settings (FX source, auto-splits toggle, PDF transaction history)
   - `split_data_cache`: Auto-fetched stock split data by year
 
 #### 5. Tax Year Calculation (`src/utils/taxYear.ts`)
@@ -158,6 +164,11 @@ The CGT engine applies rules in this order:
 **Important**: CGT matching uses `split_adjusted_quantity ?? quantity` from the enrichment pipeline via `getEffectiveQuantity()` helper.
 
 See `docs/SPECIFICATION.md` for complete HMRC rule references.
+
+#### 7. Data Issues (`src/lib/issues.ts`)
+One list of the problems the user must resolve (missing FX rates, incomplete disposals, split notices...), with one
+wording for the web app's Issues panel and the CLI's `warnings[]`; only the remedy differs (settings and buttons vs CLI
+flags). Add a new issue there, not in either UI
 
 ## Project Structure
 
@@ -217,6 +228,9 @@ is a generic engine that iterates the registry — no per-broker code goes there
 5. Add an example CSV to `public/examples/` (referenced by `exampleFile`) and,
    for E2E coverage, a fixture in `e2e/fixtures/`
 
+6. Add the broker to the lists in `README.md`, `packages/cli/README.md` and `public/llms.txt`
+   (`src/__tests__/docs.test.ts` fails until you do)
+
 ### Transaction ID Generation
 IDs must be unique within a session. Pattern: `${fileId}-${rowIndex}` where:
 - `fileId`: Unique identifier for the uploaded file (`createFileId` in `src/lib/import.ts`: sanitised file name + byte size)
@@ -271,7 +285,9 @@ Always store dates as ISO 8601: `YYYY-MM-DD`. Parsers must convert from broker-s
 - **Unit tests**: All parsers, detector logic, utility functions
 - **E2E tests**: Full import workflow with real CSV files
 - Test files mirror source structure: `src/lib/foo.ts` → `src/lib/__tests__/foo.test.ts`
-- E2E tests in separate `e2e/` directory with fixtures in `e2e/fixtures/`
+- E2E tests in separate `e2e/` directory with fixtures in `e2e/fixtures/`. Specs import `test` and `expect` from
+  `e2e/fixtures.ts`, which stubs split data and HMRC rate files and fails a test on any other external request
+- `src/__tests__/docs.test.ts` keeps docs in step with the code: the spec's schema, broker lists and CLI options
 
 ### Debugging Frontend Issues
 

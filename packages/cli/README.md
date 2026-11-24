@@ -19,14 +19,19 @@ Requires Node.js 22 or later.
 | `brokers` | List supported brokers and how to export the right file from each |
 | `normalize <files...> -o out.csv` | Convert exports into one Generic CSV that you can edit (fix or add rows), then pass to `calculate`. It refuses files with options or short sells, which the Generic CSV format can't represent |
 
-Run `cgt-visualiser --help` for all options. The main options are:
+Run `cgt-visualiser --help` for all options:
 
 - `--fx hmrc-monthly|hmrc-yearly|daily-spot`: the exchange rate source. The default is HMRC monthly rates.
 - `--details`: for each disposal, show the matched acquisitions, the FX rate used and the Section 104 pool before and after.
 - `--format text|json|csv|pdf`: the output format. The default is `text` in a terminal and `json` when the output is piped.
 - `--format pdf --tax-year 2025/26 -o report.pdf`: write one tax year's PDF report, the same as the web app's Export PDF button. Add `--include-transactions` to list every transaction up to the year end.
 - `--offline`: make no network requests. HMRC rates for past months and years are bundled, so they work offline; newer rates and daily rates come from the cache only.
+- `--no-auto-splits`: don't fetch stock split data. Splits recorded in the broker files still apply.
 - `--strict`: exit with code 3 if there are any warnings, apart from `NO_DISPOSALS`.
+- `--no-cache`: don't read or write the cache (see [Privacy](#privacy)).
+- `-o, --output <file>`: write the output to a file instead of stdout.
+- `--verbose`: show diagnostic logging on stderr.
+- `-h, --help` and `-v, --version`: show the help or the version.
 
 Exit codes: `0` success, `1` usage error, `2` a file couldn't be read or recognised, `3` warnings with `--strict`.
 

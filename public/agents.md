@@ -45,7 +45,8 @@ npx -y cgt-visualiser@latest calculate statement1.csv statement2.csv --tax-year 
 - Pass **all** the user's files in a single call. Matching works across accounts.
 - `--tax-year` limits the report to one UK tax year (6 April to 5 April). Omit it to see every year.
 - Add `--details` when you need to explain a figure. It adds the matched acquisitions, the FX rate and the Section 104 pool before and after each sale.
-- The default exchange rates are HMRC's monthly rates (bundled with the CLI; only months newer than the bundle are fetched from gov.uk). The other `--fx` sources are `hmrc-yearly` (HMRC's annual averages) and `daily-spot` (European Central Bank daily reference rates, fetched from the Frankfurter API; the ECB publishes rates against the euro, so GBP rates are worked out from those). Only change `--fx` if the user asks, and use the same source every year. `daily-spot` always needs network access, and the HMRC sources need it for recent months; without it you get `FX_RATE_MISSING`.
+- The default exchange rates are HMRC's monthly rates (bundled with the CLI; only months newer than the bundle are fetched from gov.uk). The other `--fx` sources are `hmrc-yearly` (HMRC's annual averages) and `daily-spot` (European Central Bank daily reference rates, fetched from the Frankfurter API; the ECB publishes rates against the euro, so GBP rates are worked out from those). Only change `--fx` if the user asks, and use the same source every year. `daily-spot` always needs network access, and the HMRC sources need it for recent months; without it you get `FX_RATE_MISSING`. In a sandbox with no network, add `--offline` so the CLI doesn't wait on requests: it then uses the bundled and cached rates only.
+- Add `-o <file>` to write the output to a file instead of stdout.
 - Add `--strict` if you want exit code `3` whenever there are warnings (`NO_DISPOSALS` doesn't count).
 
 Exit codes: `0` success, `1` usage error, `2` a file couldn't be read or recognised, `3` warnings with `--strict`.
@@ -124,7 +125,7 @@ Every warning has a `code`, a `message` and usually `transactionIds`. There is o
 | Code | What it means | What to do |
 |---|---|---|
 | `INCOMPLETE_DISPOSAL` | A sale has no recorded purchase for some of the shares. Only the matched part is counted, so the unmatched shares' proceeds, cost and gain are left out of the totals | Ask for earlier history, or for transfers in (with the original cost) |
-| `FX_RATE_MISSING` | No GBP exchange rate could be found, so GBP values are missing | Re-run with network access. If it persists, report the currency and dates to the user |
+| `FX_RATE_MISSING` | No GBP exchange rate could be found, so GBP values are missing | Re-run with network access (and without `--offline`). If it persists, report the currency and dates to the user |
 | `SPLIT_DATA_UNAVAILABLE` | Stock split data couldn't be fetched, so splits missing from the broker file weren't applied | Re-run with network access |
 | `SPLIT_DATA_REJECTED` | Fetched split data for a share the user holds failed validation (bad ratio or date) and wasn't applied | Ask the user whether the share split on that date. If it did, add a `STOCK_SPLIT` row with the ratio in a Generic CSV |
 | `SKIPPED_ROWS` (0.2.0+) | Some rows of a file couldn't be read (for example a missing date or an unrecognised `type` in a Generic CSV) and were left out. Interactive Brokers bond trades are listed here too | Show the user the listed rows and fix them before trusting the totals. A UK gilt needs nothing (gilts are exempt from CGT); another bond has to be added in a Generic CSV file if it's taxable |

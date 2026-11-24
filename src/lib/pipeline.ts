@@ -24,8 +24,9 @@ export interface PipelineOptions {
  * 1. Deduplicate (rows repeated across overlapping imports, and incomplete
  *    Stock Plan Activity when Equity Awards exists)
  * 2. Inject auto-fetched stock splits (if enabled)
- * 3. Enrich with FX rates and GBP conversions
- * 4. Calculate CGT with HMRC matching rules
+ * 3. Give one symbol to each security across brokers (by ISIN)
+ * 4. Enrich (split adjustments, FX rates and GBP conversions, tax year)
+ * 5. Calculate CGT with HMRC matching rules
  *
  * Runtime-agnostic: shared by the web app (via `processTransactionsFromDB`)
  * and non-browser callers such as the CLI.

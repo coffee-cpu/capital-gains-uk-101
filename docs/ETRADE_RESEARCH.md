@@ -3,6 +3,8 @@
 **Last Updated**: 2025-10-26
 **Status**: Research phase - exact CSV format not yet confirmed
 
+> The implementation checklist below predates the config-driven broker registry. To add a broker, follow "Adding a New Broker Parser" in CLAUDE.md instead.
+
 ## Overview
 
 This document contains research findings about E-Trade's CSV export formats for implementing an E-Trade parser in the Capital Gains Tax Visualiser.
