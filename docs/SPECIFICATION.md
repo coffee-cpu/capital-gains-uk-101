@@ -141,6 +141,13 @@ The raw data from a broker file, before anything is calculated. Generated from `
         "null"
       ]
     },
+    "fee_currency": {
+      "description": "Currency of fee when it differs from currency (e.g. Trading 212 charges fees in the account currency on a USD trade). Absent means the fee is in currency.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "notes": {
       "description": "Optional broker notes",
       "type": [

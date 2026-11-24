@@ -111,10 +111,12 @@ function GbpAmount({ tx, gbp, isIncomplete }: { tx: EnrichedRow; gbp: number | n
  * A money column: the GBP figure, with the broker's own amount underneath in
  * grey for a row in another currency. Hovering the GBP figure shows the rate.
  */
-function MoneyCell({ tx, gbp, original, hideZero = false, isIncomplete, children }: {
+function MoneyCell({ tx, gbp, original, currency = tx.currency, hideZero = false, isIncomplete, children }: {
   tx: EnrichedRow
   gbp: number | null | undefined
   original: number | null
+  /** The original amount's currency, when it isn't the row's (e.g. a fee charged in GBP on a USD trade) */
+  currency?: string
   hideZero?: boolean
   isIncomplete: boolean
   children?: React.ReactNode
@@ -123,7 +125,7 @@ function MoneyCell({ tx, gbp, original, hideZero = false, isIncomplete, children
   if (isEmpty(gbp) && isEmpty(original) && !(isIncomplete && original == null && !hideZero)) {
     return <span>—</span>
   }
-  const foreign = tx.currency !== 'GBP'
+  const foreign = currency.toUpperCase() !== 'GBP'
   const main = <GbpAmount tx={tx} gbp={isEmpty(gbp) ? null : gbp} isIncomplete={isIncomplete} />
   return (
     <div>
@@ -132,7 +134,7 @@ function MoneyCell({ tx, gbp, original, hideZero = false, isIncomplete, children
         {children}
       </div>
       {foreign && !isEmpty(original) && (
-        <div className="text-xs text-gray-500">{formatAmount(original!, tx.currency)}</div>
+        <div className="text-xs text-gray-500">{formatAmount(original!, currency)}</div>
       )}
     </div>
   )
@@ -790,7 +792,7 @@ export function TransactionList() {
                       <MoneyCell tx={tx} gbp={tx.value_gbp} original={tx.total} isIncomplete={!!isIncomplete} />
                     </td>
                     <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
-                      <MoneyCell tx={tx} gbp={tx.fee_gbp} original={tx.fee} hideZero isIncomplete={!!isIncomplete} />
+                      <MoneyCell tx={tx} gbp={tx.fee_gbp} original={tx.fee} currency={tx.fee_currency ?? tx.currency} hideZero isIncomplete={!!isIncomplete} />
                     </td>
                     <td className="px-3 py-4 text-sm text-gray-500">
                       <div className="flex items-center gap-1.5">

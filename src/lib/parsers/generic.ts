@@ -14,6 +14,7 @@ import { parseNumber } from './parsingUtils'
  * - currency (required, e.g., USD, GBP, EUR; may be blank on STOCK_SPLIT rows, which have no amounts)
  * - total (optional, number)
  * - fee (optional, number)
+ * - fee_currency (optional, when the fee is in a different currency from `currency`, e.g. GBP on a USD trade)
  * - split_ratio (optional, for STOCK_SPLIT only, e.g., "10:1", "2:1")
  * - isin (optional, 12-character ISIN; matches the security across brokers)
  * - asset_class (optional: "share" or "crypto"; decides the SA108 section)
@@ -95,6 +96,7 @@ function normalizeGenericRow(
   const price = parseNumber(row['price']) ?? null
   const total = parseNumber(row['total']) ?? null
   const fee = parseNumber(row['fee']) ?? null
+  const feeCurrency = row['fee_currency']?.trim().toUpperCase() || null
   const notes = row['notes']?.trim() || null
   const ratio = row['split_ratio']?.trim() || null
 
@@ -121,6 +123,7 @@ function normalizeGenericRow(
     currency,
     total,
     fee,
+    ...(feeCurrency && feeCurrency !== currency && { fee_currency: feeCurrency }),
     notes,
     ratio,
     ...(isin && { isin }),

@@ -248,3 +248,24 @@ describe('transactionsToGenericCSV - isin and asset_class together', () => {
     expect(reimported).toMatchObject({ isin: 'IE00B3XXRP09', asset_class: 'share' })
   })
 })
+
+describe('transactionsToGenericCSV - fee_currency', () => {
+  it('round-trips a fee charged in another currency, and leaves the column blank otherwise', async () => {
+    const { importCSVText } = await import('../../lib/import')
+    const usdBuy = {
+      id: 't212-1', source: 'Trading 212', symbol: 'ACME', name: null, date: '2024-05-01', type: 'BUY' as const,
+      quantity: 4, price: 25, currency: 'USD', total: 100, fee: 1.2, fee_currency: 'GBP', notes: null,
+    }
+    const gbpBuy = { ...usdBuy, id: 't212-2', currency: 'GBP', fee_currency: undefined }
+
+    const csv = transactionsToGenericCSV([usdBuy, gbpBuy])
+    const [header, , gbpRow] = csv.split('\n')
+    expect(gbpRow.split(',')[header.split(',').indexOf('fee_currency')]).toBe('')
+
+    const reimported = importCSVText(csv, 'roundtrip-fee-currency').transactions
+    expect(reimported.map(t => [t.currency, t.fee, t.fee_currency])).toEqual([
+      ['USD', 1.2, 'GBP'],
+      ['GBP', 1.2, undefined],
+    ])
+  })
+})

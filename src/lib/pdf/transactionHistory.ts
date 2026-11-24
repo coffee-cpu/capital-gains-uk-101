@@ -127,7 +127,7 @@ export function transactionTableCells(tx: EnrichedTransaction): {
     original: {
       price: cashOnly || tx.price == null ? '-' : formatOriginalAmount(tx.price, tx.currency, PRICE_DECIMALS),
       value: tx.total == null ? '-' : formatOriginalAmount(tx.total, tx.currency),
-      fee: isZero(tx.fee) ? '-' : formatOriginalAmount(tx.fee!, tx.currency),
+      fee: isZero(tx.fee) ? '-' : formatOriginalAmount(tx.fee!, tx.fee_currency ?? tx.currency),
     },
     fxRate: tx.fx_rate == null ? '-' : `${formatFxRate(tx.fx_rate)} ${tx.currency.toUpperCase()}`,
   }
