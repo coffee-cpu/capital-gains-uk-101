@@ -4,11 +4,10 @@ import * as reactPdf from '@react-pdf/renderer'
 import { fileURLToPath } from 'node:url'
 import {
   buildCGTReportDocument,
-  formatQuantity,
-  formatTransactionType,
   REPORT_DISCLAIMER,
   type ReactPdfLibrary,
 } from '../cgtReportDocument'
+import { formatQuantity, formatTransactionType } from '../transactionHistory'
 import { findReportDataIssues } from '../reportData'
 import { registerReportFonts } from '../fonts'
 import type { DisposalRecord, MatchingResult, TaxYearSummary } from '../../../types/cgt'

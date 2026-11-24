@@ -9,7 +9,7 @@ export interface BundledYear {
 export const FIRST_BUNDLED_MONTH = '2015-01'
 
 /** Last bundled month. The app reads later months from gov.uk */
-export const LAST_BUNDLED_MONTH = '2026-11'
+export const LAST_BUNDLED_MONTH = '2026-12'
 
 /**
  * Typos left out of HMRC's published rates (see the script): a transaction in

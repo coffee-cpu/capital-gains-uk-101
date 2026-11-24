@@ -1,12 +1,12 @@
 import { describe, it, expect, afterEach } from 'vitest'
+import { acquisitionLinesByDay } from '../cgtReportDocument'
 import {
-  acquisitionLinesByDay,
   formatFxRate,
   formatOriginalAmount,
   formatReportDate,
   transactionHistoryRows,
   transactionTableCells,
-} from '../cgtReportDocument'
+} from '../transactionHistory'
 import type { EnrichedTransaction } from '../../../types/transaction'
 import type { DisposalRecord } from '../../../types/cgt'
 
