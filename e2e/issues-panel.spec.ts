@@ -141,7 +141,7 @@ test.describe('IssuesPanel', () => {
 
     // Check for No Disposals Found issue
     await expect(page.getByText('No Disposals Found')).toBeVisible()
-    await expect(page.getByText(/BUY transaction.*but no SELL/i)).toBeVisible()
+    await expect(page.getByText("No sales found, so there's no capital gain to report.")).toBeVisible()
   })
 
   test('should not show IssuesPanel when no issues exist', async ({ page }) => {

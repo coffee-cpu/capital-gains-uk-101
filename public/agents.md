@@ -46,7 +46,7 @@ npx -y cgt-visualiser@latest calculate statement1.csv statement2.csv --tax-year 
 - `--tax-year` limits the report to one UK tax year (6 April to 5 April). Omit it to see every year.
 - Add `--details` when you need to explain a figure. It adds the matched acquisitions, the FX rate and the Section 104 pool before and after each sale.
 - The default exchange rates are HMRC's monthly rates (bundled with the CLI; only months newer than the bundle are fetched from gov.uk). The other `--fx` sources are `hmrc-yearly` (HMRC's annual averages) and `daily-spot` (European Central Bank daily reference rates, fetched from the Frankfurter API; the ECB publishes rates against the euro, so GBP rates are worked out from those). Only change `--fx` if the user asks, and use the same source every year. `daily-spot` always needs network access, and the HMRC sources need it for recent months; without it you get `FX_RATE_MISSING`.
-- Add `--strict` if you want exit code `3` whenever there are warnings.
+- Add `--strict` if you want exit code `3` whenever there are warnings (`NO_DISPOSALS` doesn't count).
 
 Exit codes: `0` success, `1` usage error, `2` a file couldn't be read or recognised, `3` warnings with `--strict`.
 
@@ -119,7 +119,7 @@ The JSON has `schemaVersion: 1`. Check it: if it is different, re-read this guid
 
 ## 5. Deal with warnings before presenting figures
 
-Every warning has a `code`, a `message` and usually `transactionIds`. Don't present totals as final while warnings remain; explain them to the user.
+Every warning has a `code`, a `message` and usually `transactionIds`. There is one warning per kind of problem. When it covers several items, `details` lists them one per line (for example each currency with missing rates, and its first error). Don't present totals as final while warnings remain; explain them to the user.
 
 | Code | What it means | What to do |
 |---|---|---|
@@ -134,6 +134,8 @@ Every warning has a `code`, a `message` and usually `transactionIds`. Don't pres
 | `SPLIT_RATIO_CONFLICT` | Two records of the same stock split gave different ratios; the earliest was used | Ask the user to confirm the correct ratio. If the one used is wrong, fix the split row in a Generic CSV |
 | `SYMBOLS_MATCHED_BY_ISIN` | Different tickers with the same ISIN (e.g. from two brokers) were treated as one security and share a Section 104 pool | Usually nothing; mention it so the user can confirm |
 | `TICKER_ISIN_CONFLICT` | One ticker appears with several ISINs. If they were used at the same time it names different securities and rows with an ISIN are pooled per ISIN; if one followed the other (an ISIN change after a reorganisation) the rows stay in one pool | Overlapping: ask which security the rows without an ISIN belong to and fix them in a Generic CSV. Sequential: confirm it is one holding |
+| `INCOMPLETE_STOCK_PLAN` | Schwab Stock Plan Activity rows have no price, so their cost is missing | Ask for the Schwab Equity Awards export too (a separate file), which has the prices |
+| `NO_DISPOSALS` | Purchases but no sales were imported, so there is no gain or loss to report. `--strict` doesn't count it | Nothing if the user hasn't sold. Otherwise ask for the exports with the sales |
 | `DUPLICATE_FILE` | The same file was passed twice and was used once | Usually nothing |
 | `TAX_YEAR_NOT_FOUND` | No transactions in the requested tax year | Check the year, and that the history covers it |
 

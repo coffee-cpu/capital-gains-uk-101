@@ -11,6 +11,7 @@ import { normalize } from './commands/normalize'
 import { createFileCacheBackends, defaultCacheDir, FileCacheBackends } from './fileCache'
 import { formatCalculateText, formatDisposalsCsv } from './format'
 import { readInputFiles } from './inputs'
+import { warningLines } from './report'
 import { CLI_NAME, CLI_VERSION, CliError, DISCLAIMER, ExitCode, ExitCodeValue, WEB_APP_URL } from './meta'
 
 const FX_SOURCES: Record<string, FXSource> = {
@@ -18,6 +19,9 @@ const FX_SOURCES: Record<string, FXSource> = {
   'hmrc-yearly': 'HMRC_YEARLY_AVG',
   'daily-spot': 'DAILY_SPOT',
 }
+
+/** Warnings that are notices, not problems: --strict doesn't count them */
+const NOT_STRICT: ReadonlySet<string> = new Set(['NO_DISPOSALS'])
 
 const HELP = `${CLI_NAME} ${CLI_VERSION}
 UK capital gains tax on shares, from your broker's CSV exports. Applies HMRC's
@@ -36,7 +40,7 @@ calculate options:
   --details             JSON: add each disposal's matches, FX rate and pool before/after
   --no-auto-splits      Don't fetch stock split data (broker-provided splits still apply)
   --offline             No network access: use bundled and cached exchange rates only
-  --strict              Exit with code 3 if there are warnings
+  --strict              Exit with code 3 if there are warnings (NO_DISPOSALS aside)
   --include-transactions  PDF: add a list of all transactions up to the year end
 
 Common options:
@@ -199,9 +203,9 @@ export async function main(argv: string[], io: CliIO): Promise<ExitCodeValue> {
           )
         }
         if ((format === 'csv' || format === 'pdf') && report.warnings.length > 0) {
-          io.stderr(report.warnings.map(w => `warning [${w.code}]: ${w.message}\n`).join(''))
+          io.stderr(report.warnings.flatMap(w => warningLines(w, `warning [${w.code}]: `, '    ')).map(line => `${line}\n`).join(''))
         }
-        return values.strict && report.warnings.length > 0 ? ExitCode.WARNINGS : ExitCode.OK
+        return values.strict && report.warnings.some(w => !NOT_STRICT.has(w.code)) ? ExitCode.WARNINGS : ExitCode.OK
       }
 
       case 'detect': {
