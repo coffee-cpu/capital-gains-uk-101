@@ -25,7 +25,7 @@ interface TooltipPosition {
 export function Tooltip({ content, children, className = '' }: TooltipProps) {
   const [isVisible, setIsVisible] = useState(false)
   const [position, setPosition] = useState<TooltipPosition | null>(null)
-  const triggerRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLSpanElement>(null)
   const tooltipRef = useRef<HTMLDivElement>(null)
   // The kind of pointer that last pressed the trigger: touch taps toggle the
   // tooltip, and the mouse events a browser emulates after a tap are ignored
@@ -132,7 +132,8 @@ export function Tooltip({ content, children, className = '' }: TooltipProps) {
 
   return (
     <>
-      <div
+      {/* A span, so a tooltip can sit inside a paragraph */}
+      <span
         ref={triggerRef}
         className={`inline-block ${className}`}
         onPointerDown={e => { pointerTypeRef.current = e.pointerType }}
@@ -142,7 +143,7 @@ export function Tooltip({ content, children, className = '' }: TooltipProps) {
         onClick={handleClick}
       >
         {children}
-      </div>
+      </span>
       {isVisible && position && createPortal(
         <div
           ref={tooltipRef}

@@ -9,11 +9,12 @@ import { DisposalRecord, Section104Pool } from '../types/cgt'
 import { isAcquisition, isDisposal } from './cgt/utils'
 import { formatIsoDate } from '../utils/date'
 
-// Chart color constants (matching tailwind.config.js CGT colors)
+// Chart colours. Recharts takes colour strings, not Tailwind classes, so they are
+// defined here (the app's Tailwind theme is in src/index.css)
 export const CHART_COLORS = {
-  sameDay: '#4A90E2',      // cgt-same-day (blue)
-  thirtyDay: '#F5A623',    // cgt-30-day (orange)
-  section104: '#7ED321',   // cgt-section-104 (green)
+  sameDay: '#4A90E2',      // Same-day rule (blue)
+  thirtyDay: '#F5A623',    // 30-day rule (orange)
+  section104: '#7ED321',   // Section 104 pool (green)
   shortSell: '#EC4899',    // Short sell (pink - matches Tailwind pink-500)
   gain: '#22C55E',         // Tailwind green-500
   loss: '#EF4444',         // Tailwind red-500
