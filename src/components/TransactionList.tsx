@@ -92,10 +92,16 @@ function typeBadgeClass(type: string): string {
 }
 
 /** A GBP figure (hover or tap it for the rate), "Error" when conversion failed, or "Missing" */
-function GbpAmount({ tx, gbp, isIncomplete }: { tx: EnrichedRow; gbp: number | null | undefined; isIncomplete: boolean }) {
+function GbpAmount({ tx, gbp, isIncomplete, showRate = true }: {
+  tx: EnrichedRow
+  gbp: number | null | undefined
+  isIncomplete: boolean
+  /** False when the amount wasn't converted at the row's rate (e.g. a fee charged in GBP on a USD trade) */
+  showRate?: boolean
+}) {
   if (tx.fx_error) return <span className="text-red-600 font-medium">Error</span>
   if (gbp != null) {
-    return tx.currency !== 'GBP' ? (
+    return showRate && tx.currency !== 'GBP' ? (
       <Tooltip content={fxTooltip(tx)}>
         <span className="cursor-help border-b border-dotted border-gray-400">{formatGbp(gbp)}</span>
       </Tooltip>
@@ -126,7 +132,9 @@ function MoneyCell({ tx, gbp, original, currency = tx.currency, hideZero = false
     return <span>—</span>
   }
   const foreign = currency.toUpperCase() !== 'GBP'
-  const main = <GbpAmount tx={tx} gbp={isEmpty(gbp) ? null : gbp} isIncomplete={isIncomplete} />
+  // The row's rate is only the one used when the amount is in the row's currency
+  const showRate = currency.toUpperCase() === tx.currency.toUpperCase()
+  const main = <GbpAmount tx={tx} gbp={isEmpty(gbp) ? null : gbp} isIncomplete={isIncomplete} showRate={showRate} />
   return (
     <div>
       <div className="flex items-center gap-2">
