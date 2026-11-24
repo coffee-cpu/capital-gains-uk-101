@@ -31,6 +31,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # The About page's project stats are fetched here, not in the browser.
+      # If GitHub can't be reached the committed numbers are used.
+      - name: Refresh project stats
+        run: node scripts/update-coding-stats.mjs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
       - name: Build
         run: npm run build
 

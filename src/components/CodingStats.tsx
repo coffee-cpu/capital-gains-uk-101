@@ -1,61 +1,11 @@
-import { useEffect, useState } from 'react'
-import { getRepoStats } from 'vibe-coding-stats'
+import stats from './codingStats.json'
 
-interface RepoStats {
-  totalHours: number
-  sessionsCount: number
-  devDays: number
-  totalCommits: number
-}
-
+/**
+ * Project stats from the repository's commit history. The numbers are
+ * fetched at build time by scripts/update-coding-stats.mjs (the deploy
+ * workflow runs it), so the browser makes no request to GitHub.
+ */
 export function CodingStats() {
-  const [stats, setStats] = useState<RepoStats | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    async function fetchStats() {
-      try {
-        setLoading(true)
-        const result = await getRepoStats(
-          { repo: 'coffee-cpu/capital-gains-uk-101' },
-          {
-            excludeBots: true,
-            excludeMergeCommits: true,
-            sessionTimeoutMin: 45
-          }
-        )
-
-        setStats({
-          totalHours: Math.round(result.totals?.totalHours || 0),
-          sessionsCount: result.totals?.sessionsCount || 0,
-          devDays: result.totals?.devDays || 0,
-          totalCommits: result.totals?.totalCommits || 0
-        })
-      } catch (err) {
-        console.error('Failed to fetch coding stats:', err)
-        setError('Failed to load coding statistics')
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchStats()
-  }, [])
-
-  if (loading) {
-    return (
-      <section className="bg-white shadow rounded-lg p-6">
-        <h2 className="text-2xl font-semibold text-gray-900 mb-4">Development Statistics</h2>
-        <div className="text-gray-600">Loading statistics...</div>
-      </section>
-    )
-  }
-
-  if (error || !stats) {
-    return null // Silently fail - stats are nice to have but not critical
-  }
-
   return (
     <section className="bg-white shadow rounded-lg p-4">
       <h2 className="text-xl font-semibold text-gray-900 mb-3">Project Stats</h2>
