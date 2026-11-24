@@ -88,7 +88,7 @@ export async function runPipeline(
     tickerConflicts,
     splitsWithoutRatio: findSplitsWithoutRatio(withAutoSplits),
     autoSplits,
-    splitDataUnavailable: autoSplits && (source.unavailableYears?.size ?? 0) > 0,
+    splitDataUnavailableYears: autoSplits ? [...(source.unavailableYears ?? [])].sort((a, b) => a - b) : [],
   }
 
   return result

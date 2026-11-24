@@ -161,6 +161,17 @@ describe('cgt-visualiser CLI', () => {
       expect(noData.stderr).toContain('Tax years with data: 2016/17, 2019/20, 2024/25')
     })
 
+    it('notes a history with no sales, which --strict does not count', async () => {
+      const file = join(tmp, 'buy-only.csv')
+      writeFileSync(file, 'date,type,symbol,currency,quantity,price,total,fee\n2024-06-03,BUY,VOD,GBP,100,0.70,70,0\n')
+
+      const strict = await run(['calculate', file, '--strict', ...OFFLINE])
+      const report: CalculateReport = JSON.parse(strict.stdout)
+
+      expect(report.warnings.map(w => w.code)).toEqual(['NO_DISPOSALS'])
+      expect(strict.code).toBe(0)
+    })
+
     it('warns about incomplete disposals and exits 3 with --strict', async () => {
       const file = join(tmp, 'sell-only.csv')
       writeFileSync(file, 'date,type,symbol,currency,quantity,price,total,fee\n2024-06-03,SELL,VOD,GBP,100,0.70,70,0\n')
@@ -199,9 +210,21 @@ describe('cgt-visualiser CLI', () => {
       const fxWarning = report.warnings.find(w => w.code === 'FX_RATE_MISSING')!
 
       expect(code).toBe(0)
-      expect(fxWarning.message).toContain('USD')
+      expect(fxWarning.message).toContain('Failed to fetch exchange rates for 2 transactions')
+      expect(fxWarning.details).toEqual([expect.stringMatching(/^USD: 2 transactions \(first error: /)])
       expect(fxWarning.transactionIds!.length).toBe(2)
       expect(fetchSpy).not.toHaveBeenCalled()
+
+      // Text output puts the detail lines on their own lines under the message
+      const text = (await run(['calculate', file, '--format', 'text', ...OFFLINE])).stdout.split('\n')
+      const at = text.findIndex(line => line.startsWith('  ! [FX_RATE_MISSING] Failed to fetch exchange rates for 2 transactions'))
+      expect(text[at]).not.toContain('USD: 2 transactions')
+      expect(text[at + 1]).toMatch(/^ {6}USD: 2 transactions \(first error: /)
+
+      // So does the CSV format's warning on stderr
+      const csv = (await run(['calculate', file, '--format', 'csv', ...OFFLINE])).stderr.split('\n')
+      const csvAt = csv.findIndex(line => line.startsWith('warning [FX_RATE_MISSING]: Failed to fetch exchange rates'))
+      expect(csv[csvAt + 1]).toMatch(/^ {4}USD: 2 transactions \(first error: /)
     })
 
     it('skips a file passed twice, as the web app does', async () => {
@@ -227,6 +250,9 @@ describe('cgt-visualiser CLI', () => {
       const warning = report.warnings.find(w => w.code === 'OVERLAPPING_ROWS_REMOVED')!
 
       expect(warning.transactionIds).toHaveLength(1)
+      // Files are named as given on the command line, not by internal file ID
+      expect(warning.details![0]).toMatch(/vod-(2024|all)\.csv overlaps \S*vod-(2024|all)\.csv: 1 row, 2024-05-01/)
+      expect(warning.message).not.toContain('_csv-')
       expect(report.taxYears.find(y => y.taxYear === '2024/25')!.netGainOrLossGbp).toBe(50)
     })
 

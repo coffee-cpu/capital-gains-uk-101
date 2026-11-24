@@ -166,8 +166,9 @@ The CGT engine applies rules in this order:
 See `docs/SPECIFICATION.md` for complete HMRC rule references.
 
 #### 7. Data Issues (`src/lib/issues.ts`)
-One pure detector finds the problems the user must resolve (missing FX rates, incomplete disposals, split notices...).
-The web app's Issues panel and the CLI's `warnings[]` both word its coded results, so add a new issue there, not in either UI
+One list of the problems the user must resolve (missing FX rates, incomplete disposals, split notices...), with one
+wording for the web app's Issues panel and the CLI's `warnings[]`; only the remedy differs (settings and buttons vs CLI
+flags). Add a new issue there, not in either UI
 
 ## Project Structure
 
@@ -285,7 +286,7 @@ Always store dates as ISO 8601: `YYYY-MM-DD`. Parsers must convert from broker-s
 - **E2E tests**: Full import workflow with real CSV files
 - Test files mirror source structure: `src/lib/foo.ts` → `src/lib/__tests__/foo.test.ts`
 - E2E tests in separate `e2e/` directory with fixtures in `e2e/fixtures/`. Specs import `test` and `expect` from
-  `e2e/fixtures.ts`, which stubs external hosts (FX rates, split data) so runs don't depend on the network
+  `e2e/fixtures.ts`, which stubs split data and HMRC rate files and fails a test on any other external request
 - `src/__tests__/docs.test.ts` keeps docs in step with the code: the spec's schema, broker lists and CLI options
 
 ### Debugging Frontend Issues

@@ -4,6 +4,8 @@
  * readable without JavaScript by search engines and AI agents.
  */
 
+import { formatIsoDate } from '../utils/date'
+
 export const SITE_URL = 'https://cgtvisualiser.co.uk'
 export const SITE_NAME = 'Capital Gains Tax Visualiser'
 
@@ -45,7 +47,7 @@ export function gbp(value: number): string {
 
 /** 2026-11-19 → 19 November 2026 */
 export function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
+  return formatIsoDate(iso, 'long')
 }
 
 /** JSON for a <script type="application/ld+json"> block; "<" is escaped so the text can't close the tag */

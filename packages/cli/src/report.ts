@@ -5,6 +5,8 @@ import { MatchingRule } from '../../../src/types/transaction'
 import { getEffectiveQuantity, QUANTITY_EPSILON } from '../../../src/lib/cgt/utils'
 import { sa108Rows, Sa108Category, Sa108Row } from '../../../src/lib/cgt/sa108'
 import { combineFxAttributions } from '../../../src/lib/fx/attribution'
+import { findDataIssues, DataIssueCode } from '../../../src/lib/issues'
+import { SkippedRow } from '../../../src/types/brokerDefinition'
 import { CLI_NAME, CLI_VERSION, DISCLAIMER } from './meta'
 
 /**
@@ -17,21 +19,20 @@ export type MatchRule = 'same-day' | '30-day' | 'section-104' | 'short-sell'
 
 export interface ReportWarning {
   code:
-    | 'FX_RATE_MISSING'
-    | 'INCOMPLETE_DISPOSAL'
-    | 'UNKNOWN_TRANSACTION_TYPE'
+    // Data issues, shared with the web app's Issues panel (src/lib/issues.ts)
+    | DataIssueCode
+    // About the command's arguments
     | 'DUPLICATE_FILE'
     | 'TAX_YEAR_NOT_FOUND'
-    | 'SPLIT_DATA_UNAVAILABLE'
-    | 'SPLIT_DATA_REJECTED'
-    | 'SYMBOLS_MATCHED_BY_ISIN'
-    | 'TICKER_ISIN_CONFLICT'
-    | 'SKIPPED_ROWS'
-    | 'OVERLAPPING_ROWS_REMOVED'
-    | 'SPLIT_RATIO_CONFLICT'
-    | 'SPLIT_WITHOUT_RATIO'
   message: string
+  /** One line per affected item worth naming, e.g. each currency with missing rates */
+  details?: string[]
   transactionIds?: string[]
+}
+
+/** A warning as text: the message, then each detail line indented beneath it */
+export function warningLines(warning: ReportWarning, prefix: string, detailIndent: string): string[] {
+  return [`${prefix}${warning.message}`, ...(warning.details ?? []).map(line => `${detailIndent}${line}`)]
 }
 
 export interface ReportInput {
@@ -172,6 +173,10 @@ export interface BuildReportOptions {
   inputs: ReportInput[]
   /** Warnings raised before calculation (e.g. duplicate files) */
   warnings: ReportWarning[]
+  /** Rows each input file's parser left out */
+  skippedRows?: { file: string; rows: SkippedRow[] }[]
+  /** Input file paths by file ID, to name files in warnings */
+  fileNames?: ReadonlyMap<string, string>
 }
 
 const RULE_NAMES: Record<MatchingRule, MatchRule> = {
@@ -225,8 +230,21 @@ export function buildCalculateReport(
     .filter(d => reportedYears.has(d.taxYear))
     .sort((a, b) => a.disposal.date.localeCompare(b.disposal.date) || a.disposal.id.localeCompare(b.disposal.id))
 
-  if (result) {
-    warnings.push(...collectWarnings(result, disposals))
+  // The same issues the web app's Issues panel shows, with the CLI's remedy
+  for (const issue of findDataIssues({
+    transactions: result?.transactions ?? [],
+    disposals,
+    dataNotices: result?.dataNotices,
+    metadata: result?.metadata,
+    skippedRows: options.skippedRows,
+    fileNames: options.fileNames,
+  })) {
+    warnings.push({
+      code: issue.code,
+      message: issue.remedy ? `${issue.description} ${issue.remedy.cli}` : issue.description,
+      ...(issue.details && issue.details.length > 0 && { details: issue.details }),
+      ...(issue.transactionIds && { transactionIds: issue.transactionIds }),
+    })
   }
 
   return {
@@ -419,124 +437,4 @@ function toPoolReports(pools: Map<string, Section104Pool>): PoolReport[] {
       costGbp: money(pool.totalCostGbp),
       averageCostGbp: money(pool.averageCostGbp),
     }))
-}
-
-function collectWarnings(result: CGTCalculationResult, disposals: DisposalRecord[]): ReportWarning[] {
-  const warnings: ReportWarning[] = []
-
-  // One warning per currency with FX failures, listing the affected transactions
-  const fxFailures = new Map<string, { ids: string[]; firstError: string }>()
-  for (const tx of result.transactions) {
-    if (!tx.fx_error) continue
-    const entry = fxFailures.get(tx.currency) ?? { ids: [], firstError: tx.fx_error }
-    entry.ids.push(tx.id)
-    fxFailures.set(tx.currency, entry)
-  }
-  for (const [currency, { ids, firstError }] of fxFailures) {
-    warnings.push({
-      code: 'FX_RATE_MISSING',
-      message:
-        `No GBP exchange rate for ${ids.length} ${currency} transaction(s), so their GBP values are missing ` +
-        `and the totals are wrong. First error: ${firstError}`,
-      transactionIds: ids,
-    })
-  }
-
-  const incomplete = disposals.filter(d => d.isIncomplete)
-  if (incomplete.length > 0) {
-    warnings.push({
-      code: 'INCOMPLETE_DISPOSAL',
-      message:
-        `${incomplete.length} disposal(s) sell more shares than the imported history shows were acquired. ` +
-        'Only the matched part of each is counted, so the proceeds, cost and gain of the unmatched shares are ' +
-        'left out of the totals. Import earlier history, or add the missing ' +
-        'acquisitions to a Generic CSV (see the normalize command).',
-      transactionIds: incomplete.map(d => d.disposal.id),
-    })
-  }
-
-  const overlapping = result.dataNotices?.overlappingRows ?? []
-  if (overlapping.length > 0) {
-    warnings.push({
-      code: 'OVERLAPPING_ROWS_REMOVED',
-      message:
-        `${overlapping.length} row(s) also appeared in another input file from the same broker and were counted once. ` +
-        'This is expected when exports cover overlapping dates. If any were separate trades (for example the same ' +
-        'order in two accounts), add them back in a Generic CSV.',
-      transactionIds: overlapping.map(tx => tx.id),
-    })
-  }
-
-  for (const conflict of result.dataNotices?.splitConflicts ?? []) {
-    warnings.push({
-      code: 'SPLIT_RATIO_CONFLICT',
-      message:
-        `Stock split records for ${conflict.symbol} disagree: used ${conflict.used.ratio} ` +
-        `(${conflict.used.source}, ${conflict.used.date}), ignored ${conflict.ignored.ratio} ` +
-        `(${conflict.ignored.source}, ${conflict.ignored.date}). Every later quantity depends on the ratio, so check it.`,
-      transactionIds: [conflict.used.id, conflict.ignored.id],
-    })
-  }
-
-  const splitsWithoutRatio = result.dataNotices?.splitsWithoutRatio ?? []
-  if (splitsWithoutRatio.length > 0) {
-    warnings.push({
-      code: 'SPLIT_WITHOUT_RATIO',
-      message:
-        `Stock split rows with no ratio could not be applied: ` +
-        `${splitsWithoutRatio.map(s => `${s.symbol} on ${s.date} (${s.source})`).join(', ')}. ` +
-        'Quantities before and after the split don\'t line up. ' +
-        (result.dataNotices?.autoSplits === false
-          ? 'Run again without --no-auto-splits (community split data may have the ratio), or add a STOCK_SPLIT row ' +
-            'with the ratio (e.g. 10:1) in a Generic CSV.'
-          : result.dataNotices?.splitDataUnavailable
-            ? 'Split data could not be fetched (see SPLIT_DATA_UNAVAILABLE), so it may still have the ratio: run again ' +
-              'online, or add a STOCK_SPLIT row with the ratio (e.g. 10:1) in a Generic CSV.'
-            : 'Community split data doesn\'t have it, so add a STOCK_SPLIT row with the ratio (e.g. 10:1) in a Generic CSV.'),
-      transactionIds: splitsWithoutRatio.map(s => s.id),
-    })
-  }
-
-  const rejectedSplits = result.dataNotices?.rejectedSplitRecords ?? []
-  if (rejectedSplits.length > 0) {
-    warnings.push({
-      code: 'SPLIT_DATA_REJECTED',
-      message:
-        `Fetched stock split data failed validation and was not applied: ` +
-        `${rejectedSplits.map(r => `${r.symbol} on ${r.date} (${r.reason})`).join(', ')}. ` +
-        'If that split really happened, quantities from that date are wrong: add a STOCK_SPLIT row with the ratio in a Generic CSV.',
-    })
-  }
-
-  for (const merge of result.dataNotices?.symbolMerges ?? []) {
-    warnings.push({
-      code: 'SYMBOLS_MATCHED_BY_ISIN',
-      message:
-        `${merge.mergedSymbols.join(', ')} treated as ${merge.symbol}: same ISIN ${merge.isin}, so they share ` +
-        'one Section 104 pool. Check this is the same security.',
-    })
-  }
-
-  for (const conflict of result.dataNotices?.tickerConflicts ?? []) {
-    warnings.push({
-      code: 'TICKER_ISIN_CONFLICT',
-      message: conflict.pooledSeparately
-        ? `${conflict.symbol} appears with ISINs ${conflict.isins.join(', ')} at the same time, so it names more than ` +
-          'one security. Rows with an ISIN are pooled per ISIN; rows of this ticker without an ISIN, and stock split ' +
-          'data for it, cannot be assigned to either.'
-        : `${conflict.symbol} changed ISIN (${conflict.isins.join(' to ')}), usually after a reorganisation, so its ` +
-          'rows stay in one Section 104 pool. Check it is the same holding.',
-    })
-  }
-
-  const unknown = result.transactions.filter(tx => tx.type === 'UNKNOWN')
-  if (unknown.length > 0) {
-    warnings.push({
-      code: 'UNKNOWN_TRANSACTION_TYPE',
-      message: `${unknown.length} transaction(s) have a type the importer did not recognise and were ignored in the calculation.`,
-      transactionIds: unknown.map(tx => tx.id),
-    })
-  }
-
-  return warnings
 }

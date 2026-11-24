@@ -231,16 +231,16 @@ clean) split its fixes across these branches:
   to date, with tests that keep the GenericTransaction schema, broker lists and
   CLI options in step with the code; orphaned `public/BROKER_INSTRUCTIONS.md`
   removed (#34)
-- `audit/import-safety-dates`: duplicate-import prefix collision (#38), import
+- `audit/import-safety-dates` (#213, merged): duplicate-import prefix collision (#38), import
   writes in one Dexie transaction, chart dates formatted in UTC
 - `audit/dead-code-types` (#215, merged): unused and test-only exports (#22), one transaction
   type list, one split date window, parser date helpers (#20)
 - `audit/fx-enrichment-simplify` (#210, merged): unused FX source switching and enrichment
   engine plumbing
-- `audit/shared-issues` (#216): one issue detector for the web app and the CLI
+- `audit/shared-issues` (#216, merged): one issue detector for the web app and the CLI
   (`src/lib/issues.ts`)
-- `audit/pdf-lazy-chunk`: PDF report document out of the main bundle
-- `audit/e2e-offline` (#214): E2E tests stub external hosts (`e2e/fixtures.ts`)
+- `audit/pdf-lazy-chunk` (#211, merged): PDF report document out of the main bundle
+- `audit/e2e-offline` (#214, merged): E2E tests stub external hosts (`e2e/fixtures.ts`)
 
 Still open:
 

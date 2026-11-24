@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { useIssues, Issue, IssueType } from '../hooks/useIssues'
+import { useIssues, Issue } from '../hooks/useIssues'
+import type { DataIssueSeverity } from '../lib/issues'
 import { useTransactionFilterStore } from '../stores/transactionFilterStore'
 
 /** Turn on the transaction list's "Needs attention" filter and scroll to it */
@@ -51,7 +52,7 @@ function ChevronIcon({ expanded, className }: { expanded: boolean; className?: s
 /**
  * Get styling configuration based on issue type
  */
-function getIssueStyles(type: IssueType) {
+function getIssueStyles(type: DataIssueSeverity) {
   switch (type) {
     case 'error':
       return {
@@ -90,7 +91,7 @@ function getIssueStyles(type: IssueType) {
  * Single issue item component
  */
 function IssueItem({ issue }: { issue: Issue }) {
-  const styles = getIssueStyles(issue.type)
+  const styles = getIssueStyles(issue.severity)
 
   return (
     <div className={`border-l-4 ${styles.borderColor} ${styles.bgColor} p-4 rounded-r-lg`}>
@@ -139,9 +140,9 @@ function IssueItem({ issue }: { issue: Issue }) {
             </ul>
           )}
 
-          {issue.action && (
+          {issue.remedy && (
             <p className={`mt-2 text-sm ${styles.textColor}`}>
-              <strong>Action:</strong> {issue.action}
+              <strong>Action:</strong> {issue.remedy.web}
             </p>
           )}
 
@@ -189,9 +190,9 @@ export function IssuesPanel() {
   }
 
   // Count issues by type for the header summary
-  const errorCount = issues.filter(i => i.type === 'error').length
-  const warningCount = issues.filter(i => i.type === 'warning').length
-  const infoCount = issues.filter(i => i.type === 'info').length
+  const errorCount = issues.filter(i => i.severity === 'error').length
+  const warningCount = issues.filter(i => i.severity === 'warning').length
+  const infoCount = issues.filter(i => i.severity === 'info').length
 
   return (
     <div className="bg-white shadow rounded-lg overflow-hidden">
