@@ -145,6 +145,10 @@ describe('HMRCMonthlyProvider', () => {
       // gov.uk's March 2022 file has KHR 3041.70 (about 5400 around it)
       await expect(new HMRCMonthlyProvider().getRate('2022-03-10', 'KHR'))
         .rejects.toThrow(/KHR not found.*known error/)
+      // No other source has most excluded rates (Daily Spot has no KHR, the
+      // yearly files no 2022 KHR), so the message mustn't suggest switching
+      await expect(new HMRCMonthlyProvider().getRate('2022-03-10', 'KHR'))
+        .rejects.toThrow(/known error, so it's left out$/)
       expect((await new HMRCMonthlyProvider().getRate('2019-04-10', 'USD')).rate).toBe(1.3188)
     })
 
