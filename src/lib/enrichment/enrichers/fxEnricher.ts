@@ -2,7 +2,7 @@ import { EnrichedTransaction, FX_STATUS } from '../../../types/transaction'
 import { FXSource, DEFAULT_FX_SOURCE } from '../../../types/fxSource'
 import { FXManager, convertToGBP, createFXProvider } from '../../fx/manager'
 import { Enricher } from '../types'
-import { isFiatCurrency } from '../../currencies'
+import { feeCurrency, isFiatCurrency } from '../../currencies'
 
 /**
  * FX Enricher
@@ -18,7 +18,7 @@ import { isFiatCurrency } from '../../currencies'
  * - fx_rate
  * - price_gbp
  * - value_gbp
- * - fee_gbp
+ * - fee_gbp (at the fee's own currency's rate when `fee_currency` is set)
  * - fx_source
  * - fx_error (if rate fetch fails)
  *
@@ -45,6 +45,20 @@ export class FxEnricher implements Enricher {
     // Rates are looked up in parallel (FXManager shares each in-flight
     // lookup), a few at a time so a long history doesn't flood the network
     return mapWithConcurrency(transactions, FX_LOOKUP_CONCURRENCY, tx => this.enrichOne(tx))
+  }
+
+  /**
+   * The rate for the transaction's fee: its own currency's rate when the
+   * broker charged it in another currency (`fee_currency`), else `txRate`
+   */
+  private async feeRate(tx: EnrichedTransaction, txRate: number): Promise<number> {
+    const currency = feeCurrency(tx).toUpperCase()
+    if (currency === tx.currency.toUpperCase()) return txRate
+    if (currency === 'GBP') return 1
+    if (!isFiatCurrency(currency)) {
+      throw new Error(`Fee currency "${currency}" is not supported for automatic FX conversion`)
+    }
+    return (await this.fxManager.getRate(tx.date, currency)).rate
   }
 
   /** Convert one transaction's amounts to GBP; failures are recorded on it */
@@ -78,7 +92,7 @@ export class FxEnricher implements Enricher {
         ? convertToGBP(tx.split_adjusted_price, fxRate)
         : null
       const valueGbp = tx.total != null ? convertToGBP(tx.total, fxRate) : null
-      const feeGbp = tx.fee != null ? convertToGBP(tx.fee, fxRate) : null
+      const feeGbp = tx.fee != null ? convertToGBP(tx.fee, await this.feeRate(tx, fxRate)) : null
 
       // Convert SA106 dividend withholding fields to GBP
       const grossDividendGbp = tx.grossDividend != null

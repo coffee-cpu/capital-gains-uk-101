@@ -38,6 +38,22 @@ describe('Generic CSV Parser', () => {
         fee: 0,
         notes: null,
       })
+      expect(result[0].fee_currency).toBeUndefined()
+    })
+
+    it('reads fee_currency, normalising a GBX fee to GBP and dropping one equal to currency', () => {
+      const row = { date: '2024-01-15', type: 'BUY', symbol: 'ACME', currency: 'USD', quantity: '4', price: '25' }
+      const result = normalizeGenericTransactions([
+        { ...row, fee: '1.20', fee_currency: 'gbp' },
+        { ...row, fee: '50', fee_currency: 'GBX' },
+        { ...row, fee: '0.80', fee_currency: 'USD' },
+      ], 'test-file')
+
+      expect(result.map(t => [t.fee, t.fee_currency])).toEqual([
+        [1.2, 'GBP'],
+        [0.5, 'GBP'],
+        [0.8, undefined],
+      ])
     })
 
     it('should normalize a SELL transaction', () => {

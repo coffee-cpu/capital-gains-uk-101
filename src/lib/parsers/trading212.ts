@@ -35,6 +35,8 @@ import type { SkippedRow } from '../../types/brokerDefinition'
  * - Currency (Stamp duty reserve tax): SDRT currency (newer format)
  * - Currency conversion fee: FX fee
  * - Currency (Currency conversion fee): FX fee currency
+ *   Fees are in the account currency, which can differ from the price
+ *   currency: `fee_currency` records it when it does (see `rowFees`)
  * - Notes: Additional info
  * - ID: Unique transaction ID
  */
@@ -44,8 +46,6 @@ const HEADER_LOOKUPS = {
   quantity: ['No. of shares'],
   price: ['Price / share'],
   priceCurrency: ['Currency (Price / share)'],
-  transactionFee: ['Transaction fee', 'Stamp duty reserve tax'],
-  currencyConversionFee: ['Currency conversion fee'],
   withholdingTax: ['Withholding tax'],
   withholdingTaxCurrency: ['Currency (Withholding tax)'],
 } as const
@@ -62,23 +62,41 @@ function getRowValue(row: RawCSVRow, headers: readonly string[]): string | undef
 }
 
 /**
- * Sum the numeric values of every populated column in the group.
- * Fee-type columns are conditionally included per export and each one is an
- * allowable cost (TCGA92/S38), so they must be summed rather than
- * first-wins-resolved. The per-fee `Currency (...)` columns are not applied;
- * fees are assumed to share the transaction currency (a pre-existing
- * limitation of the fee model, see the `fee` handling below).
+ * Fee columns, each with its own `Currency (...)` column. Each is an
+ * allowable cost (TCGA92/S38) and an export only includes the ones relevant
+ * to its date range, so every populated one is summed.
  */
-function sumRowValues(row: RawCSVRow, headers: readonly string[]): number | undefined {
-  let sum: number | undefined
-  for (const header of headers) {
-    const value = parseNumber(row[header])
-    if (value !== undefined) {
-      sum = (sum ?? 0) + value
-    }
-  }
+const FEE_COLUMNS = ['Transaction fee', 'Stamp duty reserve tax', 'Currency conversion fee'] as const
 
-  return sum
+/**
+ * The row's fees and the currency they are in.
+ *
+ * Trading 212 charges fees in the account currency (usually GBP), which can
+ * differ from the price currency of the trade (e.g. a GBP conversion fee on
+ * a USD buy), so the fee's currency is kept rather than assumed. A fee
+ * column without its own currency is taken to be in the `Total` currency
+ * (the account currency), then `fallbackCurrency`.
+ *
+ * Fees in more than one currency at once haven't been seen in an export.
+ * They can't be added up without converting one, so the currencies are
+ * returned as `mixed` and the caller skips the row.
+ */
+function rowFees(row: RawCSVRow, fallbackCurrency: string): { fee: number; currency: string } | { mixed: string[] } | null {
+  const totalCurrency = row['Currency (Total)']?.trim().toUpperCase()
+  const byCurrency = new Map<string, number>()
+  for (const column of FEE_COLUMNS) {
+    let amount = parseNumber(row[column])
+    if (!amount) continue
+    let currency = row[`Currency (${column})`]?.trim().toUpperCase() || totalCurrency || fallbackCurrency
+    if (currency === 'GBX') {
+      amount /= 100
+      currency = 'GBP'
+    }
+    byCurrency.set(currency, (byCurrency.get(currency) ?? 0) + amount)
+  }
+  if (byCurrency.size > 1) return { mixed: [...byCurrency.keys()] }
+  const [entry] = byCurrency
+  return entry ? { fee: entry[1], currency: entry[0] } : null
 }
 
 /**
@@ -157,16 +175,8 @@ export function normalizeTrading212Transactions(
       const quantity = parseNumber(getRowValue(row, HEADER_LOOKUPS.quantity))
       const price = parseNumber(getRowValue(row, HEADER_LOOKUPS.price))
       const csvTotal = parseNumber(row['Total'])
-      const transactionFee = sumRowValues(row, HEADER_LOOKUPS.transactionFee)
-      const currencyConversionFee = parseNumber(getRowValue(row, HEADER_LOOKUPS.currencyConversionFee))
       const withholdingTax = parseNumber(getRowValue(row, HEADER_LOOKUPS.withholdingTax))
       const exchangeRate = parseNumber(row['Exchange rate'])
-
-      // Combine all fees
-      let fee: number | undefined
-      if (transactionFee || currencyConversionFee) {
-        fee = (transactionFee || 0) + (currencyConversionFee || 0)
-      }
 
       // Get currencies. Trading 212 quotes UK-listed securities in GBX
       // (pence), which must be normalised to GBP before FX enrichment.
@@ -205,6 +215,16 @@ export function normalizeTrading212Transactions(
         ? (isPenceQuoted ? 'GBP' : priceCurrency || totalCurrency || 'GBP')
         : (totalCurrency || priceCurrency || 'GBP')
 
+      const fees = rowFees(row, currency)
+      if (fees && 'mixed' in fees) {
+        skippedRows?.push({
+          row: index + 2,
+          reason: `fees in more than one currency (${fees.mixed.join(' and ')}) aren't supported; ` +
+            'add this trade to a Generic CSV with the fee converted to one currency',
+        })
+        return null
+      }
+
       const transaction: GenericTransaction = {
         id: `${fileId}-${index + 1}`,
         source: BrokerType.TRADING212,
@@ -217,7 +237,8 @@ export function normalizeTrading212Transactions(
         price: normalizedPrice ?? null,
         currency,
         total,
-        fee: fee ?? null,
+        fee: fees?.fee ?? null,
+        ...(fees && fees.currency !== currency && { fee_currency: fees.currency }),
         notes: row['Notes'] || null,
       }
 

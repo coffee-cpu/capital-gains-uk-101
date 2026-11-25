@@ -2,7 +2,7 @@ import type { DisposalRecord, TaxYearSummary } from '../../types/cgt'
 import type { EnrichedTransaction } from '../../types/transaction'
 import { formatGbp } from '../../utils/currency'
 import { formatIsoDate } from '../../utils/date'
-import { isFiatCurrency } from '../currencies'
+import { feeCurrency, isFiatCurrency } from '../currencies'
 
 /**
  * The PDF report's options and transaction history table, without the
@@ -127,7 +127,7 @@ export function transactionTableCells(tx: EnrichedTransaction): {
     original: {
       price: cashOnly || tx.price == null ? '-' : formatOriginalAmount(tx.price, tx.currency, PRICE_DECIMALS),
       value: tx.total == null ? '-' : formatOriginalAmount(tx.total, tx.currency),
-      fee: isZero(tx.fee) ? '-' : formatOriginalAmount(tx.fee!, tx.currency),
+      fee: isZero(tx.fee) ? '-' : formatOriginalAmount(tx.fee!, feeCurrency(tx)),
     },
     fxRate: tx.fx_rate == null ? '-' : `${formatFxRate(tx.fx_rate)} ${tx.currency.toUpperCase()}`,
   }

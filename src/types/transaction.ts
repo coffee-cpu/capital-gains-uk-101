@@ -44,6 +44,7 @@ export const GenericTransactionSchema = z.object({
   currency: z.string().describe('Original transaction currency (e.g. USD, EUR, GBP)'),
   total: z.number().nullable().describe('Total value in original currency'),
   fee: z.number().nullable().describe('Fee or commission amount'),
+  fee_currency: z.string().nullable().optional().describe('Currency of fee when it differs from currency (e.g. Trading 212 charges fees in the account currency on a USD trade). Absent means the fee is in currency.'),
   notes: z.string().nullable().describe('Optional broker notes'),
   ratio: z.string().nullable().optional().describe('Stock split ratio (e.g., "10:1", "2:1", "1:10"). Only used for STOCK_SPLIT transactions.'),
   isin: z.string().nullable().optional().describe('ISIN security identifier when the source gives one (e.g. Freetrade, Trading 212). Used to match the same security across brokers that use different tickers.'),

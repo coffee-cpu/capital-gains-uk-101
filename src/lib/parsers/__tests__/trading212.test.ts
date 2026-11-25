@@ -114,6 +114,84 @@ describe('Trading 212 Parser', () => {
       expect(result).toHaveLength(1)
       // 0.50 transaction fee + 5.00 SDRT + 1.30 conversion fee
       expect(result[0].fee).toBeCloseTo(6.8, 10)
+      // GBX quotes normalise to GBP, so the GBP fees are in the row's currency
+      expect(result[0].currency).toBe('GBP')
+      expect(result[0].fee_currency).toBeUndefined()
+    })
+
+    describe('fee currency', () => {
+      /** A USD buy in a GBP account */
+      const usdBuy = (fees: Record<string, string>) => ({
+        'Action': 'Market buy',
+        'Time (UTC)': '2024-02-01 14:05:09+00:00',
+        'Ticker': 'ACME',
+        'No. of shares': '4',
+        'Price / share': '25.00',
+        'Currency (Price / share)': 'USD',
+        'Exchange rate': '1.25',
+        'Total': '81.20',
+        'Currency (Total)': 'GBP',
+        ...fees,
+      })
+
+      it('records a GBP fee on a USD trade as GBP', () => {
+        const [tx] = normalizeTrading212Transactions([
+          usdBuy({ 'Currency conversion fee': '1.20', 'Currency (Currency conversion fee)': 'GBP' }),
+        ], 'test-file')
+
+        expect(tx.currency).toBe('USD')
+        expect(tx.total).toBe(100)
+        expect(tx.fee).toBe(1.2)
+        expect(tx.fee_currency).toBe('GBP')
+      })
+
+      it('takes a fee without its own currency column to be in the Total currency', () => {
+        const [tx] = normalizeTrading212Transactions([
+          usdBuy({ 'Transaction fee': '0.80' }),
+        ], 'test-file')
+
+        expect(tx.fee).toBe(0.8)
+        expect(tx.fee_currency).toBe('GBP')
+      })
+
+      it('leaves fee_currency out when the fee is in the price currency', () => {
+        const [tx] = normalizeTrading212Transactions([
+          usdBuy({ 'Currency (Total)': 'USD', 'Transaction fee': '0.80', 'Currency (Transaction fee)': 'USD' }),
+        ], 'test-file')
+
+        expect(tx.fee).toBe(0.8)
+        expect(tx.fee_currency).toBeUndefined()
+      })
+
+      it('normalises a GBX fee to GBP', () => {
+        const [tx] = normalizeTrading212Transactions([
+          usdBuy({ 'Stamp duty reserve tax': '50', 'Currency (Stamp duty reserve tax)': 'GBX' }),
+        ], 'test-file')
+
+        expect(tx.fee).toBe(0.5)
+        expect(tx.fee_currency).toBe('GBP')
+      })
+
+      it('skips and reports a row with fees in more than one currency rather than adding them up', () => {
+        const skipped: SkippedRow[] = []
+        const result = normalizeTrading212Transactions([
+          usdBuy({ 'Currency conversion fee': '1.20', 'Currency (Currency conversion fee)': 'GBP' }),
+          usdBuy({
+            'Transaction fee': '0.40',
+            'Currency (Transaction fee)': 'EUR',
+            'Currency conversion fee': '1.20',
+            'Currency (Currency conversion fee)': 'GBP',
+          }),
+        ], 'test-file', skipped)
+
+        // The first row is kept with its own ID; the second is reported by its spreadsheet row
+        expect(result.map(tx => tx.id)).toEqual(['test-file-1'])
+        expect(skipped).toEqual([{
+          row: 3,
+          reason: "fees in more than one currency (EUR and GBP) aren't supported; " +
+            'add this trade to a Generic CSV with the fee converted to one currency',
+        }])
+      })
     })
 
     it('should normalize a Limit sell transaction', () => {
