@@ -153,7 +153,7 @@ export class HMRCMonthlyProvider extends BaseFXProvider {
         const typo = EXCLUDED_RATES.includes(`${year}-${month} ${currency}`)
         throw new RateNotPublishedError(
           `Currency ${currency} not found in HMRC rates for ${year}/${month}` +
-          (typo ? `: HMRC's published rate is a known error, so it's left out. Choose another FX source for this transaction` : '')
+          (typo ? `: HMRC's published rate for this month is a known error, so it's left out` : '')
         )
       }
 
