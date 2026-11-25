@@ -78,13 +78,13 @@ export function DisposalRecords({
         <div>
           <div className="text-xs text-gray-500 uppercase">Total Gains</div>
           <div className="text-lg font-semibold text-green-600">
-            £{totalGains.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            {formatGbp(totalGains)}
           </div>
         </div>
         <div>
           <div className="text-xs text-gray-500 uppercase">Total Losses</div>
           <div className="text-lg font-semibold text-red-600">
-            £{totalLosses.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            {formatGbp(totalLosses)}
           </div>
         </div>
         <div>
@@ -99,6 +99,8 @@ export function DisposalRecords({
         {disposals.map((disposal) => {
           const isExpanded = expandedDisposal === disposal.id
           const isGain = disposal.gainOrLossGbp > 0
+          // Rounds to £0.00 (e.g. a sale with nothing matched): neither a gain nor a loss
+          const isZero = Math.abs(disposal.gainOrLossGbp) < 0.005
           // Allowable costs are the matched acquisition costs plus the selling fees
           const sellingFees = disposal.allowableCostsGbp - disposal.matchings.reduce((sum, m) => sum + m.totalCostBasisGbp, 0)
 
@@ -128,8 +130,8 @@ export function DisposalRecords({
                   <div className="flex items-center gap-4">
                     <div className="text-right">
                       <div className="text-xs text-gray-500">Gain/(Loss)</div>
-                      <div className={`text-lg font-semibold ${isGain ? 'text-green-600' : 'text-red-600'}`}>
-                        £{Math.abs(disposal.gainOrLossGbp).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      <div className={`text-lg font-semibold ${isZero ? 'text-gray-900' : isGain ? 'text-green-600' : 'text-red-600'}`}>
+                        {formatGbp(disposal.gainOrLossGbp)}
                       </div>
                     </div>
                     <svg
@@ -152,11 +154,11 @@ export function DisposalRecords({
                     <div>
                       <div className="text-xs text-gray-500 uppercase mb-1">Proceeds</div>
                       <div className="font-medium">
-                        £{disposal.proceedsGbp.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        {formatGbp(disposal.proceedsGbp)}
                       </div>
                       <div className="text-xs text-gray-500 mt-1">
                         Sale price: {formatGbp(disposal.disposal.price_gbp ?? 0)} per {getUnitLabel(disposal.disposal, false)}
-                        {disposal.disposal.fee_gbp && disposal.disposal.fee_gbp > 0 && (
+                        {disposal.disposal.fee_gbp != null && disposal.disposal.fee_gbp > 0 && (
                           <span> (fees: {formatGbp(disposal.disposal.fee_gbp)})</span>
                         )}
                       </div>
@@ -164,7 +166,7 @@ export function DisposalRecords({
                     <div>
                       <div className="text-xs text-gray-500 uppercase mb-1">Allowable Costs</div>
                       <div className="font-medium">
-                        £{disposal.allowableCostsGbp.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        {formatGbp(disposal.allowableCostsGbp)}
                       </div>
                     </div>
                   </div>
@@ -233,7 +235,7 @@ export function DisposalRecords({
                               ))}
                             </div>
                           ))}
-                        {disposal.isIncomplete && disposal.unmatchedQuantity && disposal.unmatchedQuantity > 0 && (
+                        {disposal.isIncomplete && disposal.unmatchedQuantity != null && disposal.unmatchedQuantity > 0 && (
                           // Partially matched - show warning about unmatched portion
                           <div className="bg-yellow-50 border border-yellow-200 rounded p-3">
                             <div className="flex items-start gap-2">
@@ -271,7 +273,7 @@ export function DisposalRecords({
                       )}
                       <div className="flex justify-between font-bold border-t border-brand-200 pt-1 mt-1">
                         <span>Gain/(Loss):</span>
-                        <span className={isGain ? 'text-green-700' : 'text-red-700'}>
+                        <span className={isZero ? '' : isGain ? 'text-green-700' : 'text-red-700'}>
                           {formatGbp(disposal.gainOrLossGbp)}
                         </span>
                       </div>
