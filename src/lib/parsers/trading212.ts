@@ -78,10 +78,10 @@ const FEE_COLUMNS = ['Transaction fee', 'Stamp duty reserve tax', 'Currency conv
  * (the account currency), then `fallbackCurrency`.
  *
  * Fees in more than one currency at once haven't been seen in an export.
- * If that happens, only the fees in the account currency are summed and
- * the rest are listed in `leftOut`, so nothing is added across currencies.
+ * They can't be added up without converting one, so the currencies are
+ * returned as `mixed` and the caller skips the row.
  */
-function rowFees(row: RawCSVRow, fallbackCurrency: string): { fee: number; currency: string; leftOut: string[] } | null {
+function rowFees(row: RawCSVRow, fallbackCurrency: string): { fee: number; currency: string } | { mixed: string[] } | null {
   const totalCurrency = row['Currency (Total)']?.trim().toUpperCase()
   const byCurrency = new Map<string, number>()
   for (const column of FEE_COLUMNS) {
@@ -94,11 +94,9 @@ function rowFees(row: RawCSVRow, fallbackCurrency: string): { fee: number; curre
     }
     byCurrency.set(currency, (byCurrency.get(currency) ?? 0) + amount)
   }
-  if (byCurrency.size === 0) return null
-
-  const currency = totalCurrency && byCurrency.has(totalCurrency) ? totalCurrency : [...byCurrency.keys()][0]
-  const leftOut = [...byCurrency].filter(([c]) => c !== currency).map(([c, amount]) => `${amount} ${c}`)
-  return { fee: byCurrency.get(currency)!, currency, leftOut }
+  if (byCurrency.size > 1) return { mixed: [...byCurrency.keys()] }
+  const [entry] = byCurrency
+  return entry ? { fee: entry[1], currency: entry[0] } : null
 }
 
 /**
@@ -218,6 +216,14 @@ export function normalizeTrading212Transactions(
         : (totalCurrency || priceCurrency || 'GBP')
 
       const fees = rowFees(row, currency)
+      if (fees && 'mixed' in fees) {
+        skippedRows?.push({
+          row: index + 2,
+          reason: `fees in more than one currency (${fees.mixed.join(' and ')}) aren't supported; ` +
+            'add this trade to a Generic CSV with the fee converted to one currency',
+        })
+        return null
+      }
 
       const transaction: GenericTransaction = {
         id: `${fileId}-${index + 1}`,
@@ -234,10 +240,6 @@ export function normalizeTrading212Transactions(
         fee: fees?.fee ?? null,
         ...(fees && fees.currency !== currency && { fee_currency: fees.currency }),
         notes: row['Notes'] || null,
-      }
-      if (fees && fees.leftOut.length > 0) {
-        const feeNote = `Fees in another currency left out: ${fees.leftOut.join(', ')}`
-        transaction.notes = transaction.notes ? `${transaction.notes}; ${feeNote}` : feeNote
       }
 
       // For dividend transactions, calculate gross dividend and store withholding tax

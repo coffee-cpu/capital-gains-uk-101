@@ -14,6 +14,7 @@ import { buildBadgeIndex, buildCGTBadges } from '../lib/cgtBadges'
 import { useTransactionFilterStore } from '../stores/transactionFilterStore'
 import { formatQuantity } from '../utils/quantity'
 import { formatGbp } from '../utils/currency'
+import { feeCurrency } from '../lib/currencies'
 
 // Helper to get currency symbol
 function getCurrencySymbol(currency: string): string {
@@ -800,7 +801,7 @@ export function TransactionList() {
                       <MoneyCell tx={tx} gbp={tx.value_gbp} original={tx.total} isIncomplete={!!isIncomplete} />
                     </td>
                     <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
-                      <MoneyCell tx={tx} gbp={tx.fee_gbp} original={tx.fee} currency={tx.fee_currency ?? tx.currency} hideZero isIncomplete={!!isIncomplete} />
+                      <MoneyCell tx={tx} gbp={tx.fee_gbp} original={tx.fee} currency={feeCurrency(tx)} hideZero isIncomplete={!!isIncomplete} />
                     </td>
                     <td className="px-3 py-4 text-sm text-gray-500">
                       <div className="flex items-center gap-1.5">

@@ -35,3 +35,8 @@ export const FIAT_CURRENCIES = [
 export function isFiatCurrency(currency: string): boolean {
   return FIAT_CURRENCIES.includes(currency.toUpperCase())
 }
+
+/** The currency of a transaction's fee: its own when the broker charged it in another one */
+export function feeCurrency(tx: { currency: string; fee_currency?: string | null }): string {
+  return tx.fee_currency ?? tx.currency
+}

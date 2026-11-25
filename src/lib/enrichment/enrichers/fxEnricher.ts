@@ -2,7 +2,7 @@ import { EnrichedTransaction, FX_STATUS } from '../../../types/transaction'
 import { FXSource, DEFAULT_FX_SOURCE } from '../../../types/fxSource'
 import { FXManager, convertToGBP, createFXProvider } from '../../fx/manager'
 import { Enricher } from '../types'
-import { isFiatCurrency } from '../../currencies'
+import { feeCurrency, isFiatCurrency } from '../../currencies'
 
 /**
  * FX Enricher
@@ -52,8 +52,8 @@ export class FxEnricher implements Enricher {
    * broker charged it in another currency (`fee_currency`), else `txRate`
    */
   private async feeRate(tx: EnrichedTransaction, txRate: number): Promise<number> {
-    const currency = tx.fee_currency?.toUpperCase()
-    if (!currency || currency === tx.currency.toUpperCase()) return txRate
+    const currency = feeCurrency(tx).toUpperCase()
+    if (currency === tx.currency.toUpperCase()) return txRate
     if (currency === 'GBP') return 1
     if (!isFiatCurrency(currency)) {
       throw new Error(`Fee currency "${currency}" is not supported for automatic FX conversion`)

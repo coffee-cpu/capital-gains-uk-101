@@ -172,19 +172,25 @@ describe('Trading 212 Parser', () => {
         expect(tx.fee_currency).toBe('GBP')
       })
 
-      it('never adds fees across currencies: keeps the account-currency ones and notes the rest', () => {
-        const [tx] = normalizeTrading212Transactions([
+      it('skips and reports a row with fees in more than one currency rather than adding them up', () => {
+        const skipped: SkippedRow[] = []
+        const result = normalizeTrading212Transactions([
+          usdBuy({ 'Currency conversion fee': '1.20', 'Currency (Currency conversion fee)': 'GBP' }),
           usdBuy({
             'Transaction fee': '0.40',
             'Currency (Transaction fee)': 'EUR',
             'Currency conversion fee': '1.20',
             'Currency (Currency conversion fee)': 'GBP',
           }),
-        ], 'test-file')
+        ], 'test-file', skipped)
 
-        expect(tx.fee).toBe(1.2)
-        expect(tx.fee_currency).toBe('GBP')
-        expect(tx.notes).toBe('Fees in another currency left out: 0.4 EUR')
+        // The first row is kept with its own ID; the second is reported by its spreadsheet row
+        expect(result.map(tx => tx.id)).toEqual(['test-file-1'])
+        expect(skipped).toEqual([{
+          row: 3,
+          reason: "fees in more than one currency (EUR and GBP) aren't supported; " +
+            'add this trade to a Generic CSV with the fee converted to one currency',
+        }])
       })
     })
 
