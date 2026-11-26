@@ -114,11 +114,13 @@ describe('chartData', () => {
       expect(result.data).toHaveLength(2)
       expect(result.data[0]).toMatchObject({
         date: '2024-01-01',
-        AAPL: 1000,
+        costs: { AAPL: 1000 },
+        quantities: { AAPL: 10 },
       })
       expect(result.data[1]).toMatchObject({
         date: '2024-02-01',
-        AAPL: 1600,
+        costs: { AAPL: 1600 },
+        quantities: { AAPL: 15 },
       })
     })
 
@@ -136,10 +138,38 @@ describe('chartData', () => {
 
       expect(result.data).toHaveLength(2)
       // AAPL should be forward-filled to second date
-      expect(result.data[1].AAPL).toBe(1000)
+      expect(result.data[1].costs.AAPL).toBe(1000)
+      expect(result.data[1].quantities.AAPL).toBe(10)
       // MSFT should be 0 on first date, 500 on second
-      expect(result.data[0].MSFT).toBe(0)
-      expect(result.data[1].MSFT).toBe(500)
+      expect(result.data[0].costs.MSFT).toBe(0)
+      expect(result.data[0].quantities.MSFT).toBe(0)
+      expect(result.data[1].costs.MSFT).toBe(500)
+      expect(result.data[1].quantities.MSFT).toBe(5)
+    })
+
+    it('drops a pool to zero shares and cost once it is sold out', () => {
+      const pools = new Map([
+        ['AAPL', createMockPool('AAPL', [
+          { date: '2024-01-01', type: 'BUY', quantity: 10, costOrProceeds: 1000, balanceQuantity: 10, balanceCost: 1000, transactionId: 'tx-1' },
+          { date: '2024-03-01', type: 'SELL', quantity: 10, costOrProceeds: 1200, balanceQuantity: 0, balanceCost: 0, transactionId: 'tx-2' },
+        ])],
+      ])
+
+      const result = buildPoolBreakdownData(pools)
+
+      expect(result.data[1]).toMatchObject({ costs: { AAPL: 0 }, quantities: { AAPL: 0 } })
+    })
+
+    it('keeps a symbol named like a point field apart from the date', () => {
+      const pools = new Map([
+        ['date', createMockPool('date', [
+          { date: '2024-01-01', type: 'BUY', quantity: 2, costOrProceeds: 50, balanceQuantity: 2, balanceCost: 50, transactionId: 'tx-1' },
+        ])],
+      ])
+
+      const result = buildPoolBreakdownData(pools)
+
+      expect(result.data[0]).toMatchObject({ date: '2024-01-01', costs: { date: 50 }, quantities: { date: 2 } })
     })
 
     it('sorts symbols by final value descending', () => {
