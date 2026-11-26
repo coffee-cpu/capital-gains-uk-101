@@ -34,6 +34,11 @@ interface PoolBreakdownChartProps {
 const EMPTY_CHART_DATA: PoolBreakdownResult['data'] = []
 const EMPTY_SYMBOLS: string[] = []
 
+/** Share count with enough decimals for small crypto holdings (0.0004 BTC, not 0) */
+function formatShares(quantity: number): string {
+  return quantity.toLocaleString(undefined, { maximumFractionDigits: 8 })
+}
+
 // Pie chart data type with index signature for Recharts compatibility
 type PieDataPoint = CurrentHoldingPoint & { [key: string]: string | number }
 
@@ -74,7 +79,7 @@ function TimelineTooltip({ active, payload }: TimelineTooltipProps) {
                 <span className="text-gray-600">{entry.name}</span>
               </div>
               <span className="text-right text-gray-600">
-                {quantity > 0 ? `${quantity.toLocaleString()} sh` : ''}
+                {quantity > 0 ? `${formatShares(quantity)} sh` : ''}
               </span>
               <span className="text-right text-gray-600">
                 {quantity > 0 ? `@ ${formatGbp(entry.value / quantity)}` : ''}
@@ -114,7 +119,7 @@ function PieTooltip({ active, payload }: PieTooltipProps) {
       <div className="space-y-1 text-xs">
         <div className="flex justify-between gap-4">
           <span className="text-gray-500">Quantity:</span>
-          <span className="text-gray-900">{data.quantity.toLocaleString()}</span>
+          <span className="text-gray-900">{formatShares(data.quantity)}</span>
         </div>
         <div className="flex justify-between gap-4">
           <span className="text-gray-500">Cost Basis:</span>
