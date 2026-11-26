@@ -36,7 +36,6 @@ function formatAmount(value: number, currency: string): string {
   return `${value < 0 ? '-' : ''}${getCurrencySymbol(currency)}${formatted}`
 }
 
-// Helper to format date for FX tooltip based on source type
 /** Chevron over a filter <select> with appearance-none, as on the tax year selector */
 function SelectChevron() {
   return (
@@ -48,6 +47,7 @@ function SelectChevron() {
   )
 }
 
+// Helper to format date for FX tooltip based on source type
 function formatFxDate(date: string, fxSource: string): string {
   if (fxSource.includes('Annual')) {
     // Yearly average - show just the year
