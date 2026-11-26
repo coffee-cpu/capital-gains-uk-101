@@ -17,6 +17,7 @@ import {
   PoolBreakdownResult,
   CurrentHoldingsResult,
   CurrentHoldingPoint,
+  PoolTimelinePoint,
   generateSymbolColors,
   getTaxYearBoundaries,
   formatDateLabel,
@@ -33,16 +34,21 @@ interface PoolBreakdownChartProps {
 const EMPTY_CHART_DATA: PoolBreakdownResult['data'] = []
 const EMPTY_SYMBOLS: string[] = []
 
+/** Share count with enough decimals for small crypto holdings (0.0004 BTC, not 0) */
+function formatShares(quantity: number): string {
+  return quantity.toLocaleString(undefined, { maximumFractionDigits: 8 })
+}
+
 // Pie chart data type with index signature for Recharts compatibility
 type PieDataPoint = CurrentHoldingPoint & { [key: string]: string | number }
 
 interface TimelineTooltipProps {
   active?: boolean
   payload?: Array<{
-    dataKey: string
+    name: string
     value: number
     color: string
-    payload: { dateLabel: string }
+    payload: PoolTimelinePoint
   }>
 }
 
@@ -51,30 +57,39 @@ function TimelineTooltip({ active, payload }: TimelineTooltipProps) {
 
   const sorted = [...payload]
     .filter(entry => entry.value > 0)
-    .sort((a, b) => (b.value as number) - (a.value as number))
+    .sort((a, b) => b.value - a.value)
 
   if (sorted.length === 0) return null
 
-  const dateLabel = payload[0]?.payload?.dateLabel
+  const point = payload[0].payload
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3 text-sm max-h-64 overflow-y-auto">
-      <p className="font-semibold text-gray-900 mb-2">{dateLabel}</p>
-      <div className="space-y-1">
-        {sorted.map((entry, index) => (
-          <div key={index} className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <div
-                className="w-3 h-3 rounded-sm"
-                style={{ backgroundColor: entry.color }}
-              />
-              <span className="text-gray-600">{entry.dataKey}</span>
+      <p className="font-semibold text-gray-900 mb-2">{point.dateLabel}</p>
+      <div className="grid grid-cols-[auto_auto_auto_auto] items-center gap-x-4 gap-y-1 tabular-nums">
+        {sorted.map(entry => {
+          const quantity = point.quantities[entry.name] ?? 0
+          return (
+            <div key={entry.name} className="contents">
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-3 h-3 rounded-sm"
+                  style={{ backgroundColor: entry.color }}
+                />
+                <span className="text-gray-600">{entry.name}</span>
+              </div>
+              <span className="text-right text-gray-600">
+                {quantity > 0 ? `${formatShares(quantity)} sh` : ''}
+              </span>
+              <span className="text-right text-gray-600">
+                {quantity > 0 ? `@ ${formatGbp(entry.value / quantity)}` : ''}
+              </span>
+              <span className="text-right font-medium text-gray-900">
+                {formatGbpWhole(entry.value)}
+              </span>
             </div>
-            <span className="font-medium text-gray-900">
-              {formatGbpWhole(entry.value)}
-            </span>
-          </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )
@@ -104,7 +119,7 @@ function PieTooltip({ active, payload }: PieTooltipProps) {
       <div className="space-y-1 text-xs">
         <div className="flex justify-between gap-4">
           <span className="text-gray-500">Quantity:</span>
-          <span className="text-gray-900">{data.quantity.toLocaleString()}</span>
+          <span className="text-gray-900">{formatShares(data.quantity)}</span>
         </div>
         <div className="flex justify-between gap-4">
           <span className="text-gray-500">Cost Basis:</span>
@@ -288,7 +303,8 @@ export function PoolBreakdownChart({ data, holdingsData }: PoolBreakdownChartPro
               <Area
                 key={symbol}
                 type="monotone"
-                dataKey={symbol}
+                name={symbol}
+                dataKey={(point: PoolTimelinePoint) => point.costs[symbol]}
                 stackId="1"
                 stroke={colors[symbol]}
                 fill={colors[symbol]}

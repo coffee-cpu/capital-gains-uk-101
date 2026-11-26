@@ -212,7 +212,10 @@ export function buildTransactionTimeline(
 export interface PoolTimelinePoint {
   date: string
   dateLabel: string
-  [symbol: string]: string | number // Dynamic keys for each symbol's cost
+  /** Pool cost in GBP by symbol on this date */
+  costs: Record<string, number>
+  /** Shares in the pool by symbol on this date */
+  quantities: Record<string, number>
 }
 
 export interface PoolBreakdownResult {
@@ -235,6 +238,7 @@ export function buildPoolBreakdownData(
     date: string
     symbol: string
     balanceCost: number
+    balanceQuantity: number
   }> = []
 
   pools.forEach((pool, symbol) => {
@@ -243,6 +247,7 @@ export function buildPoolBreakdownData(
         date: entry.date,
         symbol,
         balanceCost: entry.balanceCost,
+        balanceQuantity: entry.balanceQuantity,
       })
     })
   })
@@ -267,25 +272,27 @@ export function buildPoolBreakdownData(
   )
 
   // Build timeline with forward-fill for gaps
-  const lastKnownValue: Record<string, number> = {}
-  symbols.forEach(s => { lastKnownValue[s] = 0 })
+  const lastKnownCost: Record<string, number> = {}
+  const lastKnownQuantity: Record<string, number> = {}
+  symbols.forEach(s => { lastKnownCost[s] = 0; lastKnownQuantity[s] = 0 })
 
   const data: PoolTimelinePoint[] = allDates.map(date => {
     // Update values for entries on this date
     allEntries
       .filter(e => e.date === date)
-      .forEach(e => { lastKnownValue[e.symbol] = e.balanceCost })
+      .forEach(e => {
+        lastKnownCost[e.symbol] = e.balanceCost
+        lastKnownQuantity[e.symbol] = e.balanceQuantity
+      })
 
-    const point: PoolTimelinePoint = {
-      date,
-      dateLabel: formatDateLabel(date),
-    }
-
+    const costs: Record<string, number> = {}
+    const quantities: Record<string, number> = {}
     symbols.forEach(symbol => {
-      point[symbol] = Math.max(0, lastKnownValue[symbol]) // Ensure non-negative
+      costs[symbol] = Math.max(0, lastKnownCost[symbol]) // Ensure non-negative
+      quantities[symbol] = Math.max(0, lastKnownQuantity[symbol])
     })
 
-    return point
+    return { date, dateLabel: formatDateLabel(date), costs, quantities }
   })
 
   return { data, symbols }
