@@ -36,6 +36,17 @@ function formatAmount(value: number, currency: string): string {
   return `${value < 0 ? '-' : ''}${getCurrencySymbol(currency)}${formatted}`
 }
 
+/** Chevron over a filter <select> with appearance-none, as on the tax year selector */
+function SelectChevron() {
+  return (
+    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5 text-gray-400">
+      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+      </svg>
+    </div>
+  )
+}
+
 // Helper to format date for FX tooltip based on source type
 function formatFxDate(date: string, fxSource: string): string {
   if (fxSource.includes('Annual')) {
@@ -295,36 +306,42 @@ export function TransactionList() {
               onChange={e => setSearch(e.target.value)}
               placeholder="Search symbol"
               aria-label="Search by symbol"
-              className="w-full rounded-md border border-gray-300 py-2 pl-8 pr-3 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+              className="h-9 w-full rounded-md border border-gray-300 pl-8 pr-3 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
             />
           </div>
-          <select
-            value={typeGroup}
-            onChange={e => setTypeGroup(e.target.value)}
-            aria-label="Filter by type"
-            className="rounded-md border border-gray-300 py-2 pl-3 pr-8 text-sm text-gray-700 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-          >
-            <option value="all">All types</option>
-            {(Object.keys(TYPE_GROUPS) as TypeGroup[]).map(group => (
-              <option key={group} value={group}>{TYPE_GROUPS[group].label}</option>
-            ))}
-          </select>
-          <select
-            value={activeTaxYear}
-            onChange={e => setTaxYear(e.target.value)}
-            aria-label="Filter by tax year"
-            className="rounded-md border border-gray-300 py-2 pl-3 pr-8 text-sm text-gray-700 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-          >
-            <option value="all">All tax years</option>
-            {taxYears.map(year => (
-              <option key={year} value={year}>{year}</option>
-            ))}
-          </select>
+          <div className="relative">
+            <select
+              value={typeGroup}
+              onChange={e => setTypeGroup(e.target.value)}
+              aria-label="Filter by type"
+              className="h-9 appearance-none cursor-pointer rounded-md border border-gray-300 bg-white pl-3 pr-9 text-sm text-gray-700 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+            >
+              <option value="all">All types</option>
+              {(Object.keys(TYPE_GROUPS) as TypeGroup[]).map(group => (
+                <option key={group} value={group}>{TYPE_GROUPS[group].label}</option>
+              ))}
+            </select>
+            <SelectChevron />
+          </div>
+          <div className="relative">
+            <select
+              value={activeTaxYear}
+              onChange={e => setTaxYear(e.target.value)}
+              aria-label="Filter by tax year"
+              className="h-9 appearance-none cursor-pointer rounded-md border border-gray-300 bg-white pl-3 pr-9 text-sm text-gray-700 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+            >
+              <option value="all">All tax years</option>
+              {taxYears.map(year => (
+                <option key={year} value={year}>{year}</option>
+              ))}
+            </select>
+            <SelectChevron />
+          </div>
           {attentionCount > 0 && (
             <button
               onClick={() => setFilterMode(filterMode === 'attention' ? 'all' : 'attention')}
               aria-pressed={filterMode === 'attention'}
-              className={`inline-flex items-center px-3 py-2 border shadow-sm text-sm leading-4 font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition-colors ${
+              className={`inline-flex h-9 items-center px-3 border text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition-colors ${
                 filterMode === 'attention'
                   ? 'border-yellow-400 bg-yellow-100 text-yellow-900 hover:bg-yellow-200'
                   : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
@@ -341,7 +358,7 @@ export function TransactionList() {
               <span className="hidden sm:inline">
                 {filterMode === 'attention' ? 'Show all' : 'Needs attention'}
               </span>
-              <span className="ml-1.5 inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-yellow-200 text-yellow-900">
+              <span className="ml-1.5 inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-xs font-semibold bg-yellow-200 text-yellow-900">
                 {attentionCount}
               </span>
             </button>
