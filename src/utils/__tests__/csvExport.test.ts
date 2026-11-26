@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach, type MockInstance } from 'vitest'
-import { exportTransactionsToCSV, transactionsToGenericCSV } from '../csvExport'
+import { csvExportFileName, exportTransactionsToCSV, transactionsToGenericCSV } from '../csvExport'
 import { GenericTransaction } from '../../types/transaction'
 
 describe('csvExport', () => {
@@ -115,7 +115,25 @@ describe('csvExport', () => {
 
     exportTransactionsToCSV(transactions)
 
-    expect(mockLink.setAttribute).toHaveBeenCalledWith('download', 'transactions-export.csv')
+    expect(mockLink.setAttribute).toHaveBeenCalledWith('download', 'cgt-visualiser-transactions-2024-01-15.csv')
+  })
+
+  describe('csvExportFileName', () => {
+    const tx = (id: string, date: string) => ({ id, date }) as GenericTransaction
+
+    it('names the first and last transaction dates, whatever the order', () => {
+      expect(csvExportFileName([tx('a', '2023-05-02'), tx('b', '2021-11-30'), tx('c', '2022-01-10')]))
+        .toBe('cgt-visualiser-transactions-2021-11-30-to-2023-05-02.csv')
+    })
+
+    it('names a single date once', () => {
+      expect(csvExportFileName([tx('a', '2022-03-04'), tx('b', '2022-03-04')]))
+        .toBe('cgt-visualiser-transactions-2022-03-04.csv')
+    })
+
+    it('falls back to the app name with no transactions', () => {
+      expect(csvExportFileName([])).toBe('cgt-visualiser-transactions.csv')
+    })
   })
 
   it('should call export functions for transactions with different dates', () => {
