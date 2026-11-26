@@ -4,11 +4,11 @@ import { isCryptoSource } from '../lib/cgt/sa108'
 /**
  * Export transactions to Generic CSV format and trigger a browser download
  * @param transactions Array of transactions to export
- * @param filename Optional filename (defaults to transactions-export.csv)
+ * @param filename Optional filename (defaults to csvExportFileName)
  */
 export function exportTransactionsToCSV(
   transactions: GenericTransaction[],
-  filename: string = 'transactions-export.csv'
+  filename: string = csvExportFileName(transactions)
 ): void {
   const csvContent = transactionsToGenericCSV(transactions)
 
@@ -24,6 +24,19 @@ export function exportTransactionsToCSV(
   link.click()
   document.body.removeChild(link)
   URL.revokeObjectURL(url)
+}
+
+/**
+ * File name for a Generic CSV export, from the first and last transaction dates,
+ * e.g. cgt-visualiser-transactions-2020-06-15-to-2025-08-12.csv
+ */
+export function csvExportFileName(transactions: GenericTransaction[]): string {
+  const dates = transactions.map(tx => tx.date).sort()
+  if (dates.length === 0) return 'cgt-visualiser-transactions.csv'
+  const first = dates[0]
+  const last = dates[dates.length - 1]
+  const range = first === last ? first : `${first}-to-${last}`
+  return `cgt-visualiser-transactions-${range}.csv`
 }
 
 /**
