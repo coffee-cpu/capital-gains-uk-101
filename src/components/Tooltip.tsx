@@ -146,6 +146,8 @@ export function Tooltip({ content, children, className = '' }: TooltipProps) {
         // focuses a button) still just toggles it
         onFocus={e => { if (e.target instanceof HTMLElement && e.target.matches(':focus-visible')) setIsVisible(true) }}
         onBlur={() => setIsVisible(false)}
+        // Escape closes it without moving focus (WCAG 1.4.13)
+        onKeyDown={e => { if (e.key === 'Escape') setIsVisible(false) }}
       >
         {children}
       </span>
