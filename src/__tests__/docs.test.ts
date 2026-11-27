@@ -67,12 +67,12 @@ describe('packages/cli/README.md', () => {
   })
 })
 
-describe('docs/HMRC_AUDIT.md', () => {
-  it("records the latest audit on HMRC_AUDIT_DATE, the date the app shows", async () => {
-    const { HMRC_AUDIT_DATE } = await import('../lib/cgt/hmrcAudit')
-    const audits = read('docs/HMRC_AUDIT.md').split('## Audits')[1] ?? ''
-    const latest = audits.match(/^### (\d{4}-\d{2}-\d{2})$/m)?.[1]
-    expect(latest, 'docs/HMRC_AUDIT.md has no "### YYYY-MM-DD" audit under "## Audits"').toBeDefined()
-    expect(latest, 'Record the audit in docs/HMRC_AUDIT.md when changing HMRC_AUDIT_DATE').toBe(HMRC_AUDIT_DATE)
+describe('docs/HMRC_RULES_CHECK.md', () => {
+  it("records the latest check on HMRC_RULES_CHECK_DATE, the date the app shows", async () => {
+    const { HMRC_RULES_CHECK_DATE } = await import('../lib/cgt/hmrcRulesCheck')
+    const checks = read('docs/HMRC_RULES_CHECK.md').split('## Checks')[1] ?? ''
+    const latest = checks.match(/^### (\d{4}-\d{2}-\d{2})$/m)?.[1]
+    expect(latest, 'docs/HMRC_RULES_CHECK.md has no "### YYYY-MM-DD" check under "## Checks"').toBeDefined()
+    expect(latest, 'Record the check in docs/HMRC_RULES_CHECK.md when changing HMRC_RULES_CHECK_DATE').toBe(HMRC_RULES_CHECK_DATE)
   })
 })

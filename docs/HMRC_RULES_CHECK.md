@@ -1,19 +1,20 @@
-# HMRC audit
+# HMRC rules check
 
-A regular check that the calculator still follows HMRC: the matching rules in the engine, and every HMRC figure it
-uses (allowances, rates, reporting limits). Each audit is recorded below, newest first. The date of the newest one
-is `HMRC_AUDIT_DATE` in `src/lib/cgt/hmrcAudit.ts`, which the app shows ("HMRC rules and allowances checked …").
-Change that date only as part of an audit recorded here.
+Our own regular check that the calculator still follows HMRC's published guidance and the legislation: the
+matching rules in the engine, and every HMRC figure it uses (allowances, rates, reporting limits). HMRC hasn't
+reviewed or approved this calculator. Each check is recorded below, newest first. The date of the newest one
+is `HMRC_RULES_CHECK_DATE` in `src/lib/cgt/hmrcRulesCheck.ts`, which the app shows ("HMRC rules and allowances checked …").
+Change that date only as part of a check recorded here.
 
-An amount stays in force until a Finance Act changes it, so an audit confirms the tax year it was done in and
-earlier ones as the law stood that day. Audit again after each Budget and each 6 April, and at least monthly.
+An amount stays in force until a Finance Act changes it, so a check confirms the tax year it was done in and
+earlier ones as the law stood that day. Check again after each Budget and each 6 April, and at least monthly.
 
-`.github/workflows/hmrc-audit.yml` runs this audit on the 1st of each month (or on demand from the Actions tab) and
+`.github/workflows/hmrc-rules-check.yml` runs this check on the 1st of each month (or on demand from the Actions tab) and
 opens a PR with the new entry. It moves the date only when everything matches; a person reviews and merges the PR.
-Each run starts from `main` and replaces the `chore/hmrc-audit` branch, so an audit PR that isn't merged is replaced by
+Each run starts from `main` and replaces the `chore/hmrc-rules-check` branch, so a check PR that isn't merged is replaced by
 the next month's.
 
-HMRC exchange rates are not part of the audit: a weekly workflow keeps the bundled rates up to date
+HMRC exchange rates are not part of the check: a weekly workflow keeps the bundled rates up to date
 (`scripts/vendor-hmrc-rates.mjs`).
 
 ## Checklist
@@ -56,9 +57,9 @@ HMRC exchange rates are not part of the audit: a weekly workflow keeps the bundl
   first. The engine does that only for sales the broker marks as short sells; otherwise it flags an incomplete
   disposal, since leftovers usually mean missing history. Not yet decided.
 
-## Audits
+## Checks
 
-<!-- Newest first. The newest plain "### YYYY-MM-DD" heading must equal HMRC_AUDIT_DATE. An audit that found a
+<!-- Newest first. The newest plain "### YYYY-MM-DD" heading must equal HMRC_RULES_CHECK_DATE. A check that found a
 problem is headed "### YYYY-MM-DD (needs attention)" and doesn't move the date. -->
 
 ### 2026-11-27
