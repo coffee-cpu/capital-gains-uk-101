@@ -30,6 +30,11 @@ test.describe('Capital Gains Tax Visualiser App', () => {
     // Check footer disclaimer text
     await expect(footer.getByText(/not financial or tax advice/i)).toBeVisible()
     await expect(footer.getByRole('link', { name: 'Report an issue' })).toBeVisible()
+
+    // How up to date the calculator is (the build date comes from a Vite define)
+    await expect(footer.getByTestId('freshness')).toContainText(/Updated \d{1,2} \w+ \d{4}/)
+    await expect(footer.getByTestId('freshness')).toContainText('HMRC rates to')
+    await expect(footer.getByTestId('freshness')).toContainText('Figures checked')
   })
 
   test('About page shows project stats without contacting GitHub', async ({ page }) => {
