@@ -8,7 +8,8 @@ const LINKS = [
 ]
 
 export function Footer() {
-  const items = freshnessItems(__BUILD_DATE__)
+  // Today in the browser, so the line changes on 6 April without a new build
+  const items = freshnessItems(__BUILD_DATE__, new Date().toLocaleDateString('en-CA'))
   return (
     <footer className="bg-white border-t border-gray-200">
       {/* Centred on phones; disclaimer left and links right on wider screens */}
@@ -24,24 +25,26 @@ export function Footer() {
                 {i > 0 && (
                   <span aria-hidden="true" className={i === items.length - 1 ? 'hidden xl:inline' : undefined}> · </span>
                 )}
-                <span className="whitespace-nowrap">
-                  {item.text}
-                  {item.date && ' '}
-                  {item.date &&
-                    (item.href ? (
+                {/* The bracketed date may wrap under the text on narrow screens */}
+                <span className="whitespace-nowrap">{item.text}</span>
+                {item.date && (
+                  <>
+                    {' '}
+                    <span className="whitespace-nowrap">
+                      ({item.date.label}{' '}
                       <a
-                        href={item.href}
+                        href={item.date.href}
                         target="_blank"
                         rel="noopener noreferrer"
                         title="See what the check covered"
                         className="underline decoration-gray-300 underline-offset-2 hover:text-brand-700 hover:decoration-current"
                       >
-                        {item.date}
+                        {item.date.value}
                       </a>
-                    ) : (
-                      item.date
-                    ))}
-                </span>
+                      )
+                    </span>
+                  </>
+                )}
               </span>
             ))}
           </p>

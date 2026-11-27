@@ -1,4 +1,4 @@
-import { getTaxYear, getTaxYearStart } from '../../utils/taxYear'
+import { getTaxYear, getTaxYearEnd, getTaxYearStart } from '../../utils/taxYear'
 
 /**
  * The date of the last HMRC rules check: the matching rules and every HMRC figure
@@ -8,19 +8,19 @@ import { getTaxYear, getTaxYearStart } from '../../utils/taxYear'
  * it as part of a check.
  *
  * The tables carry each amount forward until the next entry, as the law does:
- * an amount stays in force until a Finance Act changes it. The check guards
- * against the app falling behind a change, which can only affect the year it
- * was done in and later ones: past years are fixed. A tax year that starts
- * after the check hasn't been looked at yet.
+ * an amount stays in force until a Finance Act changes it. A Budget can still
+ * change the tax year that's under way (CGT rates changed on 30 October 2024),
+ * so a check confirms only the tax years that had ended by its date.
  */
 export const HMRC_RULES_CHECK_DATE = '2026-11-27'
 
-/** The tax year the last check was done in */
-export function hmrcRulesCheckTaxYear(): string {
-  return getTaxYear(HMRC_RULES_CHECK_DATE)
+/** Whether a tax year had ended by the last check, so the check confirms its rules and figures */
+export function isConfirmedByHmrcRulesCheck(taxYear: string): boolean {
+  return getTaxYearEnd(taxYear) < HMRC_RULES_CHECK_DATE
 }
 
-/** Whether a tax year starts after the last check, so it hasn't been checked yet */
-export function isAfterHmrcRulesCheck(taxYear: string): boolean {
-  return getTaxYearStart(taxYear) > HMRC_RULES_CHECK_DATE
+/** The tax year before the one a date falls in: the last one to have ended */
+export function lastEndedTaxYear(date: string): string {
+  const startYear = parseInt(getTaxYearStart(getTaxYear(date)).slice(0, 4))
+  return getTaxYear(`${startYear - 1}-04-06`)
 }

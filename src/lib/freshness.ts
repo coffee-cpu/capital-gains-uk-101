@@ -1,4 +1,4 @@
-import { HMRC_RULES_CHECK_DATE } from './cgt/hmrcRulesCheck'
+import { HMRC_RULES_CHECK_DATE, isConfirmedByHmrcRulesCheck, lastEndedTaxYear } from './cgt/hmrcRulesCheck'
 import { LAST_BUNDLED_MONTH } from './fx/data/hmrcMonthly'
 import { formatIsoDate } from '../utils/date'
 
@@ -6,11 +6,9 @@ import { formatIsoDate } from '../utils/date'
 export const HMRC_RULES_CHECK_LOG_URL = 'https://github.com/coffee-cpu/capital-gains-uk-101/blob/main/docs/HMRC_RULES_CHECK.md#checks'
 
 export interface FreshnessItem {
-  /** Text before the date, or the whole item when there's no date */
   text: string
-  date?: string
-  /** Where the date links to */
-  href?: string
+  /** A date in brackets after the text, e.g. "(checked 27 Nov 2026)", linking to href */
+  date?: { label: string; value: string; href: string }
 }
 
 /** "2026-12" as "Dec 2026" */
@@ -20,17 +18,23 @@ function formatMonth(yearMonth: string): string {
 
 /**
  * How up to date the calculator is, for the footer: when the site was built,
- * the last month of bundled HMRC exchange rates, and the last HMRC rules check of
- * the matching rules and figures (docs/HMRC_RULES_CHECK.md)
+ * the last month of bundled HMRC exchange rates, and whether the last HMRC rules
+ * check (docs/HMRC_RULES_CHECK.md) confirms the last tax year to have ended by
+ * today, the one people are usually filing for
  */
-export function freshnessItems(buildDate: string): FreshnessItem[] {
+export function freshnessItems(buildDate: string, today: string): FreshnessItem[] {
+  const filingYear = lastEndedTaxYear(today)
+  const confirmed = isConfirmedByHmrcRulesCheck(filingYear)
   return [
     { text: `Updated ${formatIsoDate(buildDate, 'short')}` },
     { text: `HMRC rates to ${formatMonth(LAST_BUNDLED_MONTH)}` },
     {
-      text: 'HMRC rules and allowances checked',
-      date: formatIsoDate(HMRC_RULES_CHECK_DATE, 'short'),
-      href: HMRC_RULES_CHECK_LOG_URL,
+      text: confirmed ? `Up to date with HMRC rules for ${filingYear}` : `${filingYear} HMRC rules not yet confirmed`,
+      date: {
+        label: confirmed ? 'checked' : 'last checked',
+        value: formatIsoDate(HMRC_RULES_CHECK_DATE, 'short'),
+        href: HMRC_RULES_CHECK_LOG_URL,
+      },
     },
   ]
 }
