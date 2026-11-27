@@ -10,6 +10,8 @@ earlier ones as the law stood that day. Audit again after each Budget and each 6
 
 `.github/workflows/hmrc-audit.yml` runs this audit on the 1st of each month (or on demand from the Actions tab) and
 opens a PR with the new entry. It moves the date only when everything matches; a person reviews and merges the PR.
+Each run starts from `main` and replaces the `chore/hmrc-audit` branch, so an audit PR that isn't merged is replaced by
+the next month's.
 
 HMRC exchange rates are not part of the audit: a weekly workflow keeps the bundled rates up to date
 (`scripts/vendor-hmrc-rates.mjs`).
@@ -56,7 +58,8 @@ HMRC exchange rates are not part of the audit: a weekly workflow keeps the bundl
 
 ## Audits
 
-<!-- Newest first. The first date heading must equal HMRC_AUDIT_DATE. -->
+<!-- Newest first. The newest plain "### YYYY-MM-DD" heading must equal HMRC_AUDIT_DATE. An audit that found a
+problem is headed "### YYYY-MM-DD (needs attention)" and doesn't move the date. -->
 
 ### 2026-11-27
 
