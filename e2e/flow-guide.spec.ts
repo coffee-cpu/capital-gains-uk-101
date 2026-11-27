@@ -69,4 +69,22 @@ test.describe('How it works line', () => {
       await expect(page.locator(href!)).toHaveCount(1)
     }
   })
+
+  test("doesn't replay its entrance when an import unlocks the stops", async ({ page }) => {
+    await page.goto('/')
+    const flow = page.getByTestId('flow-guide')
+    // Mark each stop's dot and the progress line, then check the same elements are still there after the import
+    const parts = '[data-testid="flow-guide"] li > a > span:first-child, [data-testid="flow-guide"] > div > div'
+    const before = await page.evaluate(selector => {
+      const els = [...document.querySelectorAll(selector)]
+      els.forEach((el, i) => el.setAttribute('data-mark', String(i)))
+      return els.length
+    }, parts)
+    expect(before).toBe(7) // five dots, the grey track and the coloured line
+
+    await page.getByTestId('load-sample').click()
+    await expect(flow.getByRole('link')).toHaveCount(5, { timeout: 20000 })
+    const after = await page.evaluate(selector => [...document.querySelectorAll(selector)].map(el => el.getAttribute('data-mark')), parts)
+    expect(after).toEqual(['0', '1', '2', '3', '4', '5', '6'])
+  })
 })
