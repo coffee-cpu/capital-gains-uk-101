@@ -37,12 +37,20 @@ import { getTaxYear, getTaxYearStart } from '../../utils/taxYear'
  */
 export const HMRC_FIGURES_CHECKED = '2026-11-27'
 
+/**
+ * The earliest tax year the check covers: the oldest year that all the
+ * checked gov.uk tables list (dividend figures start at 2023/24, the annual
+ * exempt amount at 2021/22). Older years' figures weren't checked.
+ */
+export const FIGURES_CHECKED_FROM_TAX_YEAR = '2023/24'
+
 /** The latest tax year the check covers: the one it was done in */
 export function figuresCheckedThroughTaxYear(): string {
   return getTaxYear(HMRC_FIGURES_CHECKED)
 }
 
-/** Whether a tax year started on or before the check, so its figures were confirmed */
+/** Whether the check covered a tax year's figures */
 export function areFiguresCheckedFor(taxYear: string): boolean {
-  return getTaxYearStart(taxYear) <= HMRC_FIGURES_CHECKED
+  const start = getTaxYearStart(taxYear)
+  return start >= getTaxYearStart(FIGURES_CHECKED_FROM_TAX_YEAR) && start <= HMRC_FIGURES_CHECKED
 }
