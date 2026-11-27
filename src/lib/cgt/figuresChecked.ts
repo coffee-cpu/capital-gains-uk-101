@@ -6,11 +6,12 @@ import { getTaxYear, getTaxYearStart } from '../../utils/taxYear'
  *
  * The tables carry each amount forward until the next entry, as the law does:
  * an amount stays in force until a Finance Act changes it (TCGA 1992 s1K has
- * no annual uprating from 2025/26). So a check confirms every tax year from
- * FIGURES_CHECKED_FROM_TAX_YEAR up to the one it was done in, as the law stood
- * that day. A Budget can still change
- * the current year part-way through (CGT rates did on 30 October 2024), so
- * check again after each Budget and each 6 April.
+ * no annual uprating from 2025/26). The check guards against the app falling
+ * behind a change, which can only affect the year it was done in and later
+ * ones: past years' figures are fixed. A tax year that starts after the check
+ * hasn't been looked at yet. A Budget can still change the current year
+ * part-way through (CGT rates did on 30 October 2024), so check again after
+ * each Budget and each 6 April.
  *
  * Checklist (where in the code: what to compare, and where):
  * - allowances.ts ANNUAL_EXEMPT_AMOUNTS: CGT annual exempt amount by year
@@ -38,20 +39,12 @@ import { getTaxYear, getTaxYearStart } from '../../utils/taxYear'
  */
 export const HMRC_FIGURES_CHECKED = '2026-11-27'
 
-/**
- * The earliest tax year the check covers: the oldest year that all the
- * checked gov.uk tables list (dividend figures start at 2023/24, the annual
- * exempt amount at 2021/22). Older years' figures weren't checked.
- */
-export const FIGURES_CHECKED_FROM_TAX_YEAR = '2023/24'
-
-/** The latest tax year the check covers: the one it was done in */
-export function figuresCheckedThroughTaxYear(): string {
+/** The tax year the check was done in */
+export function figuresCheckedTaxYear(): string {
   return getTaxYear(HMRC_FIGURES_CHECKED)
 }
 
-/** Whether the check covered a tax year's figures */
-export function areFiguresCheckedFor(taxYear: string): boolean {
-  const start = getTaxYearStart(taxYear)
-  return start >= getTaxYearStart(FIGURES_CHECKED_FROM_TAX_YEAR) && start <= HMRC_FIGURES_CHECKED
+/** Whether a tax year starts after the check, so its figures haven't been checked yet */
+export function isAfterFiguresCheck(taxYear: string): boolean {
+  return getTaxYearStart(taxYear) > HMRC_FIGURES_CHECKED
 }

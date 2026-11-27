@@ -1,10 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import {
-  FIGURES_CHECKED_FROM_TAX_YEAR,
-  HMRC_FIGURES_CHECKED,
-  areFiguresCheckedFor,
-  figuresCheckedThroughTaxYear,
-} from '../figuresChecked'
+import { HMRC_FIGURES_CHECKED, figuresCheckedTaxYear, isAfterFiguresCheck } from '../figuresChecked'
 import { getTaxYear } from '../../../utils/taxYear'
 
 /** The tax year n years after the given one, e.g. ("2026/27", 1) -> "2027/28" */
@@ -20,20 +15,15 @@ describe('figuresChecked', () => {
     expect(HMRC_FIGURES_CHECKED <= new Date().toLocaleDateString('en-CA')).toBe(true)
   })
 
-  it('covers tax years from the earliest checked one up to the one the check was done in', () => {
-    const checkedYear = figuresCheckedThroughTaxYear()
-    expect(checkedYear).toBe(getTaxYear(HMRC_FIGURES_CHECKED))
-    expect(areFiguresCheckedFor(checkedYear)).toBe(true)
-    expect(areFiguresCheckedFor(shiftTaxYear(checkedYear, -1))).toBe(true)
-    expect(areFiguresCheckedFor(FIGURES_CHECKED_FROM_TAX_YEAR)).toBe(true)
+  it('names the tax year the check was done in', () => {
+    expect(figuresCheckedTaxYear()).toBe(getTaxYear(HMRC_FIGURES_CHECKED))
   })
 
-  it('does not cover tax years older than the checked tables', () => {
-    expect(areFiguresCheckedFor(shiftTaxYear(FIGURES_CHECKED_FROM_TAX_YEAR, -1))).toBe(false)
-    expect(areFiguresCheckedFor('2014/15')).toBe(false)
-  })
-
-  it('does not cover a tax year that starts after the check', () => {
-    expect(areFiguresCheckedFor(shiftTaxYear(figuresCheckedThroughTaxYear(), 1))).toBe(false)
+  it('flags only tax years that start after the check', () => {
+    const checkedYear = figuresCheckedTaxYear()
+    expect(isAfterFiguresCheck(shiftTaxYear(checkedYear, 1))).toBe(true)
+    expect(isAfterFiguresCheck(checkedYear)).toBe(false)
+    expect(isAfterFiguresCheck(shiftTaxYear(checkedYear, -1))).toBe(false)
+    expect(isAfterFiguresCheck('2014/15')).toBe(false)
   })
 })
