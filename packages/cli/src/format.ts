@@ -1,3 +1,4 @@
+import { hmrcRulesCheckItem } from '../../../src/lib/freshness'
 import { CalculateReport, warningLines } from './report'
 
 const gbp = new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' })
@@ -21,10 +22,12 @@ function indent(lines: string[], spaces = 2): string[] {
   return lines.map(line => ' '.repeat(spaces) + line)
 }
 
-/** Human-readable summary for terminals */
-export function formatCalculateText(report: CalculateReport): string {
+/** Human-readable summary for terminals. today (YYYY-MM-DD, local) decides which tax year the rules line names */
+export function formatCalculateText(report: CalculateReport, today = new Date().toLocaleDateString('en-CA')): string {
   const lines: string[] = []
   lines.push(`${report.tool.name} ${report.tool.version} — UK capital gains on shares (FX: ${report.options.fxSourceName})`)
+  const rules = hmrcRulesCheckItem(today)
+  lines.push(`${rules.text} (${rules.date.label} ${rules.date.value})`)
   lines.push('')
 
   lines.push('Inputs')

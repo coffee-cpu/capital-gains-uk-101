@@ -7,7 +7,9 @@ import { sa108Rows, Sa108Category, Sa108Row } from '../../../src/lib/cgt/sa108'
 import { combineFxAttributions } from '../../../src/lib/fx/attribution'
 import { findDataIssues, DataIssueCode } from '../../../src/lib/issues'
 import { SkippedRow } from '../../../src/types/brokerDefinition'
-import { CLI_NAME, CLI_VERSION, DISCLAIMER } from './meta'
+import { HMRC_RULES_CHECK_DATE } from '../../../src/lib/cgt/hmrcRulesCheck'
+import { lastConfirmedTaxYear } from '../../../src/lib/freshness'
+import { CLI_NAME, CLI_VERSION, DISCLAIMER, RULES_CHECK_ABOUT } from './meta'
 
 /**
  * JSON output contract for `calculate`. Bump SCHEMA_VERSION on any breaking change
@@ -147,6 +149,13 @@ export interface CalculateReport {
   schemaVersion: typeof SCHEMA_VERSION
   tool: { name: string; version: string }
   generatedAt: string
+  /** The project's own check of the rules and allowances (docs/HMRC_RULES_CHECK.md), not HMRC's */
+  rulesCheck: {
+    lastCheckedOn: string
+    /** The last tax year the check confirms: the last one to have ended by lastCheckedOn */
+    upToDateForTaxYearsThrough: string
+    about: string
+  }
   options: {
     taxYear: string | null
     fxSource: FXSource
@@ -251,6 +260,11 @@ export function buildCalculateReport(
     schemaVersion: SCHEMA_VERSION,
     tool: { name: CLI_NAME, version: CLI_VERSION },
     generatedAt: new Date().toISOString(),
+    rulesCheck: {
+      lastCheckedOn: HMRC_RULES_CHECK_DATE,
+      upToDateForTaxYearsThrough: lastConfirmedTaxYear(),
+      about: RULES_CHECK_ABOUT,
+    },
     options: {
       taxYear: options.taxYear,
       fxSource: options.fxSource,

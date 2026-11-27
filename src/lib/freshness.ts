@@ -23,20 +23,34 @@ function formatMonth(yearMonth: string): string {
  * today, the one people are usually filing for
  */
 export function freshnessItems(buildDate: string, today: string): FreshnessItem[] {
-  const filingYear = lastEndedTaxYear(today)
-  const confirmed = isConfirmedByHmrcRulesCheck(filingYear)
   return [
     { text: `Updated ${formatIsoDate(buildDate, 'short')}` },
     { text: `HMRC rates to ${formatMonth(LAST_BUNDLED_MONTH)}` },
-    {
-      text: confirmed ? `Up to date with HMRC rules for ${filingYear}` : `${filingYear} HMRC rules not yet confirmed`,
-      date: {
-        label: confirmed ? 'checked' : 'last checked',
-        value: formatIsoDate(HMRC_RULES_CHECK_DATE, 'short'),
-        href: HMRC_RULES_CHECK_LOG_URL,
-      },
-    },
+    hmrcRulesCheckItem(today),
   ]
+}
+
+/**
+ * Whether the last HMRC rules check confirms the last tax year to have ended by
+ * today: "Up to date with HMRC rules for 2025/26 (checked 27 Nov 2026)", or
+ * "2026/27 HMRC rules not yet confirmed (last checked …)". The footer and the CLI's text output
+ */
+export function hmrcRulesCheckItem(today: string): FreshnessItem & { date: NonNullable<FreshnessItem['date']> } {
+  const filingYear = lastEndedTaxYear(today)
+  const confirmed = isConfirmedByHmrcRulesCheck(filingYear)
+  return {
+    text: confirmed ? `Up to date with HMRC rules for ${filingYear}` : `${filingYear} HMRC rules not yet confirmed`,
+    date: {
+      label: confirmed ? 'checked' : 'last checked',
+      value: formatIsoDate(HMRC_RULES_CHECK_DATE, 'short'),
+      href: HMRC_RULES_CHECK_LOG_URL,
+    },
+  }
+}
+
+/** The last tax year the HMRC rules check confirms: the last one to have ended by its date */
+export function lastConfirmedTaxYear(): string {
+  return lastEndedTaxYear(HMRC_RULES_CHECK_DATE)
 }
 
 /** How many days after a check the "up to date" badge still shows. The check runs monthly; this leaves about two weeks to review and merge its PR */
