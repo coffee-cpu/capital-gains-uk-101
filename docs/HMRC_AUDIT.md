@@ -29,8 +29,9 @@ HMRC exchange rates are not part of the audit: a weekly workflow keeps the bundl
    [s105](https://www.legislation.gov.uk/ukpga/1992/12/section/105),
    [s106A](https://www.legislation.gov.uk/ukpga/1992/12/section/106A) and
    [s127](https://www.legislation.gov.uk/ukpga/1992/12/section/127) for amendments in force or prospective.
-5. Check that every HMRC manual link in the code and docs still opens the page it's cited for
-   (`git grep -i "capital-gains-manual/cg"`).
+5. Check that every HMRC manual page cited in the code and docs (links and bare references, including the tracked
+   `.claude/` files) still exists and covers what it's cited for:
+   `git grep -nE -i "capital-gains-manual/cg|CG5[0-9]{4}" -- . ':!.claude/worktrees'`.
 
 ### Figures
 
@@ -66,7 +67,8 @@ Matching rules:
 - CG51560, CG51575, CG51700: no change to the rules the engine applies.
 - TCGA 1992 s105 and s106A: no amendment since 2013.
 - References fixed: CG51620 (corporation tax) replaced with CG51575 (individuals); CG51127 (no longer exists) with
-  CG51700; CG51500P (archived) removed.
+  CG51700; CG51500P (archived) removed; CG51730 (a definitions page, cited in the help for stock splits) with
+  CG51700. CG54224 and CG54900 (gilts guide) checked and correct. `.claude/review-instructions.md` updated too.
 - The 30-day rule doesn't apply to non-residents: the help text and spec now say the calculator assumes the user was
   UK resident throughout.
 

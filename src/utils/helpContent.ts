@@ -292,9 +292,9 @@ This order prevents tax avoidance strategies like "bed and breakfast" where inve
         description: 'Legislation: Reorganisation of share capital'
       },
       {
-        title: 'CG51730 - Stock dividends and stock splits',
-        url: 'https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51730',
-        description: 'Specific guidance on bonus issues and splits'
+        title: 'CG51700 - Share reorganisations',
+        url: 'https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51700',
+        description: 'HMRC guidance on reorganisations of share capital, including bonus issues'
       }
     ]
   },

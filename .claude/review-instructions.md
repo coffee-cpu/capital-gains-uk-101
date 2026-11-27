@@ -14,7 +14,7 @@ For any changes involving tax calculations, CGT matching rules, or financial com
   - **TCGA92/S106A(5)** - 30-day "bed and breakfast" rule
   - **TCGA92/S104** - Section 104 pooled holdings
   - **TCGA92/S127** - Share reorganisations and stock splits
-  - HMRC Capital Gains Manual (CG series): CG51560, CG51620, CG51127
+  - HMRC Capital Gains Manual (CG series): CG51560, CG51575, CG51700
 - Flag any calculations that deviate from or don't clearly implement HMRC rules
 - Verify correct handling of UK tax year boundaries (April 6 - April 5)
 - Ensure allowable costs and reliefs are calculated per HMRC guidance
@@ -59,8 +59,8 @@ The project already references these HMRC guidelines (see `CLAUDE.md` and `docs/
 |------|----------------|-------------|
 | Same-day matching | CG51560 | TCGA92/S105(1) |
 | 30-day bed & breakfast | CG51560 | TCGA92/S106A(5) |
-| Section 104 pooling | CG51620 | TCGA92/S104 |
-| Share reorganisations | CG51127 | TCGA92/S127 |
+| Section 104 pooling | CG51575 | TCGA92/S104 |
+| Share reorganisations | CG51700 | TCGA92/S127 |
 
 New rules should follow the same documentation pattern.
 
