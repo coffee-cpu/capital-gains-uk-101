@@ -8,6 +8,9 @@ Change that date only as part of an audit recorded here.
 An amount stays in force until a Finance Act changes it, so an audit confirms the tax year it was done in and
 earlier ones as the law stood that day. Audit again after each Budget and each 6 April, and at least monthly.
 
+`.github/workflows/hmrc-audit.yml` runs this audit on the 1st of each month (or on demand from the Actions tab) and
+opens a PR with the new entry. It moves the date only when everything matches; a person reviews and merges the PR.
+
 HMRC exchange rates are not part of the audit: a weekly workflow keeps the bundled rates up to date
 (`scripts/vendor-hmrc-rates.mjs`).
 
