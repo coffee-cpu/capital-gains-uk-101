@@ -1,3 +1,5 @@
+import { freshnessItems } from '../lib/freshness'
+
 const LINKS = [
   { label: 'Guides', href: '/guides/' },
   { label: 'About', href: '#about' },
@@ -6,11 +8,27 @@ const LINKS = [
 ]
 
 export function Footer() {
+  const items = freshnessItems(__BUILD_DATE__)
   return (
     <footer className="bg-white border-t border-gray-200">
       {/* Centred on phones; disclaimer left and links right on wider screens */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-col gap-3 text-center sm:text-left sm:flex-row sm:items-center sm:justify-between text-xs text-gray-500">
-        <p className="text-balance">Not financial or tax advice. Figures are estimates based on HMRC guidance.</p>
+        <div className="flex flex-col gap-1">
+          <p className="text-balance">Not financial or tax advice. Figures are estimates based on HMRC guidance.</p>
+          {/* How up to date the calculator is; each item stays on one line */}
+          <p data-testid="freshness" className="text-gray-400">
+            {items.map((item, i) => (
+              <span key={item}>
+                {/* Below xl the last item goes on its own line, so no dot is left at a line end */}
+                {i === items.length - 1 && <br className="xl:hidden" />}
+                {i > 0 && (
+                  <span aria-hidden="true" className={i === items.length - 1 ? 'hidden xl:inline' : undefined}> · </span>
+                )}
+                <span className="whitespace-nowrap">{item}</span>
+              </span>
+            ))}
+          </p>
+        </div>
         <nav aria-label="Footer" className="flex flex-wrap justify-center sm:justify-end gap-y-1">
           {LINKS.map((link, i) => (
             <span key={link.label} className="flex items-center">

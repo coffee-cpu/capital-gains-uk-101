@@ -22,6 +22,9 @@ function ttfAsDataUrl(): Plugin {
 
 export default defineConfig({
   plugins: [react(), ttfAsDataUrl()],
+  define: {
+    __BUILD_DATE__: JSON.stringify(new Date().toISOString().slice(0, 10)),
+  },
   test: {
     // Most tests are pure logic; files that need a DOM opt in with a
     // `// @vitest-environment jsdom` comment, which keeps the run fast
