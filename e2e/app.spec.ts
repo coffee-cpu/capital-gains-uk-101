@@ -34,7 +34,8 @@ test.describe('Capital Gains Tax Visualiser App', () => {
     // How up to date the calculator is (the build date comes from a Vite define)
     await expect(footer.getByTestId('freshness')).toContainText(/Updated \d{1,2} \w+ \d{4}/)
     await expect(footer.getByTestId('freshness')).toContainText('HMRC rates to')
-    await expect(footer.getByTestId('freshness')).toContainText('Figures checked')
+    await expect(footer.getByTestId('freshness')).toContainText(/HMRC rules and allowances checked \d{1,2} \w+ \d{4}/)
+    await expect(footer.getByRole('link', { name: /^\d{1,2} \w+ \d{4}$/ })).toHaveAttribute('href', /docs\/HMRC_RULES_CHECK\.md/)
   })
 
   test('About page shows project stats without contacting GitHub', async ({ page }) => {

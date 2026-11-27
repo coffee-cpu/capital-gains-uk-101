@@ -18,13 +18,30 @@ export function Footer() {
           {/* How up to date the calculator is; each item stays on one line */}
           <p data-testid="freshness" className="text-gray-400">
             {items.map((item, i) => (
-              <span key={item}>
+              <span key={item.text}>
                 {/* Below xl the last item goes on its own line, so no dot is left at a line end */}
                 {i === items.length - 1 && <br className="xl:hidden" />}
                 {i > 0 && (
                   <span aria-hidden="true" className={i === items.length - 1 ? 'hidden xl:inline' : undefined}> · </span>
                 )}
-                <span className="whitespace-nowrap">{item}</span>
+                <span className="whitespace-nowrap">
+                  {item.text}
+                  {item.date && ' '}
+                  {item.date &&
+                    (item.href ? (
+                      <a
+                        href={item.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="See what the check covered"
+                        className="underline decoration-gray-300 underline-offset-2 hover:text-brand-700 hover:decoration-current"
+                      >
+                        {item.date}
+                      </a>
+                    ) : (
+                      item.date
+                    ))}
+                </span>
               </span>
             ))}
           </p>
