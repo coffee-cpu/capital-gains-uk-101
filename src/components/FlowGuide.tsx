@@ -97,13 +97,12 @@ export function FlowGuide() {
           className="absolute top-[7px] h-[3px] rounded-full bg-gray-300 origin-left animate-flow-line motion-reduce:animate-none"
           style={{ left: inset, right: inset }}
         />
-        {progress > 0 && (
-          <div
-            aria-hidden="true"
-            className="absolute top-[7px] h-[3px] rounded-full bg-brand-600 origin-left animate-flow-line motion-reduce:animate-none transition-[width] duration-500"
-            style={{ left: inset, width: `calc((100% - 2 * ${inset}) * ${progress})` }}
-          />
-        )}
+        {/* Always rendered, so progress grows it from where it was instead of replaying the entrance */}
+        <div
+          aria-hidden="true"
+          className="absolute top-[7px] h-[3px] rounded-full bg-brand-600 origin-left animate-flow-line motion-reduce:animate-none transition-[width] duration-500"
+          style={{ left: inset, width: `calc((100% - 2 * ${inset}) * ${progress})` }}
+        />
 
         <ol className="relative flex items-start">
           {stops.map((stop, index) => {
@@ -135,20 +134,20 @@ export function FlowGuide() {
               </>
             )
 
+            // Always an <a>, so unlocking a stop keeps its elements and their entrance
+            // animation doesn't replay. Without an href a locked stop isn't a link or focusable
+            const locked = stop.state === 'locked'
             return (
               <li key={stop.name} className="flex-1 min-w-0 text-center">
-                {stop.state === 'locked' ? (
-                  <div className="flex flex-col items-center" aria-disabled="true">{content}</div>
-                ) : (
-                  <a
-                    href={`#${stop.target}`}
-                    onClick={(e) => { markSeen(stop.target); jumpTo(e, stop.target) }}
-                    aria-label={`${stop.name}: ${stop.description}${stop.state === 'done' ? ' (done)' : ''}`}
-                    className="group flex flex-col items-center rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
-                  >
-                    {content}
-                  </a>
-                )}
+                <a
+                  href={locked ? undefined : `#${stop.target}`}
+                  onClick={locked ? undefined : (e) => { markSeen(stop.target); jumpTo(e, stop.target) }}
+                  aria-disabled={locked || undefined}
+                  aria-label={locked ? undefined : `${stop.name}: ${stop.description}${stop.state === 'done' ? ' (done)' : ''}`}
+                  className="group flex flex-col items-center rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+                >
+                  {content}
+                </a>
               </li>
             )
           })}
