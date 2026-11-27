@@ -62,8 +62,8 @@ This order prevents tax avoidance strategies like "bed and breakfast" where inve
         description: 'Official HMRC guidance on same-day and 30-day matching rules'
       },
       {
-        title: 'CG51620 - Section 104 holdings',
-        url: 'https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51620',
+        title: 'CG51575 - Section 104 holdings',
+        url: 'https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51575',
         description: 'Official HMRC guidance on pooled share holdings'
       },
       {
@@ -135,7 +135,9 @@ This order prevents tax avoidance strategies like "bed and breakfast" where inve
 
 **Important**: The 30-day window starts the day AFTER the sale. If you sell on June 15, the window runs from June 16 to July 15 (inclusive).
 
-**Matching order within 30 days**: Earliest acquisitions are matched first (FIFO within the 30-day window). Purchases made on the same day count as one purchase at their average price.`,
+**Matching order within 30 days**: Earliest acquisitions are matched first (FIFO within the 30-day window). Purchases made on the same day count as one purchase at their average price.
+
+**UK residents only**: the rule doesn't apply to purchases made while you weren't UK resident. The calculator assumes you were UK resident throughout.`,
     example: {
       title: '30-Day Rule Example',
       scenario: 'On June 1, you sold 100 shares at £200 each. On June 20 (19 days later), you bought back 50 shares at £180 each. You also have 200 shares in your Section 104 pool.',
@@ -221,8 +223,8 @@ This order prevents tax avoidance strategies like "bed and breakfast" where inve
     },
     references: [
       {
-        title: 'CG51620 - Section 104 holdings',
-        url: 'https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51620',
+        title: 'CG51575 - Section 104 holdings',
+        url: 'https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51575',
         description: 'Official HMRC guidance on share pooling (TCGA92/S104)'
       },
       {

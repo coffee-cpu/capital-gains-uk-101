@@ -19,7 +19,7 @@ import { summarizeDividends, summarizeInterest } from './income'
  * 0. Short sell rule - Match uncovered SELLs with subsequent BUYs
  * 1. Same-day rule (TCGA92/S105(1)) - CG51560
  * 2. 30-day rule (TCGA92/S106A(5) and (5A)) - CG51560
- * 3. Section 104 pooling (TCGA92/S104) - CG51620
+ * 3. Section 104 pooling (TCGA92/S104) - CG51575
  *
  * Each stage is a self-contained unit that transforms the pipeline context,
  * making the rule application composable, testable, and extensible.

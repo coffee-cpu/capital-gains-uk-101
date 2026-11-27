@@ -312,12 +312,14 @@ Applied in this order (`src/lib/cgt/engine.ts`):
 
 0. **Short sells**: a sale the broker marks as a short sell (`is_short_sell`) is matched with the later purchases that cover it.
 1. **Same-day rule** (TCGA92/S105(1)): purchases and sales of the same shares on one day. All of a day's purchases (and all of its sales) count as one transaction, so a partial match uses the day's average cost.
-2. **30-day rule** (TCGA92/S106A(5) and (5A)): purchases in the 30 days after a sale, earliest first.
+2. **30-day rule** (TCGA92/S106A(5) and (5A)): purchases in the 30 days after a sale, earliest first. It doesn't apply to purchases made while non-resident; the engine assumes the user was UK resident throughout.
 3. **Section 104 pool** (TCGA92/S104): everything else, at the pool's average cost.
+
+Shares sold beyond what these rules match are flagged as an incomplete disposal (usually missing history); the unmatched part adds no gain or loss. HS284 matches them with later purchases, earliest first; the engine does that only for sales the broker marks as short sells. Open finding from the November 2026 audit, not yet decided.
 
 Quantities are split-adjusted before matching. Proceeds are gross, and selling fees are an allowable cost, as SA108 asks. Same-day sales of one share count as one disposal in the tax year totals.
 
-References: [CG51500P](https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51500p) (share identification rules), [CG51560](https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51560) (same-day and 30-day rules), [CG51620](https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51620) (Section 104 holdings), [CG51127](https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51127) (stock splits), [CG78310](https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg78310) (exchange rates).
+References: [CG51560](https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51560) (same-day and 30-day rules), [CG51575](https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51575) (Section 104 holdings), [CG51700](https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51700) (share reorganisations, incl. stock splits), [CG78310](https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg78310) (exchange rates).
 
 ## Exchange rates
 

@@ -7,7 +7,7 @@ import type { TaxYearFeaturesMap } from '../lib/cgt/taxYearFeatures/types'
  * These types support HMRC capital gains tax calculations following the official guidance:
  * - Same-day rule: TCGA92/S105(1) - CG51560
  * - 30-day "bed and breakfast" rule: TCGA92/S106A(5) and (5A) - CG51560
- * - Section 104 pooled holdings: TCGA92/S104 - CG51620
+ * - Section 104 pooled holdings: TCGA92/S104 - CG51575
  */
 
 /**
@@ -71,7 +71,7 @@ export interface DisposalRecord {
  * Section 104 Pool state for a single asset
  *
  * The pool tracks the average cost basis of shares acquired outside
- * of same-day and 30-day matching rules (HMRC CG51620)
+ * of same-day and 30-day matching rules (HMRC CG51575)
  */
 export interface Section104Pool {
   /** Asset symbol (e.g., "AAPL") */

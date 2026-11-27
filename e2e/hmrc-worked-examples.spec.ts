@@ -90,7 +90,8 @@ test.describe('HMRC HS284 Example 3 - Section 104 holding (Lobster plc)', () => 
 })
 
 test.describe('HMRC HS284 Example 2 - 30-day rule (Mesopotamia plc)', () => {
-  // HS284 Example 2 (2026 edition dates):
+  // HS284 Example 2 (2026 edition dates; the 2025 edition names the company
+  // Mesopotamia plc, the 2026 one doesn't name it):
   //   Holds 9,500 shares in a Section 104 holding
   //   30 Aug 2025: sells 4,000 shares for £6,000
   //   11 Sep 2025: buys 500 shares for £850

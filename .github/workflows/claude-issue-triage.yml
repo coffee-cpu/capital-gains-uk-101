@@ -54,8 +54,8 @@ jobs:
             - Research relevant HMRC guidance to validate the expected behavior:
               - Same-day rule: TCGA92/S105(1), HMRC ref CG51560
               - 30-day bed & breakfast rule: TCGA92/S106A(5), HMRC ref CG51560
-              - Section 104 pooling: TCGA92/S104, HMRC ref CG51620
-              - Share reorganisations/stock splits: TCGA92/S127, HMRC ref CG51127
+              - Section 104 pooling: TCGA92/S104, HMRC ref CG51575
+              - Share reorganisations/stock splits: TCGA92/S127, HMRC ref CG51700
               - UK tax years run April 6 to April 5
             - If HMRC guidance confirms a bug, acknowledge it and add relevant labels
             - If the issue misunderstands HMRC rules, politely explain the correct behavior with references

@@ -10,7 +10,7 @@ import { gbp } from './html'
 
 const HS284 = 'https://www.gov.uk/government/publications/shares-and-capital-gains-tax-hs284-self-assessment-helpsheet'
 const CG51560 = 'https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51560'
-const CG51620 = 'https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51620'
+const CG51575 = 'https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51575'
 const CG78310 = 'https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg78310'
 const RATES = 'https://www.gov.uk/government/publications/rates-and-allowances-capital-gains-tax/capital-gains-tax-rates-and-annual-tax-free-allowances'
 const SA108_NOTES = 'https://www.gov.uk/government/publications/self-assessment-capital-gains-summary-sa108'
@@ -222,7 +222,7 @@ ${renderTransactionsTable(WORKED_EXAMPLES.section104)}
 <p>The cost of the 150 shares sold is £3,600 × 150 ÷ 300 = £1,800.</p>
 ${renderResultTable(WORKED_EXAMPLES.section104)}
 
-<div class="callout info"><p>HMRC reference: <a href="${CG51620}">CG51620</a> and helpsheet <a href="${HS284}">HS284</a>.</p></div>
+<div class="callout info"><p>HMRC reference: <a href="${CG51575}">CG51575</a> and helpsheet <a href="${HS284}">HS284</a>.</p></div>
 `,
 })
 

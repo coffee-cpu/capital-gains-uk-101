@@ -66,3 +66,13 @@ describe('packages/cli/README.md', () => {
     expect(missing, 'Document these options in packages/cli/README.md').toEqual([])
   })
 })
+
+describe('docs/HMRC_AUDIT.md', () => {
+  it("records the latest audit on HMRC_AUDIT_DATE, the date the app shows", async () => {
+    const { HMRC_AUDIT_DATE } = await import('../lib/cgt/hmrcAudit')
+    const audits = read('docs/HMRC_AUDIT.md').split('## Audits')[1] ?? ''
+    const latest = audits.match(/^### (\d{4}-\d{2}-\d{2})$/m)?.[1]
+    expect(latest, 'docs/HMRC_AUDIT.md has no "### YYYY-MM-DD" audit under "## Audits"').toBeDefined()
+    expect(latest, 'Record the audit in docs/HMRC_AUDIT.md when changing HMRC_AUDIT_DATE').toBe(HMRC_AUDIT_DATE)
+  })
+})

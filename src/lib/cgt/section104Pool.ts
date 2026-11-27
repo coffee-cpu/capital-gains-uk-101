@@ -13,7 +13,7 @@ import {
 } from './utils'
 
 /**
- * Section 104 Pooled Holdings (HMRC CG51620)
+ * Section 104 Pooled Holdings (HMRC CG51575)
  *
  * "Section 104 holding"
  *
@@ -27,7 +27,7 @@ import {
  * - The pool maintains a running total of quantity and cost
  * - Average cost = Total Cost / Total Quantity
  *
- * Reference: https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51620
+ * Reference: https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51575
  */
 
 /**
