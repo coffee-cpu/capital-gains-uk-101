@@ -6,8 +6,9 @@ import { getTaxYear, getTaxYearStart } from '../../utils/taxYear'
  *
  * The tables carry each amount forward until the next entry, as the law does:
  * an amount stays in force until a Finance Act changes it (TCGA 1992 s1K has
- * no annual uprating from 2025/26). So a check confirms every tax year up to
- * the one it was done in, as the law stood that day. A Budget can still change
+ * no annual uprating from 2025/26). So a check confirms every tax year from
+ * FIGURES_CHECKED_FROM_TAX_YEAR up to the one it was done in, as the law stood
+ * that day. A Budget can still change
  * the current year part-way through (CGT rates did on 30 October 2024), so
  * check again after each Budget and each 6 April.
  *
