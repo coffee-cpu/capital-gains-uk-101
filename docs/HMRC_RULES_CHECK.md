@@ -56,12 +56,64 @@ HMRC exchange rates are not part of the check: a weekly workflow keeps the bundl
 
 - **Shares sold beyond what the rules match** (found 2026-11-27). HS284 matches them with later purchases, earliest
   first. The engine does that only for sales the broker marks as short sells; otherwise it flags an incomplete
-  disposal, since leftovers usually mean missing history. Not yet decided.
+  disposal, since leftovers usually mean missing history. Not yet decided. Re-checked 2026-11-27: still stands
+  (HS284 2026: "If these rules fail to exhaust the shares disposed of, the remaining shares are matched with later
+  acquisitions, taking the earliest one first.").
+- **Savings rates rise for 2027/28** (found 2026-11-27). Budget 2026 Annex A (updated 5 November 2026) gives savings
+  basic/higher/additional rates of 20%/40%/45% for 2026 to 2027 and 24%/44%/49% for 2027 to 2028. The law as it
+  stands is different: Finance Act 2026 s5 ("Savings rates of income tax for tax year 2027-28", enacted) sets
+  22%/42%/47% for 2027-28. Budget 2026's 24%/44%/49% would replace them once Finance Bill 2026-27 is enacted. The interest help
+  text (`IncomeDetailsPanels.tsx`, `helpContent.ts` `interest`) gives 20%/40%/45% with no tax year, and calls them
+  "your income tax rate". Correct for 2026/27 and earlier; needs a per-year rate before 6 April 2027 (and once
+  the Finance Act enacts it).
 
 ## Checks
 
 <!-- Newest first. The newest plain "### YYYY-MM-DD" heading must equal HMRC_RULES_CHECK_DATE. A check that found a
 problem is headed "### YYYY-MM-DD (needs attention)" and doesn't move the date. -->
+
+### 2026-11-27
+
+Result: rules and figures match HMRC and legislation.gov.uk as published on this date for 2026/27 and earlier,
+with the open findings above. This is a second check on the same date, after Budget 2026.
+
+Matching rules:
+- Worked-example and engine tests pass: 15 end-to-end; `src/lib/cgt` and `src/guides` 231 passed, 1 skipped
+  (18 files).
+- HS284 2026 (updated 6 April 2026, still the latest edition): order is same day, then "the 30 days following the
+  day of disposal ... provided the person making the disposal was resident in the UK at the time of the
+  acquisition", then the Section 104 holding, then later acquisitions earliest first. Example 2 (Mr Schneider:
+  9,500 held, 4,000 sold 30 August 2025 for £6,000, 500 bought 11 September 2025 for £850, proceeds £750, loss
+  £100) matches the test. Example 3 2026 PDF (Lobster plc): pool £4,150, then £6,280; costs £2,931 and £1,675;
+  gains £329 and £300, the same figures as the test. (Its introduction says the second sale was in "February 2025";
+  its Step 4 says "February 2026".)
+- CG51560, CG51575, CG51700 (each shows "updated 25 November 2026"): same-day, 30-day (with the non-resident
+  exception), Section 104 pooling and reorganisation rules are unchanged from what the engine applies.
+- TCGA 1992 (legislation.gov.uk, up to date to 26-27 November 2026): s104 last amended 2014 (FA 2014, subsection
+  (4A)), s105 and s106A 2013, s127 2020. The only outstanding effects listed are the long-standing FA 2002 Sch 16
+  and FA 2016 s15 entries; nothing new or prospective.
+- Manual references (`git grep`): CG51560, CG51575, CG51700, CG54224, CG54900 and CG78310 exist and cover what they're
+  cited for. CG51127, CG51500P, CG51620 and CG51730 appear only in this log.
+
+Figures (all match):
+- Annual exempt amount 2021/22 to 2026/27: £12,300, £12,300, £6,000, £3,000, £3,000, £3,000 (gov.uk, updated
+  13 April 2026). TCGA 1992 s1K(2) "£3,000"; s1K(3) omitted by FA 2025; the new FA 2026 amendment (s1K(6)(a)) doesn't
+  touch the individual's amount. Budget 2026 Annex A: £3,000 for 2027/28.
+- CGT rates for shares: 10%/20%, 18%/24% from 30 October 2024, 18%/24% for 2025/26 and 2026/27. Budget 2026 Annex A:
+  18%/24% for 2027/28, so no later change. (Its CGT measures, a lower Business Asset Disposal Relief limit and a new
+  Founders' Relief from April 2027, are reliefs the calculator doesn't apply.)
+- SA108 Notes 2026 (re-issued 13 May 2026), CGN 1: "worth more than £50,000"; gains "more than £3,000". SA100 2026
+  box 6: "Foreign dividends (up to £500)". No 2027 editions yet.
+- Dividend allowance £1,000 (2023/24), £500 (2024/25 to 2026/27); rates 8.75/33.75/39.35% to 2025/26,
+  10.75/35.75/39.35% for 2026/27 (gov.uk, updated 6 April 2026). Budget 2026 Annex A: the same for 2027/28.
+  Self Assessment needed over £10,000.
+- Personal Savings Allowance £1,000 / £500 / £0; savings rates 20% / 40% / 45% for 2026/27. New since the last
+  check: savings rates rise from 2027/28, to 22% / 42% / 47% under Finance Act 2026 s5 (enacted), or 24% / 44% / 49%
+  if Budget 2026's proposal is enacted (see open findings). Added by hand after the automated check, which found only
+  the Budget figures.
+
+Not compared: figures older than the live gov.uk tables (annual exempt amount before 2021/22, dividend figures
+before 2023/24).
 
 ### 2026-11-27
 
