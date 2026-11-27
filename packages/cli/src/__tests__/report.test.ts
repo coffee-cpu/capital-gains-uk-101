@@ -103,4 +103,14 @@ describe('buildCalculateReport - rules check', () => {
     const nextYear = `${parseInt(HMRC_RULES_CHECK_DATE.slice(0, 4)) + 1}${HMRC_RULES_CHECK_DATE.slice(4)}`
     expect(formatCalculateText(report, nextYear)).toMatch(/\n\d{4}\/\d{2} HMRC rules not yet confirmed \(last checked /)
   })
+
+  it('names a reported tax year the check doesn\'t confirm yet', async () => {
+    const { formatCalculateText } = await import('../format')
+    const confirmed = report.rulesCheck.upToDateForTaxYearsThrough
+    const later = `${parseInt(confirmed) + 1}/${String(parseInt(confirmed.slice(-2)) + 1).padStart(2, '0')}`
+    const withYears = { ...report, taxYears: [{ ...report.taxYears[0], taxYear: confirmed }, { ...report.taxYears[0], taxYear: later }] }
+    const text = formatCalculateText(withYears, report.rulesCheck.lastCheckedOn)
+    expect(text).toContain(`\n  ${later} HMRC rules not yet confirmed: `)
+    expect(text).not.toContain(`  ${confirmed} HMRC rules not yet confirmed`)
+  })
 })

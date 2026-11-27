@@ -1,3 +1,4 @@
+import { isConfirmedByHmrcRulesCheck } from '../../../src/lib/cgt/hmrcRulesCheck'
 import { hmrcRulesCheckItem } from '../../../src/lib/freshness'
 import { CalculateReport, warningLines } from './report'
 
@@ -36,6 +37,9 @@ export function formatCalculateText(report: CalculateReport, today = new Date().
   for (const year of report.taxYears) {
     lines.push('')
     lines.push(`Tax year ${year.taxYear} (${year.startDate} to ${year.endDate})`)
+    if (!isConfirmedByHmrcRulesCheck(year.taxYear)) {
+      lines.push(`  ${year.taxYear} HMRC rules not yet confirmed: changes announced after this version was released may be missing`)
+    }
     const summary: string[][] = [
       ['Disposals', String(year.disposals)],
       ['Disposal proceeds', formatGbp(year.proceedsGbp)],
