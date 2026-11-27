@@ -380,7 +380,7 @@ Stock splits are handled per HMRC TCGA92/S127 (share reorganisations):
 ### HMRC CGT Rules
 Reference official HMRC guidance:
 - CG51560 - Same-day rule (TCGA92/S105(1)) and 30-day "bed and breakfast" rule (TCGA92/S106A(5))
-- CG51620 - Section 104 pooled holdings (TCGA92/S104)
-- CG51127 - Share reorganisations and stock splits (TCGA92/S127)
+- CG51575 - Section 104 pooled holdings (TCGA92/S104)
+- CG51700 - Share reorganisations and stock splits (TCGA92/S127)
 
 Refer to README.md for user-facing feature status.

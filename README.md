@@ -17,7 +17,7 @@
 4. **Applies HMRC's matching rules** in the right order:
    - **Same-day rule** (TCGA92/S105(1), CG51560): shares bought and sold on the same day are matched first.
    - **30-day "bed and breakfast" rule** (TCGA92/S106A(5) and (5A), CG51560): shares bought back within 30 days after a sale are matched next.
-   - **Section 104 pool** (TCGA92/S104, CG51620): everything else is matched against the average cost of your holding.
+   - **Section 104 pool** (TCGA92/S104, CG51575): everything else is matched against the average cost of your holding.
 5. **Works out the gain or loss on every disposal**, showing which rule matched which shares, and totals each UK tax year (6 April to 5 April) against the annual exempt amount.
 6. **Exports a PDF report** with the SA108 figures and the details of every disposal.
 

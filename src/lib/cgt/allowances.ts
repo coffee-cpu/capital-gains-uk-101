@@ -4,7 +4,7 @@
  * Each table maps the first year of a tax year (2024 = 2024/25) to the
  * amount that applies from that year until the next entry. Years after the
  * last entry use the latest amount, as the law does until a Finance Act
- * changes it. figuresChecked.ts records when these were last checked.
+ * changes it. docs/HMRC_AUDIT.md records when these were last checked.
  */
 
 /**

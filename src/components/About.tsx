@@ -164,7 +164,7 @@ export function About() {
               <p>
                 When calculating capital gains tax on shares, HMRC requires specific matching rules to be applied in a defined order. These rules determine which shares you're selling and at what cost. This calculator is based on the{' '}
                 <a
-                  href="https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51500p"
+                  href="https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-brand-600 underline hover:text-brand-800 font-semibold"
@@ -217,12 +217,12 @@ export function About() {
                   <p className="text-sm text-gray-600 mt-1">
                     Reference:{' '}
                     <a
-                      href="https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51620"
+                      href="https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51575"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-brand-600 underline hover:text-brand-800"
                     >
-                      HMRC CG51620
+                      HMRC CG51575
                     </a>
                   </p>
                 </div>
