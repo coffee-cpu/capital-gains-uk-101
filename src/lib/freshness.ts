@@ -46,7 +46,6 @@ export interface HmrcRulesBadge {
   /** The last tax year to have ended, which the check confirms */
   taxYear: string
   checkedOn: string
-  href: string
 }
 
 /**
@@ -59,5 +58,5 @@ export function hmrcRulesBadge(today: string): HmrcRulesBadge | null {
   const taxYear = lastEndedTaxYear(today)
   const ageDays = (Date.parse(today) - Date.parse(HMRC_RULES_CHECK_DATE)) / 86_400_000
   if (!isConfirmedByHmrcRulesCheck(taxYear) || ageDays > HMRC_RULES_BADGE_MAX_AGE_DAYS) return null
-  return { taxYear, checkedOn: formatIsoDate(HMRC_RULES_CHECK_DATE, 'short'), href: HMRC_RULES_CHECK_LOG_URL }
+  return { taxYear, checkedOn: formatIsoDate(HMRC_RULES_CHECK_DATE, 'short') }
 }

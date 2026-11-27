@@ -52,6 +52,15 @@ test.describe('Capital Gains Tax Visualiser App', () => {
     await badge.hover()
     await expect(page.getByText(/^Up to date with HMRC rules for \d{4}\/\d{2}: .* the legislation\.$/)).toBeVisible()
 
+    // Keyboard focus shows it too
+    await page.mouse.move(600, 500)
+    await page.getByRole('heading', { name: 'Import Transactions' }).click()
+    await expect(page.getByText(/^Up to date with HMRC rules for \d{4}\/\d{2}: /)).toHaveCount(0)
+    await badge.focus()
+    await page.keyboard.press('Shift+Tab')
+    await page.keyboard.press('Tab')
+    await expect(page.getByText(/^Up to date with HMRC rules for \d{4}\/\d{2}: .* the legislation\.$/)).toBeVisible()
+
     // 46 days later the check is too old
     await page.clock.setFixedTime(new Date(checkedOn.getTime() + (HMRC_RULES_BADGE_MAX_AGE_DAYS + 1) * 86_400_000))
     await page.reload()

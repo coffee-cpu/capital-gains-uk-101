@@ -53,7 +53,6 @@ describe('hmrcRulesBadge', () => {
     const expected = {
       taxYear: lastEndedTaxYear(HMRC_RULES_CHECK_DATE),
       checkedOn,
-      href: HMRC_RULES_CHECK_LOG_URL,
     }
     expect(hmrcRulesBadge(HMRC_RULES_CHECK_DATE)).toEqual(expected)
     // Unless the limit crosses 6 April, which hides it for another reason

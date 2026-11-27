@@ -18,7 +18,8 @@ interface TooltipPosition {
 /**
  * Custom tooltip component with fast display and better styling.
  * Shows on hover with minimal delay (150ms vs browser default ~1s), and on
- * touch screens on tap (tap again, or anywhere else, to close).
+ * touch screens on tap (tap again, or anywhere else, to close), and on keyboard
+ * focus of a focusable child.
  * Uses portal rendering to avoid overflow issues in table cells.
  * Automatically adjusts position to stay within viewport on mobile.
  */
@@ -141,6 +142,10 @@ export function Tooltip({ content, children, className = '' }: TooltipProps) {
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         onClick={handleClick}
+        // Keyboard focus shows it too. Only :focus-visible, so a tap (which also
+        // focuses a button) still just toggles it
+        onFocus={e => { if (e.target instanceof HTMLElement && e.target.matches(':focus-visible')) setIsVisible(true) }}
+        onBlur={() => setIsVisible(false)}
       >
         {children}
       </span>
