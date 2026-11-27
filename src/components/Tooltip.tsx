@@ -119,6 +119,14 @@ export function Tooltip({ content, children, className = '' }: TooltipProps) {
     return () => document.removeEventListener('pointerdown', handlePointerDown)
   }, [isVisible])
 
+  // Escape closes it, however it was opened, without moving focus (WCAG 1.4.13)
+  useEffect(() => {
+    if (!isVisible) return
+    const handleKeyDown = (e: KeyboardEvent) => { if (e.key === 'Escape') setIsVisible(false) }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [isVisible])
+
   const handleMouseEnter = () => {
     if (pointerTypeRef.current !== 'touch') setIsVisible(true)
   }
