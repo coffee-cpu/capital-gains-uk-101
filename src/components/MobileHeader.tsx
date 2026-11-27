@@ -1,3 +1,5 @@
+import { HmrcRulesBadge } from './HmrcRulesBadge'
+
 /**
  * Mobile header component - shown on small screens
  */
@@ -34,6 +36,8 @@ export function MobileHeader({ onMenuToggle }: { onMenuToggle: () => void }) {
             </div>
           </div>
         </div>
+        {/* Hidden on the narrowest phones, where it would push the name onto two lines */}
+        <HmrcRulesBadge className="shrink-0 max-[359px]:hidden" />
       </div>
     </header>
   )

@@ -1,4 +1,6 @@
 import { test, expect } from './fixtures'
+import { HMRC_RULES_CHECK_DATE } from '../src/lib/cgt/hmrcRulesCheck'
+import { HMRC_RULES_BADGE_MAX_AGE_DAYS } from '../src/lib/freshness'
 
 test.describe('Capital Gains Tax Visualiser App', () => {
   test('should display the app title', async ({ page }) => {
@@ -37,6 +39,24 @@ test.describe('Capital Gains Tax Visualiser App', () => {
     await expect(footer.getByTestId('freshness')).toContainText('HMRC rates to')
     await expect(footer.getByTestId('freshness')).toContainText(/(Up to date with HMRC rules for \d{4}\/\d{2} \(checked|\d{4}\/\d{2} HMRC rules not yet confirmed \(last checked) \d{1,2} \w+ \d{4}\)/)
     await expect(footer.getByRole('link', { name: /^\d{1,2} \w+ \d{4}$/ })).toHaveAttribute('href', /docs\/HMRC_RULES_CHECK\.md/)
+  })
+
+  test('shows the HMRC rules badge only while the last check is recent and confirms the year', async ({ page }) => {
+    const checkedOn = new Date(`${HMRC_RULES_CHECK_DATE}T12:00:00`)
+    await page.clock.setFixedTime(checkedOn)
+    await page.goto('/')
+    // In the sidebar on desktop (the phone header has its own, hidden here)
+    const badge = page.getByRole('complementary').getByTestId('hmrc-rules-badge')
+    await expect(badge).toHaveText(/^HMRC \d{4}\/\d{2}$/)
+    // Hover shows what it means
+    await badge.hover()
+    await expect(page.getByText(/^Up to date with HMRC rules for \d{4}\/\d{2}: .* the legislation\.$/)).toBeVisible()
+
+    // 46 days later the check is too old
+    await page.clock.setFixedTime(new Date(checkedOn.getTime() + (HMRC_RULES_BADGE_MAX_AGE_DAYS + 1) * 86_400_000))
+    await page.reload()
+    await expect(page.getByRole('heading', { name: 'Import Transactions' })).toBeVisible()
+    await expect(page.getByTestId('hmrc-rules-badge')).toHaveCount(0)
   })
 
   test('About page shows project stats without contacting GitHub', async ({ page }) => {

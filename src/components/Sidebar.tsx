@@ -1,3 +1,5 @@
+import { HmrcRulesBadge } from './HmrcRulesBadge'
+
 interface SidebarProps {
   currentPage: 'calculator' | 'about'
   isOpen: boolean
@@ -48,8 +50,10 @@ export function Sidebar({ currentPage, isOpen, onClose }: SidebarProps) {
                 className="w-8 h-8 lg:w-10 lg:h-10 flex-shrink-0"
               />
 
-              {/* The page's <h1>: the app's name, styled as before */}
-              <h1 className="flex flex-col gap-1">
+              {/* The page's <h1>: the app's name, styled as before. The HMRC rules badge
+                  sits on the "Visualiser" line, so it adds no height; the label keeps the
+                  heading's name to the app's name */}
+              <h1 className="flex flex-col gap-1" aria-label="Capital Gains Tax Visualiser">
                 <span className="block text-sm lg:text-base font-bold leading-tight">
                   <span className="text-brand-600">C</span>
                   <span className="text-gray-900">apital </span>
@@ -58,8 +62,12 @@ export function Sidebar({ currentPage, isOpen, onClose }: SidebarProps) {
                   <span className="text-brand-600">T</span>
                   <span className="text-gray-900">ax</span>
                 </span>{' '}
-                <span className="block text-xs font-semibold text-gray-600">
-                  Visualiser
+                <span className="flex items-center gap-2">
+                  <span className="block text-xs font-semibold text-gray-600">
+                    Visualiser
+                  </span>
+                  {/* Desktop only: on phones the header shows its own */}
+                  <HmrcRulesBadge className="max-lg:hidden" />
                 </span>
               </h1>
             </div>
