@@ -126,7 +126,9 @@ export default defineConfig({
   optimizeDeps: {
     // The PDF renderer is only imported when the user exports a PDF, so the
     // dev server would otherwise discover it on that first click, re-bundle
-    // and answer the pending request with "504 Outdated Optimize Dep"
-    include: ['@react-pdf/renderer'],
+    // and answer the pending request with "504 Outdated Optimize Dep".
+    // recharts and lucide-react are listed too: when the dependency cache goes
+    // stale, discovering them late reloads the page mid-render and leaves it blank
+    include: ['@react-pdf/renderer', 'recharts', 'lucide-react'],
   },
 })
