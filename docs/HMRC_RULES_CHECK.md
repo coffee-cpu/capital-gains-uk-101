@@ -60,7 +60,9 @@ HMRC exchange rates are not part of the check: a weekly workflow keeps the bundl
   (HS284 2026: "If these rules fail to exhaust the shares disposed of, the remaining shares are matched with later
   acquisitions, taking the earliest one first.").
 - **Savings rates rise for 2027/28** (found 2026-11-27). Budget 2026 Annex A (updated 5 November 2026) gives savings
-  basic/higher/additional rates of 20%/40%/45% for 2026 to 2027 and 24%/44%/49% for 2027 to 2028. The interest help
+  basic/higher/additional rates of 20%/40%/45% for 2026 to 2027 and 24%/44%/49% for 2027 to 2028. The law as it
+  stands is different: Finance Act 2026 s5 ("Savings rates of income tax for tax year 2027-28", enacted) sets
+  22%/42%/47% for 2027-28. Budget 2026's 24%/44%/49% would replace them once Finance Bill 2026-27 is enacted. The interest help
   text (`IncomeDetailsPanels.tsx`, `helpContent.ts` `interest`) gives 20%/40%/45% with no tax year, and calls them
   "your income tax rate". Correct for 2026/27 and earlier; needs a per-year rate before 6 April 2027 (and once
   the Finance Act enacts it).
@@ -106,7 +108,9 @@ Figures (all match):
   10.75/35.75/39.35% for 2026/27 (gov.uk, updated 6 April 2026). Budget 2026 Annex A: the same for 2027/28.
   Self Assessment needed over £10,000.
 - Personal Savings Allowance £1,000 / £500 / £0; savings rates 20% / 40% / 45% for 2026/27. New since the last
-  check: Budget 2026 raises savings rates to 24% / 44% / 49% from 2027/28 (see open findings).
+  check: savings rates rise from 2027/28, to 22% / 42% / 47% under Finance Act 2026 s5 (enacted), or 24% / 44% / 49%
+  if Budget 2026's proposal is enacted (see open findings). Added by hand after the automated check, which found only
+  the Budget figures.
 
 Not compared: figures older than the live gov.uk tables (annual exempt amount before 2021/22, dividend figures
 before 2023/24).
