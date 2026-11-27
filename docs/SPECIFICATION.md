@@ -315,7 +315,7 @@ Applied in this order (`src/lib/cgt/engine.ts`):
 2. **30-day rule** (TCGA92/S106A(5) and (5A)): purchases in the 30 days after a sale, earliest first. It doesn't apply to purchases made while non-resident; the engine assumes the user was UK resident throughout.
 3. **Section 104 pool** (TCGA92/S104): everything else, at the pool's average cost.
 
-Shares sold beyond what these rules match are flagged as an incomplete disposal (usually missing history); the unmatched part adds no gain or loss. HS284 matches them with later purchases, earliest first; the engine does that only for sales the broker marks as short sells. Open finding from the November 2026 audit, not yet decided.
+Shares sold beyond what these rules match are flagged as an incomplete disposal (usually missing history); the unmatched part adds no gain or loss. HS284 matches them with later purchases, earliest first; the engine does that only for sales the broker marks as short sells. Open finding from the November 2026 HMRC rules check (`docs/HMRC_RULES_CHECK.md`), not yet decided.
 
 Quantities are split-adjusted before matching. Proceeds are gross, and selling fees are an allowable cost, as SA108 asks. Same-day sales of one share count as one disposal in the tax year totals.
 
