@@ -5,7 +5,7 @@
  * detailed explanations of CGT rules, examples, and HMRC references.
  */
 
-import { dividendTaxRatePeriods } from '../lib/cgt/allowances'
+import { dividendTaxRatePeriods, savingsTaxRatePeriods, type IncomeTaxRates } from '../lib/cgt/allowances'
 import { getLatestSa100ForeignDividendsLimit } from '../lib/cgt/reporting'
 
 const LATEST_BOX_SIX = getLatestSa100ForeignDividendsLimit()
@@ -34,16 +34,21 @@ function taxYearLabel(startYear: number): string {
   return `${startYear}/${String((startYear + 1) % 100).padStart(2, '0')}`
 }
 
-/** Dividend rates by period, newest first, from the same table the calculator and guides use */
-const DIVIDEND_RATE_LINES = dividendTaxRatePeriods()
-  .reverse()
-  .map(({ fromYear, toYear, rates }) => {
-    const period = toYear === null
-      ? `${taxYearLabel(fromYear)} onwards`
-      : `${taxYearLabel(fromYear)} to ${taxYearLabel(toYear)}`
-    return `- ${period}: ${rates.basic}% basic, ${rates.higher}% higher, ${rates.additional}% additional`
-  })
-  .join('\n')
+/** Rates by period, newest first, from the same tables the calculator and guides use */
+function rateLines(periods: { fromYear: number; toYear: number | null; rates: IncomeTaxRates }[]): string {
+  return [...periods]
+    .reverse()
+    .map(({ fromYear, toYear, rates }) => {
+      const period = toYear === null
+        ? `${taxYearLabel(fromYear)} onwards`
+        : `${taxYearLabel(fromYear)} to ${taxYearLabel(toYear)}`
+      return `- ${period}: ${rates.basic}% basic, ${rates.higher}% higher, ${rates.additional}% additional`
+    })
+    .join('\n')
+}
+
+const DIVIDEND_RATE_LINES = rateLines(dividendTaxRatePeriods())
+const SAVINGS_RATE_LINES = rateLines(savingsTaxRatePeriods())
 
 export const helpContent: Record<HelpContext, HelpContent> = {
   default: {
@@ -417,11 +422,11 @@ ${DIVIDEND_RATE_LINES}
 **When it applies**:
 The Personal Savings Allowance was introduced in April 2016. Before that, all interest was taxable unless held in tax-free accounts (ISAs, etc.).
 
-**Tax rates on interest above allowance**:
+**Tax rates on interest above allowance** (the savings rates, by your income tax band):
 
-- Basic rate: 20%
-- Higher rate: 40%
-- Additional rate: 45%
+${SAVINGS_RATE_LINES}
+
+The 2027/28 rates are set by Finance Act 2026. Budget 2026 proposes 24% basic, 44% higher and 49% additional instead, which isn't law yet.
 
 **Reporting requirements**:
 
