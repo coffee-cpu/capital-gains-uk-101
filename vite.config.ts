@@ -116,6 +116,10 @@ function contentSecurityPolicy(): Plugin {
 export default defineConfig({
   plugins: [react(), guidePages(), contentSecurityPolicy()],
   base: '/', // Custom domain - use root path
+  define: {
+    // The date the site was built (UTC), shown in the footer
+    __BUILD_DATE__: JSON.stringify(new Date().toISOString().slice(0, 10)),
+  },
   server: {
     port: 3000,
   },

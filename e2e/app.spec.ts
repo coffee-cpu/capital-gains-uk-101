@@ -30,6 +30,13 @@ test.describe('Capital Gains Tax Visualiser App', () => {
     // Check footer disclaimer text
     await expect(footer.getByText(/not financial or tax advice/i)).toBeVisible()
     await expect(footer.getByRole('link', { name: 'Report an issue' })).toBeVisible()
+
+    // How up to date the calculator is (the build date comes from a Vite define). The check
+    // line reads "not yet confirmed" from 6 April until a check confirms the year that ended
+    await expect(footer.getByTestId('freshness')).toContainText(/Updated \d{1,2} \w+ \d{4}/)
+    await expect(footer.getByTestId('freshness')).toContainText('HMRC rates to')
+    await expect(footer.getByTestId('freshness')).toContainText(/(Up to date with HMRC rules for \d{4}\/\d{2} \(checked|\d{4}\/\d{2} HMRC rules not yet confirmed \(last checked) \d{1,2} \w+ \d{4}\)/)
+    await expect(footer.getByRole('link', { name: /^\d{1,2} \w+ \d{4}$/ })).toHaveAttribute('href', /docs\/HMRC_RULES_CHECK\.md/)
   })
 
   test('About page shows project stats without contacting GitHub', async ({ page }) => {
