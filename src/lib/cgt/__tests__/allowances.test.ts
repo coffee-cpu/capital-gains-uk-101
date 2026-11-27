@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { getAnnualExemptAmount, getDividendAllowance, getDividendTaxRates } from '../allowances'
+import { getAnnualExemptAmount, getDividendAllowance, getDividendTaxRates, getSavingsTaxRates } from '../allowances'
 import { getHelpContent } from '../../../utils/helpContent'
 
 describe('getAnnualExemptAmount', () => {
@@ -55,5 +55,26 @@ describe('getDividendTaxRates', () => {
       '- 2022/23 to 2025/26: 8.75% basic, 33.75% higher, 39.35% additional',
       '- 2016/17 to 2021/22: 7.5% basic, 32.5% higher, 38.1% additional',
     ].join('\n'))
+  })
+})
+
+describe('getSavingsTaxRates', () => {
+  // GOV.UK "Income Tax rates and allowances for current and past years"; 2027/28 from Finance Act 2026 s5
+  it.each([
+    ['2015/16', null],
+    ['2016/17', { basic: 20, higher: 40, additional: 45 }],
+    ['2026/27', { basic: 20, higher: 40, additional: 45 }],
+    ['2027/28', { basic: 22, higher: 42, additional: 47 }],
+  ])('%s', (taxYear, rates) => {
+    expect(getSavingsTaxRates(taxYear)).toEqual(rates)
+  })
+
+  it('feeds the interest help text', () => {
+    const explanation = getHelpContent('interest').explanation
+    expect(explanation).toContain([
+      '- 2027/28 onwards: 22% basic, 42% higher, 47% additional',
+      '- 2016/17 to 2026/27: 20% basic, 40% higher, 45% additional',
+    ].join('\n'))
+    expect(explanation).toContain('Budget 2026 proposes 24% basic, 44% higher and 49% additional instead')
   })
 })

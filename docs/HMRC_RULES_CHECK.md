@@ -50,7 +50,8 @@ HMRC exchange rates are not part of the check: a weekly workflow keeps the bundl
 | `reporting.ts` `SA100_FOREIGN_DIVIDENDS_LIMITS` | SA100 box 6 "Foreign dividends (up to £X)"; add each new return's year | [SA100](https://www.gov.uk/government/publications/self-assessment-tax-return-sa100) |
 | `allowances.ts` `DIVIDEND_ALLOWANCES`, `DIVIDEND_TAX_RATES` | Dividend allowance and rates | [Income Tax rates and allowances](https://www.gov.uk/government/publications/rates-and-allowances-income-tax/income-tax-rates-and-allowances-current-and-past) |
 | `IncomeDetailsPanels.tsx`, help text | Dividends over £10,000 need Self Assessment | [How to report tax on dividends](https://www.gov.uk/tax-on-dividends/how-to-report-tax-on-dividends) |
-| `IncomeDetailsPanels.tsx`, help text | Personal Savings Allowance (£1,000 / £500 / £0), savings rates (20% / 40% / 45%) | [How much is tax free](https://www.gov.uk/apply-tax-free-interest-on-savings/how-much-is-tax-free) |
+| `IncomeDetailsPanels.tsx`, help text | Personal Savings Allowance (£1,000 / £500 / £0) | [How much is tax free](https://www.gov.uk/apply-tax-free-interest-on-savings/how-much-is-tax-free) |
+| `allowances.ts` `SAVINGS_TAX_RATES` | Savings rates of income tax by year (shown in the interest panel and help) | [Income Tax rates and allowances](https://www.gov.uk/government/publications/rates-and-allowances-income-tax/income-tax-rates-and-allowances-current-and-past), the latest Finance Act |
 
 ## Open findings
 
@@ -59,13 +60,12 @@ HMRC exchange rates are not part of the check: a weekly workflow keeps the bundl
   disposal, since leftovers usually mean missing history. Not yet decided. Re-checked 2026-11-27: still stands
   (HS284 2026: "If these rules fail to exhaust the shares disposed of, the remaining shares are matched with later
   acquisitions, taking the earliest one first.").
-- **Savings rates rise for 2027/28** (found 2026-11-27). Budget 2026 Annex A (updated 5 November 2026) gives savings
-  basic/higher/additional rates of 20%/40%/45% for 2026 to 2027 and 24%/44%/49% for 2027 to 2028. The law as it
-  stands is different: Finance Act 2026 s5 ("Savings rates of income tax for tax year 2027-28", enacted) sets
-  22%/42%/47% for 2027-28. Budget 2026's 24%/44%/49% would replace them once Finance Bill 2026-27 is enacted. The interest help
-  text (`IncomeDetailsPanels.tsx`, `helpContent.ts` `interest`) gives 20%/40%/45% with no tax year, and calls them
-  "your income tax rate". Correct for 2026/27 and earlier; needs a per-year rate before 6 April 2027 (and once
-  the Finance Act enacts it).
+- **Savings rates for 2027/28 not final** (found 2026-11-27). Finance Act 2026 s5 ("Savings rates of income tax for
+  tax year 2027-28", enacted) sets 22%/42%/47%. Budget 2026 Annex A (updated 5 November 2026) proposes 24%/44%/49%
+  instead, to be legislated in Finance Bill 2026-27. The app now takes savings rates by tax year from
+  `allowances.ts` `SAVINGS_TAX_RATES`, with the enacted 22%/42%/47% for 2027/28, and the interest help text names
+  the Budget proposal as not yet law. Once Finance Bill 2026-27 is enacted, update 2027/28 to the enacted rates and
+  remove that sentence from the help text (`helpContent.ts` `interest`).
 
 ## Checks
 

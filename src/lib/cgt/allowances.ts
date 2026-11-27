@@ -50,42 +50,81 @@ function lookup(
   return amount
 }
 
-export interface DividendTaxRates {
-  /** Percentages for dividends in the basic, higher and additional rate bands */
+/** Percentages for the basic, higher and additional rate bands */
+export interface IncomeTaxRates {
   basic: number
   higher: number
   additional: number
 }
+
+export type DividendTaxRates = IncomeTaxRates
 
 /**
  * Dividend tax rates, from 2016/17 when the dividend allowance began.
  *
  * Source: https://www.gov.uk/government/publications/rates-and-allowances-income-tax/income-tax-rates-and-allowances-current-and-past
  */
-const DIVIDEND_TAX_RATES: ReadonlyArray<readonly [number, DividendTaxRates]> = [
+const DIVIDEND_TAX_RATES: ReadonlyArray<readonly [number, IncomeTaxRates]> = [
   [2016, { basic: 7.5, higher: 32.5, additional: 38.1 }],
   [2022, { basic: 8.75, higher: 33.75, additional: 39.35 }],
   [2026, { basic: 10.75, higher: 35.75, additional: 39.35 }],
 ]
 
-/** Dividend tax rates for a tax year, or null before 2016/17 */
-export function getDividendTaxRates(taxYear: string): DividendTaxRates | null {
+/**
+ * Savings rates of income tax (on interest above the Personal Savings
+ * Allowance), from 2016/17 when the allowance began.
+ *
+ * 2027/28: Finance Act 2026 s5. Budget 2026 proposes 24% / 44% / 49% instead,
+ * to be legislated in Finance Bill 2026-27; until it's enacted the law is
+ * 22% / 42% / 47%. docs/HMRC_RULES_CHECK.md tracks it.
+ *
+ * Sources: https://www.gov.uk/government/publications/rates-and-allowances-income-tax/income-tax-rates-and-allowances-current-and-past,
+ * https://www.legislation.gov.uk/ukpga/2026/11/section/5/enacted
+ */
+const SAVINGS_TAX_RATES: ReadonlyArray<readonly [number, IncomeTaxRates]> = [
+  [2016, { basic: 20, higher: 40, additional: 45 }],
+  [2027, { basic: 22, higher: 42, additional: 47 }],
+]
+
+function lookupRates(table: ReadonlyArray<readonly [number, IncomeTaxRates]>, taxYear: string): IncomeTaxRates | null {
   const startYear = parseInt(taxYear.split('/')[0])
-  let rates: DividendTaxRates | null = null
-  for (const [fromYear, value] of DIVIDEND_TAX_RATES) {
+  let rates: IncomeTaxRates | null = null
+  for (const [fromYear, value] of table) {
     if (startYear < fromYear) break
     rates = value
   }
   return rates
 }
 
-/** Each period with the same dividend tax rates, oldest first; toYear is null for the latest */
-export function dividendTaxRatePeriods(): { fromYear: number; toYear: number | null; rates: DividendTaxRates }[] {
-  return DIVIDEND_TAX_RATES.map(([fromYear, rates], i) => ({
+/** Each period with the same rates, oldest first; toYear is null for the latest */
+function ratePeriods(
+  table: ReadonlyArray<readonly [number, IncomeTaxRates]>
+): { fromYear: number; toYear: number | null; rates: IncomeTaxRates }[] {
+  return table.map(([fromYear, rates], i) => ({
     fromYear,
-    toYear: i + 1 < DIVIDEND_TAX_RATES.length ? DIVIDEND_TAX_RATES[i + 1][0] - 1 : null,
+    toYear: i + 1 < table.length ? table[i + 1][0] - 1 : null,
     rates,
   }))
+}
+
+/** Dividend tax rates for a tax year, or null before 2016/17 */
+export function getDividendTaxRates(taxYear: string): DividendTaxRates | null {
+  return lookupRates(DIVIDEND_TAX_RATES, taxYear)
+}
+
+/** Each period with the same dividend tax rates, oldest first; toYear is null for the latest */
+export function dividendTaxRatePeriods(): { fromYear: number; toYear: number | null; rates: DividendTaxRates }[] {
+  return ratePeriods(DIVIDEND_TAX_RATES)
+}
+
+/** Savings rates of income tax for a tax year, or null before 2016/17 */
+export function getSavingsTaxRates(taxYear: string): IncomeTaxRates | null {
+  return lookupRates(SAVINGS_TAX_RATES, taxYear)
+}
+
+/** Each period with the same savings rates, oldest first; toYear is null for the latest */
+export function savingsTaxRatePeriods(): { fromYear: number; toYear: number | null; rates: IncomeTaxRates }[] {
+  return ratePeriods(SAVINGS_TAX_RATES)
 }
 
 /**

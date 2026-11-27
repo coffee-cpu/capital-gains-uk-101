@@ -3,6 +3,7 @@ import type { TaxYearSummary } from '../types/cgt'
 import { Tooltip } from './Tooltip'
 import { formatGbp } from '../utils/currency'
 import { getSa100ForeignDividendsLimit } from '../lib/cgt/reporting'
+import { getSavingsTaxRates } from '../lib/cgt/allowances'
 
 const SA106_URL = 'https://www.gov.uk/government/publications/self-assessment-foreign-sa106'
 const SA100_URL = 'https://www.gov.uk/government/publications/self-assessment-tax-return-sa100'
@@ -103,6 +104,7 @@ export function DividendDetailsPanel({ summary, onHelp }: PanelProps) {
  */
 export function InterestDetailsPanel({ summary, onHelp }: PanelProps) {
   const hasWithholding = summary.interestWithholdingTaxGbp > 0
+  const savingsRates = getSavingsTaxRates(summary.taxYear)
 
   return (
     <IncomePanel
@@ -143,7 +145,9 @@ export function InterestDetailsPanel({ summary, onHelp }: PanelProps) {
             <SourceLink href={SAVINGS_INTEREST_URL} tooltip="View HMRC savings interest information" text="(source)" />
           </p>
           <p className="text-sm text-gray-600 mt-1">
-            Interest above your allowance is taxed at your income tax rate (20%, 40%, or 45%).
+            {savingsRates
+              ? `Interest above your allowance is taxed at the ${summary.taxYear} savings rates: ${savingsRates.basic}%, ${savingsRates.higher}% or ${savingsRates.additional}%, depending on your income tax band.`
+              : 'Interest above your allowance is taxed at your income tax rate.'}
           </p>
         </div>
       </div>
