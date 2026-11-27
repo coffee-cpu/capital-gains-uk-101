@@ -116,6 +116,7 @@ The JSON has `schemaVersion: 1`. Check it: if it is different, re-read this guid
 - `taxYears[].rateChange2024` (2024/25 only): gains before and after the 30 October 2024 rate change. `chargeableGainsAfterGbp` is what remains of the post-change gains after the year's losses and the annual exempt amount are set against them first, the most beneficial order (TCGA92/S4B). `adjustmentRequired` is true only when that is above zero; then tell the user to use HMRC's calculator for the adjustment.
 - `disposals[]`: one row per sale, with the matching `rules` used (`same-day`, `30-day`, `section-104`, `short-sell`).
 - `section104Pools[]`: holdings remaining after the last transaction.
+- `rulesCheck` (0.9.0+): the project's own check of the rules and allowances (HMRC hasn't reviewed the tool). If the user's tax year is later than `upToDateForTaxYearsThrough`, tell them its rules haven't been confirmed yet: the figures use the rules known when this CLI version was released, and changes announced since (for example in a Budget) may not be included.
 - Full schema: [CLI README](https://github.com/coffee-cpu/capital-gains-uk-101/blob/main/packages/cli/README.md#json-output---format-json).
 
 ## 5. Deal with warnings before presenting figures

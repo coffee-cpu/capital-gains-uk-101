@@ -27,3 +27,10 @@ export class CliError extends Error {
     super(message)
   }
 }
+
+/** Explains the report's rulesCheck field, so an agent reading the JSON alone understands it */
+export const RULES_CHECK_ABOUT =
+  "This tool's own check of its CGT rules and allowances against HMRC guidance and legislation; " +
+  "HMRC hasn't reviewed this tool. It covers only tax years that had ended by the check, because a " +
+  'Budget can still change a year that is under way. For a later year, the figures use the rules known ' +
+  'when this version was released; update the CLI and check for changes announced since.'

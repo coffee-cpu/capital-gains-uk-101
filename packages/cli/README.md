@@ -49,6 +49,7 @@ The output is versioned with `schemaVersion: 1`. New fields may be added within 
 
 | Field | Contents |
 |---|---|
+| `rulesCheck` | The project's own check of the CGT rules and allowances against HMRC guidance and legislation (HMRC hasn't reviewed this tool): `lastCheckedOn`, and `upToDateForTaxYearsThrough`, the last tax year the check confirms. A check confirms only tax years that had ended by its date, because a Budget can still change a year that's under way. `about` explains this in one sentence |
 | `options`, `inputs` | What was calculated, including each file's detected broker and transaction count |
 | `taxYears[]` | One entry per year: disposals, proceeds, allowable costs, gains, losses (as a positive number), net gain, annual exempt amount and taxable gain, plus dividend and interest totals |
 | `taxYears[].sa108` | The figures the SA108 "listed shares and securities" section asks for (listed shares and funds only; proceeds are gross, with selling fees in allowable costs). Fields are named rather than numbered because box numbers change between years |

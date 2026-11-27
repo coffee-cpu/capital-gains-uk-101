@@ -78,3 +78,44 @@ describe('2024/25 rate change in the report', () => {
     expect(formatCalculateText(withInput)).toContain('£2,000.00 of gains from 2024-10-30 remain chargeable')
   })
 })
+
+describe('buildCalculateReport - rules check', () => {
+  // The text output lists the input files, so give it one
+  const report = buildCalculateReport(calculateCGT([tx({ id: 'buy' })]), {
+    ...OPTIONS, inputs: [{ file: 'trades.csv', broker: 'generic' as never, transactions: 1 }],
+  })
+
+  it('names the check date and the last tax year it confirms, and explains them', async () => {
+    const { HMRC_RULES_CHECK_DATE, lastEndedTaxYear } = await import('../../../../src/lib/cgt/hmrcRulesCheck')
+    expect(report.rulesCheck).toEqual({
+      lastCheckedOn: HMRC_RULES_CHECK_DATE,
+      upToDateForTaxYearsThrough: lastEndedTaxYear(HMRC_RULES_CHECK_DATE),
+      about: expect.stringContaining("HMRC hasn't reviewed this tool"),
+    })
+  })
+
+  it('says in the text output whether the last ended tax year is confirmed', async () => {
+    const { formatCalculateText } = await import('../format')
+    const { HMRC_RULES_CHECK_DATE } = await import('../../../../src/lib/cgt/hmrcRulesCheck')
+    const confirmed = report.rulesCheck.upToDateForTaxYearsThrough
+    expect(formatCalculateText(report, HMRC_RULES_CHECK_DATE)).toMatch(new RegExp(`^.*\\nUp to date with HMRC rules for ${confirmed.replace('/', '\\/')} \\(checked \\d+ \\w+ \\d{4}\\)\\n`))
+    // A year after the check, the year just ended isn't confirmed yet
+    const nextYear = `${parseInt(HMRC_RULES_CHECK_DATE.slice(0, 4)) + 1}${HMRC_RULES_CHECK_DATE.slice(4)}`
+    expect(formatCalculateText(report, nextYear)).toMatch(/\n\d{4}\/\d{2} HMRC rules not yet confirmed \(last checked /)
+  })
+
+  it('names a reported tax year the check doesn\'t confirm yet', async () => {
+    const { formatCalculateText } = await import('../format')
+    const confirmed = report.rulesCheck.upToDateForTaxYearsThrough
+    const later = `${parseInt(confirmed) + 1}/${String(parseInt(confirmed.slice(-2)) + 1).padStart(2, '0')}`
+    const withYears = { ...report, taxYears: [{ ...report.taxYears[0], taxYear: confirmed }, { ...report.taxYears[0], taxYear: later }] }
+    const text = formatCalculateText(withYears, report.rulesCheck.lastCheckedOn)
+    expect(text).toContain(`\n  ${later} HMRC rules not yet confirmed: `)
+    expect(text).not.toContain(`  ${confirmed} HMRC rules not yet confirmed`)
+  })
+
+  it('points people to the web app for charts, before the disclaimer', async () => {
+    const { formatCalculateText } = await import('../format')
+    expect(formatCalculateText(report)).toMatch(/load the same files at https:\/\/cgtvisualiser\.co\.uk\. Nothing is uploaded\.\n\nNot tax advice\./)
+  })
+})

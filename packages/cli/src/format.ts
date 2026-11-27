@@ -1,3 +1,6 @@
+import { isConfirmedByHmrcRulesCheck } from '../../../src/lib/cgt/hmrcRulesCheck'
+import { hmrcRulesCheckItem } from '../../../src/lib/freshness'
+import { WEB_APP_URL } from './meta'
 import { CalculateReport, warningLines } from './report'
 
 const gbp = new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' })
@@ -21,10 +24,12 @@ function indent(lines: string[], spaces = 2): string[] {
   return lines.map(line => ' '.repeat(spaces) + line)
 }
 
-/** Human-readable summary for terminals */
-export function formatCalculateText(report: CalculateReport): string {
+/** Human-readable summary for terminals. today (YYYY-MM-DD, local) decides which tax year the rules line names */
+export function formatCalculateText(report: CalculateReport, today = new Date().toLocaleDateString('en-CA')): string {
   const lines: string[] = []
   lines.push(`${report.tool.name} ${report.tool.version} — UK capital gains on shares (FX: ${report.options.fxSourceName})`)
+  const rules = hmrcRulesCheckItem(today)
+  lines.push(`${rules.text} (${rules.date.label} ${rules.date.value})`)
   lines.push('')
 
   lines.push('Inputs')
@@ -33,6 +38,9 @@ export function formatCalculateText(report: CalculateReport): string {
   for (const year of report.taxYears) {
     lines.push('')
     lines.push(`Tax year ${year.taxYear} (${year.startDate} to ${year.endDate})`)
+    if (!isConfirmedByHmrcRulesCheck(year.taxYear)) {
+      lines.push(`  ${year.taxYear} HMRC rules not yet confirmed: changes announced after this version was released may be missing`)
+    }
     const summary: string[][] = [
       ['Disposals', String(year.disposals)],
       ['Disposal proceeds', formatGbp(year.proceedsGbp)],
@@ -102,6 +110,8 @@ export function formatCalculateText(report: CalculateReport): string {
     }
   }
 
+  lines.push('')
+  lines.push(`To see these transactions, matches and Section 104 pools as charts, load the same files at ${WEB_APP_URL}. Nothing is uploaded.`)
   lines.push('')
   lines.push(report.disclaimer)
   return lines.join('\n') + '\n'

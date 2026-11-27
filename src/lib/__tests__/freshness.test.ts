@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { freshnessItems, hmrcRulesBadge, HMRC_RULES_BADGE_MAX_AGE_DAYS, HMRC_RULES_CHECK_LOG_URL } from '../freshness'
+import { freshnessItems, hmrcRulesBadge, lastConfirmedTaxYear, HMRC_RULES_BADGE_MAX_AGE_DAYS, HMRC_RULES_CHECK_LOG_URL } from '../freshness'
 import { HMRC_RULES_CHECK_DATE, lastEndedTaxYear } from '../cgt/hmrcRulesCheck'
 import { LAST_BUNDLED_MONTH } from '../fx/data/hmrcMonthly'
 import { formatIsoDate } from '../../utils/date'
@@ -67,5 +67,12 @@ describe('hmrcRulesBadge', () => {
 
   it('hides when a tax year has ended since the check', () => {
     expect(hmrcRulesBadge(yearsAfterCheck(1))).toBeNull()
+  })
+})
+
+describe('lastConfirmedTaxYear', () => {
+  it('is the last tax year to have ended by the check, the one the footer calls up to date on the check date', () => {
+    expect(lastConfirmedTaxYear()).toBe(lastEndedTaxYear(HMRC_RULES_CHECK_DATE))
+    expect(freshnessItems('2026-03-09', HMRC_RULES_CHECK_DATE)[2].text).toBe(`Up to date with HMRC rules for ${lastConfirmedTaxYear()}`)
   })
 })
