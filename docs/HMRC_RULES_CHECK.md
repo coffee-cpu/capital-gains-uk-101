@@ -6,10 +6,11 @@ reviewed or approved this calculator. Each check is recorded below, newest first
 is `HMRC_RULES_CHECK_DATE` in `src/lib/cgt/hmrcRulesCheck.ts`, which the app shows ("HMRC rules and allowances checked …").
 Change that date only as part of a check recorded here.
 
-An amount stays in force until a Finance Act changes it, so a check confirms the tax year it was done in and
-earlier ones as the law stood that day. Check again after each Budget and each 6 April, and at least monthly.
+An amount stays in force until a Finance Act changes it. A check confirms the tax years that had ended by its date;
+for the current year it confirms only the law as it stood that day, since a Budget can still change it. The app
+names the last ended year it confirms. Check again after each Budget and each 6 April, and at least monthly.
 
-`.github/workflows/hmrc-rules-check.yml` runs this check on the 1st of each month (or on demand from the Actions tab) and
+`.github/workflows/hmrc-rules-check.yml` runs this check on the 1st of each month and on 7 April (or on demand from the Actions tab) and
 opens a PR with the new entry. It moves the date only when everything matches; a person reviews and merges the PR.
 Each run starts from `main` and replaces the `chore/hmrc-rules-check` branch, so a check PR that isn't merged is replaced by
 the next month's.

@@ -17,6 +17,8 @@ on:
   schedule:
     # 1st of each month, 07:00 UTC
     - cron: '0 7 1 * *'
+    # 7 April, so the tax year that ended on 5 April is confirmed straight away
+    - cron: '0 7 7 4 *'
   workflow_dispatch:
 
 concurrency:
