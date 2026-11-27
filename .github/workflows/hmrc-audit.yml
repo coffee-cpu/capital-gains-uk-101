@@ -163,6 +163,7 @@ jobs:
           cp "$AUDIT/src/lib/cgt/hmrcAudit.ts" src/lib/cgt/hmrcAudit.ts
           if git diff --quiet -- docs/HMRC_AUDIT.md; then echo "The audit recorded nothing"; exit 1; fi
           # A pass sets the date to the day of the audit (a same-day re-run leaves it unchanged)
+          echo "new_date=$NEW_DATE" >> "$GITHUB_OUTPUT"
           if [ -n "$AUDIT_DATE" ] && [ "$NEW_DATE" = "$AUDIT_DATE" ]; then echo "dated=true" >> "$GITHUB_OUTPUT"; else echo "dated=false" >> "$GITHUB_OUTPUT"; fi
           git diff --stat
 
@@ -179,6 +180,7 @@ jobs:
           AUDIT: ${{ runner.temp }}/audit
           TESTS: ${{ needs.audit.outputs.tests }}
           DATED: ${{ steps.apply.outputs.dated }}
+          NEW_DATE: ${{ steps.apply.outputs.new_date }}
           AUDIT_DATE: ${{ needs.audit.outputs.date }}
           DOCS: ${{ steps.docs.outcome }}
         run: |
@@ -195,6 +197,17 @@ jobs:
             TITLE="HMRC audit ${AUDIT_DATE}: needs attention"
             # Never move the date the app shows on a failed audit
             git checkout -- src/lib/cgt/hmrcAudit.ts
+            # Mark the entry this audit added as "(needs attention)", so the log still
+            # agrees with the date (docs.test.ts). Only a heading the audit added is
+            # renamed: there must be more of it than on main
+            for D in $(printf '%s\n' "$AUDIT_DATE" "$NEW_DATE" | sort -u); do
+              NOW=$(grep -cx "### $D" docs/HMRC_AUDIT.md || true)
+              BEFORE=$(git show HEAD:docs/HMRC_AUDIT.md | grep -cx "### $D" || true)
+              if [ "$NOW" -gt "$BEFORE" ]; then
+                # First (newest) match only
+                D="$D" perl -0pi -e 's/^### \Q$ENV{D}\E$/### $ENV{D} (needs attention)/m' docs/HMRC_AUDIT.md
+              fi
+            done
           fi
           {
             if [ -n "$NOTES" ]; then echo "**Checked by the workflow:**"; printf "$NOTES"; echo; fi
