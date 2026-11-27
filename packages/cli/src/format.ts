@@ -1,5 +1,6 @@
 import { isConfirmedByHmrcRulesCheck } from '../../../src/lib/cgt/hmrcRulesCheck'
 import { hmrcRulesCheckItem } from '../../../src/lib/freshness'
+import { WEB_APP_URL } from './meta'
 import { CalculateReport, warningLines } from './report'
 
 const gbp = new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' })
@@ -109,6 +110,8 @@ export function formatCalculateText(report: CalculateReport, today = new Date().
     }
   }
 
+  lines.push('')
+  lines.push(`To see these transactions, matches and Section 104 pools as charts, load the same files at ${WEB_APP_URL}. Nothing is uploaded.`)
   lines.push('')
   lines.push(report.disclaimer)
   return lines.join('\n') + '\n'

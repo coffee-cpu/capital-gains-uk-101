@@ -113,4 +113,9 @@ describe('buildCalculateReport - rules check', () => {
     expect(text).toContain(`\n  ${later} HMRC rules not yet confirmed: `)
     expect(text).not.toContain(`  ${confirmed} HMRC rules not yet confirmed`)
   })
+
+  it('points people to the web app for charts, before the disclaimer', async () => {
+    const { formatCalculateText } = await import('../format')
+    expect(formatCalculateText(report)).toMatch(/load the same files at https:\/\/cgtvisualiser\.co\.uk\. Nothing is uploaded\.\n\nNot tax advice\./)
+  })
 })
