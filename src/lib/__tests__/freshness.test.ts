@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { freshnessItems, HMRC_RULES_CHECK_LOG_URL } from '../freshness'
+import { freshnessItems, hmrcRulesBadge, HMRC_RULES_BADGE_MAX_AGE_DAYS, HMRC_RULES_CHECK_LOG_URL } from '../freshness'
 import { HMRC_RULES_CHECK_DATE, lastEndedTaxYear } from '../cgt/hmrcRulesCheck'
 import { LAST_BUNDLED_MONTH } from '../fx/data/hmrcMonthly'
 import { formatIsoDate } from '../../utils/date'
@@ -38,5 +38,34 @@ describe('freshnessItems', () => {
 
   it('links to the check log in the repository', () => {
     expect(HMRC_RULES_CHECK_LOG_URL).toMatch(/\/blob\/main\/docs\/HMRC_RULES_CHECK\.md#checks$/)
+  })
+})
+
+/** The date n days after the check */
+function daysAfterCheck(n: number): string {
+  const d = new Date(`${HMRC_RULES_CHECK_DATE}T00:00:00Z`)
+  d.setUTCDate(d.getUTCDate() + n)
+  return d.toISOString().slice(0, 10)
+}
+
+describe('hmrcRulesBadge', () => {
+  it('names the last ended tax year on the day of the check and up to the age limit', () => {
+    const expected = {
+      taxYear: lastEndedTaxYear(HMRC_RULES_CHECK_DATE),
+      checkedOn,
+    }
+    expect(hmrcRulesBadge(HMRC_RULES_CHECK_DATE)).toEqual(expected)
+    // Unless the limit crosses 6 April, which hides it for another reason
+    if (lastEndedTaxYear(daysAfterCheck(HMRC_RULES_BADGE_MAX_AGE_DAYS)) === expected.taxYear) {
+      expect(hmrcRulesBadge(daysAfterCheck(HMRC_RULES_BADGE_MAX_AGE_DAYS))).toEqual(expected)
+    }
+  })
+
+  it('hides once the check is older than the limit', () => {
+    expect(hmrcRulesBadge(daysAfterCheck(HMRC_RULES_BADGE_MAX_AGE_DAYS + 1))).toBeNull()
+  })
+
+  it('hides when a tax year has ended since the check', () => {
+    expect(hmrcRulesBadge(yearsAfterCheck(1))).toBeNull()
   })
 })

@@ -38,3 +38,25 @@ export function freshnessItems(buildDate: string, today: string): FreshnessItem[
     },
   ]
 }
+
+/** How many days after a check the "up to date" badge still shows. The check runs monthly; this leaves about two weeks to review and merge its PR */
+export const HMRC_RULES_BADGE_MAX_AGE_DAYS = 45
+
+export interface HmrcRulesBadge {
+  /** The last tax year to have ended, which the check confirms */
+  taxYear: string
+  checkedOn: string
+}
+
+/**
+ * The "HMRC rules 2025/26" badge in the header, or null
+ * when it shouldn't show: the last check doesn't confirm the last ended tax
+ * year (from 6 April until the next check), or it's more than
+ * HMRC_RULES_BADGE_MAX_AGE_DAYS old. The footer still shows the details then
+ */
+export function hmrcRulesBadge(today: string): HmrcRulesBadge | null {
+  const taxYear = lastEndedTaxYear(today)
+  const ageDays = (Date.parse(today) - Date.parse(HMRC_RULES_CHECK_DATE)) / 86_400_000
+  if (!isConfirmedByHmrcRulesCheck(taxYear) || ageDays > HMRC_RULES_BADGE_MAX_AGE_DAYS) return null
+  return { taxYear, checkedOn: formatIsoDate(HMRC_RULES_CHECK_DATE, 'short') }
+}
