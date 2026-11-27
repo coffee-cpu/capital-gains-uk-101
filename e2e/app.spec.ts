@@ -51,6 +51,9 @@ test.describe('Capital Gains Tax Visualiser App', () => {
     // Hover shows what it means
     await badge.hover()
     await expect(page.getByText(/^Up to date with HMRC rules for \d{4}\/\d{2}: .* the legislation\.$/)).toBeVisible()
+    // Escape closes a tooltip opened by hover too
+    await page.keyboard.press('Escape')
+    await expect(page.getByText(/^Up to date with HMRC rules for \d{4}\/\d{2}: /)).toHaveCount(0)
 
     // Keyboard focus shows it too
     await page.mouse.move(600, 500)
